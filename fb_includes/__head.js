@@ -1,0 +1,220 @@
+/*
+	This file is part of FishBot, a Warzone 2100 AI.
+
+	FishBot is free software: you can redistribute it and/or modify it under the terms of the 
+	GNU General Public License as published by the Free Software Foundation, either version 3 
+	of the License, or (at your option) any later version.
+
+	FishBot is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; 
+	without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. 
+	See the GNU General Public License for more details.
+
+	You should have received a copy of the GNU General Public License along with this program. 
+	If not, see <https://www.gnu.org/licenses/> or <https://www.gnu.org/licenses/gpl-3.0.html>.
+*/
+
+/*
+    FISHBOT PARAMETERS
+*/
+
+const CAMPAIGN_STATUS = {
+	DEFENCE: 1,
+	COUNTERATTACK: 2,
+    BUILDUP: 3,
+	MANEUVER: 4,
+	STAGING: 5,
+	MAIN_ASSAULT: 6,
+	PURSUIT: 7,
+};
+Object.freeze(CAMPAIGN_STATUS);
+
+
+const campaignTransitions = {
+	// currently circular
+
+	'CompletedDefence': {
+		[CAMPAIGN_STATUS.DEFENCE]: CAMPAIGN_STATUS.COUNTERATTACK
+	},
+	'CompletedCounterattack': {
+		[CAMPAIGN_STATUS.COUNTERATTACK]: CAMPAIGN_STATUS.BUILDUP
+	},
+	'CompletedBuildup': {
+		[CAMPAIGN_STATUS.BUILDUP]: CAMPAIGN_STATUS.STAGING
+	},
+	// 'CompletedManeuver': {
+	// 	[CAMPAIGN_STATUS.MANEUVER]: CAMPAIGN_STATUS.STAGING
+	// },
+	'CompletedStaging': {
+		[CAMPAIGN_STATUS.STAGING]: CAMPAIGN_STATUS.MAIN_ASSAULT
+	},
+	'CompletedMainAssault': {
+		[CAMPAIGN_STATUS.MAIN_ASSAULT]: CAMPAIGN_STATUS.PURSUIT
+	},
+	'CompletedPursuit': {
+		[CAMPAIGN_STATUS.PURSUIT]: CAMPAIGN_STATUS.BUILDUP
+	}
+
+}
+Object.freeze(campaignTransitions);
+
+
+/*
+	TOC (Tactical Operations Center) PARAMETERS
+*/
+
+const MISSION_STATUS = {
+	FAILED_CREATION: 0,
+	NOT_STARTED: 1,
+	IN_PROGRESS: 2,
+	FAILED: 3,
+	SUCCEEDED: 4,
+	ABORT: 5,
+	FAILED_ABORTED: 6
+};
+Object.freeze(MISSION_STATUS);
+
+
+const MISSION_PRIORITY = {
+	URGENT: 5,
+	VERY_HIGH: 4,
+	HIGH: 3,
+	MEDIUM: 2,
+	LOW: 1
+};
+Object.freeze(MISSION_PRIORITY);
+
+
+const FEATURE_TYPE = {
+	SECTOR: 0,
+	BASE: 1,
+	DERRICK: 2
+}
+Object.freeze(FEATURE_TYPE);
+
+
+const MISSION_TYPE = {
+	ABORT_MISSION: 0,
+
+	// ARMY AVIATION
+	VTOL_STAGING_MISSION: 1000,
+	CAS_STRIKE: 1001,
+	DAS_STRUCT_STRIKE: 1002,
+	CAS_PATROL: 1003,
+	AIR_RECON_SILENT: 1302,
+	AIR_RECON_PATROL: 1301,
+
+	// ARMY GROUND COMMAND
+	GROUND_SECURITY: 2002,
+	RAID: 2003,
+
+	// ARMY INTELLIGENCE
+	SECTOR_RECON_ENGINE: 3000,
+
+	// ARMY ENGINEERING
+	HELP_CONSTRUCT: 4000,
+	CONSTRUCT_OIL_DERRICK: 4001,
+	CONSTRUCT_BASE_STRUCTURE: 4002,
+	CONSTRUCT_SINGLE_MODULE: 4003,
+	CONSTRUCT_NEARBY_DEFENCE: 4004,
+	CONSTRUCT_ALL_DERRICKS_IN_SECTOR: 4005,
+	CONSTRUCT_AUTO_DETECT_BY_STRUCTURE: 4006,
+	CONSTRUCT_STRUCTURE_NEARBY: 4007,
+};
+
+const CONSTRUCTION_MISSION_TYPES = [
+	MISSION_TYPE.HELP_CONSTRUCT, 
+	MISSION_TYPE.CONSTRUCT_OIL_DERRICK,
+	MISSION_TYPE.CONSTRUCT_BASE_STRUCTURE,
+	MISSION_TYPE.CONSTRUCT_SINGLE_MODULE,
+	MISSION_TYPE.CONSTRUCT_NEARBY_DEFENCE,
+	MISSION_TYPE.CONSTRUCT_ALL_DERRICKS_IN_SECTOR,
+	MISSION_TYPE.CONSTRUCT_AUTO_DETECT_BY_STRUCTURE,
+	MISSION_TYPE.CONSTRUCT_STRUCTURE_NEARBY
+];
+
+const AVIATION_MISSION_TYPES = [
+	MISSION_TYPE.VTOL_STAGING_MISSION,
+	MISSION_TYPE.CAS_STRIKE,
+	MISSION_TYPE.DAS_STRUCT_STRIKE,
+	MISSION_TYPE.CAS_PATROL,
+	MISSION_TYPE.AIR_RECON_SILENT,
+	MISSION_TYPE.AIR_RECON_PATROL
+]
+
+Object.freeze(MISSION_TYPE);
+Object.freeze(CONSTRUCTION_MISSION_TYPES);
+Object.freeze(AVIATION_MISSION_TYPES);
+
+
+const REGION_OWNER = {
+	FRIENDLY: 0,
+	NEUTRAL: 1,
+	CONTESTED: 2,
+	ENEMY: 3,
+}
+Object.freeze(REGION_OWNER);
+
+
+const REGION_THREAT_LEVEL = {
+	LOW: 1,
+	MEDIUM: 2,
+	HIGH: 3
+};
+Object.freeze(REGION_THREAT_LEVEL);
+
+
+const REGION_STABILITY = {
+	LOW: 1,
+	MEDIUM: 2,
+	HIGH: 3
+};
+Object.freeze(REGION_STABILITY);
+
+
+/*
+	TACTICAL PARAMETERS 
+    - used for all .js files prefixed with __tac_
+*/
+
+
+const WZ2100_v461_DROID_RANGE_SCALING_FACTOR = 1 / 128;
+
+/*
+    AIR FORCE PARAMETERS
+*/
+const AIR_RESERVE = 1000;
+
+/*
+    GROUND FORCE PARAMETERS
+*/
+
+const DIVISION = {
+    GENERAL_RESERVE: 2001,
+    HEAVY_CAV_RESERVE: 2002,
+    LIGHT_CAV_RESERVE: 2003,
+    FIRE_SUPPORT_RESERVE: 2004,
+    INFANTRY_RESERVE: 2005,
+    AIR_DEFENCE_RESERVE: 2006,    
+    BRIGADE1: 2011,                 // this is a combined arms team
+    BRIGADE2: 2012,
+    BRIGADE3: 2013,
+    BRIGADE4: 2014,
+    BRIGADE5: 2015,
+    FIRE_SUPPORT1: 2021,
+    FIRE_SUPPORT2: 2022,
+    FIRE_SUPPORT3: 2023,
+    FIRE_SUPPORT4: 2024,
+    FIRE_SUPPORT5: 2025,
+};
+Object.freeze(DIVISION);
+
+/*
+    [LOGISTICS] CONSTRUCTION PARAMETERS
+*/
+const ENGINEERING = {
+    ENGINEERING_RESERVE: 5000,
+}
+Object.freeze(ENGINEERING);
+
+
+const TOO_MUCH_POWER = 300;

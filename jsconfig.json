@@ -1,0 +1,9 @@
+{
+  "__comment": "This file allows VSCode to find all of the symbols without opening the code files.",
+  "compilerOptions": {
+    "target": "ES2020",
+    "module": "ESNext",
+    "checkJs": true
+  },
+  "include": ["**/*.js", "**/*.d.ts"]
+}
