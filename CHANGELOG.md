@@ -1,5 +1,16 @@
 # Changelog
 
+## Fishbot v4
+### _
+
+- AI behaviour (v4 objectives)
+    - Integrate unified targets into state
+    - Integrate enemy data/friendly data into state & modify strategy based on enemy data
+    - Add threat from enemy unit presence into state
+    - Improve mission cancellation
+- Architecture
+    - Migrate all files to the new naming convention
+
 ## Fishbot v3
 ### 75% WR: Fishbot-v3 Medium vs Cobra Hard (Gamma 3P T2); Warzone 2100 v4.6.3
 
