@@ -125,8 +125,7 @@ class TacticalOperationsCenter {
 
 			let curr = aviationTargets[i];
 
-			if (getObject(curr.obj.type, curr.obj.player, curr.obj.id) === null) {		//hacky, if its dead, ignore it
-				// debug(`Skipped ${curr.obj.name} at ${curr.obj.x}, ${curr.obj.y}`);
+			if (getObject(curr.obj.type, curr.obj.player, curr.obj.id) === null) {		// if target no longer exists, ignore it
 				continue;
 			}
 

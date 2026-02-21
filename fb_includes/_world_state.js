@@ -204,5 +204,7 @@ class worldState {
         this.highRiskSectors = [];
 
         this.activeMissions = [];
+
+        this.currTargets = [];
     }
 }

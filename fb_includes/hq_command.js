@@ -31,7 +31,7 @@ class CommandCenter {
 
 	/////////////////////////////////////////////////// STATE INITIALISATION ///////////////////////////////////////////////////
 
-	establishSituation(state) {
+	setDefaultSectorParameters(state) {
 		// Service: run once - establishes default sector info based on real sector data
 
 		// Simple heuristic rule to set initial threat level
@@ -121,9 +121,9 @@ class CommandCenter {
 		*/
 		const mainForceLocation = groundForces.getForceMedianLocation({droidArray: []});
 
-		const allTargets = intelligence.getAllTargets2();
+		intelligence.updateCurrTargets(state);
 
-		let groundAssaultTargets = this.prioritiseGroundCampaignTargets(allTargets, mainForceLocation);
+		let groundAssaultTargets = this.prioritiseGroundCampaignTargets(state, mainForceLocation);
 		let fireSupportTargets = this.prioritiseFireSupportCampaignTargets(groundAssaultTargets, mainForceLocation);
 
 		// EXECUTE MISSIONS BASED ON CAMPAIGN STATUS
@@ -510,15 +510,14 @@ class CommandCenter {
 	}
 
 
-	prioritiseGroundCampaignTargets(targetList, groupPosition) {
-		if (targetList.length === 0) {
-			return targetList;
+	prioritiseGroundCampaignTargets(state, groupPosition) {
+		if (state.currTargets.length === 0) {
+			return state.currTargets;
 		}
 
-		let actualTargetList = targetList;
-
-		// Prioritises targets for army ground forces
-		let noVtolTargetList = targetList.filter(target => (target.obj.isVTOL !== true));
+		let actualTargetList = state.currTargets;
+		
+		let noVtolTargetList = state.currTargets.filter(target => (target.obj.isVTOL !== true));
 		if (noVtolTargetList.length > 0) {
 			actualTargetList = noVtolTargetList;
 		}

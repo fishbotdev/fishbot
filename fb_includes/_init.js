@@ -46,6 +46,6 @@ const research = new armyResearchAndDevelopment();
 // Commander: Makes all decisions
 const hq = new CommandCenter();
 
-hq.establishSituation(state);		// initialises sector threat
+hq.setDefaultSectorParameters(state);		// initialises sector threat
 hq.setDefaultMissions(state);			// initialises default missions
 

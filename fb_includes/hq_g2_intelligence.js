@@ -18,7 +18,6 @@ class armyIntelligence {
 
 	constructor() {
 
-		this.currTargets = [];					
 	}
 
 	requestCollection(state) {
@@ -345,69 +344,60 @@ class armyIntelligence {
 		return overallTargetList;
 	}
 	
-	#updateCurrTargets() {
+	updateCurrTargets(state) {
+		// Service: This is a mutator for state.currTargets
+
+		/*
+			PRUNES MAIN TARGET LIST
+		*/
 
 		let indicesToKeep = [];
 
-		for (let i=0; i<this.currTargets.length; i++) {
-			let currTarget = this.currTargets[i];
+		for (let i=0; i<state.currTargets.length; i++) {
+			let currTarget = state.currTargets[i];
 
-			// debug(`c.obj.type ${c.obj.type}, c.obj.player ${c.obj.player}, c.obj.id ${c.obj.id}`);
-			let gameObj = getObject(currTarget.obj.type, currTarget.obj.player, currTarget.obj.id);
+			const gameObj = getObject(currTarget.obj.type, currTarget.obj.player, currTarget.obj.id);
 			
-			if (gameObj === null) {	
-				// to be removed (no longer defined)
-				// debug(`gameObj is null, removing`);
-			} else {
-				// Update the game object & position
-				currTarget.obj = gameObj;
-				currTarget.x = gameObj.x;
-				currTarget.y = gameObj.y;
+			if (!defined(gameObj)) {	
+				continue;
+			} 
 
-				indicesToKeep = indicesToKeep.concat(i);
-				// debug(`"did not remove gameObj: ${gameObj} -- ${c.id} ${c.x} ${c.y} -- ${c.obj.type}, ${c.obj.player}, ${c.obj.id} --"`);
-			}
+			// Else, update the game object & position
+			currTarget.obj = gameObj;
+			currTarget.x = gameObj.x;
+			currTarget.y = gameObj.y;
+
+			indicesToKeep.push(i);
 		}
 
-		this.currTargets = this.currTargets.filter((_, i) => indicesToKeep.includes(i));
-	}
-
-	getAllTargets2() {
-
-		const enemyPlayerList = enumLivingPlayers().filter(isEnemy); 
-
-		this.#updateCurrTargets();
+		state.currTargets = state.currTargets.filter((_, i) => indicesToKeep.includes(i));
 
 		/*
-			GET ALL TARGETS
+			GET ALL TARGETS FROM GAME ENGINE
 		*/
+		const enemyPlayerList = enumLivingPlayers().filter(isEnemy); 
 		let enemyTargets = [];
 		for (let i=0; i<enemyPlayerList.length; i++) {
 			const enemyPlayer = enemyPlayerList[i];
 			const enemyUnits = enumDroid(enemyPlayer, DROID_ANY, false); 											// HACK: Cheating, it can target units even out of sensor range									
 			const enemyStructures = enumStruct(enemyPlayer).filter(struct => struct.status !== BEING_BUILT);		// HACK: Cheating, it can target structures even out of sensor range										
-			enemyTargets = enemyTargets.concat(enemyUnits, enemyStructures);
+			enemyTargets.push(...enemyUnits, ...enemyStructures);
 		}
 
 		/*
-			CREATE TARGETS & ADD TO MASTER LIST
+			ADDS NEW TARGETS TO MAIN TARGET LIST
 		*/
 		for (let i=0; i<enemyTargets.length; i++) {
-			let currTargetObj = enemyTargets[i];
+			const currTargetObj = enemyTargets[i];
 
-			const existingTarget = this.currTargets.find(o => (o.id === currTargetObj.id));
+			const existingTarget = state.currTargets.find(o => (o.id === currTargetObj.id));
 			if (defined(existingTarget)) {
 				continue;	
 			}
 
-			let temp = this.#createNewTarget({targetObject: currTargetObj});
-
-			this.currTargets.push(temp);
-
+			const temp = this.#createNewTarget({targetObject: currTargetObj});
+			state.currTargets.push(temp);
 		}
-
-		return this.currTargets;		// will return an empty array if there are no targets
-
 	}
 
 }

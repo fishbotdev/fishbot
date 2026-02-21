@@ -225,27 +225,18 @@ def show_hard_cobra_results():
 
 def show_insane_cobra_results():
 
-    # file_path_test1_v2 = getcwd() + rf"\process_results/v3/test4_v2_insane_d2c696a.txt"                   # v2: insane,
-    # file_path_test1_v2 =  getcwd() + rf"\process_results/v3/test4_insane_90a01a7.txt"                     # v3-dev: insane, after cyborg raiding + vtol optim
-    # file_path_test1_v2 = getcwd() + rf"\process_results/v3/test4_insane_5e16da4_intelligent_arty.txt"     # v3-dev: insane, max cyborg raiding + research
-    # file_path_test1_v2 = getcwd() + rf"\process_results/v3/test4_insane_deadf9f_smart_artyngnd.txt"         # v3-dev: insane, max cyborg raiding + research
-    # file_path_test1_v2 = getcwd() + rf"\process_results/v3/test4_insane_2f7da8e_cohesion,ast_targeting.txt"    
-    # file_path_test1_v2 = getcwd() + rf"\process_results/v3/test4_insane_f06df49.txt"                                           # v3-dev: insane, improved direct assault targeting, cyborg cohesion & light cavalry % increased
-    # file_path_test1_v2 = getcwd() + rf"\process_results/v3/12f6eba,ins.txt"   
-    # file_path_test1 = getcwd() + rf"\process_results/v3/f761908,ins.txt"                   # v3-dev: last commit on v4.6.1 (36 out of 40 won on Cobra Insane)
-    # file_path_test1 = getcwd() + rf"\process_results/v3/f761908,ins,462.txt"             # v3-dev: same commit on v4.6.2 ()
-    file_path_test1 = getcwd() + rf"\process_results/v3/9ed8b2e,insane,461.txt"            # v3-dev: Using a 4.6.2 development version on 4.6.1 (84 / 100 won on Cobra Insane)
-    file_path_test2 = getcwd() + rf"\process_results/v3/29ceeb0,insane,461.txt"            # v3-dev: Using a 4.6.3 development version on 4.6.1 (98 / 100 won on Cobra Insane)
+    test_1 = getcwd() + rf"\process_results/v4/" + "5c757ab,ins,2v1" + ".txt"               # v4 dev: v3 skrush against 2x nexus @insane
+    test_2 = getcwd() + rf"\process_results/v4/" + "5c757ab,hardins,1v2" + ".txt"           # v4 dev: v3 skrush 1x hard, 1x insane nexus
+    
+    commit1 = test_1.split(rf"v4/")[1].split(",")[0]
+    commit2 = test_2.split(rf"v4/")[1].split(",")[0]
 
-    commit1 = "9ed8b2e"
-    commit2 = "29ceeb0"
-
-    show_stats(*get_stats(file_path_test1), title=f"{commit1} (earlier)", legend=[commit1, commit2], figNum=2)            
-    show_stats(*get_stats(file_path_test2), title=f"{commit2} (newer)", legend=[commit1, commit2], figNum=3)    
+    show_stats(*get_stats(test_1), title=f"{commit1} (earlier)", legend=[commit1, commit2], figNum=2)            
+    show_stats(*get_stats(test_2), title=f"{commit2} (newer)", legend=[commit1, commit2], figNum=3)    
 
 
 # show_medium_cobra_results()
-show_hard_cobra_results()
-# show_insane_cobra_results()
+# show_hard_cobra_results()
+show_insane_cobra_results()
 import matplotlib.pyplot as plt
 plt.show()
