@@ -31,8 +31,9 @@ function returnForRepair(droid) {
 	Driver for attacking
 */
 function attackTarget(droid, target) {
-	if (!defined(target))
+	if (!defined(target) || !defined(droid)) {
 		return;
+	}
 
 	// Switch based on type of target
 	switch (target.type) {
@@ -115,7 +116,7 @@ let currGroundAssaultTarget = undefined;           // eventually moved inside cl
 let currFireSupportTarget = undefined;
 let closestDroidToTarget = undefined;       // eventually moved inside class (needs to remember this state)
 
-function groundForceAttack({groundTargets, fireSupportTargets}) {
+function groundForceAttack({state, groundTargets, fireSupportTargets}) {
 
 	let generalReserve = state.g.enumGroup(DIVISION.GENERAL_RESERVE);
 	let infantryReserve = state.g.enumGroup(DIVISION.INFANTRY_RESERVE);
@@ -130,17 +131,21 @@ function groundForceAttack({groundTargets, fireSupportTargets}) {
 	if (groundTargets.length === 0) {
 		return;
 	}
+	currGroundAssaultTarget = groundTargets[0];
 
-	if (fireSupportTargets.length === 0) {
+	if (getObject(currGroundAssaultTarget.type, currGroundAssaultTarget.player, currGroundAssaultTarget.id) === null) {		
 		return;
 	}
 
-	// todo make a more advanced way of checking the target list is empty
+	currFireSupportTarget = currGroundAssaultTarget;
+	if (fireSupportTargets.length !== 0) {		
+		const targetCandidate = fireSupportTargets[0];
+		if (getObject(targetCandidate.type, targetCandidate.player, targetCandidate.id) !== null) {		
+			currFireSupportTarget = targetCandidate;
+		}			
+	}
 
-	currGroundAssaultTarget = groundTargets[0].obj;
-	currFireSupportTarget = fireSupportTargets[0].obj;
-
-	if (defined(currGroundAssaultTarget) && defined(currFireSupportTarget)) {
+	if (defined(currGroundAssaultTarget)) {
 		// debug('both ground assault, fs targets defined', currGroundAssaultTarget.name, currFireSupportTarget.name);
 		// allow all forces to coalesce before attacking
 		closestDroidToTarget = findClosestDroidToTarget(generalReserve, currGroundAssaultTarget);
@@ -217,12 +222,7 @@ function groundForceAttack({groundTargets, fireSupportTargets}) {
 				// Fire support units should fall back if they find themselves on the front line
 				orderDroidLoc(droid, DORDER_MOVE, baseLocation.x, baseLocation.y);
 			} else {
-				const outOfMortarRange = (distance(droid, currFireSupportTarget) > droid.range * WZ2100_v461_DROID_RANGE_SCALING_FACTOR + 4);
-				if (outOfMortarRange) {
-					attackTarget(droid, currGroundAssaultTarget)
-				} else {
-					attackTarget(droid, currFireSupportTarget);
-				}
+				attackTarget(droid, currFireSupportTarget);
 			}
 		});
 

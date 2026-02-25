@@ -101,16 +101,17 @@ class armyIntelligence {
 			'name': undefined,
 			'x': undefined,
 			'y': undefined,
+
+			// Target analysis
+			'distanceFromBase': 0,
+			'distanceFromGroundForce': 0,
+
 			'isEnergy': false,
 			'isProduction': false,
 			'isUnit': false,
 			'isDefence': false,
-			
-			// Intelligence
-			'lastScoutedTime': -1, 
-			'lastTimeScoutAttempted': -2,
-		
-			// Analysis of defending forces
+
+			'radiusAround': 8,
 			'targetsAround': 0, 
 			'enemyDerricksAround': 0,
 			'airDefensesAround': 0,
@@ -119,13 +120,15 @@ class armyIntelligence {
 			'otherLandUnitsAround': 0,
 
 			// Campaign planning
-			'priority': 0.2,			// Number in set: [0.2, 0.4, 0.6, 0.8, 1];			
-			'baseValue': 0.2,			// Number in set: [0.2, 0.4, 0.6, 0.8, 1];
+			'priority': 0.2,					
+			'baseValue': 0.2,			
 			'reward': 0.0,
 			'cost': 0.0,
 			'score': 0.0,
 
 			// On ground targeting
+			'lastScoutedTime': -1, 
+			'lastTimeScoutAttempted': -2,
 			'lastAttackedTime': -1,
 			'lastTimeAirAttackAttempted': -2,
 			'lastTimeGroundAttackAttempted': -2,
@@ -258,10 +261,10 @@ class armyIntelligence {
 
 		const targetObjectList = [...highPriorityTargets, ...medPriorityTargets, ...lowPriorityTargets];
 
-		let overallTargetList = [];
-		targetObjectList.forEach(obj => overallTargetList.push(this.#createNewTarget({targetObject: obj})));
+		let airRaidTargetList = [];
+		targetObjectList.forEach(obj => airRaidTargetList.push(this.#createNewTarget({targetObject: obj})));
 
-		return overallTargetList;
+		return airRaidTargetList;
 	}
 
 	getCASTargets({location}) {
@@ -290,7 +293,7 @@ class armyIntelligence {
 		return overallTargetList;
 	}
 
-	getAntiAirTargets() {
+	getAntiAirTargets(state) {
 		const alivePlayers = enumLivingPlayers();
 
 		let enemyBaseSectors = [];
@@ -317,7 +320,7 @@ class armyIntelligence {
 		return overallTargetList;
 	}
 
-	getEconomyTargets() {
+	getEconomyTargets(state) {
 		const alivePlayers = enumLivingPlayers();
 
 		let enemyBaseSectors = [];
@@ -343,7 +346,19 @@ class armyIntelligence {
 		economyTargets.forEach(obj => overallTargetList.push(this.#createNewTarget({targetObject: obj})));
 		return overallTargetList;
 	}
-	
+
+	getLandTargetsAround({state, position, searchRadius=20}) {
+
+		let targetObjects = enumRange(position.x, position.y, searchRadius, ENEMIES, false);
+
+		const noVtolTargetList = targetObjects.filter(obj => obj.isVTOL !== true);
+		if (noVtolTargetList.length > 0) {
+			targetObjects = noVtolTargetList;
+		}
+
+		return targetObjects;
+	}
+
 	updateCurrTargets(state) {
 		// Service: This is a mutator for state.currTargets
 
@@ -371,33 +386,6 @@ class armyIntelligence {
 		}
 
 		state.currTargets = state.currTargets.filter((_, i) => indicesToKeep.includes(i));
-
-		/*
-			GET ALL TARGETS FROM GAME ENGINE
-		*/
-		const enemyPlayerList = enumLivingPlayers().filter(isEnemy); 
-		let enemyTargets = [];
-		for (let i=0; i<enemyPlayerList.length; i++) {
-			const enemyPlayer = enemyPlayerList[i];
-			const enemyUnits = enumDroid(enemyPlayer, DROID_ANY, false); 											// HACK: Cheating, it can target units even out of sensor range									
-			const enemyStructures = enumStruct(enemyPlayer).filter(struct => struct.status !== BEING_BUILT);		// HACK: Cheating, it can target structures even out of sensor range										
-			enemyTargets.push(...enemyUnits, ...enemyStructures);
-		}
-
-		/*
-			ADDS NEW TARGETS TO MAIN TARGET LIST
-		*/
-		for (let i=0; i<enemyTargets.length; i++) {
-			const currTargetObj = enemyTargets[i];
-
-			const existingTarget = state.currTargets.find(o => (o.id === currTargetObj.id));
-			if (defined(existingTarget)) {
-				continue;	
-			}
-
-			const temp = this.#createNewTarget({targetObject: currTargetObj});
-			state.currTargets.push(temp);
-		}
 	}
 
 }
