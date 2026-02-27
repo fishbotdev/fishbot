@@ -270,7 +270,7 @@ class armyIntelligence {
 	}
 
 	getCASTargets({location}) {
-		const TARGET_RADIUS = 16;
+		const TARGET_RADIUS = 30;
 		let targetObjectList = enumRange(location.x, location.y, TARGET_RADIUS, ENEMIES, false);
 		
 		const units = targetObjectList.filter(o => o.type === DROID && o.isVTOL !== true);

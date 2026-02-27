@@ -234,7 +234,9 @@ class CommandCenter {
 		// GROUND FORCES
 		const mainForceLocation = groundForces.getForceMedianLocation();
 
-		if (campaignStatus === CAMPAIGN_STATUS.MAIN_ASSAULT || campaignStatus === CAMPAIGN_STATUS.STAGING) {
+		const readyToAttack = campaignStatus === CAMPAIGN_STATUS.MAIN_ASSAULT || campaignStatus === CAMPAIGN_STATUS.STAGING;
+
+		if (readyToAttack) {
 
 			// Get targets efficiently
 
@@ -261,7 +263,11 @@ class CommandCenter {
 		let airRaidTargets = intelligence.getAirRaidTargets(state);
 		let	casTargets = intelligence.getCASTargets({location: mainForceLocation});
 
-		let enemyBaseTargets = intelligence.getAllEnemyBaseTargets(state);		
+		let enemyBaseTargets = {"antiAirTargets": [], "economyTargets": []};
+		if (casTargets.length === 0 && airRaidTargets.length === 0 && readyToAttack) {
+			debug(`runCombatOperations(): used expensive getAllEnemyBaseTargets @ ${getCurrGameTime()}`);
+			enemyBaseTargets = intelligence.getAllEnemyBaseTargets(state);		
+		}		
 		
 		const aviationTargets = this.prioritiseAviationTargets(state, mainForceLocation, airRaidTargets, casTargets, enemyBaseTargets);
 
