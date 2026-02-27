@@ -24,6 +24,7 @@ class CommandCenter {
 		this.toc = new TacticalOperationsCenter();
 
 		this.oilDominance = false;
+		this.OIL_DOMINANCE_PERCENTAGE = 55;
 
 		this.RECON_COOLDOWN_TIME = 1900;		// this number depends on FishBot's ticks, FishBot need to perform a full number of cycles
 		this.lastConductedRecon = -2 * this.RECON_COOLDOWN_TIME;
@@ -79,7 +80,88 @@ class CommandCenter {
 		state.activeMissions.push(md1, md2);
 	}
 
+	/////////////////////////////////////////////////// "CAMPAIGN STATUS" ///////////////////////////////////////////////////
+	getCampaignStatus() {
+		return this.campaignStatus;
+	}
+
+	updateCampaignStatus(event) {
+		const currState = this.getCampaignStatus();
+
+		// Advance the state machine on 'event'
+		let nextState = undefined;
+		if(defined(campaignTransitions[event])) {
+			nextState = campaignTransitions[event][currState];
+		}
+
+		if (defined(nextState)) {
+			// debug(`Advanced to next campaign state ${nextState}`);
+			this.campaignStatus = nextState;
+		} 
+	}
+
 	/////////////////////////////////////////////////// COMBAT OPERATIONS ///////////////////////////////////////////////////
+	prioritiseGroundCampaignTargets(state, objectList, groupPosition) {
+
+		if (objectList.length === 0) {
+			return [];
+		}
+
+		let groundTargetObjects = [];
+
+		const NEARBY_RANGE = 10;
+		let nearbyObjects = objectList.filter(obj => distSq(obj.x, groupPosition.x, obj.y, groupPosition.y) <= NEARBY_RANGE ** 2);
+
+		// Sort nearest objects by closest to furthest
+		nearbyObjects.sort((a, b) => distSq(a.x, groupPosition.x, a.y, groupPosition.y) - distSq(b.x, groupPosition.x, b.y, groupPosition.y));
+
+		groundTargetObjects.push(...nearbyObjects);
+
+		// Lazily evaluate far objects
+		if (nearbyObjects.length <= 3) {
+			let farObjects = objectList.filter(obj => !nearbyObjects.includes(obj));
+			farObjects.sort((a, b) => distSq(a.x, groupPosition.x, a.y, groupPosition.y) - distSq(b.x, groupPosition.x, b.y, groupPosition.y));	
+			groundTargetObjects.push(...farObjects);
+		}
+
+		if (false) { 
+			debug(``);
+			const nearestTargets = objectList.slice(0, 3);
+			nearestTargets.forEach(t => debug(`	target: ${t.obj.name} - ${t.obj.x} ${t.obj.y}`));
+		}
+
+		return groundTargetObjects;
+	}
+
+	prioritiseLandIndirectFires(state, objectList, groupPosition) {
+		if (objectList.length === 0) {
+			return [];
+		}
+
+		// TODO: these 4 lines are copied from above, can combine the two functions to save computation
+		const NEARBY_RANGE = 10;
+		let nearbyObjects = objectList.filter(obj => distSq(obj.x, groupPosition.x, obj.y, groupPosition.y) <= NEARBY_RANGE ** 2);
+
+		// Sort nearest objects by closest to furthest
+		nearbyObjects.sort((a, b) => distSq(a.x, groupPosition.x, a.y, groupPosition.y) - distSq(b.x, groupPosition.x, b.y, groupPosition.y));
+
+		// Prioritise indirect fires, air defences, cyborgs, then the rest
+		const nearbyCyborgs = nearbyObjects.filter(o => o.droidType === DROID_CYBORG);
+		const nearbyIndirectFires = nearbyObjects.filter(o => o.hasIndirect === true);
+		const nearbyAirDefences = nearbyObjects.filter(o => isAntiAirDefense(o));
+		const nearbyStaticDefences = nearbyObjects.filter(o => 
+			o.stattype === DEFENSE && 
+			!nearbyAirDefences.includes(o) && 
+			!nearbyIndirectFires.includes(o));
+
+		const ECONOMY_STRUCTURES = [FACTORY, VTOL_FACTORY, CYBORG_FACTORY, RESOURCE_EXTRACTOR];	
+		const economyTargets = nearbyObjects.filter(o => ECONOMY_STRUCTURES.includes(o.stattype));
+
+		const fireSupportTargets = [...nearbyCyborgs, ...nearbyIndirectFires, ...nearbyAirDefences, ...nearbyStaticDefences, economyTargets];
+
+		return fireSupportTargets;
+	}
+
 	abortDangerousVTOLMissions(state, mainForceLocation, antiAirDefences) {
 
 		const activeMissions = this.toc.getActiveAviationMissions(state);
@@ -114,10 +196,10 @@ class CommandCenter {
 		}
 	}
 
-	prioritiseAviationTargets(mainForceLocation, airRaidTargets, casTargets, antiAirTargets, economyTargets, myUnitCount, enemyUnitCount) {
+	prioritiseAviationTargets(mainForceLocation, airRaidTargets, casTargets, antiAirTargets, economyTargets) {
 		let aviationTargets = [];
 
-		if (!this.oilDominance || antiAirTargets.length >= 4 || myUnitCount < 1.5 * enemyUnitCount) {
+		if (!this.oilDominance || antiAirTargets.length >= 4) {
 			const nearbyEnemyTargetCount = enumRange(mainForceLocation.x, mainForceLocation.y, 12, ENEMIES, true).length;
 			aviationTargets = [...airRaidTargets];
 			if (airRaidTargets.length === 0 || nearbyEnemyTargetCount >= 2) {
@@ -133,51 +215,47 @@ class CommandCenter {
 
 		return aviationTargets;
 	}
-
+	
 	runCombatOperations(state) {
 
-		/*
-			GROUND FORCES (TEMPORARY)
-		*/
+		if (!this.oilDominance) {
+			this.oilDominance = intelligence.getOilDominanceStatus(state, this.OIL_DOMINANCE_PERCENTAGE);
+			if (this.oilDominance) {
+				debug(`oil dominance at: ${getCurrGameTime()} ms.`)
+			}
+		}
+
+		const campaignStatus = this.getCampaignStatus();
 
 		intelligence.updateCurrTargets(state);
 
+		// GROUND FORCES
 		const mainForceLocation = groundForces.getForceMedianLocation();
 
-		const nearbyLandTargets = intelligence.getLandTargetsAround({state: state, position: mainForceLocation, searchRadius: 20});
-
-		const groundAssaultTargets = this.prioritiseGroundCampaignTargets(state, nearbyLandTargets, mainForceLocation);
-		const fireSupportTargets = this.prioritiseLandIndirectFires(state, groundAssaultTargets, mainForceLocation);
-
-		// EXECUTE MISSIONS BASED ON CAMPAIGN STATUS
-		const campaignStatus = this.getCampaignStatus();
 		if (campaignStatus === CAMPAIGN_STATUS.MAIN_ASSAULT || campaignStatus === CAMPAIGN_STATUS.STAGING) {
-			// MOVE GROUND FORCES
-			// TODO: hack; directly calls tactical level function
+
+			// Get targets efficiently
+
+			let nearbyLandTargets = intelligence.getLandTargetsAround({state: state, position: mainForceLocation, searchRadius: 20});
+
+			if (nearbyLandTargets.length === 0) {
+				nearbyLandTargets = intelligence.getLandTargetsAround({state: state, position: mainForceLocation, searchRadius: 30});
+			}
+
+			if (nearbyLandTargets.length === 0) {
+				// debug(`runCombatOperations(): used expensive getAllTargets @ ${getCurrGameTime()}`);
+				nearbyLandTargets = intelligence.getAllTargets({state: state}) 	
+			}
+
+			// Prioritise targets
+			const groundAssaultTargets = this.prioritiseGroundCampaignTargets(state, nearbyLandTargets, mainForceLocation);
+			const fireSupportTargets = this.prioritiseLandIndirectFires(state, groundAssaultTargets, mainForceLocation);
+
+			// Ground attack; HACK: directly calls tactical level function
 			groundForceAttack({state: state, groundTargets: groundAssaultTargets, fireSupportTargets: fireSupportTargets});		
 		}
 
-		/*
-			AVIATION
-		*/
-		const OIL_DOMINANCE_PERCENTAGE = 55;
-		let totalDerricks = 0, capturedDerricks = 0;
-
-		for (let i=0; i<state.sectors.length; i++) {
-			let d = state.sectors[i].derricks;
-			d.forEach(derrick => {
-				if (derrick.owner === REGION_OWNER.FRIENDLY) {
-					capturedDerricks++;
-				}
-				totalDerricks++;
-			})
-		}
-		if (Math.floor(capturedDerricks / totalDerricks * 100) > OIL_DOMINANCE_PERCENTAGE && !this.oilDominance) {
-			debug(`oil dominance at: ${getCurrGameTime()} ms.`)
-			this.oilDominance = true;
-		}
-
-		// DIRECT AVIATION TO PROVIDE AIR SUPPORT
+		// AVIATION
 		let airRaidTargets = intelligence.getAirRaidTargets(state);
 		let	casTargets = intelligence.getCASTargets({location: mainForceLocation});
 		let antiAirTargets = intelligence.getAntiAirTargets(state);
@@ -185,24 +263,11 @@ class CommandCenter {
 
 		let attackInGroup = antiAirTargets.length >= 1;
 
-		let myUnitCount = enumDroid(me, DROID_WEAPON).filter(d => d.isVTOL !== true).length;
-
-		let enemyUnitCount = 0;
-		const enemyPlayerList = enumLivingPlayers().filter(isEnemy); 
-		enemyPlayerList.forEach(playerID => {
-			const enemyTankCount = enumDroid(playerID, DROID_WEAPON).filter(d => !isVTOL(d)).length;
-			const enemyCyborgCount = enumDroid(playerID, DROID_CYBORG).length;
-			enemyUnitCount += enemyTankCount + enemyCyborgCount;
-		});
-
-		const aviationTargets = this.prioritiseAviationTargets(
-			mainForceLocation, 
-			airRaidTargets, casTargets, antiAirTargets, economyTargets, 
-			myUnitCount, enemyUnitCount);
+		const aviationTargets = this.prioritiseAviationTargets(mainForceLocation, airRaidTargets, casTargets, antiAirTargets, economyTargets);
 
 		this.toc.assignAviationTargets(aviationTargets, attackInGroup, state);					
 
-		if (!this.oilDominance || antiAirTargets.length >= 4 || myUnitCount < 1.5 * enemyUnitCount) {
+		if (!this.oilDominance || antiAirTargets.length >= 4) {
 			this.abortDangerousVTOLMissions(state, mainForceLocation, antiAirTargets);
 		}
 	}
@@ -403,25 +468,6 @@ class CommandCenter {
 		this.abortDangerousConstructionTasks(state);
 	}
 
-	getCampaignStatus() {
-		return this.campaignStatus;
-	}
-
-	updateCampaignStatus(event) {
-		const currState = this.getCampaignStatus();
-
-		// Advance the state machine on 'event'
-		let nextState = undefined;
-		if(defined(campaignTransitions[event])) {
-			nextState = campaignTransitions[event][currState];
-		}
-
-		if (defined(nextState)) {
-			// debug(`Advanced to next campaign state ${nextState}`);
-			this.campaignStatus = nextState;
-		} 
-	}
-
 	runC2() {
 
 		/*
@@ -477,67 +523,6 @@ class CommandCenter {
 				// then cancel all raid missions
 			}
 		}
-	}
-
-	prioritiseGroundCampaignTargets(state, objectList, groupPosition) {
-
-		if (objectList.length === 0) {
-			return [];
-		}
-
-		let groundTargetObjects = [];
-
-		const NEARBY_RANGE = 10;
-		let nearbyObjects = objectList.filter(obj => distSq(obj.x, groupPosition.x, obj.y, groupPosition.y) <= NEARBY_RANGE ** 2);
-
-		// Sort nearest objects by closest to furthest
-		nearbyObjects.sort((a, b) => distSq(a.x, groupPosition.x, a.y, groupPosition.y) - distSq(b.x, groupPosition.x, b.y, groupPosition.y));
-
-		groundTargetObjects.push(...nearbyObjects);
-
-		// Lazily evaluate far objects
-		if (nearbyObjects.length <= 3) {
-			let farObjects = objectList.filter(obj => !nearbyObjects.includes(obj));
-			farObjects.sort((a, b) => distSq(a.x, groupPosition.x, a.y, groupPosition.y) - distSq(b.x, groupPosition.x, b.y, groupPosition.y));	
-			groundTargetObjects.push(...farObjects);
-		}
-
-		if (false) { 
-			debug(``);
-			const nearestTargets = objectList.slice(0, 3);
-			nearestTargets.forEach(t => debug(`	target: ${t.obj.name} - ${t.obj.x} ${t.obj.y}`));
-		}
-
-		return groundTargetObjects;
-	}
-
-	prioritiseLandIndirectFires(state, objectList, groupPosition) {
-		if (objectList.length === 0) {
-			return [];
-		}
-
-		// TODO: these 4 lines are copied from above, can combine the two functions to save computation
-		const NEARBY_RANGE = 10;
-		let nearbyObjects = objectList.filter(obj => distSq(obj.x, groupPosition.x, obj.y, groupPosition.y) <= NEARBY_RANGE ** 2);
-
-		// Sort nearest objects by closest to furthest
-		nearbyObjects.sort((a, b) => distSq(a.x, groupPosition.x, a.y, groupPosition.y) - distSq(b.x, groupPosition.x, b.y, groupPosition.y));
-
-		// Prioritise indirect fires, air defences, cyborgs, then the rest
-		const nearbyCyborgs = nearbyObjects.filter(o => o.droidType === DROID_CYBORG);
-		const nearbyIndirectFires = nearbyObjects.filter(o => o.hasIndirect === true);
-		const nearbyAirDefences = nearbyObjects.filter(o => isAntiAirDefense(o));
-		const nearbyStaticDefences = nearbyObjects.filter(o => 
-			o.stattype === DEFENSE && 
-			!nearbyAirDefences.includes(o) && 
-			!nearbyIndirectFires.includes(o));
-
-		const ECONOMY_STRUCTURES = [FACTORY, VTOL_FACTORY, CYBORG_FACTORY, RESOURCE_EXTRACTOR];	
-		const economyTargets = nearbyObjects.filter(o => ECONOMY_STRUCTURES.includes(o.stattype));
-
-		const fireSupportTargets = [...nearbyCyborgs, ...nearbyIndirectFires, ...nearbyAirDefences, ...nearbyStaticDefences, economyTargets];
-
-		return fireSupportTargets;
 	}
 
 }

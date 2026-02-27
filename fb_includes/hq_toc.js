@@ -118,8 +118,6 @@ class TacticalOperationsCenter {
 	}
 
 	assignAviationTargets(aviationTargets, attackInGroup, state) {
-		// this function assumes that 'aviationTargets' is the same array as allTargets (so this variable is shared), 
-		// except the entries have been reordered in order of priority (most important to least important)
 
 		for (let i=0; i<aviationTargets.length; i++) {
 

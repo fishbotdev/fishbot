@@ -346,7 +346,7 @@ class armyIntelligence {
 		economyTargets.forEach(obj => overallTargetList.push(this.#createNewTarget({targetObject: obj})));
 		return overallTargetList;
 	}
-
+	
 	getLandTargetsAround({state, position, searchRadius=20}) {
 
 		let targetObjects = enumRange(position.x, position.y, searchRadius, ENEMIES, false);
@@ -357,6 +357,30 @@ class armyIntelligence {
 		}
 
 		return targetObjects;
+	}
+
+	getAllTargets({state}) {
+		// This is computationally expensive, should only be used as a fallback
+		
+		let landTargets = [], airTargets= [];
+
+		const enemyPlayerList = enumLivingPlayers().filter(isEnemy); 
+		enemyPlayerList.forEach(playerID => {
+			const enemyUnits = enumDroid(playerID, DROID_ANY);
+			
+			const enemyLandUnits = enemyUnits.filter(d => !isVTOL(d));
+			const enemyVTOLs = enemyUnits.filter(d => isVTOL(d));
+
+			const enemyStructures = enumStruct(playerID);		
+
+			landTargets.push(...enemyLandUnits, ...enemyStructures);
+			airTargets.push(...enemyVTOLs);
+		});
+
+		// this is expensive 
+		landTargets.sort((a,b) => distSq(a.x, baseLocation.x, a.y, baseLocation.y) - distSq(b.x, baseLocation.x, b.y, baseLocation.y));		
+
+		return [...landTargets, ...airTargets];
 	}
 
 	updateCurrTargets(state) {
@@ -386,6 +410,25 @@ class armyIntelligence {
 		}
 
 		state.currTargets = state.currTargets.filter((_, i) => indicesToKeep.includes(i));
+	}
+
+	getOilDominanceStatus(state, OIL_DOMINANCE_PERCENTAGE) {
+		let totalDerricks = 0, capturedDerricks = 0;
+
+		for (let i=0; i<state.sectors.length; i++) {
+			let d = state.sectors[i].derricks;
+			d.forEach(derrick => {
+				if (derrick.owner === REGION_OWNER.FRIENDLY) {
+					capturedDerricks++;
+				}
+				totalDerricks++;
+			})
+		}
+		if (Math.floor(capturedDerricks / totalDerricks * 100) > OIL_DOMINANCE_PERCENTAGE) {
+			return true;
+		} else {
+			return false;
+		}
 	}
 
 }
