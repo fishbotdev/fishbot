@@ -196,20 +196,22 @@ class CommandCenter {
 		}
 	}
 
-	prioritiseAviationTargets(mainForceLocation, airRaidTargets, casTargets, antiAirTargets, economyTargets) {
+	prioritiseAviationTargets(state, mainForceLocation, airRaidTargets, casTargets, enemyBaseTargets) {
 		let aviationTargets = [];
 
-		if (!this.oilDominance || antiAirTargets.length >= 4) {
+		if (!this.oilDominance || enemyBaseTargets["antiAirTargets"].length >= 4) {
+
 			const nearbyEnemyTargetCount = enumRange(mainForceLocation.x, mainForceLocation.y, 12, ENEMIES, true).length;
+
 			aviationTargets = [...airRaidTargets];
 			if (airRaidTargets.length === 0 || nearbyEnemyTargetCount >= 2) {
 				aviationTargets = [...casTargets, ...airRaidTargets];
 			}
 		} else {
-			if (antiAirTargets.length >= 2) {
-				aviationTargets = [...antiAirTargets, ...economyTargets, ...casTargets, ...airRaidTargets];
+			if (enemyBaseTargets["antiAirTargets"].length >= 2) {
+				aviationTargets = [...enemyBaseTargets["antiAirTargets"], ...casTargets, ...enemyBaseTargets["economyTargets"], ...airRaidTargets];
 			} else {
-				aviationTargets = [...economyTargets, ...antiAirTargets, ...casTargets, ...airRaidTargets];
+				aviationTargets = [...casTargets, ...enemyBaseTargets["economyTargets"], ...enemyBaseTargets["antiAirTargets"],  ...airRaidTargets];
 			}
 		}
 
@@ -258,17 +260,16 @@ class CommandCenter {
 		// AVIATION
 		let airRaidTargets = intelligence.getAirRaidTargets(state);
 		let	casTargets = intelligence.getCASTargets({location: mainForceLocation});
-		let antiAirTargets = intelligence.getAntiAirTargets(state);
-		let economyTargets = intelligence.getEconomyTargets(state);
 
-		let attackInGroup = antiAirTargets.length >= 1;
+		let enemyBaseTargets = intelligence.getAllEnemyBaseTargets(state);		
+		
+		const aviationTargets = this.prioritiseAviationTargets(state, mainForceLocation, airRaidTargets, casTargets, enemyBaseTargets);
 
-		const aviationTargets = this.prioritiseAviationTargets(mainForceLocation, airRaidTargets, casTargets, antiAirTargets, economyTargets);
-
+		const attackInGroup = true;
 		this.toc.assignAviationTargets(aviationTargets, attackInGroup, state);					
 
-		if (!this.oilDominance || antiAirTargets.length >= 4) {
-			this.abortDangerousVTOLMissions(state, mainForceLocation, antiAirTargets);
+		if (!this.oilDominance || enemyBaseTargets["antiAirTargets"].length >= 5) {
+			this.abortDangerousVTOLMissions(state, mainForceLocation, enemyBaseTargets["antiAirTargets"]);
 		}
 	}
 

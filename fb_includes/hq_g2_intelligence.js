@@ -219,6 +219,8 @@ class armyIntelligence {
 	}
 
 	getAirRaidTargets(state) {
+		const SEARCH_RADIUS = 8;
+
 		let lowPriorityTargets = [];
 		let medPriorityTargets = [];
 		let highPriorityTargets = [];
@@ -234,7 +236,7 @@ class armyIntelligence {
 
 			for (let i=0; i<currSector.derricks.length; i++) {
 
-				const nearbyTargets = enumRange(currSector.derricks[i].x, currSector.derricks[i].y, 5, ENEMIES, false);
+				const nearbyTargets = enumRange(currSector.derricks[i].x, currSector.derricks[i].y, SEARCH_RADIUS, ENEMIES, false);
 
 				const nearbyUnits = nearbyTargets.filter(obj => obj.type === DROID && !isVTOL(obj));
 				const nearbyStructures = nearbyTargets.filter(obj => obj.type === STRUCTURE && obj.stattype !== RESOURCE_EXTRACTOR);
@@ -293,7 +295,7 @@ class armyIntelligence {
 		return overallTargetList;
 	}
 
-	getAntiAirTargets(state) {
+	getAllEnemyBaseTargets(state) {
 		const alivePlayers = enumLivingPlayers();
 
 		let enemyBaseSectors = [];
@@ -305,46 +307,32 @@ class armyIntelligence {
 			}
 		});
 
-		let antiAirTargets = [];
-		for (let i=0; i<enemyBaseSectors.length; i++) {
-			let objList = enumRange(enemyBaseSectors[i].x, enemyBaseSectors[i].y, 40, ENEMIES, false);
-			antiAirTargets.push(...objList.filter(o => isAntiAirDefense(o)));	// o.type === STRUCTURE && 
-		}
-		antiAirTargets.sort((a,b) => 
-			distSq(a.x, baseLocation.x, a.y, baseLocation.y) - distSq(b.x, baseLocation.x, b.y, baseLocation.y));
-
-		let overallTargetList = [];
-		antiAirTargets.forEach(obj => overallTargetList.push(this.#createNewTarget({targetObject: obj})));
-
-		// debug(`getAntiAirTargets(): base sects.length ${enemyBaseSectors.length}, aa targets ${antiAirTargets.length}, overall ${overallTargetList.length}`)
-		return overallTargetList;
-	}
-
-	getEconomyTargets(state) {
-		const alivePlayers = enumLivingPlayers();
-
-		let enemyBaseSectors = [];
-		state.sectors.forEach(sector => {
-			if (defined(sector.base)) {
-				if (sector.base.isEnemy && alivePlayers.includes(sector.base.playerID)) {
-					enemyBaseSectors.push(sector);
-				}
-			}
-		});
+		let aaGameObjects = [], economyGameObjects = [];
 
 		const ECONOMY_TARGET_STRUCTURES = [VTOL_FACTORY, CYBORG_FACTORY];
 		const LESS_IMPORTANT_ECONOMY_STRUCTURES = [REPAIR_FACILITY, FACTORY];
-		let economyTargets = [];
+
 		for (let i=0; i<enemyBaseSectors.length; i++) {
 			let objList = enumRange(enemyBaseSectors[i].x, enemyBaseSectors[i].y, 40, ENEMIES, false);
-			economyTargets.push(...objList.filter(o => o.droidType === DROID_CONSTRUCT));
-			economyTargets.push(...objList.filter(o => ECONOMY_TARGET_STRUCTURES.includes(o.stattype)));	
-			economyTargets.push(...objList.filter(o => LESS_IMPORTANT_ECONOMY_STRUCTURES.includes(o.stattype)));
+
+			// Anti-air targets
+			aaGameObjects.push(...objList.filter(o => isAntiAirDefense(o)));	
+
+			// Economy targets
+			economyGameObjects.push(...objList.filter(o => o.droidType === DROID_CONSTRUCT));
+			economyGameObjects.push(...objList.filter(o => ECONOMY_TARGET_STRUCTURES.includes(o.stattype)));	
+			economyGameObjects.push(...objList.filter(o => LESS_IMPORTANT_ECONOMY_STRUCTURES.includes(o.stattype)));
 		}
 
-		let overallTargetList = [];
-		economyTargets.forEach(obj => overallTargetList.push(this.#createNewTarget({targetObject: obj})));
-		return overallTargetList;
+		let aaTargets = [], economyTargets = [];
+		
+		aaGameObjects.sort((a,b) => 
+			distSq(a.x, baseLocation.x, a.y, baseLocation.y) - distSq(b.x, baseLocation.x, b.y, baseLocation.y));
+		aaGameObjects.forEach(obj => aaTargets.push(this.#createNewTarget({targetObject: obj})));
+
+		economyGameObjects.forEach(obj => economyTargets.push(this.#createNewTarget({targetObject: obj})));
+
+		return {"antiAirTargets": aaTargets, "economyTargets": economyTargets};
 	}
 	
 	getLandTargetsAround({state, position, searchRadius=20}) {
