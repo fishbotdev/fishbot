@@ -236,15 +236,17 @@ class CommandCenter {
 
 		const readyToAttack = campaignStatus === CAMPAIGN_STATUS.MAIN_ASSAULT || campaignStatus === CAMPAIGN_STATUS.STAGING;
 
+		let casTargets = [];
+
 		if (readyToAttack) {
 
 			// Get targets efficiently
 
-			let nearbyLandTargets = intelligence.getLandTargetsAround({state: state, position: mainForceLocation, searchRadius: 15});
+			let nearbyLandTargets = intelligence.getLandTargetsAround({state: state, position: mainForceLocation, searchRadius: 20});
 
 			if (nearbyLandTargets.length === 0) {
 				debug(`runCombatOperations(): used expanded search radius for land targets around @ ${getCurrGameTime()}`);
-				nearbyLandTargets = intelligence.getLandTargetsAround({state: state, position: mainForceLocation, searchRadius: 25});
+				nearbyLandTargets = intelligence.getLandTargetsAround({state: state, position: mainForceLocation, searchRadius: 28});
 			}
 
 			if (nearbyLandTargets.length === 0) {
@@ -252,6 +254,9 @@ class CommandCenter {
 				debug(`runCombatOperations(): used expensive getAllTargets @ ${getCurrGameTime()}`);
 				nearbyLandTargets = intelligence.getAllTargets({state: state}) 	
 			}
+
+			// Moved casTargets inside for performance reasons
+			casTargets = intelligence.getCASTargets({location: mainForceLocation, nearbyLandTargets: nearbyLandTargets});
 
 			// Prioritise targets
 			const groundAssaultTargets = this.prioritiseGroundCampaignTargets(state, nearbyLandTargets, mainForceLocation);
@@ -263,7 +268,6 @@ class CommandCenter {
 
 		// AVIATION
 		let airRaidTargets = intelligence.getAirRaidTargets(state);
-		let	casTargets = intelligence.getCASTargets({location: mainForceLocation});
 
 		let enemyBaseTargets = {"antiAirTargets": [], "economyTargets": []};
 		if (casTargets.length === 0 && airRaidTargets.length === 0 && readyToAttack) {

@@ -269,12 +269,10 @@ class armyIntelligence {
 		return airRaidTargetList;
 	}
 
-	getCASTargets({location}) {
-		const TARGET_RADIUS = 30;
-		let targetObjectList = enumRange(location.x, location.y, TARGET_RADIUS, ENEMIES, false);
+	getCASTargets({location, nearbyLandTargets}) {
 		
-		const units = targetObjectList.filter(o => o.type === DROID && o.isVTOL !== true);
-		const adaFortifications = targetObjectList.filter(o => o.type === STRUCTURE && isAntiAirDefense(o));
+		const units = nearbyLandTargets.filter(o => o.type === DROID && o.isVTOL !== true);
+		const adaFortifications = nearbyLandTargets.filter(o => o.type === STRUCTURE && isAntiAirDefense(o));
 
 		const groundPropulsions = [PROPULSIONS["Wheels"].id, PROPULSIONS["Half-tracks"].id, PROPULSIONS["Tracks"].id, PROPULSIONS["Hover"].id];
 
