@@ -256,10 +256,10 @@ class armyIntelligence {
 			}
 		}
 
-		medPriorityTargets.sort((a,b) => 
-			distSq(a.x, baseLocation.x, a.y, baseLocation.y) - distSq(b.x, baseLocation.x, b.y, baseLocation.y));
-		lowPriorityTargets.sort((a,b) => 
-			distSq(a.x, baseLocation.x, a.y, baseLocation.y) - distSq(b.x, baseLocation.x, b.y, baseLocation.y));
+		// medPriorityTargets.sort((a,b) => 
+		// 	distSq(a.x, baseLocation.x, a.y, baseLocation.y) - distSq(b.x, baseLocation.x, b.y, baseLocation.y));
+		// lowPriorityTargets.sort((a,b) => 
+		// 	distSq(a.x, baseLocation.x, a.y, baseLocation.y) - distSq(b.x, baseLocation.x, b.y, baseLocation.y));
 
 		const targetObjectList = [...highPriorityTargets, ...medPriorityTargets, ...lowPriorityTargets];
 
@@ -274,11 +274,10 @@ class armyIntelligence {
 		const units = nearbyLandTargets.filter(o => o.type === DROID && o.isVTOL !== true);
 		const adaFortifications = nearbyLandTargets.filter(o => o.type === STRUCTURE && isAntiAirDefense(o));
 
-		const groundPropulsions = [PROPULSIONS["Wheels"].id, PROPULSIONS["Half-tracks"].id, PROPULSIONS["Tracks"].id, PROPULSIONS["Hover"].id];
+		const GROUND_PROPULSION_ID = [PROPULSIONS["Wheels"].id, PROPULSIONS["Half-tracks"].id, PROPULSIONS["Tracks"].id, PROPULSIONS["Hover"].id];
 
-		const groundVehicles = units.filter(droid => 
-			groundPropulsions.includes(droid.propulsion)).
-			sort((a, b) => distSq(a.x, location.x, a.y, location.y) - distSq(b.x, location.x, b.y, location.y));
+		const groundVehicles = units.filter(droid => GROUND_PROPULSION_ID.includes(droid.propulsion));
+			// sort((a, b) => distSq(a.x, location.x, a.y, location.y) - distSq(b.x, location.x, b.y, location.y));
 		
 		const adaGroundUnits = groundVehicles.filter(droid => isAntiAirDefense(droid));
 		const indirectGroundUnits = groundVehicles.filter(droid => droid.hasIndirect === true);
