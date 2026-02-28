@@ -101,7 +101,7 @@ class CommandCenter {
 	}
 
 	/////////////////////////////////////////////////// COMBAT OPERATIONS ///////////////////////////////////////////////////
-	prioritiseGroundCampaignTargets(state, objectList, groupPosition) {
+	prioritiseGroundTargets(state, objectList, groupPosition) {
 
 		if (objectList.length === 0) {
 			return [];
@@ -117,35 +117,7 @@ class CommandCenter {
 
 		groundTargetObjects.push(...nearbyObjects);
 
-		// Lazily evaluate far objects
-		if (nearbyObjects.length <= 3) {
-			let farObjects = objectList.filter(obj => !nearbyObjects.includes(obj));
-			farObjects.sort((a, b) => distSq(a.x, groupPosition.x, a.y, groupPosition.y) - distSq(b.x, groupPosition.x, b.y, groupPosition.y));	
-			groundTargetObjects.push(...farObjects);
-		}
-
-		if (false) { 
-			debug(``);
-			const nearestTargets = objectList.slice(0, 3);
-			nearestTargets.forEach(t => debug(`	target: ${t.obj.name} - ${t.obj.x} ${t.obj.y}`));
-		}
-
-		return groundTargetObjects;
-	}
-
-	prioritiseLandIndirectFires(state, objectList, groupPosition) {
-		if (objectList.length === 0) {
-			return [];
-		}
-
-		// TODO: these 4 lines are copied from above, can combine the two functions to save computation
-		const NEARBY_RANGE = 10;
-		let nearbyObjects = objectList.filter(obj => distSq(obj.x, groupPosition.x, obj.y, groupPosition.y) <= NEARBY_RANGE ** 2);
-
-		// Sort nearest objects by closest to furthest
-		nearbyObjects.sort((a, b) => distSq(a.x, groupPosition.x, a.y, groupPosition.y) - distSq(b.x, groupPosition.x, b.y, groupPosition.y));
-
-		// Prioritise indirect fires, air defences, cyborgs, then the rest
+		// FIRE SUPPORT TARGETS
 		const nearbyCyborgs = nearbyObjects.filter(o => o.droidType === DROID_CYBORG);
 		const nearbyIndirectFires = nearbyObjects.filter(o => o.hasIndirect === true);
 		const nearbyAirDefences = nearbyObjects.filter(o => isAntiAirDefense(o));
@@ -159,7 +131,20 @@ class CommandCenter {
 
 		const fireSupportTargets = [...nearbyCyborgs, ...nearbyIndirectFires, ...nearbyAirDefences, ...nearbyStaticDefences, economyTargets];
 
-		return fireSupportTargets;
+		// Lazily evaluate far objects
+		if (nearbyObjects.length <= 3) {
+			let farObjects = objectList.filter(obj => !nearbyObjects.includes(obj));
+			farObjects.sort((a, b) => distSq(a.x, groupPosition.x, a.y, groupPosition.y) - distSq(b.x, groupPosition.x, b.y, groupPosition.y));	
+			groundTargetObjects.push(...farObjects);
+		}
+
+		if (false) { 
+			debug(``);
+			const nearestTargets = objectList.slice(0, 3);
+			nearestTargets.forEach(t => debug(`	target: ${t.obj.name} - ${t.obj.x} ${t.obj.y}`));
+		}
+		
+		return {"fireSupportTargets": fireSupportTargets, "directFireTargets": groundTargetObjects};
 	}
 
 	abortDangerousVTOLMissions(state, mainForceLocation, antiAirDefences) {
@@ -260,15 +245,12 @@ class CommandCenter {
 				nearbyLandTargets = intelligence.getAllTargets({state: state}) 	
 			}
 
-			// Moved casTargets inside for performance reasons
-			casTargets = intelligence.getCASTargets({location: mainForceLocation, nearbyLandTargets: nearbyLandTargets});
-
-			// Prioritise targets
-			const groundAssaultTargets = this.prioritiseGroundCampaignTargets(state, nearbyLandTargets, mainForceLocation);
-			const fireSupportTargets = this.prioritiseLandIndirectFires(state, groundAssaultTargets, mainForceLocation);
+			// Prioritise air & ground targets
+			const groundTargets = this.prioritiseGroundTargets(state, nearbyLandTargets, mainForceLocation);
+			casTargets = intelligence.getCASTargets(mainForceLocation, nearbyLandTargets);
 
 			// Ground attack; HACK: directly calls tactical level function
-			groundForceAttack({state: state, groundTargets: groundAssaultTargets, fireSupportTargets: fireSupportTargets});		
+			groundForceAttack({state: state, groundTargets: groundTargets["directFireTargets"], fireSupportTargets: groundTargets["fireSupportTargets"]});		
 		}
 
 		// AVIATION

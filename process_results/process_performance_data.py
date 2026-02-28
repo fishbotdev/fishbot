@@ -146,15 +146,16 @@ from os import getcwd as cwd
 # df_before = extract_runC2(rf"{cwd()}\\" + rf"process_results\v4_perfdata\fd007a2,med,cobra,perfdata.log")        
 # df_before = extract_runC2(rf"{cwd()}\\" + rf"process_results\v4_perfdata\27eea6b.log")        
 # df_before = extract_runC2(rf"{cwd()}\process_results\v4_perfdata\\" + rf"975d6c2.log")        
-df_before = extract_runC2(rf"{cwd()}\process_results\v4_perfdata\\" + rf"691769f.log")        
-df_after = extract_runC2(rf"{cwd()}\process_results\v4_perfdata\\" + rf"a06c2c6.log")        
+# df_before = extract_runC2(rf"{cwd()}\process_results\v4_perfdata\\" + rf"691769f.log")        
+df_1 = extract_runC2(rf"{cwd()}\process_results\v4_perfdata\\" + rf"a06c2c6.log")        
+df_2 = extract_runC2(rf"{cwd()}\process_results\v4_perfdata\\" + rf"194010e.log")        # Removed 2x search radius changes (13 & 18 combined into 15)
 
 # print(df_before)
-print(df_after)
+print(df_2)
 
 plot_runC2_histograms(
-    df_before,
-    df_after,
+    df_1,
+    df_2,
     label_a="Before",
     label_b="After"
 )

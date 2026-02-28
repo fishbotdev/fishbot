@@ -269,7 +269,7 @@ class armyIntelligence {
 		return airRaidTargetList;
 	}
 
-	getCASTargets({location, nearbyLandTargets}) {
+	getCASTargets(location, nearbyLandTargets) {
 		
 		const units = nearbyLandTargets.filter(o => o.type === DROID && o.isVTOL !== true);
 		const adaFortifications = nearbyLandTargets.filter(o => o.type === STRUCTURE && isAntiAirDefense(o));
