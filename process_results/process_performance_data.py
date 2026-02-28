@@ -86,50 +86,56 @@ def plot_runC2_histograms(
 
     GAME_TIME_SEC_SCALING = 1e3
 
-
     # ---- avg_usec histogram ----
-    plt.figure()
-    plt.hist(df_a["avg_usec"]/MILLISEC_SCALING, bins=bins, alpha=0.5, label=label_a)
-    plt.hist(df_b["avg_usec"]/MILLISEC_SCALING, bins=bins, alpha=0.5, label=label_b)
+    fig, axs = plt.subplots(3, 1, figsize=(8, 6))
+    ax1, ax2, ax3 = axs
 
-    plt.title("Histogram of avg_usec")
-    plt.xlabel(f"avg_usec ({MILLISEC_TEXT})")
-    plt.ylabel("Frequency")
-    plt.legend()
-    plt.pause(0.1)
+    ax1.grid(color='grey', linestyle='-', linewidth=0.4, alpha=0.3)
+
+    ax1.hist(df_a["avg_usec"]/MILLISEC_SCALING, bins=bins, alpha=0.5, label=label_a)
+    ax1.hist(df_b["avg_usec"]/MILLISEC_SCALING, bins=bins, alpha=0.5, label=label_b)
+
+    ax1.set_title("Histogram of avg_usec")
+    ax1.set_xlabel(f"avg_usec ({MILLISEC_TEXT})")
+    ax1.set_ylabel("Frequency")
+    ax1.legend()
 
     # ---- worst_usec histogram ----
-    plt.figure()
-    plt.hist(df_a["worst_usec"]/MILLISEC_SCALING, bins=bins, alpha=0.5, label=label_a)
-    plt.hist(df_b["worst_usec"]/MILLISEC_SCALING, bins=bins, alpha=0.5, label=label_b)
 
-    plt.title("Histogram of worst_usec")
-    plt.xlabel(f"worst_usec ({MILLISEC_TEXT})")
-    plt.ylabel("Frequency")
-    plt.legend()
-    plt.pause(0.1)
+    ax2.grid(color='grey', linestyle='-', linewidth=0.4, alpha=0.3)
+
+    ax2.hist(df_a["worst_usec"]/MILLISEC_SCALING, bins=bins, alpha=0.5, label=label_a)
+    ax2.hist(df_b["worst_usec"]/MILLISEC_SCALING, bins=bins, alpha=0.5, label=label_b)
+
+    ax2.set_title("Histogram of worst_usec")
+    ax2.set_xlabel(f"worst_usec ({MILLISEC_TEXT})")
+    ax2.set_ylabel("Frequency")
+    ax2.legend()
+
 
     # ---- worst_call_at histogram ----
-    plt.figure()
-    plt.hist(df_a["worst_call_at"]/GAME_TIME_SEC_SCALING, bins=bins, alpha=0.5, label=label_a)
-    plt.hist(df_b["worst_call_at"]/GAME_TIME_SEC_SCALING, bins=bins, alpha=0.5, label=label_b)
+    ax3.grid(color='grey', linestyle='-', linewidth=0.4, alpha=0.3)
 
-    plt.title("Histogram of worst_call_at")
-    plt.xlabel(f"worst_call_at (seconds)")
+    ax3.hist(df_a["worst_call_at"]/GAME_TIME_SEC_SCALING, bins=bins, alpha=0.5, label=label_a)
+    ax3.hist(df_b["worst_call_at"]/GAME_TIME_SEC_SCALING, bins=bins, alpha=0.5, label=label_b)
+
+    ax3.set_title("Histogram of worst_call_at")
+    ax3.set_xlabel(f"worst_call_at (seconds)")
+    ax3.set_ylabel("Frequency")
+    ax3.legend()
+
+    fig.tight_layout()
+
+    # ---- ge_limit_half histogram ----
+    plt.figure()
+    plt.hist(df_a["ge_limit_half"], bins=bins, alpha=0.5, label=label_a)
+    plt.hist(df_b["ge_limit_half"], bins=bins, alpha=0.5, label=label_b)
+
+    plt.title("Histogram of ge_limit_half")
+    plt.xlabel("ge_limit_half")
     plt.ylabel("Frequency")
     plt.legend()
     plt.pause(0.1)
-
-    # # ---- ge_limit_half histogram ----
-    # plt.figure()
-    # plt.hist(df_a["ge_limit_half"], bins=bins, alpha=0.5, label=label_a)
-    # plt.hist(df_b["ge_limit_half"], bins=bins, alpha=0.5, label=label_b)
-
-    # plt.title("Histogram of ge_limit_half")
-    # plt.xlabel("ge_limit_half")
-    # plt.ylabel("Frequency")
-    # plt.legend()
-    # plt.pause(0.1)
 
 
 # ---- usage ----
@@ -142,15 +148,16 @@ from os import getcwd as cwd
 # df_before = extract_runC2(rf"{cwd()}\process_results\v4_perfdata\a2e13b4_v3_release.log")     # 98 / 100 won vs Cobra Medium (after VTOL targeting optimisation)
 
 # df_before = extract_runC2(rf"{cwd()}\process_results\v4_perfdata\1e3edc5_100g.log")     # 96 / 100 won vs Cobra Medium (after suppressing getEnemyBaseTargets)
-# df_before = extract_runC2(rf"{cwd()}\process_results\v4_perfdata\74a6f77_getAllBaseTargets_improved.log")       # Seemed to lose a lot
+# df_1 = extract_runC2(rf"{cwd()}\process_results\v4_perfdata\74a6f77_getAllBaseTargets_improved.log")       # Seemed to lose a lot
 # df_before = extract_runC2(rf"{cwd()}\\" + rf"process_results\v4_perfdata\fd007a2,med,cobra,perfdata.log")        
 # df_before = extract_runC2(rf"{cwd()}\\" + rf"process_results\v4_perfdata\27eea6b.log")        
 # df_before = extract_runC2(rf"{cwd()}\process_results\v4_perfdata\\" + rf"975d6c2.log")        
-# df_before = extract_runC2(rf"{cwd()}\process_results\v4_perfdata\\" + rf"691769f.log")        
-df_1 = extract_runC2(rf"{cwd()}\process_results\v4_perfdata\\" + rf"a06c2c6.log")        
-df_2 = extract_runC2(rf"{cwd()}\process_results\v4_perfdata\\" + rf"194010e.log")        # Removed 2x search radius changes (13 & 18 combined into 15)
+df_1 = extract_runC2(rf"{cwd()}\process_results\v4_perfdata\\" + rf"691769f.log")        
+# df_1 = extract_runC2(rf"{cwd()}\process_results\v4_perfdata\\" + rf"a06c2c6.log")        
+# df_1 = extract_runC2(rf"{cwd()}\process_results\v4_perfdata\\" + rf"194010e.log")        # Removed 2x search radius changes (13 & 18 combined into 15)
+df_2 = extract_runC2(rf"{cwd()}\process_results\v4_perfdata\\" + rf"ae78c5e.log")        # Combined groundTarget prioritisation
 
-# print(df_before)
+# print(df_1)
 print(df_2)
 
 plot_runC2_histograms(
