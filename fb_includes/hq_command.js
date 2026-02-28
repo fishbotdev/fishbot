@@ -240,13 +240,15 @@ class CommandCenter {
 
 			// Get targets efficiently
 
-			let nearbyLandTargets = intelligence.getLandTargetsAround({state: state, position: mainForceLocation, searchRadius: 20});
+			let nearbyLandTargets = intelligence.getLandTargetsAround({state: state, position: mainForceLocation, searchRadius: 15});
 
 			if (nearbyLandTargets.length === 0) {
-				nearbyLandTargets = intelligence.getLandTargetsAround({state: state, position: mainForceLocation, searchRadius: 30});
+				debug(`runCombatOperations(): used expanded search radius for land targets around @ ${getCurrGameTime()}`);
+				nearbyLandTargets = intelligence.getLandTargetsAround({state: state, position: mainForceLocation, searchRadius: 25});
 			}
 
 			if (nearbyLandTargets.length === 0) {
+				
 				debug(`runCombatOperations(): used expensive getAllTargets @ ${getCurrGameTime()}`);
 				nearbyLandTargets = intelligence.getAllTargets({state: state}) 	
 			}

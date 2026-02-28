@@ -186,8 +186,9 @@ def show_medium_cobra_results():
     # test_1 = getcwd() + rf"\process_results/v3/" + "f8094ef,medium" + ".txt"              # v3 dev: high prio oil cap optim [95 / 100 wins]
     # test_1 = getcwd() + rf"\process_results/v3/" + "68275e8,medium,463" + ".txt"            # v3 dev: [100 / 100 wins]
     # test_1 = getcwd() + rf"\process_results/v3/" + "29ceeb0,med,463" + ".txt"               # v3 dev: [143 / 150 wins]
-    test_1 = getcwd() + rf"\process_results/v4/" + "a2e13b4,med,cobra_v3_release" + ".txt"    # v3 release: retesting [98 / 100 wins]
-    test_2 = getcwd() + rf"\process_results/v4/" + "1e3edc5,med,cobra" + ".txt"               # v4 dev: after perf optimisations [96 / 100]
+    # test_1 = getcwd() + rf"\process_results/v4/" + "a2e13b4,med,cobra_v3_release" + ".txt"    # v3 release: retesting [98 / 100 wins]
+    test_1 = getcwd() + rf"\process_results/v4/" + "1e3edc5,med,cobra" + ".txt"               # v4 dev: after perf optimisations [96 / 100]
+    test_2 = getcwd() + rf"\process_results/v4/" + "fd007a2_gamelog,med,cobra" + ".txt"               # perf: removed getAllBaseTargets
     
     commit1 = test_1.split(rf"v4/")[1].split(",")[0]
     commit2 = test_2.split(rf"v4/")[1].split(",")[0]

@@ -141,9 +141,19 @@ from os import getcwd as cwd
 
 # df_before = extract_runC2(rf"{cwd()}\process_results\v4_perfdata\a2e13b4_v3_release.log")     # 98 / 100 won vs Cobra Medium (after VTOL targeting optimisation)
 
-df_before = extract_runC2(rf"{cwd()}\process_results\v4_perfdata\1e3edc5_100g.log")     # 96 / 100 won vs Cobra Medium (after suppressing getEnemyBaseTargets)
-df_after = extract_runC2(rf"{cwd()}\process_results\v4_perfdata\74a6f77_getAllBaseTargets_improved.log")     # Seemed to lose a lot
+# df_before = extract_runC2(rf"{cwd()}\process_results\v4_perfdata\1e3edc5_100g.log")     # 96 / 100 won vs Cobra Medium (after suppressing getEnemyBaseTargets)
+df_before = extract_runC2(rf"{cwd()}\process_results\v4_perfdata\74a6f77_getAllBaseTargets_improved.log")       # Seemed to lose a lot
+df_after = extract_runC2(rf"{cwd()}\\" + rf"process_results\v4_perfdata\fd007a2,med,cobra,perfdata.log")        
 
+game_times_min = [18.30003333333333, 12.300033333333333, 14.200033333333332, 21.80003333333333, 17.700033333333334, 12.050033333333333, 17.50003333333333, 15.700033333333332, 14.950033333333332, 12.500033333333333, 19.30003333333333, 19.850033333333332, 14.900033333333333, 15.250033333333333, 14.700033333333332, 12.500033333333333, 14.900033333333333, 16.200033333333334, 20.25003333333333, 11.450033333333332]
+
+df_after['game_time_sec'] = [round(t * 60, 2) for t in game_times_min]
+percent_worst_call = []
+for n, fin_game_time in enumerate(df_after['game_time_sec']):
+    percent_worst_call.append((df_after['worst_call_at'][n] / 1000) / fin_game_time)
+
+percent_worst_call = [round(p*100, 1) for p in percent_worst_call]
+df_after['percent_worst_call'] = percent_worst_call
 
 print(df_before)
 print(df_after)
