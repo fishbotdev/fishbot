@@ -93,18 +93,26 @@ function findClosestDroidToTarget(unitGroup, currGroundTarget) {
 		return undefined;
 	}
 
-	let distances = [];
-	for (let i=0; i<unitGroup.length; i++) {
-		let currDroid = unitGroup[i];
-		const dist = distance(currDroid, currGroundTarget);
-		distances = distances.concat([[dist, i]]);
-	}
-	distances.sort((first, second) => first[0] - second[0]);
-	// distances.forEach((d) => debug('	', d));
+	const LOWER_THRESHOLD = 6 ** 2;
 
-	let smallestIndex = distances[0][1];
-	// debug('smallest index', smallestIndex);
-	return unitGroup[smallestIndex];
+	let closestDroidIdx = 0;
+	let closestDroidSquaredDist = distSq(unitGroup[0].x, currGroundTarget.x, unitGroup[0].y, currGroundTarget.y);
+
+	for (let i=1; i<unitGroup.length; i++) {
+
+		const squaredDist = distSq(unitGroup[i].x, currGroundTarget.x, unitGroup[i].y, currGroundTarget.y);
+
+		if (squaredDist < LOWER_THRESHOLD) {
+			return unitGroup[i];
+		}
+
+		if (squaredDist < closestDroidSquaredDist) {
+			closestDroidSquaredDist = squaredDist;
+			closestDroidIdx = i;
+		}
+	}
+
+	return unitGroup[closestDroidIdx];
 }
 
 
