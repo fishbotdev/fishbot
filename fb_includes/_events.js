@@ -56,15 +56,25 @@ function eventDestroyed(object) {
 	// does nothing for now
 }
 
+function runIntel() {
+	hq.runIntel()
+}
+
 function runC2() {
-	hq.runC2();
+	hq.runCombat();
+}
+
+function runSustainment() {
+	hq.runSustainment();
 }
 
 function setupFishBot() {
 	// This function is already queued with a player-specific delay, so adding a random timer period is 
 	// no longer necessary for the timers of parallel Fishbot instances to be desynchronised           
 	const FISHBOT_DECISION_INTERVAL = 1000;
-    setTimer("runC2", FISHBOT_DECISION_INTERVAL);      
+    setTimer("runC2", FISHBOT_DECISION_INTERVAL);
+	setTimer("runSustainment", FISHBOT_DECISION_INTERVAL);      
+	setTimer("runIntel", FISHBOT_DECISION_INTERVAL);
 }
 
 function eventStartLevel() {

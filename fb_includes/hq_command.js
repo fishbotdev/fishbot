@@ -486,18 +486,21 @@ class CommandCenter {
 		this.abortDangerousConstructionTasks(state);
 	}
 
-	runC2() {
-
+	runIntel() {
 		/*
 			INTELLIGENCE OPERATIONS
 		*/
 		this.runSectorIntel(state);		
+	}
 
+	runCombat() {
 		/*
 			COMBAT OPERATIONS
 		*/
 		this.runCombatOperations(state);
+	}
 
+	runSustainment() {
 		/*
 			COMBAT SUSTAINMENT
 		*/
