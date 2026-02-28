@@ -126,16 +126,16 @@ def plot_runC2_histograms(
 
     fig.tight_layout()
 
-    # ---- ge_limit_half histogram ----
-    plt.figure()
-    plt.hist(df_a["ge_limit_half"], bins=bins, alpha=0.5, label=label_a)
-    plt.hist(df_b["ge_limit_half"], bins=bins, alpha=0.5, label=label_b)
+    # # ---- ge_limit_half histogram ----
+    # plt.figure()
+    # plt.hist(df_a["ge_limit_half"], bins=bins, alpha=0.5, label=label_a)
+    # plt.hist(df_b["ge_limit_half"], bins=bins, alpha=0.5, label=label_b)
 
-    plt.title("Histogram of ge_limit_half")
-    plt.xlabel("ge_limit_half")
-    plt.ylabel("Frequency")
-    plt.legend()
-    plt.pause(0.1)
+    # plt.title("Histogram of ge_limit_half")
+    # plt.xlabel("ge_limit_half")
+    # plt.ylabel("Frequency")
+    # plt.legend()
+    # plt.pause(0.1)
 
 
 # ---- usage ----
@@ -152,10 +152,14 @@ from os import getcwd as cwd
 # df_before = extract_runC2(rf"{cwd()}\\" + rf"process_results\v4_perfdata\fd007a2,med,cobra,perfdata.log")        
 # df_before = extract_runC2(rf"{cwd()}\\" + rf"process_results\v4_perfdata\27eea6b.log")        
 # df_before = extract_runC2(rf"{cwd()}\process_results\v4_perfdata\\" + rf"975d6c2.log")        
-df_1 = extract_runC2(rf"{cwd()}\process_results\v4_perfdata\\" + rf"691769f.log")        
+df_1 = extract_runC2(rf"{cwd()}\process_results\v4_perfdata\\" + rf"691769f.log")          # After splitting functions to isolate combat 
 # df_1 = extract_runC2(rf"{cwd()}\process_results\v4_perfdata\\" + rf"a06c2c6.log")        
 # df_1 = extract_runC2(rf"{cwd()}\process_results\v4_perfdata\\" + rf"194010e.log")        # Removed 2x search radius changes (13 & 18 combined into 15)
-df_2 = extract_runC2(rf"{cwd()}\process_results\v4_perfdata\\" + rf"ae78c5e.log")        # Combined groundTarget prioritisation
+# df_1 = extract_runC2(rf"{cwd()}\process_results\v4_perfdata\\" + rf"ae78c5e.log")        # Combined groundTarget prioritisation
+# df_1 = extract_runC2(rf"{cwd()}\process_results\v4_perfdata\\" + rf"b9608fe.log")        
+# df_1 = extract_runC2(rf"{cwd()}\process_results\v4_perfdata\\" + rf"f3f74e5.log")        
+# df_1 = extract_runC2(rf"{cwd()}\process_results\v4_perfdata\\" + rf"2d4195e.log")        
+df_2 = extract_runC2(rf"{cwd()}\process_results\v4_perfdata\\" + rf"2d4195e_opened_chrome.log")        
 
 # print(df_1)
 print(df_2)
