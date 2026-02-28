@@ -119,7 +119,13 @@ class TacticalOperationsCenter {
 
 	assignAviationTargets(aviationTargets, attackInGroup, state) {
 
+		let failedAttempts = 0;
+
 		for (let i=0; i<aviationTargets.length; i++) {
+
+			if (failedAttempts >= 2) {
+				return;
+			}
 
 			let curr = aviationTargets[i];
 
@@ -142,7 +148,9 @@ class TacticalOperationsCenter {
 			if (defined(missionData) && defined(curr.obj)) {
 				// debug(`Scheduled AIR STRIKE (${missionType}) for:`, missionData.id, curr.obj.name, curr.obj.id, curr.obj.x, curr.obj.y);
 				state.activeMissions.push(missionData);
-			} 
+			} else {
+				failedAttempts++;
+			}
 		}
 	}
 

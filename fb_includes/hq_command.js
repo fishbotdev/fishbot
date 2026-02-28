@@ -182,11 +182,9 @@ class CommandCenter {
 	}
 
 	prioritiseAviationTargets(state, nearbyEnemyUnitCount, airRaidTargets, casTargets, enemyBaseTargets) {
-		let aviationTargets = [];
+		let aviationTargets = [...airRaidTargets];
 
 		if (!this.oilDominance || enemyBaseTargets["antiAirTargets"].length >= 4) {
-
-			aviationTargets = [...airRaidTargets];
 			if (airRaidTargets.length === 0 || nearbyEnemyUnitCount >= 2) {
 				aviationTargets = [...casTargets, ...airRaidTargets];
 			}
