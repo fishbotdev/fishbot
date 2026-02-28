@@ -147,19 +147,19 @@ from os import getcwd as cwd
 
 # df_before = extract_runC2(rf"{cwd()}\process_results\v4_perfdata\a2e13b4_v3_release.log")     # 98 / 100 won vs Cobra Medium (after VTOL targeting optimisation)
 
-# df_before = extract_runC2(rf"{cwd()}\process_results\v4_perfdata\1e3edc5_100g.log")     # 96 / 100 won vs Cobra Medium (after suppressing getEnemyBaseTargets)
+df_1 = extract_runC2(rf"{cwd()}\process_results\v4_perfdata\1e3edc5_100g.log")     # 96 / 100 won vs Cobra Medium (after suppressing getEnemyBaseTargets)
 # df_1 = extract_runC2(rf"{cwd()}\process_results\v4_perfdata\74a6f77_getAllBaseTargets_improved.log")       # Seemed to lose a lot
 # df_before = extract_runC2(rf"{cwd()}\\" + rf"process_results\v4_perfdata\fd007a2,med,cobra,perfdata.log")        
 # df_before = extract_runC2(rf"{cwd()}\\" + rf"process_results\v4_perfdata\27eea6b.log")        
 # df_before = extract_runC2(rf"{cwd()}\process_results\v4_perfdata\\" + rf"975d6c2.log")        
-df_1 = extract_runC2(rf"{cwd()}\process_results\v4_perfdata\\" + rf"691769f.log")          # After splitting functions to isolate combat 
+# df_1 = extract_runC2(rf"{cwd()}\process_results\v4_perfdata\\" + rf"691769f.log")          # After splitting functions to isolate combat 
 # df_1 = extract_runC2(rf"{cwd()}\process_results\v4_perfdata\\" + rf"a06c2c6.log")        
 # df_1 = extract_runC2(rf"{cwd()}\process_results\v4_perfdata\\" + rf"194010e.log")        # Removed 2x search radius changes (13 & 18 combined into 15)
 # df_1 = extract_runC2(rf"{cwd()}\process_results\v4_perfdata\\" + rf"ae78c5e.log")        # Combined groundTarget prioritisation
 # df_1 = extract_runC2(rf"{cwd()}\process_results\v4_perfdata\\" + rf"b9608fe.log")        
 # df_1 = extract_runC2(rf"{cwd()}\process_results\v4_perfdata\\" + rf"f3f74e5.log")        
 # df_1 = extract_runC2(rf"{cwd()}\process_results\v4_perfdata\\" + rf"2d4195e.log")        
-df_2 = extract_runC2(rf"{cwd()}\process_results\v4_perfdata\\" + rf"2d4195e_opened_chrome.log")        
+df_2 = extract_runC2(rf"{cwd()}\process_results\v4_perfdata\\" + rf"0c6d165.log")        #  95 / 100 won against Cobra Medium (after many optimisations)
 
 # print(df_1)
 print(df_2)
