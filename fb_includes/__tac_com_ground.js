@@ -163,9 +163,9 @@ function groundForceAttack({state, groundTargets, fireSupportTargets}) {
 
 		const randomX = Math.floor(Math.random() * 3) - 1;
 
-		// if (!defined(closestDroidToTarget)) {
-		// 	return;
-		// }
+		if (!defined(closestDroidToTarget)) {
+			return;
+		}
 
 		if (DEBUG_MODE_ON) {
 			hackMarkTiles();		// clear all marked tiles
@@ -191,40 +191,40 @@ function groundForceAttack({state, groundTargets, fireSupportTargets}) {
 			}
 			*/
 
-			// if (_distSqToClosestDroid(droid) < 6 ** 2) {
+			if (_distSqToClosestDroid(droid) < 6 ** 2) {
 				attackTarget(droid, currGroundAssaultTarget);
-			// } else {
-				// orderDroidLoc(droid, DORDER_MOVE, closestDroidToTarget.x, closestDroidToTarget.y);
-			// }
+			} else {
+				orderDroidLoc(droid, DORDER_MOVE, closestDroidToTarget.x, closestDroidToTarget.y);
+			}
 		}
 
 		// CYBORG (INFANTRY) UNITS
 		for (let i=0; i<infantryReserve.length; ++i) {
 			let droid = infantryReserve[i];
-			// if (_distSqToClosestDroid(droid) <= 4 ** 2) {
+			if (_distSqToClosestDroid(droid) <= 4 ** 2) {
 				attackTarget(droid, currGroundAssaultTarget);
-			// } else {
-			// 	orderDroidLoc(droid, DORDER_MOVE, closestDroidToTarget.x, closestDroidToTarget.y);
-			// }
+			} else {
+				orderDroidLoc(droid, DORDER_MOVE, closestDroidToTarget.x, closestDroidToTarget.y);
+			}
 		}
 
 		// ADA UNITS
 		airDefenceArtilleryReserve.forEach((droid) => {
-			// if (_distSqToClosestDroid(droid) > 7 ** 2) {
+			if (_distSqToClosestDroid(droid) > 7 ** 2) {
 				orderDroidLoc(droid, DORDER_MOVE, closestDroidToTarget.x, closestDroidToTarget.y);
-			// } else {
-			// 	orderDroidLoc(droid, DORDER_PATROL, droid.x + randomX, droid.y);
-			// }
+			} else {
+				orderDroidLoc(droid, DORDER_PATROL, droid.x + randomX, droid.y);
+			}
 		});
 		
 		// Hack: Sensor units
 		const sensorUnits = enumDroid(me, DROID_SENSOR);		// these have not been added to the grouping system yet!
 		sensorUnits.forEach((droid) => {
-			// if (_distSqToClosestDroid(droid) > 5 ** 2) {
+			if (_distSqToClosestDroid(droid) > 5 ** 2) {
 				orderDroidLoc(droid, DORDER_MOVE, closestDroidToTarget.x, closestDroidToTarget.y);
-			// } else {
-			// 	orderDroidLoc(droid, DORDER_PATROL, droid.x + randomX, droid.y);
-			// }
+			} else {
+				orderDroidLoc(droid, DORDER_PATROL, droid.x + randomX, droid.y);
+			}
 		});
 
 		// FIRE SUPPORT UNITS
