@@ -145,8 +145,9 @@ from os import getcwd as cwd
 # df_before = extract_runC2(rf"{cwd()}\process_results\v4_perfdata\74a6f77_getAllBaseTargets_improved.log")       # Seemed to lose a lot
 # df_before = extract_runC2(rf"{cwd()}\\" + rf"process_results\v4_perfdata\fd007a2,med,cobra,perfdata.log")        
 # df_before = extract_runC2(rf"{cwd()}\\" + rf"process_results\v4_perfdata\27eea6b.log")        
-df_before = extract_runC2(rf"{cwd()}\process_results\v4_perfdata\\" + rf"975d6c2.log")        
-df_after = extract_runC2(rf"{cwd()}\process_results\v4_perfdata\\" + rf"691769f.log")        
+# df_before = extract_runC2(rf"{cwd()}\process_results\v4_perfdata\\" + rf"975d6c2.log")        
+df_before = extract_runC2(rf"{cwd()}\process_results\v4_perfdata\\" + rf"691769f.log")        
+df_after = extract_runC2(rf"{cwd()}\process_results\v4_perfdata\\" + rf"a06c2c6.log")        
 
 # print(df_before)
 print(df_after)

@@ -168,7 +168,7 @@ function groundForceAttack({state, groundTargets, fireSupportTargets}) {
 			return;
 		}
 
-		if (false) {
+		if (DEBUG_MODE_ON) {
 			hackMarkTiles();		// clear all marked tiles
 			addBeacon(currGroundAssaultTarget.x, currGroundAssaultTarget.y, 0);
 			hackMarkTiles(currFireSupportTarget.x, currFireSupportTarget.y);
