@@ -374,7 +374,7 @@ class armyIntelligence {
 		});
 
 		// this is expensive 
-		landTargets.sort((a,b) => distSq(a.x, baseLocation.x, a.y, baseLocation.y) - distSq(b.x, baseLocation.x, b.y, baseLocation.y));		
+		// landTargets.sort((a,b) => distSq(a.x, baseLocation.x, a.y, baseLocation.y) - distSq(b.x, baseLocation.x, b.y, baseLocation.y));		
 
 		return [...landTargets, ...airTargets];
 	}
