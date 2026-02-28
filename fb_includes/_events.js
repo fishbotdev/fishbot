@@ -78,7 +78,7 @@ function setupFishBot() {
 	const FISHBOT_DECISION_INTERVAL = 1000;
 	setTimer("runIntelligence", FISHBOT_DECISION_INTERVAL);
     setTimer("runC2", FISHBOT_DECISION_INTERVAL);
-	setTimer("runLogistics", FISHBOT_DECISION_INTERVAL * 4);      
+	setTimer("runLogistics", FISHBOT_DECISION_INTERVAL);      
 	setTimer("runMissionManager", FISHBOT_DECISION_INTERVAL);
 }
 
