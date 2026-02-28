@@ -226,7 +226,7 @@ class CommandCenter {
 			// Get targets efficiently
 			nearbyLandTargets = intelligence.getLandTargetsAround({state: state, position: mainForceLocation, searchRadius: 15});
 			if (nearbyLandTargets.length === 0) {
-				debug(`runCombatOperations(): used expensive getAllTargets @ ${getCurrGameTime()}`);
+				// debug(`runCombatOperations(): used expensive getAllTargets @ ${getCurrGameTime()}`);
 				nearbyLandTargets = intelligence.getAllTargets({state: state}) 	
 			}
 
@@ -253,9 +253,9 @@ class CommandCenter {
 		const attackInGroup = true;
 		this.toc.assignAviationTargets(aviationTargets, attackInGroup, state);					
 
-		// if (!this.oilDominance || enemyBaseTargets["antiAirTargets"].length >= 5) {
-		// 	this.abortDangerousVTOLMissions(state, mainForceLocation, enemyBaseTargets["antiAirTargets"]);
-		// }
+		if (!this.oilDominance || enemyBaseTargets["antiAirTargets"].length >= 5) {
+			this.abortDangerousVTOLMissions(state, mainForceLocation, enemyBaseTargets["antiAirTargets"]);
+		}
 	}
 
 

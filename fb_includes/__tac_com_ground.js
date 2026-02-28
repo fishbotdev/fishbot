@@ -158,15 +158,14 @@ function groundForceAttack({state, groundTargets, fireSupportTargets}) {
 	}
 
 	if (defined(currGroundAssaultTarget)) {
-		// debug('both ground assault, fs targets defined', currGroundAssaultTarget.name, currFireSupportTarget.name);
-		// allow all forces to coalesce before attacking
+
 		closestDroidToTarget = findClosestDroidToTarget(generalReserve, currGroundAssaultTarget);
 
 		const randomX = Math.floor(Math.random() * 3) - 1;
 
-		if (!defined(closestDroidToTarget)) {
-			return;
-		}
+		// if (!defined(closestDroidToTarget)) {
+		// 	return;
+		// }
 
 		if (DEBUG_MODE_ON) {
 			hackMarkTiles();		// clear all marked tiles
@@ -192,52 +191,52 @@ function groundForceAttack({state, groundTargets, fireSupportTargets}) {
 			}
 			*/
 
-			if (_distSqToClosestDroid(droid) < 6 ** 2) {
+			// if (_distSqToClosestDroid(droid) < 6 ** 2) {
 				attackTarget(droid, currGroundAssaultTarget);
-			} else {
-				orderDroidLoc(droid, DORDER_MOVE, closestDroidToTarget.x, closestDroidToTarget.y);
-			}
+			// } else {
+				// orderDroidLoc(droid, DORDER_MOVE, closestDroidToTarget.x, closestDroidToTarget.y);
+			// }
 		}
 
 		// CYBORG (INFANTRY) UNITS
 		for (let i=0; i<infantryReserve.length; ++i) {
 			let droid = infantryReserve[i];
-			if (_distSqToClosestDroid(droid) <= 4 ** 2) {
+			// if (_distSqToClosestDroid(droid) <= 4 ** 2) {
 				attackTarget(droid, currGroundAssaultTarget);
-			} else {
-				orderDroidLoc(droid, DORDER_MOVE, closestDroidToTarget.x, closestDroidToTarget.y);
-			}
+			// } else {
+			// 	orderDroidLoc(droid, DORDER_MOVE, closestDroidToTarget.x, closestDroidToTarget.y);
+			// }
 		}
 
 		// ADA UNITS
 		airDefenceArtilleryReserve.forEach((droid) => {
-			if (_distSqToClosestDroid(droid) > 7 ** 2) {
+			// if (_distSqToClosestDroid(droid) > 7 ** 2) {
 				orderDroidLoc(droid, DORDER_MOVE, closestDroidToTarget.x, closestDroidToTarget.y);
-			} else {
-				orderDroidLoc(droid, DORDER_PATROL, droid.x + randomX, droid.y);
-			}
+			// } else {
+			// 	orderDroidLoc(droid, DORDER_PATROL, droid.x + randomX, droid.y);
+			// }
 		});
 		
 		// Hack: Sensor units
 		const sensorUnits = enumDroid(me, DROID_SENSOR);		// these have not been added to the grouping system yet!
 		sensorUnits.forEach((droid) => {
-			if (_distSqToClosestDroid(droid) > 5 ** 2) {
+			// if (_distSqToClosestDroid(droid) > 5 ** 2) {
 				orderDroidLoc(droid, DORDER_MOVE, closestDroidToTarget.x, closestDroidToTarget.y);
-			} else {
-				orderDroidLoc(droid, DORDER_PATROL, droid.x + randomX, droid.y);
-			}
+			// } else {
+			// 	orderDroidLoc(droid, DORDER_PATROL, droid.x + randomX, droid.y);
+			// }
 		});
 
 		// FIRE SUPPORT UNITS
 		fireSupportReserve.forEach((droid) => {
-			if (distSq(droid.x, currGroundAssaultTarget.x, droid.y, currGroundAssaultTarget.y) < _distSqToClosestDroid(currGroundAssaultTarget) || 
-				distSq(droid.x, currGroundAssaultTarget.x, droid.y, currGroundAssaultTarget.y) <= 7 ** 2) 
-			{
-				// Fire support units should fall back if they find themselves on the front line
-				orderDroidLoc(droid, DORDER_MOVE, baseLocation.x, baseLocation.y);
-			} else {
+			// if (distSq(droid.x, currGroundAssaultTarget.x, droid.y, currGroundAssaultTarget.y) < _distSqToClosestDroid(currGroundAssaultTarget) || 
+			// 	distSq(droid.x, currGroundAssaultTarget.x, droid.y, currGroundAssaultTarget.y) <= 7 ** 2) 
+			// {
+			// 	// Fire support units should fall back if they find themselves on the front line
+			// 	orderDroidLoc(droid, DORDER_MOVE, baseLocation.x, baseLocation.y);
+			// } else {
 				attackTarget(droid, currFireSupportTarget);
-			}
+			// }
 		});
 
 	} else {
