@@ -229,14 +229,14 @@ function groundForceAttack({state, groundTargets, fireSupportTargets}) {
 
 		// FIRE SUPPORT UNITS
 		fireSupportReserve.forEach((droid) => {
-			// if (distSq(droid.x, currGroundAssaultTarget.x, droid.y, currGroundAssaultTarget.y) < _distSqToClosestDroid(currGroundAssaultTarget) || 
-			// 	distSq(droid.x, currGroundAssaultTarget.x, droid.y, currGroundAssaultTarget.y) <= 7 ** 2) 
-			// {
-			// 	// Fire support units should fall back if they find themselves on the front line
-			// 	orderDroidLoc(droid, DORDER_MOVE, baseLocation.x, baseLocation.y);
-			// } else {
+			if (distSq(droid.x, currGroundAssaultTarget.x, droid.y, currGroundAssaultTarget.y) < _distSqToClosestDroid(currGroundAssaultTarget) || 
+				distSq(droid.x, currGroundAssaultTarget.x, droid.y, currGroundAssaultTarget.y) <= 7 ** 2) 
+			{
+				// Fire support units should fall back if they find themselves on the front line
+				orderDroidLoc(droid, DORDER_MOVE, baseLocation.x, baseLocation.y);
+			} else {
 				attackTarget(droid, currFireSupportTarget);
-			// }
+			}
 		});
 
 	} else {
