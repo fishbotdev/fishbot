@@ -103,11 +103,11 @@ class CommandCenter {
 	/////////////////////////////////////////////////// COMBAT OPERATIONS ///////////////////////////////////////////////////
 	prioritiseGroundTargets(state, objectList, groupPosition) {
 
-		if (objectList.length === 0) {
-			return [];
-		}
+		let output = {"fireSupportTargets": [], "directFireTargets": [], "nearbyEnemyUnitCount": 0};
 
-		let groundTargetObjects = [];
+		if (objectList.length === 0) {
+			return output;
+		}
 
 		const NEARBY_RANGE = 10;
 		let nearbyObjects = objectList.filter(obj => distSq(obj.x, groupPosition.x, obj.y, groupPosition.y) <= NEARBY_RANGE ** 2);
@@ -115,7 +115,8 @@ class CommandCenter {
 		// Sort nearest objects by closest to furthest
 		nearbyObjects.sort((a, b) => distSq(a.x, groupPosition.x, a.y, groupPosition.y) - distSq(b.x, groupPosition.x, b.y, groupPosition.y));
 
-		groundTargetObjects.push(...nearbyObjects);
+		output["nearbyEnemyUnitCount"] += nearbyObjects.length;
+		output["directFireTargets"].push(...nearbyObjects);
 
 		// FIRE SUPPORT TARGETS
 		const nearbyCyborgs = nearbyObjects.filter(o => o.droidType === DROID_CYBORG);
@@ -129,22 +130,16 @@ class CommandCenter {
 		const ECONOMY_STRUCTURES = [FACTORY, VTOL_FACTORY, CYBORG_FACTORY, RESOURCE_EXTRACTOR];	
 		const economyTargets = nearbyObjects.filter(o => ECONOMY_STRUCTURES.includes(o.stattype));
 
-		const fireSupportTargets = [...nearbyCyborgs, ...nearbyIndirectFires, ...nearbyAirDefences, ...nearbyStaticDefences, economyTargets];
+		output["fireSupportTargets"].push(...nearbyCyborgs, ...nearbyIndirectFires, ...nearbyAirDefences, ...nearbyStaticDefences, ...economyTargets);
 
 		// Lazily evaluate far objects
 		if (nearbyObjects.length <= 3) {
 			let farObjects = objectList.filter(obj => !nearbyObjects.includes(obj));
 			farObjects.sort((a, b) => distSq(a.x, groupPosition.x, a.y, groupPosition.y) - distSq(b.x, groupPosition.x, b.y, groupPosition.y));	
-			groundTargetObjects.push(...farObjects);
+			output["directFireTargets"].push(...farObjects);
 		}
 
-		if (false) { 
-			debug(``);
-			const nearestTargets = objectList.slice(0, 3);
-			nearestTargets.forEach(t => debug(`	target: ${t.obj.name} - ${t.obj.x} ${t.obj.y}`));
-		}
-		
-		return {"fireSupportTargets": fireSupportTargets, "directFireTargets": groundTargetObjects, "nearbyEnemyUnitCount": nearbyObjects.length};
+		return output;
 	}
 
 	abortDangerousVTOLMissions(state, mainForceLocation, antiAirDefences) {
