@@ -81,27 +81,55 @@ def plot_runC2_histograms(
         Histogram bin count.
     """
 
+    MILLISEC_SCALING = 1e3
+    MILLISEC_TEXT = "ms"
+
+    GAME_TIME_SEC_SCALING = 1e3
+
+
     # ---- avg_usec histogram ----
     plt.figure()
-    plt.hist(df_a["avg_usec"], bins=bins, alpha=0.5, label=label_a)
-    plt.hist(df_b["avg_usec"], bins=bins, alpha=0.5, label=label_b)
+    plt.hist(df_a["avg_usec"]/MILLISEC_SCALING, bins=bins, alpha=0.5, label=label_a)
+    plt.hist(df_b["avg_usec"]/MILLISEC_SCALING, bins=bins, alpha=0.5, label=label_b)
 
     plt.title("Histogram of avg_usec")
-    plt.xlabel("avg_usec")
+    plt.xlabel(f"avg_usec ({MILLISEC_TEXT})")
     plt.ylabel("Frequency")
     plt.legend()
     plt.pause(0.1)
 
     # ---- worst_usec histogram ----
     plt.figure()
-    plt.hist(df_a["worst_usec"], bins=bins, alpha=0.5, label=label_a)
-    plt.hist(df_b["worst_usec"], bins=bins, alpha=0.5, label=label_b)
+    plt.hist(df_a["worst_usec"]/MILLISEC_SCALING, bins=bins, alpha=0.5, label=label_a)
+    plt.hist(df_b["worst_usec"]/MILLISEC_SCALING, bins=bins, alpha=0.5, label=label_b)
 
     plt.title("Histogram of worst_usec")
-    plt.xlabel("worst_usec")
+    plt.xlabel(f"worst_usec ({MILLISEC_TEXT})")
     plt.ylabel("Frequency")
     plt.legend()
     plt.pause(0.1)
+
+    # ---- worst_call_at histogram ----
+    plt.figure()
+    plt.hist(df_a["worst_call_at"]/GAME_TIME_SEC_SCALING, bins=bins, alpha=0.5, label=label_a)
+    plt.hist(df_b["worst_call_at"]/GAME_TIME_SEC_SCALING, bins=bins, alpha=0.5, label=label_b)
+
+    plt.title("Histogram of worst_call_at")
+    plt.xlabel(f"worst_call_at (seconds)")
+    plt.ylabel("Frequency")
+    plt.legend()
+    plt.pause(0.1)
+
+    # # ---- ge_limit_half histogram ----
+    # plt.figure()
+    # plt.hist(df_a["ge_limit_half"], bins=bins, alpha=0.5, label=label_a)
+    # plt.hist(df_b["ge_limit_half"], bins=bins, alpha=0.5, label=label_b)
+
+    # plt.title("Histogram of ge_limit_half")
+    # plt.xlabel("ge_limit_half")
+    # plt.ylabel("Frequency")
+    # plt.legend()
+    # plt.pause(0.1)
 
 
 # ---- usage ----
@@ -109,7 +137,8 @@ from os import getcwd as cwd
 
 # df_before = extract_runC2(rf"{cwd()}\process_results\v4_perfdata\821b835.log")     # 10 / 10 won vs Cobra Medium (v3 release)
 # df_before = extract_runC2(rf"{cwd()}\process_results\v4_perfdata\08768a7.log")     # 9 / 10 won vs Cobra Medium (after enumRange optimisation)
-df_before = extract_runC2(rf"{cwd()}\process_results\v4_perfdata\3cae9dd.log")     # 10 / 10 won vs Cobra Medium (after VTOL targeting optimisation)
+# df_before = extract_runC2(rf"{cwd()}\process_results\v4_perfdata\3cae9dd.log")     # 10 / 10 won vs Cobra Medium (after VTOL targeting optimisation)
+df_before = extract_runC2(rf"{cwd()}\process_results\v4_perfdata\a2e13b4_v3_release.log")     # 98 / 100 won vs Cobra Medium (after VTOL targeting optimisation)
 df_after = extract_runC2(rf"{cwd()}\process_results\v4_perfdata\1e3edc5_100g.log")     # 96 / 100 won vs Cobra Medium (after suppressing getEnemyBaseTargets)
 
 

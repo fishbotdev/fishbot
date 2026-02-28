@@ -247,7 +247,7 @@ class CommandCenter {
 			}
 
 			if (nearbyLandTargets.length === 0) {
-				// debug(`runCombatOperations(): used expensive getAllTargets @ ${getCurrGameTime()}`);
+				debug(`runCombatOperations(): used expensive getAllTargets @ ${getCurrGameTime()}`);
 				nearbyLandTargets = intelligence.getAllTargets({state: state}) 	
 			}
 

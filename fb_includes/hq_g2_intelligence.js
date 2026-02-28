@@ -312,8 +312,19 @@ class armyIntelligence {
 		const ECONOMY_TARGET_STRUCTURES = [VTOL_FACTORY, CYBORG_FACTORY];
 		const LESS_IMPORTANT_ECONOMY_STRUCTURES = [REPAIR_FACILITY, FACTORY];
 
+		const SEARCH_RADIUS = Math.min(
+			Math.floor(mapHeight/alivePlayers.length), 
+			Math.floor(mapWidth/alivePlayers.length), 
+			20
+		);
+
 		for (let i=0; i<enemyBaseSectors.length; i++) {
-			let objList = enumRange(enemyBaseSectors[i].x, enemyBaseSectors[i].y, 40, ENEMIES, false);
+			let objList = enumRange(enemyBaseSectors[i].x, enemyBaseSectors[i].y, SEARCH_RADIUS, ENEMIES, false);
+			
+			if (objList.length === 0) {
+				debug(`getAllEnemyBaseTargets(): doubled search radius.`);
+				objList = enumRange(enemyBaseSectors[i].x, enemyBaseSectors[i].y, SEARCH_RADIUS * 2, ENEMIES, false);
+			}
 
 			// Anti-air targets
 			aaGameObjects.push(...objList.filter(o => isAntiAirDefense(o)));	
