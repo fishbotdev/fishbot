@@ -265,8 +265,8 @@ class CommandCenter {
 
 		let enemyBaseTargets = {"antiAirTargets": [], "economyTargets": []};
 		if (casTargets.length === 0 && airRaidTargets.length === 0 && readyToAttack) {
-			debug(`runCombatOperations(): used expensive getAllEnemyBaseTargets @ ${getCurrGameTime()}`);
-			enemyBaseTargets = intelligence.getAllEnemyBaseTargets(state);		
+			// debug(`runCombatOperations(): used expensive getAllEnemyBaseTargets @ ${getCurrGameTime()}`);
+			// enemyBaseTargets = intelligence.getAllEnemyBaseTargets(state);		
 		}		
 		
 		const aviationTargets = this.prioritiseAviationTargets(state, mainForceLocation, airRaidTargets, casTargets, enemyBaseTargets);

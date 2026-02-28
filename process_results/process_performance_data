@@ -138,8 +138,11 @@ from os import getcwd as cwd
 # df_before = extract_runC2(rf"{cwd()}\process_results\v4_perfdata\821b835.log")     # 10 / 10 won vs Cobra Medium (v3 release)
 # df_before = extract_runC2(rf"{cwd()}\process_results\v4_perfdata\08768a7.log")     # 9 / 10 won vs Cobra Medium (after enumRange optimisation)
 # df_before = extract_runC2(rf"{cwd()}\process_results\v4_perfdata\3cae9dd.log")     # 10 / 10 won vs Cobra Medium (after VTOL targeting optimisation)
-df_before = extract_runC2(rf"{cwd()}\process_results\v4_perfdata\a2e13b4_v3_release.log")     # 98 / 100 won vs Cobra Medium (after VTOL targeting optimisation)
-df_after = extract_runC2(rf"{cwd()}\process_results\v4_perfdata\1e3edc5_100g.log")     # 96 / 100 won vs Cobra Medium (after suppressing getEnemyBaseTargets)
+
+# df_before = extract_runC2(rf"{cwd()}\process_results\v4_perfdata\a2e13b4_v3_release.log")     # 98 / 100 won vs Cobra Medium (after VTOL targeting optimisation)
+
+df_before = extract_runC2(rf"{cwd()}\process_results\v4_perfdata\1e3edc5_100g.log")     # 96 / 100 won vs Cobra Medium (after suppressing getEnemyBaseTargets)
+df_after = extract_runC2(rf"{cwd()}\process_results\v4_perfdata\74a6f77_getAllBaseTargets_improved.log")     # Seemed to lose a lot
 
 
 print(df_before)
