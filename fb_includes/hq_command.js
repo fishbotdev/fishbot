@@ -144,7 +144,7 @@ class CommandCenter {
 			nearestTargets.forEach(t => debug(`	target: ${t.obj.name} - ${t.obj.x} ${t.obj.y}`));
 		}
 		
-		return {"fireSupportTargets": fireSupportTargets, "directFireTargets": groundTargetObjects};
+		return {"fireSupportTargets": fireSupportTargets, "directFireTargets": groundTargetObjects, "nearbyEnemyUnitCount": nearbyObjects.length};
 	}
 
 	abortDangerousVTOLMissions(state, mainForceLocation, antiAirDefences) {
@@ -181,15 +181,13 @@ class CommandCenter {
 		}
 	}
 
-	prioritiseAviationTargets(state, mainForceLocation, airRaidTargets, casTargets, enemyBaseTargets) {
+	prioritiseAviationTargets(state, nearbyEnemyUnitCount, airRaidTargets, casTargets, enemyBaseTargets) {
 		let aviationTargets = [];
 
 		if (!this.oilDominance || enemyBaseTargets["antiAirTargets"].length >= 4) {
 
-			const nearbyEnemyTargetCount = enumRange(mainForceLocation.x, mainForceLocation.y, 12, ENEMIES, true).length;
-
 			aviationTargets = [...airRaidTargets];
-			if (airRaidTargets.length === 0 || nearbyEnemyTargetCount >= 2) {
+			if (airRaidTargets.length === 0 || nearbyEnemyUnitCount >= 2) {
 				aviationTargets = [...casTargets, ...airRaidTargets];
 			}
 		} else {
@@ -222,12 +220,12 @@ class CommandCenter {
 		const readyToAttack = campaignStatus === CAMPAIGN_STATUS.MAIN_ASSAULT || campaignStatus === CAMPAIGN_STATUS.STAGING;
 
 		let casTargets = [];
-
-		const SEARCH_RADII = [15];
+		let nearbyEnemyUnitCount = 0;
 
 		if (readyToAttack) {
 
 			// Get targets efficiently
+			const SEARCH_RADII = [15];
 			let nearbyLandTargets = [];
 			for (let i=0; i<SEARCH_RADII.length; i++) {
 				nearbyLandTargets = intelligence.getLandTargetsAround({state: state, position: mainForceLocation, searchRadius: SEARCH_RADII[i]});
@@ -251,6 +249,8 @@ class CommandCenter {
 
 			// Ground attack; HACK: directly calls tactical level function
 			groundForceAttack({state: state, groundTargets: groundTargets["directFireTargets"], fireSupportTargets: groundTargets["fireSupportTargets"]});		
+
+			nearbyEnemyUnitCount = groundTargets["nearbyEnemyUnitCount"];
 		}
 
 		// AVIATION
@@ -262,7 +262,7 @@ class CommandCenter {
 			// enemyBaseTargets = intelligence.getAllEnemyBaseTargets(state);		
 		}		
 		
-		const aviationTargets = this.prioritiseAviationTargets(state, mainForceLocation, airRaidTargets, casTargets, enemyBaseTargets);
+		const aviationTargets = this.prioritiseAviationTargets(state, nearbyEnemyUnitCount, airRaidTargets, casTargets, enemyBaseTargets);
 
 		const attackInGroup = true;
 		this.toc.assignAviationTargets(aviationTargets, attackInGroup, state);					

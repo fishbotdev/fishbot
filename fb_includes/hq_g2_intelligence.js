@@ -343,7 +343,7 @@ class armyIntelligence {
 		return {"antiAirTargets": aaTargets, "economyTargets": economyTargets};
 	}
 	
-	getLandTargetsAround({state, position, searchRadius=20}) {
+	getLandTargetsAround({state, position, searchRadius}) {
 
 		let targetObjects = enumRange(position.x, position.y, searchRadius, ENEMIES, false);
 
