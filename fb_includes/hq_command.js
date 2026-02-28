@@ -238,7 +238,7 @@ class CommandCenter {
 
 		let casTargets = [];
 
-		const SEARCH_RADII = [13, 18];
+		const SEARCH_RADII = [15];
 
 		if (readyToAttack) {
 
