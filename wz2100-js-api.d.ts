@@ -681,3 +681,20 @@ declare function chat(playerFilter: PlayerFilterType, message: string): boolean;
 Returns true if an alliance exists between the two players, or they are the same player.
  */
 declare function allianceExistsBetween(player1: number, player2: number): boolean;
+
+/**
+## hackMarkTiles([label | x, y[, x2, y2]])
+
+Mark the given tile(s) on the map. Either give a ```POSITION``` or ```AREA``` label,
+or a tile x, y position, or four positions for a square area. If no parameter
+is given, all marked tiles are cleared. (3.2+ only)
+ */
+declare function hackMarkTiles(x: int, y: int): void;
+
+/**
+## addBeacon(x, y, playerFilter[, message])
+
+Send a beacon message to target player. Target may also be ```ALLIES```.
+Message is currently unused. Returns a boolean that is true on success. (3.2+ only)
+ */
+declare function addBeacon(x: int, y: int, playerFilter: PlayerFilterType, message?: string): boolean;

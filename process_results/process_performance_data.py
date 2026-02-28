@@ -199,8 +199,8 @@ if True:
     # df_before = extract_runC2(rf"{cwd()}\\" + rf"process_results\v4_perfdata\fd007a2,med,cobra,perfdata.log")        
     # df_before = extract_runC2(rf"{cwd()}\\" + rf"process_results\v4_perfdata\27eea6b.log")        
     # df_before = extract_runC2(rf"{cwd()}\process_results\v4_perfdata\\" + rf"975d6c2.log")        
-    # df_1 = extract_runC2(rf"{cwd()}\process_results\v4_perfdata\\" + rf"691769f.log")          # After splitting functions to isolate combat 
-    df_1 = extract_runC2(rf"{cwd()}\process_results\v4_perfdata\\" + rf"a06c2c6.log")        
+    df_1 = extract_runC2(rf"{cwd()}\process_results\v4_perfdata\\" + rf"691769f.log")          # After splitting functions to isolate combat 
+    # df_1 = extract_runC2(rf"{cwd()}\process_results\v4_perfdata\\" + rf"a06c2c6.log")        
     # df_1 = extract_runC2(rf"{cwd()}\process_results\v4_perfdata\\" + rf"194010e.log")        # Removed 2x search radius changes (13 & 18 combined into 15)
     # df_1 = extract_runC2(rf"{cwd()}\process_results\v4_perfdata\\" + rf"ae78c5e.log")        # Combined groundTarget prioritisation
     # df_1 = extract_runC2(rf"{cwd()}\process_results\v4_perfdata\\" + rf"b9608fe.log")        
@@ -215,7 +215,7 @@ if True:
         df_1,
         df_2,
         label_a="Before",
-        label_b="After"
+        label_b="After Optimisation"
     )
     plt.show()
 
@@ -225,20 +225,23 @@ NEW TEST DATA (runC2 is split)
 
 path1 = rf"{cwd()}\process_results\v4_perfdata\\" + rf"ca33b29,hard,cobra,100g.log"
 
-if True:
+if False:
     ########
     func1 = "runC2"
     func2 = "runMissionManager"
+    func3 = "runIntelligence"
     df_1 = extract_runC2(path1, function_name=func1)        
     df_2 = extract_runC2(path1, function_name=func2)       
+    df_3 = extract_runC2(path1, function_name=func3)       
 
-    print(df_1)
-    print(df_2)
+    # print(df_1)
+    # print(df_2)
 
     commit_hash = path1.split(rf"\\")[-1].split(".log")[0]
 
     plot_single_histogram(df_1, label=commit_hash, suptitle=func1)
     plot_single_histogram(df_2, label=commit_hash, suptitle=func2)
+    plot_single_histogram(df_3, label=commit_hash, suptitle=func3)
     plt.show()
 
 
