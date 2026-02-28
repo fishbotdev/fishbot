@@ -238,19 +238,24 @@ class CommandCenter {
 
 		let casTargets = [];
 
+		const SEARCH_RADII = [13, 18];
+
 		if (readyToAttack) {
 
 			// Get targets efficiently
+			let nearbyLandTargets = [];
+			for (let i=0; i<SEARCH_RADII.length; i++) {
+				nearbyLandTargets = intelligence.getLandTargetsAround({state: state, position: mainForceLocation, searchRadius: SEARCH_RADII[i]});
 
-			let nearbyLandTargets = intelligence.getLandTargetsAround({state: state, position: mainForceLocation, searchRadius: 20});
-
-			if (nearbyLandTargets.length === 0) {
-				debug(`runCombatOperations(): used expanded search radius for land targets around @ ${getCurrGameTime()}`);
-				nearbyLandTargets = intelligence.getLandTargetsAround({state: state, position: mainForceLocation, searchRadius: 28});
+				if (nearbyLandTargets.length > 0) {
+					if (i >= 1) {
+						debug(`runCombatOperations(): used expensive enumRange radius = ${SEARCH_RADII[i]} @ ${getCurrGameTime()}`);
+					}
+					break;
+				}
 			}
 
 			if (nearbyLandTargets.length === 0) {
-				
 				debug(`runCombatOperations(): used expensive getAllTargets @ ${getCurrGameTime()}`);
 				nearbyLandTargets = intelligence.getAllTargets({state: state}) 	
 			}
