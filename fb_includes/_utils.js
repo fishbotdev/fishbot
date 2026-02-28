@@ -174,10 +174,25 @@ function enumLivingPlayers() {
 }
 
 function gameHasEnded() {
-	if (enumLivingPlayers().filter(isEnemy).length === 0)
+	const myDroids = enumDroid();
+
+	if (myDroids.length === 0) {
+		const myStructures = enumStruct();
+		if (myStructures.length === 0) {
+			return true;
+		}
+
+		const FACTORY_TYPES = [FACTORY, VTOL_FACTORY, CYBORG_FACTORY];
+		if (myStructures.filter(s => FACTORY_TYPES.includes(s.stattype)).length === 0) {
+			return true;
+		}
+	}
+
+	if (enumLivingPlayers().filter(isEnemy).length === 0) {
 		return true;
-	else
-		return false;
+	}
+	
+	return false;
 }
 
 /*

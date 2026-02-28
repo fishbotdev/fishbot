@@ -18,7 +18,6 @@
 class CommandCenter {
 
 	constructor() {
-		// Campaign
 		this.campaignStatus = CAMPAIGN_STATUS.BUILDUP;	
 		
 		this.toc = new TacticalOperationsCenter();
@@ -26,7 +25,7 @@ class CommandCenter {
 		this.oilDominance = false;
 		this.OIL_DOMINANCE_PERCENTAGE = 55;
 
-		this.RECON_COOLDOWN_TIME = 1900;		// this number depends on FishBot's ticks, FishBot need to perform a full number of cycles
+		this.RECON_COOLDOWN_TIME = 1900;		// this number depends on FishBot's ticks, if we want recon to be conducted every 2 * DECISION_INTERVAL = 2000 ms then we need to set a number smaller than 2000 
 		this.lastConductedRecon = -2 * this.RECON_COOLDOWN_TIME;
 	}
 
@@ -258,6 +257,7 @@ class CommandCenter {
 
 	issueIntelTasking(intelTasks) {
 		const currTime = getCurrGameTime();
+		
 		if (currTime - this.lastConductedRecon > this.RECON_COOLDOWN_TIME) {
 			if (false) debug(`issueIntelTasking(): scheduling recon -> ${currTime}`);
 			this.lastConductedRecon = currTime;
@@ -287,12 +287,6 @@ class CommandCenter {
 
 	/**
 	 * Approves requested tasks based on game state & generates approved buildTasks for TOC execution 
-	 * @param {*} requestedSectorOilCapTasks 
-	 * @param {*} requestedBaseBuildTasks 
-	 * @param {*} requestedSectorDefenceBuildTasks 
-	 * @param {*} sectorIndirectFireBuildTasks 
-	 * @param {*} state 
-	 * @returns 
 	 */
 	issueConstructionTasking(requestedSectorOilCapTasks, requestedBaseBuildTasks, requestedSectorDefenceBuildTasks, sectorIndirectFireBuildTasks, state) {
 

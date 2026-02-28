@@ -58,20 +58,36 @@ function eventDestroyed(object) {
 }
 */
 
+function runGameEndedWatchdog() {
+	if (gameHasEnded() && state.botIsActive) {
+		debug(`FishBot ${me}: gameHasEnded`);
+		state.botIsActive = false;
+	}
+}
+
 function runIntelligence() {
-	hq.runIntelligence(state)
+	if (state.botIsActive) {
+		hq.runIntelligence(state)
+	}
+	
 }
 
 function runC2() {
-	hq.runC2(state);
+	if (state.botIsActive) {
+		hq.runC2(state);
+	}
 }
 
 function runLogistics() {
-	hq.runLogistics(state);
+	if (state.botIsActive) {
+		hq.runLogistics(state);
+	}
 }
 
 function runMissionManager() {
-	hq.runMissionManager(state);
+	if (state.botIsActive) {
+		hq.runMissionManager(state);
+	}
 }
 
 function setupFishBot() {
@@ -82,6 +98,8 @@ function setupFishBot() {
     setTimer("runC2", FISHBOT_DECISION_INTERVAL);
 	setTimer("runLogistics", FISHBOT_DECISION_INTERVAL);      
 	setTimer("runMissionManager", FISHBOT_DECISION_INTERVAL);
+
+	setTimer("runGameEndedWatchdog", 60000);
 }
 
 function eventStartLevel() {

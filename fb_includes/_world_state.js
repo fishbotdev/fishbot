@@ -206,5 +206,7 @@ class worldState {
         this.activeMissions = [];
 
         this.currTargets = [];
+
+        this.botIsActive = true;
     }
 }
