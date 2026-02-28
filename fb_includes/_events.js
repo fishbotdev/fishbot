@@ -15,24 +15,24 @@
 	If not, see <https://www.gnu.org/licenses/>.
 */
 
-/*
- * This file includes event definitions only.
- *
- */
 
 function eventDroidBuilt(droid, structure) {	
+	// This is the only event handler that FishBot uses (avoids having to perform enumDroid continuously)
 	supply.assignNewDroidIntoGroup(droid);	
 }
 
+/*
 function eventStructureReady(structure) {
 	// does nothing for now
 }
 
 function eventStructureBuilt(structure) {
+	// this is regularly called if defined		
 	// does nothing for now
 }
 
 function eventAttacked(victim, attacker) {
+	// this is regularly called if defined
 	// does nothing for now
 }
 
@@ -53,8 +53,10 @@ function eventBeaconRemoved(from, to) {
 }
 
 function eventDestroyed(object) {
+	// this is regularly called if defined
 	// does nothing for now
 }
+*/
 
 function runIntelligence() {
 	hq.runIntelligence(state)
