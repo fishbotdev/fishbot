@@ -57,7 +57,54 @@ def extract_runC2(filepath: str, function_name: str = "runC2") -> pd.DataFrame:
 
     return pd.DataFrame(rows, columns=columns)
 
-def plot_runC2_histograms(
+def plot_single_histogram(df_a, label="A", suptitle='', bins=10):
+
+    MILLISEC_SCALING = 1e3
+    MILLISEC_TEXT = "ms"
+
+    GAME_TIME_SEC_SCALING = 1e3
+
+    # ---- avg_usec histogram ----
+    fig, axs = plt.subplots(3, 1, figsize=(8, 6))
+    ax1, ax2, ax3 = axs
+    
+    fig.suptitle(suptitle, size=16)
+
+    ax1.grid(color='grey', linestyle='-', linewidth=0.4, alpha=0.3)
+
+    ax1.hist(df_a["avg_usec"]/MILLISEC_SCALING, bins=bins, alpha=0.5, label=label)
+
+    ax1.set_title(f"Histogram of avg_usec")
+    ax1.set_xlabel(f"avg_usec ({MILLISEC_TEXT})")
+    ax1.set_ylabel("Frequency")
+    ax1.legend()
+
+    # ---- worst_usec histogram ----
+
+    ax2.grid(color='grey', linestyle='-', linewidth=0.4, alpha=0.3)
+
+    ax2.hist(df_a["worst_usec"]/MILLISEC_SCALING, bins=bins, alpha=0.5, label=label)
+
+    ax2.set_title("Histogram of worst_usec")
+    ax2.set_xlabel(f"worst_usec ({MILLISEC_TEXT})")
+    ax2.set_ylabel("Frequency")
+    ax2.legend()
+
+
+    # ---- worst_call_at histogram ----
+    ax3.grid(color='grey', linestyle='-', linewidth=0.4, alpha=0.3)
+
+    ax3.hist(df_a["worst_call_at"]/GAME_TIME_SEC_SCALING, bins=bins, alpha=0.5, label=label)
+
+    ax3.set_title("Histogram of worst_call_at")
+    ax3.set_xlabel(f"worst_call_at (seconds)")
+    ax3.set_ylabel("Frequency")
+    ax3.legend()
+
+    fig.tight_layout()
+
+
+def plot_comparative_histograms(
     df_a,
     df_b,
     label_a="Dataset A",
@@ -65,7 +112,7 @@ def plot_runC2_histograms(
     bins=10,
 ):
     """
-    Plot histograms comparing runC2 timing metrics.
+    Plot histograms comparing timing metrics.
 
     Parameters
     ----------
@@ -141,33 +188,57 @@ def plot_runC2_histograms(
 # ---- usage ----
 from os import getcwd as cwd
 
-# df_before = extract_runC2(rf"{cwd()}\process_results\v4_perfdata\821b835.log")     # 10 / 10 won vs Cobra Medium (v3 release)
-# df_before = extract_runC2(rf"{cwd()}\process_results\v4_perfdata\08768a7.log")     # 9 / 10 won vs Cobra Medium (after enumRange optimisation)
-# df_before = extract_runC2(rf"{cwd()}\process_results\v4_perfdata\3cae9dd.log")     # 10 / 10 won vs Cobra Medium (after VTOL targeting optimisation)
+"""
+OLD TEST DATA
+"""
+if True:
+    # df_before = extract_runC2(rf"{cwd()}\process_results\v4_perfdata\a2e13b4_v3_release.log")     # 98 / 100 won vs Cobra Medium (after VTOL targeting optimisation)
 
-# df_before = extract_runC2(rf"{cwd()}\process_results\v4_perfdata\a2e13b4_v3_release.log")     # 98 / 100 won vs Cobra Medium (after VTOL targeting optimisation)
+    # df_1 = extract_runC2(rf"{cwd()}\process_results\v4_perfdata\1e3edc5_100g.log")     # 96 / 100 won vs Cobra Medium (after suppressing getEnemyBaseTargets)
+    # df_1 = extract_runC2(rf"{cwd()}\process_results\v4_perfdata\74a6f77_getAllBaseTargets_improved.log")       # Seemed to lose a lot
+    # df_before = extract_runC2(rf"{cwd()}\\" + rf"process_results\v4_perfdata\fd007a2,med,cobra,perfdata.log")        
+    # df_before = extract_runC2(rf"{cwd()}\\" + rf"process_results\v4_perfdata\27eea6b.log")        
+    # df_before = extract_runC2(rf"{cwd()}\process_results\v4_perfdata\\" + rf"975d6c2.log")        
+    # df_1 = extract_runC2(rf"{cwd()}\process_results\v4_perfdata\\" + rf"691769f.log")          # After splitting functions to isolate combat 
+    df_1 = extract_runC2(rf"{cwd()}\process_results\v4_perfdata\\" + rf"a06c2c6.log")        
+    # df_1 = extract_runC2(rf"{cwd()}\process_results\v4_perfdata\\" + rf"194010e.log")        # Removed 2x search radius changes (13 & 18 combined into 15)
+    # df_1 = extract_runC2(rf"{cwd()}\process_results\v4_perfdata\\" + rf"ae78c5e.log")        # Combined groundTarget prioritisation
+    # df_1 = extract_runC2(rf"{cwd()}\process_results\v4_perfdata\\" + rf"b9608fe.log")        
+    # df_1 = extract_runC2(rf"{cwd()}\process_results\v4_perfdata\\" + rf"f3f74e5.log")        
+    # df_1 = extract_runC2(rf"{cwd()}\process_results\v4_perfdata\\" + rf"2d4195e.log")        
+    df_2 = extract_runC2(rf"{cwd()}\process_results\v4_perfdata\\" + rf"0c6d165.log")        #  95 / 100 won against Cobra Medium (after many optimisations)
 
-# df_1 = extract_runC2(rf"{cwd()}\process_results\v4_perfdata\1e3edc5_100g.log")     # 96 / 100 won vs Cobra Medium (after suppressing getEnemyBaseTargets)
-# df_1 = extract_runC2(rf"{cwd()}\process_results\v4_perfdata\74a6f77_getAllBaseTargets_improved.log")       # Seemed to lose a lot
-# df_before = extract_runC2(rf"{cwd()}\\" + rf"process_results\v4_perfdata\fd007a2,med,cobra,perfdata.log")        
-# df_before = extract_runC2(rf"{cwd()}\\" + rf"process_results\v4_perfdata\27eea6b.log")        
-# df_before = extract_runC2(rf"{cwd()}\process_results\v4_perfdata\\" + rf"975d6c2.log")        
-# df_1 = extract_runC2(rf"{cwd()}\process_results\v4_perfdata\\" + rf"691769f.log")          # After splitting functions to isolate combat 
-df_1 = extract_runC2(rf"{cwd()}\process_results\v4_perfdata\\" + rf"a06c2c6.log")        
-# df_1 = extract_runC2(rf"{cwd()}\process_results\v4_perfdata\\" + rf"194010e.log")        # Removed 2x search radius changes (13 & 18 combined into 15)
-# df_1 = extract_runC2(rf"{cwd()}\process_results\v4_perfdata\\" + rf"ae78c5e.log")        # Combined groundTarget prioritisation
-# df_1 = extract_runC2(rf"{cwd()}\process_results\v4_perfdata\\" + rf"b9608fe.log")        
-# df_1 = extract_runC2(rf"{cwd()}\process_results\v4_perfdata\\" + rf"f3f74e5.log")        
-# df_1 = extract_runC2(rf"{cwd()}\process_results\v4_perfdata\\" + rf"2d4195e.log")        
-df_2 = extract_runC2(rf"{cwd()}\process_results\v4_perfdata\\" + rf"0c6d165.log")        #  95 / 100 won against Cobra Medium (after many optimisations)
+    # print(df_1)
+    print(df_2)
 
-# print(df_1)
-print(df_2)
+    plot_comparative_histograms(
+        df_1,
+        df_2,
+        label_a="Before",
+        label_b="After"
+    )
+    plt.show()
 
-plot_runC2_histograms(
-    df_1,
-    df_2,
-    label_a="Before",
-    label_b="After"
-)
-plt.show()
+"""
+NEW TEST DATA (runC2 is split)
+"""
+
+path1 = rf"{cwd()}\process_results\v4_perfdata\\" + rf"ca33b29,hard,cobra,100g.log"
+
+if True:
+    ########
+    func1 = "runC2"
+    func2 = "runMissionManager"
+    df_1 = extract_runC2(path1, function_name=func1)        
+    df_2 = extract_runC2(path1, function_name=func2)       
+
+    print(df_1)
+    print(df_2)
+
+    commit_hash = path1.split(rf"\\")[-1].split(".log")[0]
+
+    plot_single_histogram(df_1, label=commit_hash, suptitle=func1)
+    plot_single_histogram(df_2, label=commit_hash, suptitle=func2)
+    plt.show()
+
+
