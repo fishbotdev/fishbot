@@ -441,7 +441,7 @@ class CommandCenter {
 		}
 	}
 
-	runConstructionTasks() {
+	runConstructionTasks(state) {
 
 		// Sector oil
 		const sectorOilCaptureBuildTasks = engineering.requestOilCapture(state);
@@ -454,45 +454,11 @@ class CommandCenter {
 		this.abortDangerousConstructionTasks(state);
 	}
 
-	runIntel() {
-		/*
-			INTELLIGENCE OPERATIONS
-		*/
+	runIntelligence(state) {
+
 		this.runSectorIntel(state);		
-	}
 
-	runCombat() {
-		/*
-			COMBAT OPERATIONS
-		*/
-		this.runCombatOperations(state);
-	}
-
-	runSustainment() {
-		/*
-			COMBAT SUSTAINMENT
-		*/
-
-		if (gameHasEnded()) {
-			return;		// STOP ALL OTHER FUNCTIONS IF GAME IS ENDED
-		}
-
-		// Production
-		supply.manageProduction();
-		// Research
-		research.manageResearch();
-		// Construction
-		this.runConstructionTasks();
-
-
-		// Executes all bot actions
-		this.toc.manageMissions(state);														
-
-
-		/*
-			ADVANCE CAMPAIGN BASED ON GAME STATE
-		*/
-
+		// ADVANCE CAMPAIGN BASED ON GAME STATE
 		let event = undefined;
 		if (groundForces.completedForceBuildup()) {
 			event = 'CompletedBuildup';
@@ -512,6 +478,24 @@ class CommandCenter {
 				// then cancel all raid missions
 			}
 		}
+	}
+
+	runC2(state) {
+		this.runCombatOperations(state);
+	}
+
+	runLogistics(state) {
+		// Production
+		supply.manageProduction();
+		// Research
+		research.manageResearch();
+		// Construction
+		this.runConstructionTasks(state);												
+	}
+
+	runMissionManager(state) {
+		// Executes all bot actions
+		this.toc.manageMissions(state);		
 	}
 
 }
