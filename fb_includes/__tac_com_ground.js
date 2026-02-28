@@ -210,10 +210,10 @@ function groundForceAttack({state, groundTargets, fireSupportTargets}) {
 
 		// ADA UNITS
 		airDefenceArtilleryReserve.forEach((droid) => {
-			if (_distSqToClosestDroid(droid) > 7 ** 2) {
+			if (_distSqToClosestDroid(droid) > 5 ** 2) {
 				orderDroidLoc(droid, DORDER_MOVE, closestDroidToTarget.x, closestDroidToTarget.y);
 			} else {
-				orderDroidLoc(droid, DORDER_PATROL, droid.x + randomX, droid.y);
+				orderDroidLoc(droid, DORDER_MOVE, droid.x + randomX, droid.y);
 			}
 		});
 		
@@ -223,7 +223,7 @@ function groundForceAttack({state, groundTargets, fireSupportTargets}) {
 			if (_distSqToClosestDroid(droid) > 5 ** 2) {
 				orderDroidLoc(droid, DORDER_MOVE, closestDroidToTarget.x, closestDroidToTarget.y);
 			} else {
-				orderDroidLoc(droid, DORDER_PATROL, droid.x + randomX, droid.y);
+				orderDroidLoc(droid, DORDER_MOVE, droid.x + randomX, droid.y);
 			}
 		});
 
