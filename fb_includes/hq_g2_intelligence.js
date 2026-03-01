@@ -256,11 +256,6 @@ class armyIntelligence {
 			}
 		}
 
-		// medPriorityTargets.sort((a,b) => 
-		// 	distSq(a.x, baseLocation.x, a.y, baseLocation.y) - distSq(b.x, baseLocation.x, b.y, baseLocation.y));
-		// lowPriorityTargets.sort((a,b) => 
-		// 	distSq(a.x, baseLocation.x, a.y, baseLocation.y) - distSq(b.x, baseLocation.x, b.y, baseLocation.y));
-
 		const targetObjectList = [...highPriorityTargets, ...medPriorityTargets, ...lowPriorityTargets];
 
 		let airRaidTargetList = [];
@@ -271,25 +266,45 @@ class armyIntelligence {
 
 	getCASTargets(location, nearbyLandTargets) {
 		
-		const units = nearbyLandTargets.filter(o => o.type === DROID && o.isVTOL !== true);
-		const adaFortifications = nearbyLandTargets.filter(o => o.type === STRUCTURE && isAntiAirDefense(o));
+		let adaFortifications = [], adaGroundUnits = [], indirectFireFortifications = [], indirectFireGroundUnits = [], regularGroundUnits = [];
 
-		const GROUND_PROPULSION_ID = [PROPULSIONS["Wheels"].id, PROPULSIONS["Half-tracks"].id, PROPULSIONS["Tracks"].id, PROPULSIONS["Hover"].id];
+		const GROUND_PROPULSION_IDS = [PROPULSIONS["Wheels"].id, PROPULSIONS["Half-tracks"].id, PROPULSIONS["Tracks"].id, PROPULSIONS["Hover"].id];
 
-		const groundVehicles = units.filter(droid => GROUND_PROPULSION_ID.includes(droid.propulsion));
-			// sort((a, b) => distSq(a.x, location.x, a.y, location.y) - distSq(b.x, location.x, b.y, location.y));
-		
-		const adaGroundUnits = groundVehicles.filter(droid => isAntiAirDefense(droid));
-		const indirectGroundUnits = groundVehicles.filter(droid => droid.hasIndirect === true);
-		const regularGroundUnits = groundVehicles.filter(droid => !adaGroundUnits.includes(droid));
+		for (let i=0; i<nearbyLandTargets.length; i++) {
+			const currLandTarget = nearbyLandTargets[i];
 
-		// const otherUnits = units.filter(droid => !groundVehicles.includes(droid));
+			if (currLandTarget.type === STRUCTURE) {
+				if (currLandTarget.hasIndirect === true) {
+					indirectFireFortifications.push(this.#createNewTarget({targetObject: currLandTarget}));
+					continue;
+				}
 
-		const objList = [...adaGroundUnits, ...adaFortifications, ...indirectGroundUnits, ...regularGroundUnits];
+				if (isAntiAirDefense(currLandTarget)) {
+					adaFortifications.push(this.#createNewTarget({targetObject: currLandTarget}));
+					continue;
+				}
+			} else if (currLandTarget.type === DROID) {
+				if (!GROUND_PROPULSION_IDS.includes(currLandTarget.propulsion)) {
+					continue;		// ignores cyborgs
+				}
 
-		let overallTargetList = [];
-		objList.forEach(droid => overallTargetList.push(this.#createNewTarget({targetObject: droid})));
-		return overallTargetList;
+				if (currLandTarget.hasIndirect === true) {
+					indirectFireGroundUnits.push(this.#createNewTarget({targetObject: currLandTarget}));
+					continue;
+				}
+
+				if (isAntiAirDefense(currLandTarget)) {
+					adaGroundUnits.push(this.#createNewTarget({targetObject: currLandTarget}));
+					continue;
+				}
+
+				regularGroundUnits.push(this.#createNewTarget({targetObject: currLandTarget}));
+			}
+		}
+
+		const prioritisedTargetList = [...adaGroundUnits, ...adaFortifications, ...indirectFireGroundUnits, ...regularGroundUnits, ...indirectFireFortifications];
+
+		return prioritisedTargetList;
 	}
 
 	getAllEnemyBaseTargets(state) {
