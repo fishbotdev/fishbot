@@ -90,15 +90,16 @@ function runMissionManager() {
 	}
 }
 
-
+function scheduleCoreFunctions() {
+	const OFFSET = 37;	// ms
+	const CORE_FUNCTION_NAMES = ["runIntelligence", "runC2", "runLogistics", "runMissionManager"];
+	CORE_FUNCTION_NAMES.forEach((f, idx) => queue(f, idx * OFFSET))
+}
 
 function setupFishBot() {
 	// This function queued with a player-specific delay          
 	const FISHBOT_DECISION_INTERVAL = 1000;
-	setTimer("runIntelligence", FISHBOT_DECISION_INTERVAL);
-    setTimer("runC2", FISHBOT_DECISION_INTERVAL);
-	setTimer("runLogistics", FISHBOT_DECISION_INTERVAL);      
-	setTimer("runMissionManager", FISHBOT_DECISION_INTERVAL);
+	setTimer("scheduleCoreFunctions", FISHBOT_DECISION_INTERVAL);
 
 	setTimer("runGameEndedWatchdog", 60000);
 }
