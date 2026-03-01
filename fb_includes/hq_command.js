@@ -256,11 +256,11 @@ class CommandCenter {
 
 	prioritiseAviationTargets(state, nearbyTargetCount, airRaidTargets, casTargets) {
 
-		let aviationTargets = [...airRaidTargets];
+		let aviationTargets = [...airRaidTargets, ...casTargets];
 
 		if (!this.oilDominance) {
 			if (nearbyTargetCount >= 3) {
-				aviationTargets.unshift(...casTargets);
+				aviationTargets = [...casTargets, ...airRaidTargets];
 			}
 		}
 
@@ -321,7 +321,7 @@ class CommandCenter {
 		// AVIATION
 		let airRaidTargets = intelligence.getAirRaidTargets(state);		
 		const aviationTargets = this.prioritiseAviationTargets(state, numTargetsInImmediateRadius, airRaidTargets, casTargets);
-
+		debug(`avTarg ${aviationTargets.length} = cas ${casTargets.length} + raid ${airRaidTargets.length}, ${numTargetsInImmediateRadius}`);
 		const attackInGroup = true;
 		this.toc.assignAviationTargets(state, aviationTargets, attackInGroup);					
 
