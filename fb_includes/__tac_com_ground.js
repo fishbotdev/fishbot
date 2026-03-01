@@ -65,31 +65,10 @@ function attackTarget(droid, target) {
 }
 
 /*
-	TAC SOP: RAID TARGET OBJECT @ LOCATION
-*/
-function raidTargetObject(targetObj, taskForceID) {
-
-	const updatedObject = getObject(targetObj.type, targetObj.player, targetObj.id);
-	if (updatedObject === null) {		
-		return true;	// object is destroyed
-	}
-
-	const taskForceUnits = state.g.enumGroup(taskForceID);
-	if (taskForceUnits.length === 0) {
-		// debug("_tac_com_ground/raidTargetObject: terminated - 0 group size", taskForceID);
-		return undefined;		// raid units were killed or reassigned
-	}
-
-	taskForceUnits.forEach((droid) => attackTarget(droid, updatedObject));
-
-    return false;      
-}
-
-/*
     Helper for finding closest droid to target
 */
 function findClosestDroidToTarget(unitGroup, currGroundTarget) {
-	if (unitGroup.length === 0) {
+	if (unitGroup.length === 0 || !defined(currGroundTarget)) {
 		return undefined;
 	}
 
@@ -120,130 +99,118 @@ function findClosestDroidToTarget(unitGroup, currGroundTarget) {
     TAC SOP: ATTACKS A TARGET; REINFORCEMENTS ARRIVE AT CLOSEST DROID TO TARGET
 */
 
-let currGroundAssaultTarget = undefined;           // eventually moved inside class (needs to remember this state)
-let currFireSupportTarget = undefined;
-let closestDroidToTarget = undefined;       // eventually moved inside class (needs to remember this state)
-
-function _distSqToClosestDroid(droid) {
-	return distSq(droid.x, closestDroidToTarget.x, droid.y, closestDroidToTarget.y);
-}
-
-function groundForceAttack({state, groundTargets, fireSupportTargets}) {
+function groundForceAttack({state, directFireTarget, fireSupportTarget, adaTarget}) {
 
 	let generalReserve = state.g.enumGroup(DIVISION.GENERAL_RESERVE);
 	let infantryReserve = state.g.enumGroup(DIVISION.INFANTRY_RESERVE);
 	let fireSupportReserve = state.g.enumGroup(DIVISION.FIRE_SUPPORT_RESERVE);
 	let airDefenceArtilleryReserve = state.g.enumGroup(DIVISION.AIR_DEFENCE_RESERVE);
-	// debug('land unit lengths', generalReserve.length, infantryReserve.length, fireSupportReserve.length, groundTargets.length, fireSupportTargets.length, gameTime);
 
 	if (generalReserve.length === 0) {
 		return;
 	}
 
-	if (groundTargets.length === 0) {
-		return;
-	}
-	currGroundAssaultTarget = groundTargets[0];
-
-	if (getObject(currGroundAssaultTarget.type, currGroundAssaultTarget.player, currGroundAssaultTarget.id) === null) {		
+	if (!defined(directFireTarget)) {
 		return;
 	}
 
-	currFireSupportTarget = currGroundAssaultTarget;
-	if (fireSupportTargets.length !== 0) {		
-		const targetCandidate = fireSupportTargets[0];
-		if (getObject(targetCandidate.type, targetCandidate.player, targetCandidate.id) !== null) {		
-			currFireSupportTarget = targetCandidate;
-		}			
+	const currDirectFireTarget = getObject(directFireTarget.type, directFireTarget.player, directFireTarget.id);
+	const closestDroidToTarget = findClosestDroidToTarget(generalReserve, currDirectFireTarget);
+
+	if (!defined(closestDroidToTarget) || !defined(currDirectFireTarget)) {
+		return;
 	}
 
-	if (defined(currGroundAssaultTarget)) {
-
-		closestDroidToTarget = findClosestDroidToTarget(generalReserve, currGroundAssaultTarget);
-
-		const randomX = Math.floor(Math.random() * 3) - 1;
-
-		if (!defined(closestDroidToTarget)) {
-			return;
-		}
-
-		if (DEBUG_MODE_ON) {
-			hackMarkTiles();		// clear all marked tiles
-			addBeacon(currGroundAssaultTarget.x, currGroundAssaultTarget.y, 0);
-			hackMarkTiles(currFireSupportTarget.x, currFireSupportTarget.y);
-		}
-            
-		// MAIN ASSAULT UNITS
-		for (let i=0; i<generalReserve.length; i++) {
-			let droid = generalReserve[i];
-
-			/*
-			// basic implementation of repair facility, only for front line units
-			if (droid.health < 45 && generalReserve.length > 12) {
-				// debug(`${droid.name} RTR @ ${droid.health}`);
-				returnForRepair(droid);
-				continue;
-			}
-
-			if (droid.order === DORDER_RTR) {
-				// debug(`skipped RTR ${droid.name} ${droid.health}`);
-				continue;
-			}
-			*/
-
-			if (_distSqToClosestDroid(droid) < 6 ** 2) {
-				attackTarget(droid, currGroundAssaultTarget);
-			} else {
-				orderDroidLoc(droid, DORDER_MOVE, closestDroidToTarget.x, closestDroidToTarget.y);
-			}
-		}
-
-		// CYBORG (INFANTRY) UNITS
-		for (let i=0; i<infantryReserve.length; ++i) {
-			let droid = infantryReserve[i];
-			if (_distSqToClosestDroid(droid) <= 4 ** 2) {
-				attackTarget(droid, currGroundAssaultTarget);
-			} else {
-				orderDroidLoc(droid, DORDER_MOVE, closestDroidToTarget.x, closestDroidToTarget.y);
-			}
-		}
-
-		// ADA UNITS
-		airDefenceArtilleryReserve.forEach((droid) => {
-			if (_distSqToClosestDroid(droid) > 5 ** 2) {
-				orderDroidLoc(droid, DORDER_MOVE, closestDroidToTarget.x, closestDroidToTarget.y);
-			} else {
-				orderDroidLoc(droid, DORDER_MOVE, droid.x + randomX, droid.y);
-			}
-		});
+	const _distSqToClosestDroid = (droid) => distSq(droid.x, closestDroidToTarget.x, droid.y, closestDroidToTarget.y);
 		
-		// Hack: Sensor units
-		const sensorUnits = enumDroid(me, DROID_SENSOR);		// these have not been added to the grouping system yet!
-		sensorUnits.forEach((droid) => {
+	// MAIN ASSAULT UNITS
+	for (let i=0; i<generalReserve.length; i++) {
+		let droid = generalReserve[i];
+
+		/*
+		// basic implementation of repair facility, only for front line units
+		if (droid.health < 45 && generalReserve.length > 12) {
+			// debug(`${droid.name} RTR @ ${droid.health}`);
+			returnForRepair(droid);
+			continue;
+		}
+
+		if (droid.order === DORDER_RTR) {
+			// debug(`skipped RTR ${droid.name} ${droid.health}`);
+			continue;
+		}
+		*/
+
+		if (_distSqToClosestDroid(droid) < 6 ** 2) {
+			attackTarget(droid, currDirectFireTarget);
+		} else {
+			orderDroidLoc(droid, DORDER_MOVE, closestDroidToTarget.x, closestDroidToTarget.y);
+		}
+	}
+
+	// CYBORG (INFANTRY) UNITS
+	for (let i=0; i<infantryReserve.length; ++i) {
+		let droid = infantryReserve[i];
+		if (_distSqToClosestDroid(droid) <= 4 ** 2) {
+			attackTarget(droid, currDirectFireTarget);
+		} else {
+			orderDroidLoc(droid, DORDER_MOVE, closestDroidToTarget.x, closestDroidToTarget.y);
+		}
+	}
+
+	// Hack: Sensor units
+	const sensorUnits = enumDroid(me, DROID_SENSOR);		// these have not been added to the grouping system yet!
+	sensorUnits.forEach((droid) => {
+		if (_distSqToClosestDroid(droid) > 5 ** 2) {
+			orderDroidLoc(droid, DORDER_MOVE, closestDroidToTarget.x, closestDroidToTarget.y);
+		} else {
+			orderDroid(droid, DORDER_STOP);
+		}
+	});
+
+	// ADA UNITS
+	let currAdaTarget = undefined;
+	if (defined(adaTarget)) {
+		currAdaTarget = getObject(adaTarget.type, adaTarget.player, adaTarget.id);
+	}	
+
+	airDefenceArtilleryReserve.forEach((droid) => {
+		if (defined(currAdaTarget)) {
+			attackTarget(droid, currAdaTarget);		
+		} else {
+			// Move to the closest droid
 			if (_distSqToClosestDroid(droid) > 5 ** 2) {
 				orderDroidLoc(droid, DORDER_MOVE, closestDroidToTarget.x, closestDroidToTarget.y);
 			} else {
-				orderDroidLoc(droid, DORDER_MOVE, droid.x + randomX, droid.y);
+				orderDroid(droid, DORDER_STOP);
 			}
-		});
+		}
+	});
 
-		// FIRE SUPPORT UNITS
-		fireSupportReserve.forEach((droid) => {
-			if (distSq(droid.x, currGroundAssaultTarget.x, droid.y, currGroundAssaultTarget.y) < _distSqToClosestDroid(currGroundAssaultTarget) || 
-				distSq(droid.x, currGroundAssaultTarget.x, droid.y, currGroundAssaultTarget.y) <= 7 ** 2) 
-			{
-				// Fire support units should fall back if they find themselves on the front line
-				orderDroidLoc(droid, DORDER_MOVE, baseLocation.x, baseLocation.y);
-			} else {
+	// FIRE SUPPORT UNITS
+	let currFireSupportTarget = undefined;
+	if (defined(fireSupportTarget)) {
+		currFireSupportTarget = getObject(fireSupportTarget.type, fireSupportTarget.player, fireSupportTarget.id);
+	} 
+	fireSupportReserve.forEach((droid) => {
+		if (distSq(droid.x, currDirectFireTarget.x, droid.y, currDirectFireTarget.y) <= 7 ** 2) {
+			// Fire support units should fall back if they find themselves on the front line
+			orderDroidLoc(droid, DORDER_MOVE, baseLocation.x, baseLocation.y);
+		} else {
+			if (defined(currFireSupportTarget)) {
 				attackTarget(droid, currFireSupportTarget);
 			}
-		});
+		}
+	});
 
-	} else {
-		// Check if the closestDroid is still alive, if so, coalesce forces there. Else, continue with current plan
-		let cd = getObject(closestDroidToTarget.type, closestDroidToTarget.player, closestDroidToTarget.id);
-		if (cd !== null) {
-			generalReserve.forEach(droid => orderDroidLoc(droid, DORDER_MOVE, closestDroidToTarget.x, closestDroidToTarget.y));
-		}		
+	if (DEBUG_MODE_ON) {
+		hackMarkTiles();		// clear all marked tiles
+		if (defined(currDirectFireTarget)) {
+			addBeacon(currDirectFireTarget.x, currDirectFireTarget.y, 0);
+		}
+		if (defined(currFireSupportTarget)) {
+			hackMarkTiles(currFireSupportTarget.x, currFireSupportTarget.y);
+		}
 	}
+
 }

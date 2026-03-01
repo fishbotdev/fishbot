@@ -117,7 +117,7 @@ class TacticalOperationsCenter {
 		state.activeMissions = currActiveMissions;
 	}
 
-	assignAviationTargets(aviationTargets, attackInGroup, state) {
+	assignAviationTargets(state, aviationTargets, attackInGroup) {
 
 		let failedAttempts = 0;
 
@@ -127,15 +127,14 @@ class TacticalOperationsCenter {
 				return;
 			}
 
-			let curr = aviationTargets[i];
-
-			if (getObject(curr.obj.type, curr.obj.player, curr.obj.id) === null) {		// if target no longer exists, ignore it
+			const obj = getObject(aviationTargets[i].type, aviationTargets[i].player, aviationTargets[i].id);
+			if (!defined(obj)) {
 				continue;
 			}
 
 			// Determine mission type based on target properties
 			let missionType = MISSION_TYPE.CAS_STRIKE;		// default
-			if (curr.obj.type === STRUCTURE) {
+			if (obj.type === STRUCTURE) {
 				missionType = MISSION_TYPE.DAS_STRUCT_STRIKE;
 			}
 
@@ -143,13 +142,13 @@ class TacticalOperationsCenter {
 			if (attackInGroup) {
 				numUnits = 2;
 			}
-			const missionData = this.createNewMission({missionType: missionType, priority: MISSION_PRIORITY.MEDIUM}, curr.obj, numUnits, i);
+			const missionData = this.createNewMission({missionType: missionType, priority: MISSION_PRIORITY.MEDIUM}, obj, numUnits, i);
 				
-			if (defined(missionData) && defined(curr.obj)) {
-				// debug(`Scheduled AIR STRIKE (${missionType}) for:`, missionData.id, curr.obj.name, curr.obj.id, curr.obj.x, curr.obj.y);
+			if (defined(missionData)) {
+				// debug(`Scheduled AIR STRIKE (${missionType}) for:`, missionData.id, obj.name, obj.x, obj.y);
 				state.activeMissions.push(missionData);
 			} else {
-				failedAttempts++;
+				failedAttempts += 1;
 			}
 		}
 	}

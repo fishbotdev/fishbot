@@ -100,47 +100,6 @@ class CommandCenter {
 	}
 
 	/////////////////////////////////////////////////// COMBAT OPERATIONS ///////////////////////////////////////////////////
-	prioritiseGroundTargets(state, objectList, groupPosition) {
-
-		let output = {"fireSupportTargets": [], "directFireTargets": [], "nearbyEnemyUnitCount": 0};
-
-		if (objectList.length === 0) {
-			return output;
-		}
-
-		const NEARBY_RANGE = 10;
-		let nearbyObjects = objectList.filter(obj => distSq(obj.x, groupPosition.x, obj.y, groupPosition.y) <= NEARBY_RANGE ** 2);
-
-		// Sort nearest objects by closest to furthest
-		nearbyObjects.sort((a, b) => distSq(a.x, groupPosition.x, a.y, groupPosition.y) - distSq(b.x, groupPosition.x, b.y, groupPosition.y));
-
-		output["nearbyEnemyUnitCount"] += nearbyObjects.length;
-		output["directFireTargets"].push(...nearbyObjects);
-
-		// FIRE SUPPORT TARGETS
-		const nearbyCyborgs = nearbyObjects.filter(o => o.droidType === DROID_CYBORG);
-		const nearbyIndirectFires = nearbyObjects.filter(o => o.hasIndirect === true);
-		const nearbyAirDefences = nearbyObjects.filter(o => isAntiAirDefense(o));
-		const nearbyStaticDefences = nearbyObjects.filter(o => 
-			o.stattype === DEFENSE && 
-			!nearbyAirDefences.includes(o) && 
-			!nearbyIndirectFires.includes(o));
-
-		const ECONOMY_STRUCTURES = [FACTORY, VTOL_FACTORY, CYBORG_FACTORY, RESOURCE_EXTRACTOR];	
-		const economyTargets = nearbyObjects.filter(o => ECONOMY_STRUCTURES.includes(o.stattype));
-
-		output["fireSupportTargets"].push(...nearbyCyborgs, ...nearbyIndirectFires, ...nearbyAirDefences, ...nearbyStaticDefences, ...economyTargets);
-
-		// Lazily evaluate far objects
-		if (nearbyObjects.length <= 3) {
-			let farObjects = objectList.filter(obj => !nearbyObjects.includes(obj));
-			farObjects.sort((a, b) => distSq(a.x, groupPosition.x, a.y, groupPosition.y) - distSq(b.x, groupPosition.x, b.y, groupPosition.y));	
-			output["directFireTargets"].push(...farObjects);
-		}
-
-		return output;
-	}
-
 	abortDangerousVTOLMissions(state, mainForceLocation, antiAirDefences) {
 
 		const activeMissions = this.toc.getActiveAviationMissions(state);
@@ -174,25 +133,147 @@ class CommandCenter {
 
 		}
 	}
+	
+	prioritiseGroundTargets(state, targetInfo, groupPosition) {
 
-	prioritiseAviationTargets(state, nearbyEnemyUnitCount, airRaidTargets, casTargets, enemyBaseTargets) {
-		let aviationTargets = [...airRaidTargets];
+		let output = {
+			"directFireTarget": undefined, 
+			"fireSupportTarget": undefined,
+			"adaTarget": undefined, 
+			"casTargets": undefined,
+			"targetsInImmediateRadius": 0
+		};
 
-		if (!this.oilDominance || enemyBaseTargets["antiAirTargets"].length >= 4) {
-			if (airRaidTargets.length === 0 || nearbyEnemyUnitCount >= 2) {
-				aviationTargets = [...casTargets, ...airRaidTargets];
+		/*
+			targetInfo in this format:
+ 			info = {
+				'enemyArmor': [], 
+				'enemyInfantry': [], 
+				'enemyIndirectFire': [], 
+				'enemyADA': [], 
+				'enemyAviation': [], 
+				'enemyConstructor': [], 
+				'enemyIndustrial': [], 
+				'enemyUtility': [], 
+				'enemyDefenses': [],
+				'closestObject': undefined,
+				'targetsInImmediateRadius': 0
+			};		
+		*/
+
+		if (!defined(targetInfo["closestObject"])) {
+			// Then the target-generating function immediately returned as there were no inputs
+			return output;
+		}
+
+		output["directFireTarget"] = targetInfo["closestObject"];
+
+		const MAX_CAS_TARGETS = 3;
+		if (targetInfo["enemyArmor"].length > 0) {
+			output["casTargets"] = targetInfo["enemyArmor"].slice(0, MAX_CAS_TARGETS);
+		}
+		
+		const EFFECTIVE_SQ_FS_RADIUS = 10 ** 2;
+		let backupFsTargets = [...targetInfo["enemyIndirectFire"], ...targetInfo["enemyADA"], ...targetInfo["enemyDefenses"], ...targetInfo["enemyIndustrial"]];
+		backupFsTargets = backupFsTargets.filter(t => {
+			const o = getObject(t.type, t.player, t.id);
+			if (distSq(o.x, groupPosition.x, o.y, groupPosition.y) < EFFECTIVE_SQ_FS_RADIUS) {
+				return true;
 			}
-		} else {
-			if (enemyBaseTargets["antiAirTargets"].length >= 2) {
-				aviationTargets = [...enemyBaseTargets["antiAirTargets"], ...casTargets, ...enemyBaseTargets["economyTargets"], ...airRaidTargets];
-			} else {
-				aviationTargets = [...casTargets, ...enemyBaseTargets["economyTargets"], ...enemyBaseTargets["antiAirTargets"],  ...airRaidTargets];
+			return false;
+		});
+
+		if (!defined(output["casTargets"])) { 
+			if (backupFsTargets.length > 0) {
+				output["casTargets"] = backupFsTargets.slice(0, MAX_CAS_TARGETS);
 			}
 		}
 
+		const infantryTargets = targetInfo["enemyInfantry"];
+		if (infantryTargets.length > 0) {
+			let closestIdx = 0;
+			let closestCyborg = getObject(infantryTargets[closestIdx].type, infantryTargets[closestIdx].player, infantryTargets[closestIdx].id);
+			let closestDistSq = distSq(closestCyborg.x, groupPosition.x, closestCyborg.y, groupPosition.y);
+
+			for (let i=1; i<infantryTargets.length; i++) {
+				const currCyborg = getObject(infantryTargets[i].type, infantryTargets[i].player, infantryTargets[i].id);
+				const currDistSq = distSq(currCyborg.x, groupPosition.x, currCyborg.y, groupPosition.y);
+				if (currDistSq < closestDistSq) {
+					closestDistSq = currDistSq;
+					closestIdx = i;
+				}
+			}
+
+			if (closestDistSq < EFFECTIVE_SQ_FS_RADIUS) {
+				output["fireSupportTarget"] = infantryTargets[closestIdx];
+			}
+		}
+
+		if (!defined(output["fireSupportTarget"])) {
+			if (backupFsTargets.length > 0) {
+				output["fireSupportTarget"] = backupFsTargets[0];
+			}
+		}
+
+		if (!defined(output["fireSupportTarget"])) {
+			output["fireSupportTarget"] = output["directFireTarget"];
+		}
+
+		// Determine ADA target based on weakest VTOL
+		let adaTargets = targetInfo["enemyAviation"];
+
+		if (adaTargets.length > 0) {
+			let lowestHealthIdx = undefined;
+			let lowestHealth = undefined;
+
+			for (let i=0; i<adaTargets.length; i++) {
+				const t = adaTargets[i];
+				const v = getObject(t.type, t.player, t.id);
+				if (distSq(v.x, groupPosition.x, v.y, groupPosition.y) > EFFECTIVE_SQ_FS_RADIUS) {		// uses the same FS RADIUS as fireSupport
+					continue;
+				}
+
+				if (!defined(lowestHealthIdx)) {
+					lowestHealthIdx = i;
+					lowestHealth = v.health;
+				} else {
+					if (v.health < lowestHealth) {
+						lowestHealthIdx = i;
+						lowestHealth = v.health;
+					}
+				}
+			}
+
+			if (defined(lowestHealthIdx)) {
+				output["adaTarget"] = adaTargets[lowestHealthIdx];
+			}
+		}		
+		
+		output["targetsInImmediateRadius"] = targetInfo["targetsInImmediateRadius"];
+
+		return output;
+	}
+
+	prioritiseAviationTargets(state, nearbyTargetCount, airRaidTargets, casTargets) {
+
+		let aviationTargets = [...airRaidTargets];
+
+		if (!this.oilDominance) {
+			if (nearbyTargetCount >= 3) {
+				aviationTargets.unshift(...casTargets);
+			}
+		}
+
+		// 	if (enemyBaseTargets["antiAirTargets"].length >= 2) {
+		// 		aviationTargets = [...enemyBaseTargets["antiAirTargets"], ...casTargets, ...enemyBaseTargets["economyTargets"], ...airRaidTargets];
+		// 	} else {
+		// 		aviationTargets = [...casTargets, ...enemyBaseTargets["economyTargets"], ...enemyBaseTargets["antiAirTargets"],  ...airRaidTargets];
+		// 	}
+		// }
+
 		return aviationTargets;
 	}
-	
+
 	runCombatOperations(state) {
 
 		if (!this.oilDominance) {
@@ -204,54 +285,50 @@ class CommandCenter {
 
 		const campaignStatus = this.getCampaignStatus();
 
-		intelligence.updateCurrTargets(state);
-
 		// GROUND FORCES
 		const mainForceLocation = groundForces.getForceMedianLocation();
-		let nearbyLandTargets = [];
+		let nearbyLandTargets = {};
 
 		const readyToAttack = campaignStatus === CAMPAIGN_STATUS.MAIN_ASSAULT || campaignStatus === CAMPAIGN_STATUS.STAGING;
 
 		let casTargets = [];
-		let nearbyEnemyUnitCount = 0;
+		let numTargetsInImmediateRadius = 0;
 
 		if (readyToAttack) {
 
 			// Get targets efficiently
-			nearbyLandTargets = intelligence.getLandTargetsAround({state: state, position: mainForceLocation, searchRadius: 20});
-			if (nearbyLandTargets.length === 0) {
-				nearbyLandTargets = intelligence.getAllTargets({state: state}); 	
-				// debug(`runCombatOperations(): used expensive getAllTargets @ ${getCurrGameTime()}, ${nearbyLandTargets.length}`);
-			}
+			nearbyLandTargets = intelligence.proposeTargetsInRadius({state: state, loc: mainForceLocation, searchRadius: 20, immediateRadius: 10});
 
+			// Prioritise & assign targets
 			const groundTargets = this.prioritiseGroundTargets(state, nearbyLandTargets, mainForceLocation);
 
-			// Ground attack; HACK: directly calls tactical level function
-			groundForceAttack({state: state, groundTargets: groundTargets["directFireTargets"], fireSupportTargets: groundTargets["fireSupportTargets"]});		
+			// Attack ground targets; HACK: directly calls tactical level function
+			groundForceAttack({
+				"state": state, 
+				"directFireTarget": groundTargets["directFireTarget"], 
+				"fireSupportTarget": groundTargets["fireSupportTarget"],
+				"adaTarget": groundTargets["adaTarget"]
+			});
 
-			nearbyEnemyUnitCount = groundTargets["nearbyEnemyUnitCount"];
+			// Extract further information for aviation missions
+			if (defined(groundTargets["casTargets"])) {
+				casTargets.push(...groundTargets["casTargets"]);
+			}
+			numTargetsInImmediateRadius = groundTargets["targetsInImmediateRadius"];
+
 		}
 
 		// AVIATION
-		let airRaidTargets = intelligence.getAirRaidTargets(state);
-		casTargets = intelligence.getCASTargets(mainForceLocation, nearbyLandTargets);
-
-		let enemyBaseTargets = {"antiAirTargets": [], "economyTargets": []};
-		if (casTargets.length === 0 && airRaidTargets.length === 0 && readyToAttack) {
-			// debug(`runCombatOperations(): used expensive getAllEnemyBaseTargets @ ${getCurrGameTime()}`);
-			// enemyBaseTargets = intelligence.getAllEnemyBaseTargets(state);		
-		}		
-		
-		const aviationTargets = this.prioritiseAviationTargets(state, nearbyEnemyUnitCount, airRaidTargets, casTargets, enemyBaseTargets);
+		let airRaidTargets = intelligence.getAirRaidTargets(state);		
+		const aviationTargets = this.prioritiseAviationTargets(state, numTargetsInImmediateRadius, airRaidTargets, casTargets);
 
 		const attackInGroup = true;
-		this.toc.assignAviationTargets(aviationTargets, attackInGroup, state);					
+		this.toc.assignAviationTargets(state, aviationTargets, attackInGroup);					
 
-		if (!this.oilDominance || enemyBaseTargets["antiAirTargets"].length >= 5) {
-			this.abortDangerousVTOLMissions(state, mainForceLocation, enemyBaseTargets["antiAirTargets"]);
-		}
+		// if (!this.oilDominance) {
+		// 	this.abortDangerousVTOLMissions(state, mainForceLocation, antiAirDefences);
+		// }
 	}
-
 
 	/////////////////////////////////////////////////// INTELLIGENCE ///////////////////////////////////////////////////
 
