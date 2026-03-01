@@ -226,9 +226,10 @@ if False:
 NEW TEST DATA (runC2 is split)
 """
 
-path1 = rf"{cwd()}\process_results\v4_perfdata\\" + rf"e464479_4timer_same_25g.log"
+# path1 = rf"{cwd()}\process_results\v4_perfdata\\" + rf"e464479_4timer_same_25g.log"
 # path2 = rf"{cwd()}\process_results\v4_perfdata\\" + rf"fd8ab67_4timer_37ms_25g.log"
-path2 = rf"{cwd()}\process_results\v4_perfdata\\" + rf"2167472,med.cobra,50g.log"
+path1 = rf"{cwd()}\process_results\v4_perfdata\\" + rf"2167472,med.cobra,50g.log"
+path2 = rf"{cwd()}\process_results\v4_perfdata\\" + rf"1df2117,hardins,1v2.log"
 
 if True:
     ########

@@ -228,10 +228,12 @@ def show_hard_cobra_results():
     show_stats(*get_stats(test_1), title=f"{commit1} (before)", figNum=2)                             
     show_stats(*get_stats(test_2), title=f"{commit2} (after)", legend=[commit1, commit2], figNum=3)     
 
-def show_insane_cobra_results():
+def show_insane_diff_results():
 
-    test_1 = getcwd() + rf"\process_results/v4/" + "5c757ab,ins,2v1" + ".txt"               # v4 dev: v3 skrush against 2x nexus @insane
-    test_2 = getcwd() + rf"\process_results/v4/" + "5c757ab,hardins,1v2" + ".txt"           # v4 dev: v3 skrush 1x hard, 1x insane nexus
+    # test_1 = getcwd() + rf"\process_results/v4/" + "5c757ab,ins,2v1" + ".txt"               # v4 dev: v3 skrush against 2x nexus @insane
+    
+    test_1 = getcwd() + rf"\process_results/v4/" + "5c757ab,hardins,1v2" + ".txt"           # v4 dev: v3 skrush 1x hard, 1x insane nexus        [39 / 50 wins]
+    test_2 = getcwd() + rf"\process_results/v4/" + "1df2117,hardins,1v2" + ".txt"           # v4 dev: v3 skrush 1x hard, 1x insane nexus, after perf optimisations [42 / 50 wins]
     
     commit1 = test_1.split(rf"v4/")[1].split(",")[0]
     commit2 = test_2.split(rf"v4/")[1].split(",")[0]
@@ -240,8 +242,9 @@ def show_insane_cobra_results():
     show_stats(*get_stats(test_2), title=f"{commit2} (newer)", legend=[commit1, commit2], figNum=3)    
 
 
-show_medium_cobra_results()
+# show_medium_cobra_results()
 # show_hard_cobra_results()
-# show_insane_cobra_results()
+show_insane_diff_results()
+
 import matplotlib.pyplot as plt
 plt.show()
