@@ -90,9 +90,10 @@ function runMissionManager() {
 	}
 }
 
+
+
 function setupFishBot() {
-	// This function is already queued with a player-specific delay, so adding a random timer period is 
-	// no longer necessary for the timers of parallel Fishbot instances to be desynchronised           
+	// This function queued with a player-specific delay          
 	const FISHBOT_DECISION_INTERVAL = 1000;
 	setTimer("runIntelligence", FISHBOT_DECISION_INTERVAL);
     setTimer("runC2", FISHBOT_DECISION_INTERVAL);

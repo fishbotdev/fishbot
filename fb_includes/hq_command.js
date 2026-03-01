@@ -221,7 +221,7 @@ class CommandCenter {
 			nearbyLandTargets = intelligence.getLandTargetsAround({state: state, position: mainForceLocation, searchRadius: 20});
 			if (nearbyLandTargets.length === 0) {
 				nearbyLandTargets = intelligence.getAllTargets({state: state}); 	
-				debug(`runCombatOperations(): used expensive getAllTargets @ ${getCurrGameTime()}, ${nearbyLandTargets.length}`);
+				// debug(`runCombatOperations(): used expensive getAllTargets @ ${getCurrGameTime()}, ${nearbyLandTargets.length}`);
 			}
 
 			const groundTargets = this.prioritiseGroundTargets(state, nearbyLandTargets, mainForceLocation);
