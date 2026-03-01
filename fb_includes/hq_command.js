@@ -218,16 +218,16 @@ class CommandCenter {
 		if (readyToAttack) {
 
 			// Get targets efficiently
-			nearbyLandTargets = intelligence.getLandTargetsAround({state: state, position: mainForceLocation, searchRadius: 15});
+			nearbyLandTargets = intelligence.getLandTargetsAround({state: state, position: mainForceLocation, searchRadius: 20});
 			if (nearbyLandTargets.length === 0) {
-				// debug(`runCombatOperations(): used expensive getAllTargets @ ${getCurrGameTime()}`);
-				nearbyLandTargets = intelligence.getAllTargets({state: state}) 	
+				nearbyLandTargets = intelligence.getAllTargets({state: state}); 	
+				debug(`runCombatOperations(): used expensive getAllTargets @ ${getCurrGameTime()}, ${nearbyLandTargets.length}`);
 			}
 
 			const groundTargets = this.prioritiseGroundTargets(state, nearbyLandTargets, mainForceLocation);
 
 			// Ground attack; HACK: directly calls tactical level function
-			groundForceAttack({state: state, groundTargets: groundTargets["directFireTargets"], fireSupportTargets: groundTargets["fireSupportTargets"]});		
+			profile("groundForceAttack", {state: state, groundTargets: groundTargets["directFireTargets"], fireSupportTargets: groundTargets["fireSupportTargets"]});		
 
 			nearbyEnemyUnitCount = groundTargets["nearbyEnemyUnitCount"];
 		}

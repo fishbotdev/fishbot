@@ -134,7 +134,7 @@ function groundForceAttack({state, groundTargets, fireSupportTargets}) {
 	let infantryReserve = state.g.enumGroup(DIVISION.INFANTRY_RESERVE);
 	let fireSupportReserve = state.g.enumGroup(DIVISION.FIRE_SUPPORT_RESERVE);
 	let airDefenceArtilleryReserve = state.g.enumGroup(DIVISION.AIR_DEFENCE_RESERVE);
-	// debug('land unit lengths', generalReserve.length, infantryReserve.length, fireSupportReserve.length, groundTargets.length, fireSupportTargets.length);
+	// debug('land unit lengths', generalReserve.length, infantryReserve.length, fireSupportReserve.length, groundTargets.length, fireSupportTargets.length, gameTime);
 
 	if (generalReserve.length === 0) {
 		return;
