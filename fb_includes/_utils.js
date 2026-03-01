@@ -152,16 +152,22 @@ function enumLivingPlayers() {
 
 	for (let playerID=0; playerID<maxPlayers; playerID++) {
 
-		if (countDroid(DROID_ANY, playerID) > 0) {
+		let factoryExists = false;
+		FACTORY_ID.forEach(factoryID => {
+			if (countStruct(factoryID, playerID) > 0) {
+				factoryExists = true;
+				return;
+			}
+		});
+
+		if (factoryExists) {
 			livingPlayerIDs.push(playerID);
 			continue;
 		}
 
-		for (let j=0; j<FACTORY_ID.length; j++) {
-			if (countStruct(FACTORY_ID[j], playerID) > 0) {
-				livingPlayerIDs.push(playerID);
-				break;
-			}
+		if (countDroid(DROID_ANY, playerID) > 0) {
+			livingPlayerIDs.push(playerID);
+			continue;
 		}
 	}
 
