@@ -186,8 +186,10 @@ def show_medium_cobra_results():
     # test_1 = getcwd() + rf"\process_results/v3/" + "f8094ef,medium" + ".txt"              # v3 dev: high prio oil cap optim [95 / 100 wins]
     # test_1 = getcwd() + rf"\process_results/v3/" + "68275e8,medium,463" + ".txt"            # v3 dev: [100 / 100 wins]
     # test_1 = getcwd() + rf"\process_results/v3/" + "29ceeb0,med,463" + ".txt"               # v3 dev: [143 / 150 wins]
-    test_1 = getcwd() + rf"\process_results/v4/" + "a2e13b4,med,cobra_v3_release" + ".txt"    # v3 release: retesting [98 / 100 wins]
-    test_2 = getcwd() + rf"\process_results/v4/" + "1e3edc5,med,cobra" + ".txt"               # v4 dev: after perf optimisations [96 / 100]
+    # test_1 = getcwd() + rf"\process_results/v4/" + "a2e13b4,med,cobra_v3_release" + ".txt"    # v3 release: retesting [98 / 100 wins]
+    # test_1 = getcwd() + rf"\process_results/v4/" + "1e3edc5,med,cobra" + ".txt"               # v4 dev: before perf optimisations [96 / 100 won]
+    test_1 = getcwd() + rf"\process_results/v4/" + "0c6d165,med,cobra,100g" + ".txt"               # perf: removed getAllBaseTargets [95 / 100 won]
+    test_2 = getcwd() + rf"\process_results/v4/" + "2167472,med,cobra,50g" + ".txt"               # perf: before merging performance-improvements [49 / 49 won]
     
     commit1 = test_1.split(rf"v4/")[1].split(",")[0]
     commit2 = test_2.split(rf"v4/")[1].split(",")[0]
@@ -201,7 +203,7 @@ def show_hard_cobra_results():
     # file_path_test1_v2 = getcwd() + rf"\process_results/v3/test3_10_v3_1ce1841.txt"       # v3-dev: 4 / 100, basic rush strategy
     # file_path_test1_v2 = getcwd() + rf"\process_results/v3/test3_13_v3_c2f4e98_hard.txt"  # v3-dev: 1 / 100, after cyborg raiding + vtol optim
     # test_1 = getcwd() + rf"\process_results/v3/deadf9f,hard,461.txt"                      # v3 dev: 
-    test_1 = getcwd() + rf"\process_results/v3/f761908,hard,462.txt"                      # v3 dev: initial update to 4.6.2 
+    # test_1 = getcwd() + rf"\process_results/v3/f761908,hard,462.txt"                      # v3 dev: initial update to 4.6.2 
     # test_1 = getcwd() + rf"\process_results/v3/" + "9ed8b2e,hard,462" + ".txt"              # v3 dev: 4.6.2, optimised truck usage, research, safer fire support, raiding in main assault
     # test_1 = getcwd() + rf"\process_results/v3/" + "a5dd47e,hard,462" + ".txt"              # v3 dev: 4.6.2, cobra teamplay removed, 2.5wks later, sector system + general constr + vtol updates
     # test_1 = getcwd() + rf"\process_results/v3/" + "88bc305,hard,462" + ".txt"              # v3 dev: 4.6.2, 
@@ -217,10 +219,11 @@ def show_hard_cobra_results():
     # test_1 = getcwd() + rf"\process_results/v3/" + "6f04840,hard" + ".txt"              # v3 dev: 4.6.2, 
     # test_1 = getcwd() + rf"\process_results/v3/" + "5c6703a,hard" + ".txt"              # v3 dev: 4.6.2, 
     # test_1 = getcwd() + rf"\process_results/v3/" + "68275e8,hard" + ".txt"              # v3 dev: 4.6.2, [40/50 wins] optimised oil cap, optimised cyborgs and research
-    test_2 = getcwd() + rf"\process_results/v3/" + "29ceeb0,hard,463" + ".txt"              # v3 dev: 4.6.3, [63/86 wins] long term test
+    test_1 = getcwd() + rf"\process_results/v3/" + "29ceeb0,hard,463" + ".txt"              # v3 dev: 4.6.3, [63/86 wins] long term test
+    test_2 = getcwd() + rf"\process_results/v4/" + "ca33b28,hard,cobra,100g" + ".txt"              # v4 dev: 4.6.3, [55 / 100 wins] regression after perf-optimisation
 
     commit1 = test_1.split(rf"v3/")[1].split(",")[0]
-    commit2 = test_2.split(rf"v3/")[1].split(",")[0]
+    commit2 = test_2.split(rf"v4/")[1].split(",")[0]
 
     show_stats(*get_stats(test_1), title=f"{commit1} (before)", figNum=2)                             
     show_stats(*get_stats(test_2), title=f"{commit2} (after)", legend=[commit1, commit2], figNum=3)     

@@ -15,24 +15,24 @@
 	If not, see <https://www.gnu.org/licenses/>.
 */
 
-/*
- * This file includes event definitions only.
- *
- */
 
 function eventDroidBuilt(droid, structure) {	
+	// This is the only event handler that FishBot uses (avoids having to perform enumDroid continuously)
 	supply.assignNewDroidIntoGroup(droid);	
 }
 
+/*
 function eventStructureReady(structure) {
 	// does nothing for now
 }
 
 function eventStructureBuilt(structure) {
+	// this is regularly called if defined		
 	// does nothing for now
 }
 
 function eventAttacked(victim, attacker) {
+	// this is regularly called if defined
 	// does nothing for now
 }
 
@@ -53,18 +53,55 @@ function eventBeaconRemoved(from, to) {
 }
 
 function eventDestroyed(object) {
+	// this is regularly called if defined
 	// does nothing for now
+}
+*/
+
+function runGameEndedWatchdog() {
+	const gameIsFinished = gameHasEnded();
+
+	if (gameIsFinished && state.botIsActive) {
+		debug(`FishBot ${me}: gameHasEnded, stopping all function`);
+		state.botIsActive = false;
+	}
+
+	if (!gameIsFinished && !state.botIsActive) {
+		debug(`FishBot ${me}: is alive, resuming function`);
+		state.botIsActive = true;
+	}
+}
+
+function runIntelligence() {
+	hq.runIntelligence(state)
 }
 
 function runC2() {
-	hq.runC2();
+	hq.runC2(state);
+}
+
+function runLogistics() {
+	hq.runLogistics(state);
+}
+
+function runMissionManager() {
+	hq.runMissionManager(state);
+}
+
+function scheduleCoreFunctions() {
+	if (state.botIsActive) {
+		const OFFSET = 0;	// ms
+		const CORE_FUNCTION_NAMES = ["runIntelligence", "runC2", "runLogistics", "runMissionManager"];
+		CORE_FUNCTION_NAMES.forEach((f, idx) => queue(f, idx * OFFSET))
+	}
 }
 
 function setupFishBot() {
-	// This function is already queued with a player-specific delay, so adding a random timer period is 
-	// no longer necessary for the timers of parallel Fishbot instances to be desynchronised           
+	// This function queued with a player-specific delay          
 	const FISHBOT_DECISION_INTERVAL = 1000;
-    setTimer("runC2", FISHBOT_DECISION_INTERVAL);      
+	setTimer("scheduleCoreFunctions", FISHBOT_DECISION_INTERVAL);
+
+	setTimer("runGameEndedWatchdog", 60000);
 }
 
 function eventStartLevel() {

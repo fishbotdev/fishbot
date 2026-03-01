@@ -98,12 +98,6 @@ function defined(variable) {
 	structure enumeration helpers
 */
 
-function countStructList(list, player) {
-	if (!defined(player))
-		player = me;
-	return list.reduce((summ, new_value) => (summ + countStruct(new_value, player)), 0);
-}
-
 function getIdleStructuresOfType({structureID, playerID=me}) {
 	// Default player is me
 	const structuresOfType = enumStruct(playerID, structureID);
@@ -151,33 +145,60 @@ function isEnemy(playerID) {
 }
 
 function enumLivingPlayers() {
-	// const enemyUnits = enumDroid(i, DROID_ANY, true).filter(droid => droid.isVTOL !== true);		
-	// const enemyStructures = enumStruct(i, DROID_ANY, true);				
 
-	let baseStructures = [];
-	for (const [key, value] of Object.entries(BASE_STRUCTURES)) {
-		baseStructures.push(value.id);
-	}
+	let FACTORY_ID = [STRUCTURES["Factory"].id, STRUCTURES["Cyborg Factory"].id, STRUCTURES["VTOL Factory"].id];
 
-	let livingPlayers = [];
-	for (let i = 0; i < maxPlayers; ++i) {
-		if (countStructList(baseStructures, i) > 0) {
-			livingPlayers.push(i);
+	let livingPlayerIDs = [];
+
+	for (let playerID=0; playerID<maxPlayers; playerID++) {
+
+		let factoryExists = false;
+		FACTORY_ID.forEach(factoryID => {
+			if (countStruct(factoryID, playerID) > 0) {
+				factoryExists = true;
+				return;
+			}
+		});
+
+		if (factoryExists) {
+			livingPlayerIDs.push(playerID);
 			continue;
 		}
-		if (enumDroid(i).length > 0) {
-			livingPlayers.push(i);
+
+		if (countDroid(DROID_ANY, playerID) > 0) {
+			livingPlayerIDs.push(playerID);
+			continue;
 		}
 	}
 
-	return livingPlayers;
+	if (false) {
+		debug(`livingPlayerIDs:`);
+		livingPlayerIDs.forEach(p => debug(`	${p}`));
+	}
+
+	return livingPlayerIDs;
 }
 
 function gameHasEnded() {
-	if (enumLivingPlayers().filter(isEnemy).length === 0)
+	const myDroids = enumDroid();
+
+	if (myDroids.length === 0) {
+		const myStructures = enumStruct();
+		if (myStructures.length === 0) {
+			return true;
+		}
+
+		const FACTORY_TYPES = [FACTORY, VTOL_FACTORY, CYBORG_FACTORY];
+		if (myStructures.filter(s => FACTORY_TYPES.includes(s.stattype)).length === 0) {
+			return true;
+		}
+	}
+
+	if (enumLivingPlayers().filter(isEnemy).length === 0) {
 		return true;
-	else
-		return false;
+	}
+	
+	return false;
 }
 
 /*

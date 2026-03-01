@@ -219,11 +219,10 @@ class armyIntelligence {
 	}
 
 	getAirRaidTargets(state) {
-		const SEARCH_RADIUS = 8;
 
-		let lowPriorityTargets = [];
-		let medPriorityTargets = [];
-		let highPriorityTargets = [];
+		const SEARCH_RADIUS = 7;
+
+		let lowPriorityTargets = [], medPriorityTargets = [], highPriorityTargets = [];
 
 		for (let i=0; i<state.sectors.length; i++) {
 			const currSector = state.sectors[i];
@@ -232,67 +231,98 @@ class armyIntelligence {
 				continue;
 			}
 
+			// For each derrick, find all nearby targets. Skip if derricks are assumed close together
 			let units = [], structures = [], defences = [];
+			let NUM_SEARCH_ITERATIONS = currSector.derricks.length;
+			if (NUM_SEARCH_ITERATIONS >= 4) {
+				NUM_SEARCH_ITERATIONS = 1;		// usually this means the derricks are close together (to be verified)
+			}
+			for (let j=0; j<NUM_SEARCH_ITERATIONS; j++) {
 
-			for (let i=0; i<currSector.derricks.length; i++) {
+				const nearbyTargets = enumRange(currSector.derricks[j].x, currSector.derricks[j].y, SEARCH_RADIUS, ENEMIES, false);
 
-				const nearbyTargets = enumRange(currSector.derricks[i].x, currSector.derricks[i].y, SEARCH_RADIUS, ENEMIES, false);
+				for (let k=0; k<nearbyTargets.length; k++) {
+					const t = nearbyTargets[k];
 
-				const nearbyUnits = nearbyTargets.filter(obj => obj.type === DROID && !isVTOL(obj));
-				const nearbyStructures = nearbyTargets.filter(obj => obj.type === STRUCTURE && obj.stattype !== RESOURCE_EXTRACTOR);
-				const nearbyDefences = nearbyTargets.filter(obj => (obj.type === STRUCTURE && obj.stattype === DEFENSE && obj.status === BUILT));
+					// if (t.type === DROID && t.isVTOL !== true) {
+						// units.push(this.#createNewTarget({targetObject: t}));
+						// continue;
+					// } else 
+					if (t.type === STRUCTURE) {
+						if (t.stattype === DEFENSE && t.status === BUILT) {
+							defences.push(this.#createNewTarget({targetObject: t}));
+							continue;
+						}
 
-				units.push(...nearbyUnits);
-				structures.push(...nearbyStructures);
-				defences.push(...nearbyDefences);
+						// if (t.stattype !== RESOURCE_EXTRACTOR) {
+						// 	structures.push(this.#createNewTarget({targetObject: t}));
+						// 	continue;
+						// }
+					}
+				}
 			}
 
 			if (currSector.derricks.length >= 4) {
 				highPriorityTargets.push(...defences);
-			} else if (structures.length <= currSector.derricks.length) {	// at most, on average more than 1 other structure/derrick
-				medPriorityTargets.push(...defences);
+			} else if (defences.length <= currSector.derricks.length) {	
+				medPriorityTargets.push(...defences); 	// "low hanging fruit"
 			} else {
-				lowPriorityTargets.push(...defences);		// removed derricks which are easily reinforced; against an insane AI it doesn't matter if the defence is continually destroyed since they have effectively infinite power
+				lowPriorityTargets.push(...defences);		
 			}
+			
 		}
 
-		medPriorityTargets.sort((a,b) => 
-			distSq(a.x, baseLocation.x, a.y, baseLocation.y) - distSq(b.x, baseLocation.x, b.y, baseLocation.y));
-		lowPriorityTargets.sort((a,b) => 
-			distSq(a.x, baseLocation.x, a.y, baseLocation.y) - distSq(b.x, baseLocation.x, b.y, baseLocation.y));
-
-		const targetObjectList = [...highPriorityTargets, ...medPriorityTargets, ...lowPriorityTargets];
-
-		let airRaidTargetList = [];
-		targetObjectList.forEach(obj => airRaidTargetList.push(this.#createNewTarget({targetObject: obj})));
+		const airRaidTargetList = [...highPriorityTargets, ...medPriorityTargets, ...lowPriorityTargets];
 
 		return airRaidTargetList;
 	}
 
-	getCASTargets({location}) {
-		const TARGET_RADIUS = 30;
-		let targetObjectList = enumRange(location.x, location.y, TARGET_RADIUS, ENEMIES, false);
+	getCASTargets(location, nearbyLandTargets) {
 		
-		const units = targetObjectList.filter(o => o.type === DROID && o.isVTOL !== true);
-		const adaFortifications = targetObjectList.filter(o => o.type === STRUCTURE && isAntiAirDefense(o));
+		let adaFortifications = [], adaGroundUnits = [], indirectFireFortifications = [], indirectFireGroundUnits = [], regularGroundUnits = [];
 
-		const groundPropulsions = [PROPULSIONS["Wheels"].id, PROPULSIONS["Half-tracks"].id, PROPULSIONS["Tracks"].id, PROPULSIONS["Hover"].id];
+		const GROUND_PROPULSION_IDS = [PROPULSIONS["Wheels"].id, PROPULSIONS["Half-tracks"].id, PROPULSIONS["Tracks"].id, PROPULSIONS["Hover"].id];
 
-		const groundVehicles = units.filter(droid => 
-			groundPropulsions.includes(droid.propulsion)).
-			sort((a, b) => distSq(a.x, location.x, a.y, location.y) - distSq(b.x, location.x, b.y, location.y));
-		
-		const adaGroundUnits = groundVehicles.filter(droid => isAntiAirDefense(droid));
-		const indirectGroundUnits = groundVehicles.filter(droid => droid.hasIndirect === true);
-		const regularGroundUnits = groundVehicles.filter(droid => !adaGroundUnits.includes(droid));
+		for (let i=0; i<nearbyLandTargets.length; i++) {
+			const currLandTarget = nearbyLandTargets[i];
 
-		// const otherUnits = units.filter(droid => !groundVehicles.includes(droid));
+			if (currLandTarget.type === STRUCTURE) {
+				if (currLandTarget.hasIndirect === true) {
+					indirectFireFortifications.push(this.#createNewTarget({targetObject: currLandTarget}));
+					continue;
+				}
 
-		const objList = [...adaGroundUnits, ...adaFortifications, ...indirectGroundUnits, ...regularGroundUnits];
+				if (isAntiAirDefense(currLandTarget)) {
+					adaFortifications.push(this.#createNewTarget({targetObject: currLandTarget}));
+					continue;
+				}
+			} else if (currLandTarget.type === DROID) {
+				if (!GROUND_PROPULSION_IDS.includes(currLandTarget.propulsion)) {
+					continue;		// ignores cyborgs
+				}
 
-		let overallTargetList = [];
-		objList.forEach(droid => overallTargetList.push(this.#createNewTarget({targetObject: droid})));
-		return overallTargetList;
+				if (currLandTarget.hasIndirect === true) {
+					indirectFireGroundUnits.push(this.#createNewTarget({targetObject: currLandTarget}));
+					continue;
+				}
+
+				if (isAntiAirDefense(currLandTarget)) {
+					adaGroundUnits.push(this.#createNewTarget({targetObject: currLandTarget}));
+					continue;
+				}
+
+				if (currLandTarget.droidType === DROID_WEAPON) {
+					regularGroundUnits.unshift(this.#createNewTarget({targetObject: currLandTarget}));
+					continue;
+				}
+
+				regularGroundUnits.push(this.#createNewTarget({targetObject: currLandTarget}));
+			}
+		}
+
+		const prioritisedTargetList = [...adaGroundUnits, ...adaFortifications, ...indirectFireGroundUnits, ...regularGroundUnits, ...indirectFireFortifications];
+
+		return prioritisedTargetList;
 	}
 
 	getAllEnemyBaseTargets(state) {
@@ -346,7 +376,7 @@ class armyIntelligence {
 		return {"antiAirTargets": aaTargets, "economyTargets": economyTargets};
 	}
 	
-	getLandTargetsAround({state, position, searchRadius=20}) {
+	getLandTargetsAround({state, position, searchRadius}) {
 
 		let targetObjects = enumRange(position.x, position.y, searchRadius, ENEMIES, false);
 
@@ -375,9 +405,6 @@ class armyIntelligence {
 			landTargets.push(...enemyLandUnits, ...enemyStructures);
 			airTargets.push(...enemyVTOLs);
 		});
-
-		// this is expensive 
-		landTargets.sort((a,b) => distSq(a.x, baseLocation.x, a.y, baseLocation.y) - distSq(b.x, baseLocation.x, b.y, baseLocation.y));		
 
 		return [...landTargets, ...airTargets];
 	}

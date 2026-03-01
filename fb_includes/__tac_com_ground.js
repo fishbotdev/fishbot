@@ -93,18 +93,26 @@ function findClosestDroidToTarget(unitGroup, currGroundTarget) {
 		return undefined;
 	}
 
-	let distances = [];
-	for (let i=0; i<unitGroup.length; i++) {
-		let currDroid = unitGroup[i];
-		const dist = distance(currDroid, currGroundTarget);
-		distances = distances.concat([[dist, i]]);
-	}
-	distances.sort((first, second) => first[0] - second[0]);
-	// distances.forEach((d) => debug('	', d));
+	const LOWER_THRESHOLD = 6 ** 2;
 
-	let smallestIndex = distances[0][1];
-	// debug('smallest index', smallestIndex);
-	return unitGroup[smallestIndex];
+	let closestDroidIdx = 0;
+	let closestDroidSquaredDist = distSq(unitGroup[0].x, currGroundTarget.x, unitGroup[0].y, currGroundTarget.y);
+
+	for (let i=1; i<unitGroup.length; i++) {
+
+		const squaredDist = distSq(unitGroup[i].x, currGroundTarget.x, unitGroup[i].y, currGroundTarget.y);
+
+		if (squaredDist < LOWER_THRESHOLD) {
+			return unitGroup[i];
+		}
+
+		if (squaredDist < closestDroidSquaredDist) {
+			closestDroidSquaredDist = squaredDist;
+			closestDroidIdx = i;
+		}
+	}
+
+	return unitGroup[closestDroidIdx];
 }
 
 
@@ -116,13 +124,17 @@ let currGroundAssaultTarget = undefined;           // eventually moved inside cl
 let currFireSupportTarget = undefined;
 let closestDroidToTarget = undefined;       // eventually moved inside class (needs to remember this state)
 
+function _distSqToClosestDroid(droid) {
+	return distSq(droid.x, closestDroidToTarget.x, droid.y, closestDroidToTarget.y);
+}
+
 function groundForceAttack({state, groundTargets, fireSupportTargets}) {
 
 	let generalReserve = state.g.enumGroup(DIVISION.GENERAL_RESERVE);
 	let infantryReserve = state.g.enumGroup(DIVISION.INFANTRY_RESERVE);
 	let fireSupportReserve = state.g.enumGroup(DIVISION.FIRE_SUPPORT_RESERVE);
 	let airDefenceArtilleryReserve = state.g.enumGroup(DIVISION.AIR_DEFENCE_RESERVE);
-	// debug('land unit lengths', generalReserve.length, infantryReserve.length, fireSupportReserve.length, groundTargets.length, fireSupportTargets.length);
+	// debug('land unit lengths', generalReserve.length, infantryReserve.length, fireSupportReserve.length, groundTargets.length, fireSupportTargets.length, gameTime);
 
 	if (generalReserve.length === 0) {
 		return;
@@ -146,9 +158,14 @@ function groundForceAttack({state, groundTargets, fireSupportTargets}) {
 	}
 
 	if (defined(currGroundAssaultTarget)) {
-		// debug('both ground assault, fs targets defined', currGroundAssaultTarget.name, currFireSupportTarget.name);
-		// allow all forces to coalesce before attacking
+
 		closestDroidToTarget = findClosestDroidToTarget(generalReserve, currGroundAssaultTarget);
+
+		const randomX = Math.floor(Math.random() * 3) - 1;
+
+		if (!defined(closestDroidToTarget)) {
+			return;
+		}
 
 		if (DEBUG_MODE_ON) {
 			hackMarkTiles();		// clear all marked tiles
@@ -156,11 +173,8 @@ function groundForceAttack({state, groundTargets, fireSupportTargets}) {
 			hackMarkTiles(currFireSupportTarget.x, currFireSupportTarget.y);
 		}
             
-		let leader = generalReserve[0];
-		attackTarget(leader, currGroundAssaultTarget);
-
 		// MAIN ASSAULT UNITS
-		for (let i=1; i<generalReserve.length; i++) {
+		for (let i=0; i<generalReserve.length; i++) {
 			let droid = generalReserve[i];
 
 			/*
@@ -177,7 +191,7 @@ function groundForceAttack({state, groundTargets, fireSupportTargets}) {
 			}
 			*/
 
-			if (distance(droid, closestDroidToTarget) < 6) {
+			if (_distSqToClosestDroid(droid) < 6 ** 2) {
 				attackTarget(droid, currGroundAssaultTarget);
 			} else {
 				orderDroidLoc(droid, DORDER_MOVE, closestDroidToTarget.x, closestDroidToTarget.y);
@@ -187,7 +201,7 @@ function groundForceAttack({state, groundTargets, fireSupportTargets}) {
 		// CYBORG (INFANTRY) UNITS
 		for (let i=0; i<infantryReserve.length; ++i) {
 			let droid = infantryReserve[i];
-			if (distance(droid, closestDroidToTarget) <= 4) {
+			if (_distSqToClosestDroid(droid) <= 4 ** 2) {
 				attackTarget(droid, currGroundAssaultTarget);
 			} else {
 				orderDroidLoc(droid, DORDER_MOVE, closestDroidToTarget.x, closestDroidToTarget.y);
@@ -196,29 +210,28 @@ function groundForceAttack({state, groundTargets, fireSupportTargets}) {
 
 		// ADA UNITS
 		airDefenceArtilleryReserve.forEach((droid) => {
-			if (distance(droid, closestDroidToTarget) > 7) {
+			if (_distSqToClosestDroid(droid) > 5 ** 2) {
 				orderDroidLoc(droid, DORDER_MOVE, closestDroidToTarget.x, closestDroidToTarget.y);
 			} else {
-				const randomX = Math.floor(Math.random() * 3) - 1;
-				orderDroidLoc(droid, DORDER_PATROL, droid.x + randomX, droid.y);
+				orderDroidLoc(droid, DORDER_MOVE, droid.x + randomX, droid.y);
 			}
 		});
 		
 		// Hack: Sensor units
 		const sensorUnits = enumDroid(me, DROID_SENSOR);		// these have not been added to the grouping system yet!
 		sensorUnits.forEach((droid) => {
-			if (distance(droid, closestDroidToTarget) > 5) {
+			if (_distSqToClosestDroid(droid) > 5 ** 2) {
 				orderDroidLoc(droid, DORDER_MOVE, closestDroidToTarget.x, closestDroidToTarget.y);
 			} else {
-				const randomX = Math.floor(Math.random() * 3) - 1;
-				orderDroidLoc(droid, DORDER_PATROL, droid.x + randomX, droid.y);
+				orderDroidLoc(droid, DORDER_MOVE, droid.x + randomX, droid.y);
 			}
 		});
 
 		// FIRE SUPPORT UNITS
 		fireSupportReserve.forEach((droid) => {
-			if (distance(droid, currGroundAssaultTarget) < distance(closestDroidToTarget, currGroundAssaultTarget) ||
-				distance(droid, currGroundAssaultTarget) <= 7) {
+			if (distSq(droid.x, currGroundAssaultTarget.x, droid.y, currGroundAssaultTarget.y) < _distSqToClosestDroid(currGroundAssaultTarget) || 
+				distSq(droid.x, currGroundAssaultTarget.x, droid.y, currGroundAssaultTarget.y) <= 7 ** 2) 
+			{
 				// Fire support units should fall back if they find themselves on the front line
 				orderDroidLoc(droid, DORDER_MOVE, baseLocation.x, baseLocation.y);
 			} else {

@@ -18,7 +18,6 @@
 class CommandCenter {
 
 	constructor() {
-		// Campaign
 		this.campaignStatus = CAMPAIGN_STATUS.BUILDUP;	
 		
 		this.toc = new TacticalOperationsCenter();
@@ -26,7 +25,7 @@ class CommandCenter {
 		this.oilDominance = false;
 		this.OIL_DOMINANCE_PERCENTAGE = 55;
 
-		this.RECON_COOLDOWN_TIME = 1900;		// this number depends on FishBot's ticks, FishBot need to perform a full number of cycles
+		this.RECON_COOLDOWN_TIME = 1900;		// this number depends on FishBot's ticks, if we want recon to be conducted every 2 * DECISION_INTERVAL = 2000 ms then we need to set a number smaller than 2000 
 		this.lastConductedRecon = -2 * this.RECON_COOLDOWN_TIME;
 	}
 
@@ -101,13 +100,13 @@ class CommandCenter {
 	}
 
 	/////////////////////////////////////////////////// COMBAT OPERATIONS ///////////////////////////////////////////////////
-	prioritiseGroundCampaignTargets(state, objectList, groupPosition) {
+	prioritiseGroundTargets(state, objectList, groupPosition) {
+
+		let output = {"fireSupportTargets": [], "directFireTargets": [], "nearbyEnemyUnitCount": 0};
 
 		if (objectList.length === 0) {
-			return [];
+			return output;
 		}
-
-		let groundTargetObjects = [];
 
 		const NEARBY_RANGE = 10;
 		let nearbyObjects = objectList.filter(obj => distSq(obj.x, groupPosition.x, obj.y, groupPosition.y) <= NEARBY_RANGE ** 2);
@@ -115,37 +114,10 @@ class CommandCenter {
 		// Sort nearest objects by closest to furthest
 		nearbyObjects.sort((a, b) => distSq(a.x, groupPosition.x, a.y, groupPosition.y) - distSq(b.x, groupPosition.x, b.y, groupPosition.y));
 
-		groundTargetObjects.push(...nearbyObjects);
+		output["nearbyEnemyUnitCount"] += nearbyObjects.length;
+		output["directFireTargets"].push(...nearbyObjects);
 
-		// Lazily evaluate far objects
-		if (nearbyObjects.length <= 3) {
-			let farObjects = objectList.filter(obj => !nearbyObjects.includes(obj));
-			farObjects.sort((a, b) => distSq(a.x, groupPosition.x, a.y, groupPosition.y) - distSq(b.x, groupPosition.x, b.y, groupPosition.y));	
-			groundTargetObjects.push(...farObjects);
-		}
-
-		if (false) { 
-			debug(``);
-			const nearestTargets = objectList.slice(0, 3);
-			nearestTargets.forEach(t => debug(`	target: ${t.obj.name} - ${t.obj.x} ${t.obj.y}`));
-		}
-
-		return groundTargetObjects;
-	}
-
-	prioritiseLandIndirectFires(state, objectList, groupPosition) {
-		if (objectList.length === 0) {
-			return [];
-		}
-
-		// TODO: these 4 lines are copied from above, can combine the two functions to save computation
-		const NEARBY_RANGE = 10;
-		let nearbyObjects = objectList.filter(obj => distSq(obj.x, groupPosition.x, obj.y, groupPosition.y) <= NEARBY_RANGE ** 2);
-
-		// Sort nearest objects by closest to furthest
-		nearbyObjects.sort((a, b) => distSq(a.x, groupPosition.x, a.y, groupPosition.y) - distSq(b.x, groupPosition.x, b.y, groupPosition.y));
-
-		// Prioritise indirect fires, air defences, cyborgs, then the rest
+		// FIRE SUPPORT TARGETS
 		const nearbyCyborgs = nearbyObjects.filter(o => o.droidType === DROID_CYBORG);
 		const nearbyIndirectFires = nearbyObjects.filter(o => o.hasIndirect === true);
 		const nearbyAirDefences = nearbyObjects.filter(o => isAntiAirDefense(o));
@@ -157,9 +129,16 @@ class CommandCenter {
 		const ECONOMY_STRUCTURES = [FACTORY, VTOL_FACTORY, CYBORG_FACTORY, RESOURCE_EXTRACTOR];	
 		const economyTargets = nearbyObjects.filter(o => ECONOMY_STRUCTURES.includes(o.stattype));
 
-		const fireSupportTargets = [...nearbyCyborgs, ...nearbyIndirectFires, ...nearbyAirDefences, ...nearbyStaticDefences, economyTargets];
+		output["fireSupportTargets"].push(...nearbyCyborgs, ...nearbyIndirectFires, ...nearbyAirDefences, ...nearbyStaticDefences, ...economyTargets);
 
-		return fireSupportTargets;
+		// Lazily evaluate far objects
+		if (nearbyObjects.length <= 3) {
+			let farObjects = objectList.filter(obj => !nearbyObjects.includes(obj));
+			farObjects.sort((a, b) => distSq(a.x, groupPosition.x, a.y, groupPosition.y) - distSq(b.x, groupPosition.x, b.y, groupPosition.y));	
+			output["directFireTargets"].push(...farObjects);
+		}
+
+		return output;
 	}
 
 	abortDangerousVTOLMissions(state, mainForceLocation, antiAirDefences) {
@@ -196,15 +175,11 @@ class CommandCenter {
 		}
 	}
 
-	prioritiseAviationTargets(state, mainForceLocation, airRaidTargets, casTargets, enemyBaseTargets) {
-		let aviationTargets = [];
+	prioritiseAviationTargets(state, nearbyEnemyUnitCount, airRaidTargets, casTargets, enemyBaseTargets) {
+		let aviationTargets = [...airRaidTargets];
 
 		if (!this.oilDominance || enemyBaseTargets["antiAirTargets"].length >= 4) {
-
-			const nearbyEnemyTargetCount = enumRange(mainForceLocation.x, mainForceLocation.y, 12, ENEMIES, true).length;
-
-			aviationTargets = [...airRaidTargets];
-			if (airRaidTargets.length === 0 || nearbyEnemyTargetCount >= 2) {
+			if (airRaidTargets.length === 0 || nearbyEnemyUnitCount >= 2) {
 				aviationTargets = [...casTargets, ...airRaidTargets];
 			}
 		} else {
@@ -233,43 +208,41 @@ class CommandCenter {
 
 		// GROUND FORCES
 		const mainForceLocation = groundForces.getForceMedianLocation();
+		let nearbyLandTargets = [];
 
 		const readyToAttack = campaignStatus === CAMPAIGN_STATUS.MAIN_ASSAULT || campaignStatus === CAMPAIGN_STATUS.STAGING;
+
+		let casTargets = [];
+		let nearbyEnemyUnitCount = 0;
 
 		if (readyToAttack) {
 
 			// Get targets efficiently
-
-			let nearbyLandTargets = intelligence.getLandTargetsAround({state: state, position: mainForceLocation, searchRadius: 20});
-
+			nearbyLandTargets = intelligence.getLandTargetsAround({state: state, position: mainForceLocation, searchRadius: 20});
 			if (nearbyLandTargets.length === 0) {
-				nearbyLandTargets = intelligence.getLandTargetsAround({state: state, position: mainForceLocation, searchRadius: 30});
+				nearbyLandTargets = intelligence.getAllTargets({state: state}); 	
+				// debug(`runCombatOperations(): used expensive getAllTargets @ ${getCurrGameTime()}, ${nearbyLandTargets.length}`);
 			}
 
-			if (nearbyLandTargets.length === 0) {
-				debug(`runCombatOperations(): used expensive getAllTargets @ ${getCurrGameTime()}`);
-				nearbyLandTargets = intelligence.getAllTargets({state: state}) 	
-			}
-
-			// Prioritise targets
-			const groundAssaultTargets = this.prioritiseGroundCampaignTargets(state, nearbyLandTargets, mainForceLocation);
-			const fireSupportTargets = this.prioritiseLandIndirectFires(state, groundAssaultTargets, mainForceLocation);
+			const groundTargets = this.prioritiseGroundTargets(state, nearbyLandTargets, mainForceLocation);
 
 			// Ground attack; HACK: directly calls tactical level function
-			groundForceAttack({state: state, groundTargets: groundAssaultTargets, fireSupportTargets: fireSupportTargets});		
+			groundForceAttack({state: state, groundTargets: groundTargets["directFireTargets"], fireSupportTargets: groundTargets["fireSupportTargets"]});		
+
+			nearbyEnemyUnitCount = groundTargets["nearbyEnemyUnitCount"];
 		}
 
 		// AVIATION
 		let airRaidTargets = intelligence.getAirRaidTargets(state);
-		let	casTargets = intelligence.getCASTargets({location: mainForceLocation});
+		casTargets = intelligence.getCASTargets(mainForceLocation, nearbyLandTargets);
 
 		let enemyBaseTargets = {"antiAirTargets": [], "economyTargets": []};
 		if (casTargets.length === 0 && airRaidTargets.length === 0 && readyToAttack) {
-			debug(`runCombatOperations(): used expensive getAllEnemyBaseTargets @ ${getCurrGameTime()}`);
-			enemyBaseTargets = intelligence.getAllEnemyBaseTargets(state);		
+			// debug(`runCombatOperations(): used expensive getAllEnemyBaseTargets @ ${getCurrGameTime()}`);
+			// enemyBaseTargets = intelligence.getAllEnemyBaseTargets(state);		
 		}		
 		
-		const aviationTargets = this.prioritiseAviationTargets(state, mainForceLocation, airRaidTargets, casTargets, enemyBaseTargets);
+		const aviationTargets = this.prioritiseAviationTargets(state, nearbyEnemyUnitCount, airRaidTargets, casTargets, enemyBaseTargets);
 
 		const attackInGroup = true;
 		this.toc.assignAviationTargets(aviationTargets, attackInGroup, state);					
@@ -284,6 +257,7 @@ class CommandCenter {
 
 	issueIntelTasking(intelTasks) {
 		const currTime = getCurrGameTime();
+		
 		if (currTime - this.lastConductedRecon > this.RECON_COOLDOWN_TIME) {
 			if (false) debug(`issueIntelTasking(): scheduling recon -> ${currTime}`);
 			this.lastConductedRecon = currTime;
@@ -313,12 +287,6 @@ class CommandCenter {
 
 	/**
 	 * Approves requested tasks based on game state & generates approved buildTasks for TOC execution 
-	 * @param {*} requestedSectorOilCapTasks 
-	 * @param {*} requestedBaseBuildTasks 
-	 * @param {*} requestedSectorDefenceBuildTasks 
-	 * @param {*} sectorIndirectFireBuildTasks 
-	 * @param {*} state 
-	 * @returns 
 	 */
 	issueConstructionTasking(requestedSectorOilCapTasks, requestedBaseBuildTasks, requestedSectorDefenceBuildTasks, sectorIndirectFireBuildTasks, state) {
 
@@ -462,7 +430,7 @@ class CommandCenter {
 		}
 	}
 
-	runConstructionTasks() {
+	runConstructionTasks(state) {
 
 		// Sector oil
 		const sectorOilCaptureBuildTasks = engineering.requestOilCapture(state);
@@ -475,42 +443,11 @@ class CommandCenter {
 		this.abortDangerousConstructionTasks(state);
 	}
 
-	runC2() {
+	runIntelligence(state) {
 
-		/*
-			INTELLIGENCE OPERATIONS
-		*/
 		this.runSectorIntel(state);		
 
-		/*
-			COMBAT OPERATIONS
-		*/
-		this.runCombatOperations(state);
-
-		/*
-			COMBAT SUSTAINMENT
-		*/
-
-		if (gameHasEnded()) {
-			return;		// STOP ALL OTHER FUNCTIONS IF GAME IS ENDED
-		}
-
-		// Production
-		supply.manageProduction();
-		// Research
-		research.manageResearch();
-		// Construction
-		this.runConstructionTasks();
-
-
-		// Executes all bot actions
-		this.toc.manageMissions(state);														
-
-
-		/*
-			ADVANCE CAMPAIGN BASED ON GAME STATE
-		*/
-
+		// ADVANCE CAMPAIGN BASED ON GAME STATE
 		let event = undefined;
 		if (groundForces.completedForceBuildup()) {
 			event = 'CompletedBuildup';
@@ -530,6 +467,24 @@ class CommandCenter {
 				// then cancel all raid missions
 			}
 		}
+	}
+
+	runC2(state) {
+		this.runCombatOperations(state);
+	}
+
+	runLogistics(state) {
+		// Production
+		supply.manageProduction();
+		// Research
+		research.manageResearch();
+		// Construction
+		this.runConstructionTasks(state);												
+	}
+
+	runMissionManager(state) {
+		// Executes all bot actions
+		this.toc.manageMissions(state);		
 	}
 
 }

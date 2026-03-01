@@ -39,6 +39,11 @@ declare const mapHeight: number;
 declare const gameTime: number;
 
 /**
+* ```maxPlayers``` The number of active players in this game.
+ */
+declare const maxPlayers: number;
+
+/**
 * ```Stats``` A sparse, read-only array containing rules information for game entity types.
 (For now only the highest level member attributes are documented here. Use the 'jsdebug' cheat
 to see them all.)
@@ -437,7 +442,6 @@ interface FeatureObject extends BaseObject {
 
 //////////////////////////////////////////// FUNCTIONS ////////////////////////////////////////////
 
-
 /**
   ## include(filePath)
   Includes another source code file at this point. You should generally only specify the filename,
@@ -452,6 +456,16 @@ declare function include(path: string): void;
   Output text to the command line.
 */
 declare function debug(...string: string[]): void;
+
+/**
+## profile(functionName[, arguments])
+
+Calls a function with given arguments, measures time it took to evaluate the function,
+and adds this time to performance monitor statistics. Transparently returns the
+function's return value. The function to run is the first parameter, and it
+_must be quoted_. (3.2+ only)
+*/
+declare function profile(functionName: string, arguments?: any): any;
 
 /**
 ## enumRange(x, y, range[, playerFilter[, seen]])
@@ -487,12 +501,28 @@ declare function enumStruct(player?: number, structureType?: number, playerFilte
 declare function enumDroid(player?: number, droidType?: number, playerFilter?: boolean): DroidObject[];
 
 /**
+## countStruct(structureName[, playerFilter])
+
+Count the number of structures of a given type.
+The playerFilter parameter can be a specific player, ```ALL_PLAYERS```, ```ALLIES``` or ```ENEMIES```.
+ */
+declare function countStruct(structureName: StructureStatType, playerFilter?: PlayerFilterType): number;
+
+/**
+## countDroid([droidType[, playerFilter]])
+
+Count the number of droids that a given player has. Droid type must be either
+```DROID_ANY```, ```DROID_COMMAND``` or ```DROID_CONSTRUCT```.
+The playerFilter parameter can be a specific player, ```ALL_PLAYERS```, ```ALLIES``` or ```ENEMIES```. 
+ */
+declare function countDroid(droidType: DroidTypeType, playerFilter?: PlayerFilterType): number;
+
+/**
 ## tileIsBurning(x, y)
 
 Returns whether the given map tile is burning. (3.5+ only)
  */
 declare function tileIsBurning(x: number, y: number): boolean;
-
 
 /**
 ## isStructureAvailable(structureName[, player])
@@ -500,6 +530,13 @@ declare function tileIsBurning(x: number, y: number): boolean;
 Returns true if given structure can be built. It checks both research and unit limits.
 */
 declare function isStructureAvailable(structureName: string, player?: number): boolean;
+
+/**
+## structureIdle(structure)
+
+Is given structure idle?
+ */
+declare function structureIdle(structure: StructureObject): boolean;
 
 /**
 ## pickStructLocation(droid, structureName, x, y[, maxBlockingTiles])
@@ -681,3 +718,34 @@ declare function chat(playerFilter: PlayerFilterType, message: string): boolean;
 Returns true if an alliance exists between the two players, or they are the same player.
  */
 declare function allianceExistsBetween(player1: number, player2: number): boolean;
+
+/**
+## playerPower(player)
+
+Return amount of power held by the given player.
+ */
+declare function playerPower(player: number): number;
+
+/**
+## queuedPower(player)
+
+Return amount of power queued up for production by the given player. (3.2+ only)
+ */
+declare function queuedPower(player: number): number;
+
+/**
+## hackMarkTiles([label | x, y[, x2, y2]])
+
+Mark the given tile(s) on the map. Either give a ```POSITION``` or ```AREA``` label,
+or a tile x, y position, or four positions for a square area. If no parameter
+is given, all marked tiles are cleared. (3.2+ only)
+ */
+declare function hackMarkTiles(x: int, y: int): void;
+
+/**
+## addBeacon(x, y, playerFilter[, message])
+
+Send a beacon message to target player. Target may also be ```ALLIES```.
+Message is currently unused. Returns a boolean that is true on success. (3.2+ only)
+ */
+declare function addBeacon(x: int, y: int, playerFilter: PlayerFilterType, message?: string): boolean;

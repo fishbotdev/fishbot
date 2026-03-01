@@ -139,12 +139,13 @@ class armyGroundForceCommand {
 
 		// Get all x,y coordinates
 		let currGameTime = getCurrGameTime();
-		let droidsInGroup = allLandUnits.filter((droid) => (currGameTime - droid.born) > 30000);		
-		let droidX = [];
-		let droidY = [];
+		
+		let droidsInGroup = allLandUnits.filter((droid) => (currGameTime - droid.born) > 30000);	
+
+		let droidX = [], droidY = [];
 		droidsInGroup.forEach((droid) => {
-			droidX = droidX.concat([droid.x]);
-			droidY = droidY.concat([droid.y]);
+			droidX.push(droid.x);
+			droidY.push(droid.y);
 		});	
 
 		// Find median
