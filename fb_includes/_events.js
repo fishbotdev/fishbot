@@ -21,7 +21,6 @@ function eventDroidBuilt(droid, structure) {
 	supply.assignNewDroidIntoGroup(droid);	
 }
 
-/*
 function eventStructureReady(structure) {
 	// does nothing for now
 }
@@ -32,8 +31,8 @@ function eventStructureBuilt(structure) {
 }
 
 function eventAttacked(victim, attacker) {
-	// this is regularly called if defined
-	// does nothing for now
+	// this is regularly called if defined 
+	// does nothing for now (prevents auto-retaliate on friendly fire)
 }
 
 function eventChat(from, to, message) {
@@ -56,7 +55,6 @@ function eventDestroyed(object) {
 	// this is regularly called if defined
 	// does nothing for now
 }
-*/
 
 function runGameEndedWatchdog() {
 	const gameIsFinished = gameHasEnded();
