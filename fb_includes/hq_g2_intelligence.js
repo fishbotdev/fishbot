@@ -416,7 +416,7 @@ class armyIntelligence {
 			PRUNES MAIN TARGET LIST
 		*/
 
-		let indicesToKeep = [];
+		let updatedCurrTargets = [];
 
 		for (let i=0; i<state.currTargets.length; i++) {
 			let currTarget = state.currTargets[i];
@@ -432,10 +432,10 @@ class armyIntelligence {
 			currTarget.x = gameObj.x;
 			currTarget.y = gameObj.y;
 
-			indicesToKeep.push(i);
+			updatedCurrTargets.push(currTarget);
 		}
 
-		state.currTargets = state.currTargets.filter((_, i) => indicesToKeep.includes(i));
+		state.currTargets = updatedCurrTargets;
 	}
 
 	getOilDominanceStatus(state, OIL_DOMINANCE_PERCENTAGE) {

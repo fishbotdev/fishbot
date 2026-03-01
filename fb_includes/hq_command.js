@@ -390,12 +390,9 @@ class CommandCenter {
 		return approvedConstructionTasks;
 	}
 
-	/**
-	 * Cancel tasks where the area is now dangerous but the units are far away (> 10 tiles away).
-	 * @param {Object} state - Game state (from FishBot's perspective).
-	 * @returns {void}
-	 */
+	
 	abortDangerousConstructionTasks(state) {
+		// Cancel tasks where the area is now dangerous but the units are far away (> 10 tiles away).
 		
 		const activeMissions = this.toc.getActiveConstructionMissions(state);
 
@@ -430,6 +427,7 @@ class CommandCenter {
 		}
 	}
 
+	/////////////////////////////////////////////////// RUNNERS ///////////////////////////////////////////////////
 	runConstructionTasks(state) {
 
 		// Sector oil
