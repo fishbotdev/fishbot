@@ -98,12 +98,6 @@ function defined(variable) {
 	structure enumeration helpers
 */
 
-function countStructList(list, player) {
-	if (!defined(player))
-		player = me;
-	return list.reduce((summ, new_value) => (summ + countStruct(new_value, player)), 0);
-}
-
 function getIdleStructuresOfType({structureID, playerID=me}) {
 	// Default player is me
 	const structuresOfType = enumStruct(playerID, structureID);
@@ -151,26 +145,32 @@ function isEnemy(playerID) {
 }
 
 function enumLivingPlayers() {
-	// const enemyUnits = enumDroid(i, DROID_ANY, true).filter(droid => droid.isVTOL !== true);		
-	// const enemyStructures = enumStruct(i, DROID_ANY, true);				
 
-	let baseStructures = [];
-	for (const [key, value] of Object.entries(BASE_STRUCTURES)) {
-		baseStructures.push(value.id);
-	}
+	let FACTORY_ID = [STRUCTURES["Factory"].id, STRUCTURES["Cyborg Factory"].id, STRUCTURES["VTOL Factory"].id];
 
-	let livingPlayers = [];
-	for (let i = 0; i < maxPlayers; ++i) {
-		if (countStructList(baseStructures, i) > 0) {
-			livingPlayers.push(i);
+	let livingPlayerIDs = [];
+
+	for (let playerID=0; playerID<maxPlayers; playerID++) {
+
+		if (countDroid(DROID_ANY, playerID) > 0) {
+			livingPlayerIDs.push(playerID);
 			continue;
 		}
-		if (enumDroid(i).length > 0) {
-			livingPlayers.push(i);
+
+		for (let j=0; j<FACTORY_ID.length; j++) {
+			if (countStruct(FACTORY_ID[j], playerID) > 0) {
+				livingPlayerIDs.push(playerID);
+				break;
+			}
 		}
 	}
 
-	return livingPlayers;
+	if (false) {
+		debug(`livingPlayerIDs:`);
+		livingPlayerIDs.forEach(p => debug(`	${p}`));
+	}
+
+	return livingPlayerIDs;
 }
 
 function gameHasEnded() {

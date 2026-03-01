@@ -39,6 +39,11 @@ declare const mapHeight: number;
 declare const gameTime: number;
 
 /**
+* ```maxPlayers``` The number of active players in this game.
+ */
+declare const maxPlayers: number;
+
+/**
 * ```Stats``` A sparse, read-only array containing rules information for game entity types.
 (For now only the highest level member attributes are documented here. Use the 'jsdebug' cheat
 to see them all.)
@@ -485,6 +490,23 @@ declare function enumStruct(player?: number, structureType?: number, playerFilte
   visibility - the default is not to filter.
 */
 declare function enumDroid(player?: number, droidType?: number, playerFilter?: boolean): DroidObject[];
+
+/**
+## countStruct(structureName[, playerFilter])
+
+Count the number of structures of a given type.
+The playerFilter parameter can be a specific player, ```ALL_PLAYERS```, ```ALLIES``` or ```ENEMIES```.
+ */
+declare function countStruct(structureName: StructureStatType, playerFilter?: PlayerFilterType): number;
+
+/**
+## countDroid([droidType[, playerFilter]])
+
+Count the number of droids that a given player has. Droid type must be either
+```DROID_ANY```, ```DROID_COMMAND``` or ```DROID_CONSTRUCT```.
+The playerFilter parameter can be a specific player, ```ALL_PLAYERS```, ```ALLIES``` or ```ENEMIES```. 
+ */
+declare function countDroid(droidType: DroidTypeType, playerFilter?: PlayerFilterType): number;
 
 /**
 ## tileIsBurning(x, y)
