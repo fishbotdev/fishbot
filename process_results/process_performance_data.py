@@ -57,7 +57,7 @@ def extract_runC2(filepath: str, function_name: str = "runC2") -> pd.DataFrame:
 
     return pd.DataFrame(rows, columns=columns)
 
-def plot_single_histogram(df_a, label="A", suptitle='', bins=10):
+def plot_single_histogram(df_a, label1="A", suptitle='', bins=10):
 
     MILLISEC_SCALING = 1e3
     MILLISEC_TEXT = "ms"
@@ -72,7 +72,7 @@ def plot_single_histogram(df_a, label="A", suptitle='', bins=10):
 
     ax1.grid(color='grey', linestyle='-', linewidth=0.4, alpha=0.3)
 
-    ax1.hist(df_a["avg_usec"]/MILLISEC_SCALING, bins=bins, alpha=0.5, label=label)
+    ax1.hist(df_a["avg_usec"]/MILLISEC_SCALING, bins=bins, alpha=0.5, label=label1)
 
     ax1.set_title(f"Histogram of avg_usec")
     ax1.set_xlabel(f"avg_usec ({MILLISEC_TEXT})")
@@ -83,7 +83,7 @@ def plot_single_histogram(df_a, label="A", suptitle='', bins=10):
 
     ax2.grid(color='grey', linestyle='-', linewidth=0.4, alpha=0.3)
 
-    ax2.hist(df_a["worst_usec"]/MILLISEC_SCALING, bins=bins, alpha=0.5, label=label)
+    ax2.hist(df_a["worst_usec"]/MILLISEC_SCALING, bins=bins, alpha=0.5, label=label1)
 
     ax2.set_title("Histogram of worst_usec")
     ax2.set_xlabel(f"worst_usec ({MILLISEC_TEXT})")
@@ -94,7 +94,7 @@ def plot_single_histogram(df_a, label="A", suptitle='', bins=10):
     # ---- worst_call_at histogram ----
     ax3.grid(color='grey', linestyle='-', linewidth=0.4, alpha=0.3)
 
-    ax3.hist(df_a["worst_call_at"]/GAME_TIME_SEC_SCALING, bins=bins, alpha=0.5, label=label)
+    ax3.hist(df_a["worst_call_at"]/GAME_TIME_SEC_SCALING, bins=bins, alpha=0.5, label=label1)
 
     ax3.set_title("Histogram of worst_call_at")
     ax3.set_xlabel(f"worst_call_at (seconds)")
@@ -107,8 +107,9 @@ def plot_single_histogram(df_a, label="A", suptitle='', bins=10):
 def plot_comparative_histograms(
     df_a,
     df_b,
-    label_a="Dataset A",
-    label_b="Dataset B",
+    label1="Dataset A",
+    label2="Dataset B",
+    suptitle="",
     bins=10,
 ):
     """
@@ -121,7 +122,7 @@ def plot_comparative_histograms(
             - avg_usec
             - worst_usec
 
-    label_a, label_b : str
+    label1, label2 : str
         Legend labels.
 
     bins : int
@@ -137,10 +138,12 @@ def plot_comparative_histograms(
     fig, axs = plt.subplots(3, 1, figsize=(8, 6))
     ax1, ax2, ax3 = axs
 
+    fig.suptitle(suptitle, size=16)
+
     ax1.grid(color='grey', linestyle='-', linewidth=0.4, alpha=0.3)
 
-    ax1.hist(df_a["avg_usec"]/MILLISEC_SCALING, bins=bins, alpha=0.5, label=label_a)
-    ax1.hist(df_b["avg_usec"]/MILLISEC_SCALING, bins=bins, alpha=0.5, label=label_b)
+    ax1.hist(df_a["avg_usec"]/MILLISEC_SCALING, bins=bins, alpha=0.5, label=label1)
+    ax1.hist(df_b["avg_usec"]/MILLISEC_SCALING, bins=bins, alpha=0.5, label=label2)
 
     ax1.set_title("Histogram of avg_usec")
     ax1.set_xlabel(f"avg_usec ({MILLISEC_TEXT})")
@@ -151,8 +154,8 @@ def plot_comparative_histograms(
 
     ax2.grid(color='grey', linestyle='-', linewidth=0.4, alpha=0.3)
 
-    ax2.hist(df_a["worst_usec"]/MILLISEC_SCALING, bins=bins, alpha=0.5, label=label_a)
-    ax2.hist(df_b["worst_usec"]/MILLISEC_SCALING, bins=bins, alpha=0.5, label=label_b)
+    ax2.hist(df_a["worst_usec"]/MILLISEC_SCALING, bins=bins, alpha=0.5, label=label1)
+    ax2.hist(df_b["worst_usec"]/MILLISEC_SCALING, bins=bins, alpha=0.5, label=label2)
 
     ax2.set_title("Histogram of worst_usec")
     ax2.set_xlabel(f"worst_usec ({MILLISEC_TEXT})")
@@ -163,8 +166,8 @@ def plot_comparative_histograms(
     # ---- worst_call_at histogram ----
     ax3.grid(color='grey', linestyle='-', linewidth=0.4, alpha=0.3)
 
-    ax3.hist(df_a["worst_call_at"]/GAME_TIME_SEC_SCALING, bins=bins, alpha=0.5, label=label_a)
-    ax3.hist(df_b["worst_call_at"]/GAME_TIME_SEC_SCALING, bins=bins, alpha=0.5, label=label_b)
+    ax3.hist(df_a["worst_call_at"]/GAME_TIME_SEC_SCALING, bins=bins, alpha=0.5, label=label1)
+    ax3.hist(df_b["worst_call_at"]/GAME_TIME_SEC_SCALING, bins=bins, alpha=0.5, label=label2)
 
     ax3.set_title("Histogram of worst_call_at")
     ax3.set_xlabel(f"worst_call_at (seconds)")
@@ -191,7 +194,7 @@ from os import getcwd as cwd
 """
 OLD TEST DATA
 """
-if True:
+if False:
     # df_before = extract_runC2(rf"{cwd()}\process_results\v4_perfdata\a2e13b4_v3_release.log")     # 98 / 100 won vs Cobra Medium (after VTOL targeting optimisation)
 
     # df_1 = extract_runC2(rf"{cwd()}\process_results\v4_perfdata\1e3edc5_100g.log")     # 96 / 100 won vs Cobra Medium (after suppressing getEnemyBaseTargets)
@@ -214,8 +217,8 @@ if True:
     plot_comparative_histograms(
         df_1,
         df_2,
-        label_a="Before",
-        label_b="After Optimisation"
+        label1="Before",
+        label2="After Optimisation"
     )
     plt.show()
 
@@ -223,25 +226,27 @@ if True:
 NEW TEST DATA (runC2 is split)
 """
 
-path1 = rf"{cwd()}\process_results\v4_perfdata\\" + rf"ca33b29,hard,cobra,100g.log"
+path1 = rf"{cwd()}\process_results\v4_perfdata\\" + rf"e464479_4timer_same_25g.log"
+path2 = rf"{cwd()}\process_results\v4_perfdata\\" + rf"fd8ab67_4timer_37ms_25g.log"
 
-if False:
+if True:
     ########
     func1 = "runC2"
     func2 = "runMissionManager"
     func3 = "runIntelligence"
     df_1 = extract_runC2(path1, function_name=func1)        
     df_2 = extract_runC2(path1, function_name=func2)       
-    df_3 = extract_runC2(path1, function_name=func3)       
+    df_3 = extract_runC2(path1, function_name=func3)
 
-    # print(df_1)
-    # print(df_2)
+    df_4 = extract_runC2(path2, function_name=func1)        
+    df_5 = extract_runC2(path2, function_name=func2)       
+    df_6 = extract_runC2(path2, function_name=func3) 
 
-    commit_hash = path1.split(rf"\\")[-1].split(".log")[0]
+    commit_hash1 = path1.split(rf"\\")[-1].split(".log")[0]
+    commit_hash2 = path2.split(rf"\\")[-1].split(".log")[0]
 
-    plot_single_histogram(df_1, label=commit_hash, suptitle=func1)
-    plot_single_histogram(df_2, label=commit_hash, suptitle=func2)
-    plot_single_histogram(df_3, label=commit_hash, suptitle=func3)
+    plot_comparative_histograms(df_1, df_4, label1=commit_hash1, label2=commit_hash2, suptitle=func1)
+    plot_comparative_histograms(df_2, df_5, label1=commit_hash1, label2=commit_hash2, suptitle=func2)
+    plot_comparative_histograms(df_3, df_6, label1=commit_hash1, label2=commit_hash2, suptitle=func3)
     plt.show()
-
 
