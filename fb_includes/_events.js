@@ -91,7 +91,7 @@ function runMissionManager() {
 }
 
 function scheduleCoreFunctions() {
-	const OFFSET = 37;	// ms
+	const OFFSET = 0;	// ms
 	const CORE_FUNCTION_NAMES = ["runIntelligence", "runC2", "runLogistics", "runMissionManager"];
 	CORE_FUNCTION_NAMES.forEach((f, idx) => queue(f, idx * OFFSET))
 }
