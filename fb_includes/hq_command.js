@@ -323,7 +323,7 @@ class CommandCenter {
 		// AVIATION
 		let airRaidTargets = intelligence.getAirRaidTargets(state);		
 		const aviationTargets = this.prioritiseAviationTargets(state, numTargetsInImmediateRadius, airRaidTargets, casTargets);
-		debug(`avTarg ${aviationTargets.length} = cas ${casTargets.length} + raid ${airRaidTargets.length}, ${numTargetsInImmediateRadius}`);
+		// debug(`avTarg ${aviationTargets.length} = cas ${casTargets.length} + raid ${airRaidTargets.length}, ${numTargetsInImmediateRadius}`);
 		const attackInGroup = true;
 		this.toc.assignAviationTargets(state, aviationTargets, attackInGroup);					
 
