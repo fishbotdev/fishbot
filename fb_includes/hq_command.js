@@ -265,6 +265,8 @@ class CommandCenter {
 
 	prioritiseAviationTargets(state, nearbyTargetCount, airRaidTargets, casTargets) {
 
+		let currAviationMissions = this.toc.getActiveAviationMissions(state);
+
 		let aviationTargets = [...airRaidTargets, ...casTargets];
 
 		if (!this.oilDominance) {
@@ -331,8 +333,7 @@ class CommandCenter {
 		let airRaidTargets = intelligence.getAirRaidTargets(state);		
 		const aviationTargets = this.prioritiseAviationTargets(state, numTargetsInImmediateRadius, airRaidTargets, casTargets);
 		// debug(`avTarg ${aviationTargets.length} = cas ${casTargets.length} + raid ${airRaidTargets.length}, ${numTargetsInImmediateRadius}`);
-		const attackInGroup = true;
-		this.toc.assignAviationTargets(state, aviationTargets, attackInGroup);					
+		this.toc.assignAviationMissions(state, aviationTargets);					
 
 		// if (!this.oilDominance) {
 		// 	this.abortDangerousVTOLMissions(state, mainForceLocation, antiAirDefences);

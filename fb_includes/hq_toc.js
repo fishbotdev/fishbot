@@ -117,38 +117,22 @@ class TacticalOperationsCenter {
 		state.activeMissions = currActiveMissions;
 	}
 
-	assignAviationTargets(state, aviationTargets, attackInGroup) {
-
-		let failedAttempts = 0;
+	assignAviationMissions(state, aviationTargets) {
 
 		for (let i=0; i<aviationTargets.length; i++) {
-
-			if (failedAttempts >= 2) {
-				return;
-			}
-
-			const obj = getObject(aviationTargets[i].type, aviationTargets[i].player, aviationTargets[i].id);
-			if (!defined(obj)) {
-				continue;
-			}
-
 			// Determine mission type based on target properties
-			let missionType = MISSION_TYPE.CAS_STRIKE;		// default
-			if (obj.type === STRUCTURE) {
-				missionType = MISSION_TYPE.DAS_STRUCT_STRIKE;
-			}
 
-			let numUnits = 1;		
-			if (attackInGroup) {
-				numUnits = 2;
-			}
-			const missionData = this.createNewMission({missionType: missionType, priority: MISSION_PRIORITY.MEDIUM}, obj, numUnits, i);
+			// todo store the meaningful parameters for this function in aviationTargets[i], this function shouldn't make decisions
+			// It is the responsibility of higher command to determine what missions are worth devoting more resources to
+
+			const missionType = MISSION_TYPE.AIR_STRIKE;		
+			const NUM_UNITS = 2;
+
+			const missionData = this.createNewMission({missionType: missionType, priority: MISSION_PRIORITY.MEDIUM}, aviationTargets[i], NUM_UNITS, i);
 				
 			if (defined(missionData)) {
-				// debug(`Scheduled AIR STRIKE (${missionType}) for:`, missionData.id, obj.name, obj.x, obj.y);
+				// debug(`Scheduled AIR_STRIKE (${missionType}) for:`, missionData.id, obj.name, obj.x, obj.y);
 				state.activeMissions.push(missionData);
-			} else {
-				failedAttempts += 1;
 			}
 		}
 	}
@@ -228,11 +212,8 @@ class TacticalOperationsCenter {
 			case MISSION_TYPE.CAS_PATROL:
 				md = aviation.createCasPatrolMission({x: args[0], y: args[1], tickUID: args[2]});		
 				break;
-			case MISSION_TYPE.CAS_STRIKE:
-				md = aviation.createCASMission({obj: args[0], numRaidAircraft: args[1], tickUID: args[2]});
-				break;
-			case MISSION_TYPE.DAS_STRUCT_STRIKE:
-				md = aviation.createDasStructMission({obj: args[0], numRaidAircraft: args[1], tickUID: args[2]});		
+			case MISSION_TYPE.AIR_STRIKE:
+				md = aviation.createAirStrikeMission({targetInfo: args[0], numRaidAircraft: args[1], tickUID: args[2]});
 				break;
 			case MISSION_TYPE.AIR_RECON_SILENT:
 				md = aviation.createAirReconSilentMission({x: args[0], y: args[1], tickUID: args[2]});		
