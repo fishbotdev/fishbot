@@ -262,7 +262,7 @@ class armyIntelligence {
 	 */
 	proposeTargetsInRadius({state, loc, searchRadius=20, immediateRadius=10}) {
 
-		const SHOW_TARGETS = true;
+		const SHOW_TARGETS = false;
 		
 		let proposedTargets = {
 			'enemyArmor': [], 
