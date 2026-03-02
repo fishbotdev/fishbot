@@ -135,5 +135,9 @@ function eventStartLevel() {
 		transformPlayerToSpectator(0);		// remove default human player (force-added in challenge mode)
 	}
 
-	queue("setupFishBot", me * 100);
+	queue("setupFishBot", me * 77);		// 77 is a random number which have lowest common multiples which seem unlikely to line up with other bots
+	
+	// Run construction tasks right away
+	queue("runLogistics");				
+	queue("runMissionManager");
 }
