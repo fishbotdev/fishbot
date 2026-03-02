@@ -168,20 +168,12 @@ class CommandCenter {
 
 		output["directFireTarget"] = targetInfo["closestObject"];
 
-		const MAX_CAS_TARGETS = 3;
+		const MAX_CAS_TARGETS = 8;
 		if (targetInfo["enemyArmor"].length > 0) {
 			output["casTargets"] = targetInfo["enemyArmor"].slice(0, MAX_CAS_TARGETS);
 		}
 		
-		const EFFECTIVE_SQ_FS_RADIUS = 10 ** 2;
-		let backupFsTargets = [...targetInfo["enemyIndirectFire"], ...targetInfo["enemyADA"], ...targetInfo["enemyDefenses"], ...targetInfo["enemyIndustrial"]];
-		backupFsTargets = backupFsTargets.filter(t => {
-			const o = getObject(t.type, t.player, t.id);
-			if (distSq(o.x, groupPosition.x, o.y, groupPosition.y) < EFFECTIVE_SQ_FS_RADIUS) {
-				return true;
-			}
-			return false;
-		});
+		let backupFsTargets = [...targetInfo["enemyIndirectFire"], ...targetInfo["enemyADA"], ...targetInfo["enemyIndustrial"], ...targetInfo["enemyDefenses"]];
 
 		if (!defined(output["casTargets"])) { 
 			if (backupFsTargets.length > 0) {
@@ -189,6 +181,7 @@ class CommandCenter {
 			}
 		}
 
+		const EFFECTIVE_SQ_FS_RADIUS = 10 ** 2;
 		const infantryTargets = targetInfo["enemyInfantry"];
 		if (infantryTargets.length > 0) {
 			let closestIdx = 0;
@@ -211,7 +204,16 @@ class CommandCenter {
 
 		if (!defined(output["fireSupportTarget"])) {
 			if (backupFsTargets.length > 0) {
-				output["fireSupportTarget"] = backupFsTargets[0];
+
+				backupFsTargets = backupFsTargets.filter(t => {
+					const o = getObject(t.type, t.player, t.id);
+					if (distSq(o.x, groupPosition.x, o.y, groupPosition.y) < EFFECTIVE_SQ_FS_RADIUS) {
+						return true;
+					}
+					return false;
+				});
+
+				output["fireSupportTarget"] = backupFsTargets[0];		// no sorting, maybe should refactor to sort in order of distance (think it doesn't matter though)
 			}
 		}
 
@@ -297,7 +299,7 @@ class CommandCenter {
 		if (readyToAttack) {
 
 			// Get targets efficiently
-			nearbyLandTargets = intelligence.proposeTargetsInRadius({state: state, loc: mainForceLocation, searchRadius: 20, immediateRadius: 10});
+			nearbyLandTargets = intelligence.proposeTargetsInRadius({state: state, loc: mainForceLocation, searchRadius: 25, immediateRadius: 10});
 
 			// Prioritise & assign targets
 			const groundTargets = this.prioritiseGroundTargets(state, nearbyLandTargets, mainForceLocation);
