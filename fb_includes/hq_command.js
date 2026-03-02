@@ -166,21 +166,27 @@ class CommandCenter {
 			return output;
 		}
 
+		// DIRECT FIRE TARGETS
 		output["directFireTarget"] = targetInfo["closestObject"];
 
-		const MAX_CAS_TARGETS = 8;
+		// CAS
+		const MAX_CAS_TARGETS = 5;
 		if (targetInfo["enemyArmor"].length > 0) {
 			output["casTargets"] = targetInfo["enemyArmor"].slice(0, MAX_CAS_TARGETS);
 		}
-		
-		let backupFsTargets = [...targetInfo["enemyIndirectFire"], ...targetInfo["enemyADA"], ...targetInfo["enemyIndustrial"], ...targetInfo["enemyDefenses"]];
 
 		if (!defined(output["casTargets"])) { 
-			if (backupFsTargets.length > 0) {
-				output["casTargets"] = backupFsTargets.slice(0, MAX_CAS_TARGETS);
+			let backupCasTargets = [...targetInfo["enemyADA"], ...targetInfo["enemyIndirectFire"]];
+			if (backupCasTargets.length > 0) {
+				output["casTargets"] = backupCasTargets.slice(0, MAX_CAS_TARGETS);
 			}
 		}
 
+		if (!defined(output["casTargets"])) {
+			output["casTargets"] = [output["directFireTarget"]];
+		}
+
+		// FIRE SUPPORT
 		const EFFECTIVE_SQ_FS_RADIUS = 10 ** 2;
 		const infantryTargets = targetInfo["enemyInfantry"];
 		if (infantryTargets.length > 0) {
@@ -203,6 +209,7 @@ class CommandCenter {
 		}
 
 		if (!defined(output["fireSupportTarget"])) {
+			let backupFsTargets = [...targetInfo["enemyADA"], ...targetInfo["enemyIndirectFire"], ...targetInfo["enemyIndustrial"], ...targetInfo["enemyDefenses"]];
 			if (backupFsTargets.length > 0) {
 
 				backupFsTargets = backupFsTargets.filter(t => {
@@ -221,7 +228,7 @@ class CommandCenter {
 			output["fireSupportTarget"] = output["directFireTarget"];
 		}
 
-		// Determine ADA target based on weakest VTOL
+		// ADA (Air Defense Artillery)
 		let adaTargets = targetInfo["enemyAviation"];
 
 		if (adaTargets.length > 0) {
