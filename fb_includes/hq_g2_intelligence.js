@@ -96,21 +96,15 @@ class armyIntelligence {
 	#createNewTarget(targetObject) {
 		
 		let temp =  {
-			'name': undefined,
+			'name': targetObject.name,
 
-			// These 3 parameters allow the efficient 'getObject' to be used at a later point to retrieve up-to-date object information
-			'type': undefined,
-			'player': undefined,
-			'id': undefined,
+			// These 3 parameters allow 'getObject' to be used at a later point to retrieve up-to-date object information
+			'type': targetObject.type,
+			'player': targetObject.player,
+			'id': targetObject.id,
 
-			'airStrikeMissionIDs': [],
+			'priority': MISSION_PRIORITY.LOW,
 		};
-
-		temp.name = targetObject.name;
-
-		temp.type = targetObject.type;
-		temp.player = targetObject.player;
-		temp.id = targetObject.id;		
 
 		return temp;
 	}
@@ -315,11 +309,6 @@ class armyIntelligence {
 			}
 
 			// Classify, then compress the game object
-			if (obj.hasIndirect === true) {
-				proposedTargets["enemyIndirectFire"].push(this.#createNewTarget(obj));
-				continue;
-			}
-
 			if (isAntiAirDefense(obj)) {
 				proposedTargets["enemyADA"].push(this.#createNewTarget(obj));
 				continue;
@@ -334,6 +323,12 @@ class armyIntelligence {
 				if (obj.propulsion === PROPULSIONS["Cyborg Propulsion"]) {
 					// cyborg engineers were filtered out earlier
 					proposedTargets["enemyInfantry"].push(this.#createNewTarget(obj));		
+					continue;
+				}
+
+				if (obj.hasIndirect === true) {
+					// cyborg indirect (e.g. grenadier) was filtered out earlier
+					proposedTargets["enemyIndirectFire"].push(this.#createNewTarget(obj));
 					continue;
 				}
 
@@ -353,6 +348,11 @@ class armyIntelligence {
 			}
 
 			if (obj.type === STRUCTURE) {
+				if (obj.hasIndirect === true) {
+					proposedTargets["enemyIndirectFire"].push(this.#createNewTarget(obj));
+					continue;
+				}
+				
 				if (obj.stattype === DEFENSE) {
 					proposedTargets["enemyDefenses"].push(this.#createNewTarget(obj));
 					continue;

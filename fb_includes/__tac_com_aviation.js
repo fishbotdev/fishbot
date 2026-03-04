@@ -123,11 +123,13 @@ function doAirStrike(targetInfo, taskForceID) {
 
 	const obj = getObject(targetInfo.type, targetInfo.player, targetInfo.id);
 	if (obj === null) {								// target destroyed (mission succeeded)
+		// debug(`succeeded ${taskForceID}`);
 		return {status: MISSION_STATUS.SUCCEEDED};
 	}
 
 	const strikeUnits = state.g.enumGroup(taskForceID);
 	if (strikeUnits.length === 0) {
+		// debug(`failed ${taskForceID}, 0 group length`);
 		return {status: MISSION_STATUS.FAILED};		// strike aircraft were killed
 	}
 

@@ -64,7 +64,7 @@ class armyAviation {
 		return md;
 	}
 	
-	createAirStrikeMission({targetInfo, numRaidAircraft=1, tickUID=undefined}) {
+	createAirStrikeMission({targetInfo, numRaidAircraft=1, tickUID=undefined, type="AIR_STRIKE_GENERIC"}) {
 		// It returns either:
 		// 	- missionData object (according to missionDataTemplate), if mission successfully created, OR
 		//	- undefined, if mission was not able to be created	 
@@ -77,7 +77,7 @@ class armyAviation {
 		let md = this.#createMissionOrders();
 
 		// Create mission details
-		const id = getCurrGameTime() + "_CAS_STRIKE_" + tickUID;
+		const id = getCurrGameTime() + `_${type}_` + tickUID;
 		md.id = id;
 		md.taskForceID = id;
 

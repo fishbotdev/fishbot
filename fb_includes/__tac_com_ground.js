@@ -197,16 +197,19 @@ function groundForceAttack({state, directFireTarget, fireSupportTarget, adaTarge
 			// Fire support units should fall back if they find themselves on the front line
 			orderDroidLoc(droid, DORDER_MOVE, baseLocation.x, baseLocation.y);
 		} else {
-			if (defined(currFireSupportTarget)) {
-				attackTarget(droid, currFireSupportTarget);
-			}
+		if (defined(currFireSupportTarget)) {
+			attackTarget(droid, currFireSupportTarget);
+		}
 		}
 	});
 
 	if (DEBUG_MODE_ON) {
+		hackMarkTiles();
 		if (defined(currDirectFireTarget)) {
 			addBeacon(currDirectFireTarget.x, currDirectFireTarget.y, 0);
 		}
+		if (defined(currFireSupportTarget)) {
+			hackMarkTiles(currFireSupportTarget.x - 1, currFireSupportTarget.y - 1, currFireSupportTarget.x + 1, currFireSupportTarget.y + 1);
+		}
 	}
-
 }

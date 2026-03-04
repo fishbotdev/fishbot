@@ -100,41 +100,7 @@ class CommandCenter {
 	}
 
 	/////////////////////////////////////////////////// COMBAT OPERATIONS ///////////////////////////////////////////////////
-	abortDangerousVTOLMissions(state, mainForceLocation, antiAirDefences) {
-
-		const activeMissions = this.toc.getActiveAviationMissions(state);
-
-		for (let i=0; i<activeMissions.length; i++) {
-			let currMission = activeMissions[i];
-
-			if (!defined(currMission.obj)) {
-				continue;
-			}
-
-			// Note: the game object "currMission.obj" does not have an updated x, y, so we update it here 
-			// (TEMPORARY, WILL BE MOVED TO OTHER FUNCTION WHICH UPDATES GAME OBJECTS IN GENERAL ONCE TARGET LISTS ARE UNIFIED)
-			const updatedGameObj = getObject(currMission.obj.type, currMission.obj.player, currMission.obj.id);
-			currMission.obj = updatedGameObj;
-			if (!defined(updatedGameObj)) {
-				continue;		// mission management will terminate the mission naturally if the game object no longer exists
-			}
-
-			const RISK_RADIUS_SQ = 14 ** 2;
-			if (distSq(currMission.obj.x, mainForceLocation.x, currMission.obj.y, mainForceLocation.y) > RISK_RADIUS_SQ) {
-
-				const nearHighRiskArea = antiAirDefences.some(t => 
-					distSq(t.x, currMission.obj.x, t.y, currMission.obj.y) <= RISK_RADIUS_SQ);
-
-				if (nearHighRiskArea) {
-					// debug(`cancelling airstrike - obj: ${currMission.obj.name} @ ${currMission.obj.x} ${currMission.obj.y}`);
-					currMission.missionStatus = MISSION_STATUS.ABORT;
-				}
-			}
-
-		}
-	}
-	
-	prioritiseGroundTargets(state, targetInfo, groupPosition) {
+	prioritiseLandForceTargets(state, targetInfo, groupPosition) {
 
 		let output = {
 			"directFireTarget": undefined, 
@@ -170,24 +136,10 @@ class CommandCenter {
 		output["directFireTarget"] = targetInfo["closestObject"];
 
 		// CAS
-		const MAX_CAS_TARGETS = 5;
-		if (targetInfo["enemyArmor"].length > 0) {
-			output["casTargets"] = targetInfo["enemyArmor"].slice(0, MAX_CAS_TARGETS);
-		}
-
-		if (!defined(output["casTargets"])) { 
-			let backupCasTargets = [...targetInfo["enemyADA"], ...targetInfo["enemyIndirectFire"]];
-			if (backupCasTargets.length > 0) {
-				output["casTargets"] = backupCasTargets.slice(0, MAX_CAS_TARGETS);
-			}
-		}
-
-		if (!defined(output["casTargets"])) {
-			output["casTargets"] = [output["directFireTarget"]];
-		}
+		output["casTargets"] = [...targetInfo["enemyArmor"], ...targetInfo["enemyADA"], ...targetInfo["enemyIndirectFire"]];
 
 		// FIRE SUPPORT
-		const EFFECTIVE_SQ_FS_RADIUS = 10 ** 2;
+		const EFFECTIVE_SQ_FS_RADIUS = 12 ** 2;
 		const infantryTargets = targetInfo["enemyInfantry"];
 		if (infantryTargets.length > 0) {
 			let closestIdx = 0;
@@ -263,26 +215,94 @@ class CommandCenter {
 		return output;
 	}
 
-	prioritiseAviationTargets(state, nearbyTargetCount, airRaidTargets, casTargets) {
+	prioritiseAviationTargets(state, groupPosition, nearbyTargetCount, airRaidTargets, casTargets) {
+		
+		let targetCandidates = [];
 
-		let currAviationMissions = this.toc.getActiveAviationMissions(state);
+		let industrialTargets = []; // temp until implemented
 
-		let aviationTargets = [...airRaidTargets, ...casTargets];
+		// TEMPORARY -> Will be replaced by intelligent merge sort based on weighted priority
+		const prioritiseCasTargets = nearbyTargetCount >= 3;
+		const prioritiseRaidTargets = !this.oilDominance;
+		const prioritiseIndustrialTargets = this.oilDominance;
 
-		if (!this.oilDominance) {
-			if (nearbyTargetCount >= 3) {
-				aviationTargets = [...casTargets, ...airRaidTargets];
+		let highestNewTargetPriority = MISSION_PRIORITY.LOW;
+
+		casTargets.forEach(t => {
+			if (prioritiseCasTargets && casTargets.length > 0) {
+				highestNewTargetPriority = MISSION_PRIORITY.URGENT;
+				t.priority = highestNewTargetPriority;
+			}
+			t.missionType = MISSION_TYPE.CAS_STRIKE;
+		});
+		airRaidTargets.forEach(t => {
+			if (prioritiseRaidTargets && airRaidTargets.length > 0) {
+				highestNewTargetPriority = MISSION_PRIORITY.HIGH;
+				t.priority = highestNewTargetPriority;
+			}
+			t.missionType = MISSION_TYPE.AIR_RAID;
+		});
+		industrialTargets.forEach(t => {
+			if (prioritiseIndustrialTargets && industrialTargets.length > 0) {
+				highestNewTargetPriority = MISSION_PRIORITY.MEDIUM;
+				t.priority = highestNewTargetPriority;
+			}
+			t.missionType = MISSION_TYPE.DAS_STRIKE;
+		});
+
+		if (prioritiseCasTargets) {
+			targetCandidates = [...casTargets, ...airRaidTargets];
+		} else if (prioritiseRaidTargets) {
+			targetCandidates = [...airRaidTargets, ...casTargets, ...industrialTargets];
+		} else {
+			targetCandidates = [...industrialTargets, ...casTargets, ...airRaidTargets];
+		}
+
+		// Terminate current missions which are TWO PRIORITY LEVELS below e.g.
+		// If new URGENT task -> cancel HIGH missions 
+		const OFFENSIVE_MISSION_TYPES = [MISSION_TYPE.CAS_STRIKE, MISSION_TYPE.AIR_RAID, MISSION_TYPE.DAS_STRIKE];
+		let activeMissions = this.toc.getActiveAviationMissions(state).
+										filter(m => OFFENSIVE_MISSION_TYPES.includes(m.missionType));
+
+		let activeTargetIDs = [];
+		const CAS_RADIUS = 18;
+
+		for (let i=0; i<activeMissions.length; i++) {
+			let c = activeMissions[i];
+			activeTargetIDs.push(c.id);
+
+			if (c.priority <= highestNewTargetPriority - 2) {
+				// debug(`aborted ${c.missionType}: ${c.target.name} @ ${gameTime}, higher priorities`);
+				c.missionStatus = MISSION_STATUS.ABORT;
+				continue;
+			}
+			
+			if (c.missionType === MISSION_TYPE.CAS_STRIKE) {
+				const currObj = getObject(c.target.type, c.target.player, c.target.id);
+				if (!defined(currObj)) {
+					continue;
+				}
+				if (distSq(currObj.x, groupPosition.x, currObj.y, groupPosition.y) >= CAS_RADIUS ** 2) {
+					// debug(`aborted CAS_STRIKE: ${c.target.name} @ ${gameTime}, too far away`);
+					c.missionStatus = MISSION_STATUS.ABORT;					
+					continue;
+				}
+			}
+
+		}
+
+		// Remove already active missions (inefficient, loops through the list again)
+		let newAviationTargets = [], existingAviationTargets = [];
+
+		for (let i=0; i<targetCandidates.length; i++) {
+			if (!activeTargetIDs.includes(targetCandidates[i].id)) {
+				newAviationTargets.push(targetCandidates[i]);
+			} else {
+				existingAviationTargets.push(targetCandidates[i]);
 			}
 		}
 
-		// 	if (enemyBaseTargets["antiAirTargets"].length >= 2) {
-		// 		aviationTargets = [...enemyBaseTargets["antiAirTargets"], ...casTargets, ...enemyBaseTargets["economyTargets"], ...airRaidTargets];
-		// 	} else {
-		// 		aviationTargets = [...casTargets, ...enemyBaseTargets["economyTargets"], ...enemyBaseTargets["antiAirTargets"],  ...airRaidTargets];
-		// 	}
-		// }
-
-		return aviationTargets;
+		return [...newAviationTargets, ...existingAviationTargets];
 	}
 
 	runCombatOperations(state) {
@@ -311,7 +331,7 @@ class CommandCenter {
 			nearbyLandTargets = intelligence.proposeTargetsInRadius({state: state, loc: mainForceLocation, searchRadius: 25, immediateRadius: 10});
 
 			// Prioritise & assign targets
-			const groundTargets = this.prioritiseGroundTargets(state, nearbyLandTargets, mainForceLocation);
+			const groundTargets = this.prioritiseLandForceTargets(state, nearbyLandTargets, mainForceLocation);
 
 			// Attack ground targets; HACK: directly calls tactical level function
 			groundForceAttack({
@@ -329,15 +349,11 @@ class CommandCenter {
 
 		}
 
-		// AVIATION
-		let airRaidTargets = intelligence.getAirRaidTargets(state);		
-		const aviationTargets = this.prioritiseAviationTargets(state, numTargetsInImmediateRadius, airRaidTargets, casTargets);
+		let airRaidTargets = intelligence.getAirRaidTargets(state);	
+
+		const aviationTargets = this.prioritiseAviationTargets(state, mainForceLocation, numTargetsInImmediateRadius, airRaidTargets, casTargets);
 		// debug(`avTarg ${aviationTargets.length} = cas ${casTargets.length} + raid ${airRaidTargets.length}, ${numTargetsInImmediateRadius}`);
 		this.toc.assignAviationMissions(state, aviationTargets);					
-
-		// if (!this.oilDominance) {
-		// 	this.abortDangerousVTOLMissions(state, mainForceLocation, antiAirDefences);
-		// }
 	}
 
 	/////////////////////////////////////////////////// INTELLIGENCE ///////////////////////////////////////////////////
