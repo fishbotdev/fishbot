@@ -75,7 +75,7 @@ function runIntelligence() {
 }
 
 function runC2() {
-	hq.runC2(state);
+	hq.runCombatOperations(state);
 }
 
 function runLogistics() {

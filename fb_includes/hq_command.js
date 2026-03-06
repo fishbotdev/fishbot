@@ -358,7 +358,7 @@ class CommandCenter {
 
 	/////////////////////////////////////////////////// INTELLIGENCE ///////////////////////////////////////////////////
 
-	issueIntelTasking(intelTasks) {
+	prioritiseIntelTasks(intelTasks) {
 		const currTime = getCurrGameTime();
 		
 		if (currTime - this.lastConductedRecon > this.RECON_COOLDOWN_TIME) {
@@ -372,9 +372,9 @@ class CommandCenter {
 		}
 	}
 
-	runSectorIntel(state) {
+	runIntelligence(state) {
 		const intelTasks = intelligence.requestCollection(state);						// g2-intelligence: this proposes targets to recon
-		const approvedIntelTasks = this.issueIntelTasking(intelTasks);			// hq: this selects targets from that list to recon
+		const approvedIntelTasks = this.prioritiseIntelTasks(intelTasks);			// hq: this selects targets from that list to recon
 
 		if (approvedIntelTasks.length > 0) {
 			this.toc.assignReconMissions({reconTasks: approvedIntelTasks, state: state});					// hq/toc: this translates orders (previous step) into missions
@@ -383,15 +383,35 @@ class CommandCenter {
 
 			this.toc.updateHighRiskSectors(state);
 		}
-	}
 
+		// ADVANCE CAMPAIGN BASED ON GAME STATE
+		let event = undefined;
+		if (groundForces.completedForceBuildup()) {
+			event = 'CompletedBuildup';
+		}
+		if (groundForces.completedStagingForAttack()) {
+			event = 'CompletedStaging';
+		}
+		if (defined(event)) {
+			const currCampaignStatus = this.getCampaignStatus();
+			this.updateCampaignStatus(event);
+			const newCampaignStatus = this.getCampaignStatus();
+			if (newCampaignStatus !== currCampaignStatus) {
+				debug(`Campaign event detected: ${event}, campaign status updated to: ${this.getCampaignStatus()}`);
+			}	
+			
+			if (newCampaignStatus === CAMPAIGN_STATUS.MAIN_ASSAULT) {
+				// then cancel all raid missions
+			}
+		}
+	}
 
 	/////////////////////////////////////////////////// CONSTRUCTION ///////////////////////////////////////////////////
 
 	/**
 	 * Approves requested tasks based on game state & generates approved buildTasks for TOC execution 
 	 */
-	issueConstructionTasking(requestedSectorOilCapTasks, requestedBaseBuildTasks, requestedSectorDefenceBuildTasks, sectorIndirectFireBuildTasks, state) {
+	prioritiseConstructionTasks(requestedSectorOilCapTasks, requestedBaseBuildTasks, requestedSectorDefenceBuildTasks, sectorIndirectFireBuildTasks, state) {
 
 		const truckData = engineering.getTruckAvailability();
 		// No tasks if no trucks available
@@ -486,7 +506,7 @@ class CommandCenter {
 		}
 
 
-		/////// OFFENSIVE STRUCTURE CONSTRUCTION ///////
+		/////// FORWARD STRUCTURE CONSTRUCTION ///////
 		// sectorIndirectFireBuildTasks.forEach(l => debug(`requesting building mortar / sensor around ${l.payload.x}, ${l.payload.y}`));
 		// approvedConstructionTasks.push(...sectorIndirectFireBuildTasks.slice(0, 2));
 		
@@ -530,7 +550,6 @@ class CommandCenter {
 		}
 	}
 
-	/////////////////////////////////////////////////// RUNNERS ///////////////////////////////////////////////////
 	runConstructionTasks(state) {
 
 		// Sector oil
@@ -538,40 +557,10 @@ class CommandCenter {
 		const baseBuildTasks = engineering.requestBaseConstruction(state);
 		const sectorDefenceBuildTasks = engineering.requestSectorDefenceConstruction(state);	
 
-		const approvedTasks = this.issueConstructionTasking(sectorOilCaptureBuildTasks, baseBuildTasks, sectorDefenceBuildTasks, undefined, state);
+		const approvedTasks = this.prioritiseConstructionTasks(sectorOilCaptureBuildTasks, baseBuildTasks, sectorDefenceBuildTasks, undefined, state);
 		this.toc.assignConstructionTasks({approvedTasks: approvedTasks, state: state});
 	
 		this.abortDangerousConstructionTasks(state);
-	}
-
-	runIntelligence(state) {
-
-		this.runSectorIntel(state);		
-
-		// ADVANCE CAMPAIGN BASED ON GAME STATE
-		let event = undefined;
-		if (groundForces.completedForceBuildup()) {
-			event = 'CompletedBuildup';
-		}
-		if (groundForces.completedStagingForAttack()) {
-			event = 'CompletedStaging';
-		}
-		if (defined(event)) {
-			const currCampaignStatus = this.getCampaignStatus();
-			this.updateCampaignStatus(event);
-			const newCampaignStatus = this.getCampaignStatus();
-			if (newCampaignStatus !== currCampaignStatus) {
-				debug(`Campaign event detected: ${event}, campaign status updated to: ${this.getCampaignStatus()}`);
-			}	
-			
-			if (newCampaignStatus === CAMPAIGN_STATUS.MAIN_ASSAULT) {
-				// then cancel all raid missions
-			}
-		}
-	}
-
-	runC2(state) {
-		this.runCombatOperations(state);
 	}
 
 	runLogistics(state) {
@@ -582,6 +571,7 @@ class CommandCenter {
 		// Construction
 		this.runConstructionTasks(state);												
 	}
+
 
 	runMissionManager(state) {
 		// Executes all bot actions
