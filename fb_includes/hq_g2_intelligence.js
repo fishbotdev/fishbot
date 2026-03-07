@@ -32,7 +32,7 @@ class armyIntelligence {
 		// Generates options for intelligence gathering
 		let c = {
 			'sectorUpdate': [], 
-			'oilDominanceCheck': [],
+			'checkOilDominance': [],
 		}
 
 		// SECTOR RECON
@@ -42,8 +42,8 @@ class armyIntelligence {
 
 		// OIL DOMINANCE CHECK
 		// payload = oilDominance percentage -> will be populated by hq-command
-		let oilDominanceCheck = this.#createIntelRequest({missionType: MISSION_TYPE.OIL_DOMINANCE_CHECK, payload: undefined});		
-		c['oilDominanceCheck'].push(oilDominanceCheck);
+		let checkOilDominance = this.#createIntelRequest({missionType: MISSION_TYPE.CHECK_OIL_DOMINANCE, payload: undefined});		
+		c['checkOilDominance'].push(checkOilDominance);
 
 		return c;
 	}
@@ -99,7 +99,7 @@ class armyIntelligence {
 		return md;
 	}
 
-	createOilDominanceCheckMission({payload: oilDominanceThreshold, missionType, tickUID}) {
+	createCheckOilDominanceMission({payload: oilDominanceThreshold, missionType, tickUID}) {
 		// it returns either:
 		// 	- missionData object (according to missionDataTemplate), if mission successfully created, OR
 		//	- undefined, if mission was not able to be created
@@ -113,7 +113,7 @@ class armyIntelligence {
 		md.sectorID = undefined;
 
 		// Assign orders for conducting & ceasing operations			
-		md.orders = () => this.#mcb(getOilDominanceStatus, state, oilDominanceThreshold, missionType);		
+		md.orders = () => this.#mcb(checkOilDominance, state, oilDominanceThreshold, missionType);		
 		md.ceaseOrders = () => this.#mcb(this.#finaliseEngineCall, md);
 
 		return md;
@@ -356,14 +356,14 @@ class armyIntelligence {
 					continue;
 				}
 
-				if (obj.hasIndirect === true) {
-					// cyborg indirect (e.g. grenadier) was filtered out earlier
-					proposedTargets["enemyIndirectFire"].push(this.#createNewTarget(obj));
+				if (obj.isVTOL === true) {
+					proposedTargets["enemyAviation"].push(this.#createNewTarget(obj));
 					continue;
 				}
 
-				if (obj.isVTOL === true) {
-					proposedTargets["enemyAviation"].push(this.#createNewTarget(obj));
+				if (obj.hasIndirect === true) {
+					// cyborg indirect (e.g. grenadier) & VTOL indirect (e.g. bombs) were filtered out earlier
+					proposedTargets["enemyIndirectFire"].push(this.#createNewTarget(obj));
 					continue;
 				}
 

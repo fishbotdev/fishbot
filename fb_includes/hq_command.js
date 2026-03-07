@@ -32,13 +32,15 @@ class CommandCenter {
 		// Order these in terms of priority for performance reasons
 		this.REQUESTS_PER_MINUTE = {
 			'sectorUpdate': 30,
-			'oilDominanceCheck': 2,
+			'checkTargetsNearby': 12,
+			'checkOilDominance': 2,
 		};
 
 		// Game performance related parameters
 		this.WORKER_IDS = {
 			'sectorUpdate': [],
-			'oilDominanceCheck': []
+			'checkTargetsNearby': [],
+			'checkOilDominance': [],
 		}
 
 		this.#setWorkerIDs();
@@ -138,7 +140,7 @@ class CommandCenter {
 	}
 
 	/////////////////////////////////////////////////// COMBAT OPERATIONS ///////////////////////////////////////////////////
-	prioritiseLandForceTargets(state, targetInfo, groupPosition) {
+	prioritiseLandForceTargets(targetInfo, groupPosition) {
 
 		let output = {
 			"directFireTarget": undefined, 
@@ -165,7 +167,7 @@ class CommandCenter {
 			};		
 		*/
 
-		if (!defined(targetInfo["closestObject"])) {
+		if (!defined(targetInfo["closestObject"]) || !defined(groupPosition)) {
 			// Then the target-generating function immediately returned as there were no inputs
 			return output;
 		}
@@ -181,11 +183,22 @@ class CommandCenter {
 		const infantryTargets = targetInfo["enemyInfantry"];
 		if (infantryTargets.length > 0) {
 			let closestIdx = 0;
-			let closestCyborg = getObject(infantryTargets[closestIdx].type, infantryTargets[closestIdx].player, infantryTargets[closestIdx].id);
-			let closestDistSq = distSq(closestCyborg.x, groupPosition.x, closestCyborg.y, groupPosition.y);
+			let closestCyborg = undefined;
+			let closestDistSq = 0;
 
-			for (let i=1; i<infantryTargets.length; i++) {
+			for (let i=0; i<infantryTargets.length; i++) {
 				const currCyborg = getObject(infantryTargets[i].type, infantryTargets[i].player, infantryTargets[i].id);
+
+				if (!defined(currCyborg)) {
+					continue;
+				}
+
+				if (!defined(closestCyborg)) {
+					closestCyborg = currCyborg;
+					closestDistSq = distSq(closestCyborg.x, groupPosition.x, closestCyborg.y, groupPosition.y);
+					continue;
+				}
+
 				const currDistSq = distSq(currCyborg.x, groupPosition.x, currCyborg.y, groupPosition.y);
 				if (currDistSq < closestDistSq) {
 					closestDistSq = currDistSq;
@@ -204,10 +217,15 @@ class CommandCenter {
 
 				backupFsTargets = backupFsTargets.filter(t => {
 					const o = getObject(t.type, t.player, t.id);
+					if (!defined(o)) {
+						return false;
+					}
+
 					if (distSq(o.x, groupPosition.x, o.y, groupPosition.y) < EFFECTIVE_SQ_FS_RADIUS) {
 						return true;
+					} else {
+						return false;
 					}
-					return false;
 				});
 
 				output["fireSupportTarget"] = backupFsTargets[0];		// no sorting, maybe should refactor to sort in order of distance (think it doesn't matter though)
@@ -228,6 +246,10 @@ class CommandCenter {
 			for (let i=0; i<adaTargets.length; i++) {
 				const t = adaTargets[i];
 				const v = getObject(t.type, t.player, t.id);
+				if (!defined(v)) {
+					continue;
+				}
+
 				if (distSq(v.x, groupPosition.x, v.y, groupPosition.y) > EFFECTIVE_SQ_FS_RADIUS) {		// uses the same FS RADIUS as fireSupport
 					continue;
 				}
@@ -348,8 +370,6 @@ class CommandCenter {
 		const campaignStatus = this.getCampaignStatus();
 
 		// GROUND FORCES
-		const mainForceLocation = groundForces.getForceMedianLocation();
-		let nearbyLandTargets = {};
 
 		const readyToAttack = campaignStatus === CAMPAIGN_STATUS.MAIN_ASSAULT || campaignStatus === CAMPAIGN_STATUS.STAGING;
 
@@ -357,12 +377,8 @@ class CommandCenter {
 		let numTargetsInImmediateRadius = 0;
 
 		if (readyToAttack) {
-
-			// Get targets efficiently
-			nearbyLandTargets = intelligence.proposeTargetsInRadius({state: state, loc: mainForceLocation, searchRadius: 25, immediateRadius: 10});
-
 			// Prioritise & assign targets
-			const groundTargets = this.prioritiseLandForceTargets(state, nearbyLandTargets, mainForceLocation);
+			const groundTargets = this.prioritiseLandForceTargets(state.nearbyGroundTargets, state.forceLocation);
 
 			// Attack ground targets; HACK: directly calls tactical level function
 			groundForceAttack({
@@ -377,19 +393,18 @@ class CommandCenter {
 				casTargets.push(...groundTargets["casTargets"]);
 			}
 			numTargetsInImmediateRadius = groundTargets["targetsInImmediateRadius"];
-
 		}
 
 		let airRaidTargets = intelligence.getAirRaidTargets(state);	
 
-		const aviationTargets = this.prioritiseAviationTargets(state, mainForceLocation, numTargetsInImmediateRadius, airRaidTargets, casTargets);
+		const aviationTargets = this.prioritiseAviationTargets(state, state.forceLocation, numTargetsInImmediateRadius, airRaidTargets, casTargets);
 		// debug(`avTarg ${aviationTargets.length} = cas ${casTargets.length} + raid ${airRaidTargets.length}, ${numTargetsInImmediateRadius}`);
 		this.toc.assignAviationMissions(state, aviationTargets);					
 	}
 
 	/////////////////////////////////////////////////// INTELLIGENCE ///////////////////////////////////////////////////
 
-	prioritiseIntelTasks(intelRequests) {
+	prioritiseIntelTasks(state, intelRequests) {
 		const currGt = getCurrGameTime();
 
 		// This function implements basic scheduling in requests (todo: move this to the top level function)
@@ -403,9 +418,24 @@ class CommandCenter {
 			approvedIntelTasks.push(...intelRequests['sectorUpdate']);
 		}
 
-		if (this.WORKER_IDS['oilDominanceCheck'].includes(bucket)) {
-			intelRequests['oilDominanceCheck'].forEach(t => t.payload = this.OIL_DOMINANCE_PERCENTAGE);
-			approvedIntelTasks.push(...intelRequests['oilDominanceCheck']);
+		if (this.WORKER_IDS['checkOilDominance'].includes(bucket)) {
+			intelRequests['checkOilDominance'].forEach(t => t.payload = this.OIL_DOMINANCE_PERCENTAGE);
+			approvedIntelTasks.push(...intelRequests['checkOilDominance']);
+		}
+
+		if (this.WORKER_IDS['checkTargetsNearby'].includes(bucket)) {
+			// HACK: writes state directly; needs to be changed
+
+			// Update location(s) & composition(s) of active combat force(s) -- TEMPORARY IMPLEMENTATION
+			const mainForceLocation = groundForces.getForceMedianLocation(0);
+			state.forceLocation = mainForceLocation;
+
+			if (defined(state.forceLocation)) {
+				state.nearbyGroundTargets = intelligence.proposeTargetsInRadius({state: state, loc: state.forceLocation, searchRadius: 25, immediateRadius: 10});		
+				// debug(`updated force loc & targets @ ${gameTime}`);
+			} else {
+				// debug(`updated force loc @ ${gameTime}`);
+			}			
 		}
 
 		return approvedIntelTasks;
@@ -413,7 +443,7 @@ class CommandCenter {
 
 	runIntelligence(state) {
 		const intelRequests = intelligence.requestIntelCollection(state);							// g2-intelligence: this proposes targets to recon
-		const approvedIntelTasks = this.prioritiseIntelTasks(intelRequests);					// hq: this selects targets from that list to recon
+		const approvedIntelTasks = this.prioritiseIntelTasks(state, intelRequests);					// hq: this selects targets from that list to recon
 
 		if (approvedIntelTasks.length > 0) {
 			this.toc.assignIntelMissions({intelTasks: approvedIntelTasks, state: state});					// hq/toc: this translates orders (previous step) into missions

@@ -37,16 +37,21 @@ class worldState {
     // All functions in FishBot use this class as the current ground truth.
     constructor() {
 
-        this.g = new fbGroup();
-        
+        // Map knowledge
         this.sectors = [];
         this.highRiskSectors = [];
+        this.oilDominance = false;
 
+        // Combat targeting
+        this.forceLocation = undefined;
+        this.nearbyGroundTargets = undefined;   
+
+        // Mission management system
+        this.g = new fbGroup();
         this.activeMissions = [];
 
+        // Bot attributes
         this.botIsActive = true;
-
-        this.oilDominance = false;
     }
 }
 

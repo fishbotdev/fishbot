@@ -88,7 +88,7 @@ class TacticalOperationsCenter {
 					case MISSION_STATUS.SUCCEEDED:
 
 						// Handle other retval payload based on missionType
-						if ([MISSION_TYPE.SECTOR_RECON_ENGINE, MISSION_TYPE.OIL_DOMINANCE_CHECK].includes(md.missionType)) {
+						if ([MISSION_TYPE.SECTOR_RECON_ENGINE, MISSION_TYPE.CHECK_OIL_DOMINANCE].includes(md.missionType)) {
 							// send intel to pending intel
 							this.pendingIntelReports.push(retval.intelReport);
 						}
@@ -236,8 +236,8 @@ class TacticalOperationsCenter {
 			case MISSION_TYPE.SECTOR_RECON_ENGINE:
 				md = intelligence.createSectorReconEngineMission({sectorInfo: args[0], missionType: missionType, tickUID: args[1]});		
 				break;
-			case MISSION_TYPE.OIL_DOMINANCE_CHECK:
-				md = intelligence.createOilDominanceCheckMission({payload: args[0], missionType: missionType, tickUID: args[1]});
+			case MISSION_TYPE.CHECK_OIL_DOMINANCE:
+				md = intelligence.createCheckOilDominanceMission({payload: args[0], missionType: missionType, tickUID: args[1]});
 				break;
 
 			/*
@@ -288,7 +288,7 @@ class TacticalOperationsCenter {
 			const r = reports[i];
 
 			// Process OIL_DOMINANCE_CHECK
-			if (r['missionType'] === MISSION_TYPE.OIL_DOMINANCE_CHECK) {
+			if (r['missionType'] === MISSION_TYPE.CHECK_OIL_DOMINANCE) {
 				if (state.oilDominance !== r['report']) {
 					debug(`oil dominance changed to ${r['report']} @ ${gameTime} ms`);
 					state.oilDominance = r['report'];

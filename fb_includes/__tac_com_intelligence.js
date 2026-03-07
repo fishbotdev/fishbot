@@ -139,7 +139,7 @@ function getSectorIntelFromGameEngine(sectorInfo, missionType) {
 
 }
 
-function getOilDominanceStatus(state, oilDominancePercentage, missionType) {
+function checkOilDominance(state, oilDominancePercentage, missionType) {
 
     let totalDerricks = 0, capturedDerricks = 0;
 

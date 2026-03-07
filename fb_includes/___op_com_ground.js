@@ -43,7 +43,7 @@ class armyGroundForceCommand {
 			return false;
 	}
 
-	getForceMedianLocation() {
+	getForceMedianLocation(unused) {
 		/*
 			Goal: to find the 'median' droid's (x,y) coordinates
 			1. Get x,y of all owned droids
@@ -55,10 +55,11 @@ class armyGroundForceCommand {
 		let infantryReserve = state.g.enumGroup(DIVISION.INFANTRY_RESERVE);
 		let allLandUnits = [...generalReserve, ...fireSupportReserve, ...infantryReserve];
 
-		// Get all x,y coordinates
 		let currGameTime = getCurrGameTime();
-		
 		let droidsInGroup = allLandUnits.filter((droid) => (currGameTime - droid.born) > 30000);	
+		if (droidsInGroup.length === 0) {
+			return undefined;
+		}
 
 		let droidX = [], droidY = [];
 		droidsInGroup.forEach((droid) => {
