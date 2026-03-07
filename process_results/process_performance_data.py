@@ -232,8 +232,9 @@ NEW TEST DATA (runC2 is split)
 # path1 = rf"{cwd()}\process_results\v4_perfdata\\" + rf"1df2117,hardins,1v2.log"
 # path1 = rf"{cwd()}\process_results\v4_perfdata\\" + rf"c7d8eb7,hardins,1v2,targoptim.log"
 # path2 = rf"{cwd()}\process_results\v4_perfdata\\" + rf"4aee90e,hardins,1v2,vtolfix.log"
-path1 = rf"{cwd()}\process_results\v4_perfdata\\" + rf"f9d0fd4,med,cobra,50g.log"
-path2 = rf"{cwd()}\process_results\v4_perfdata\\" + rf"e18c4c4,hard,cobra,50g.log"
+# path1 = rf"{cwd()}\process_results\v4_perfdata\\" + rf"f9d0fd4,med,cobra,50g.log"
+path1 = rf"{cwd()}\process_results\v4_perfdata\\" + rf"e18c4c4,hard,cobra,50g.log"
+path2 = rf"{cwd()}\process_results\v4_perfdata\\" + rf"83ebcd1,hard,cobra,50g.log"
 
 if True:
     ########

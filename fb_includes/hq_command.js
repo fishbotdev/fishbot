@@ -32,7 +32,7 @@ class CommandCenter {
 		// Order these in terms of priority for performance reasons
 		this.REQUESTS_PER_MINUTE = {
 			'sectorUpdate': 30,
-			'checkTargetsNearby': 12,
+			'checkTargetsNearby': 15,
 			'checkOilDominance': 2,
 		};
 
