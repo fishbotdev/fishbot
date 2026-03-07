@@ -126,8 +126,10 @@ class CommandCenter {
 			}
 		}
 
-		usedTimeBlocks.sort((a,b) => a - b);
-		debug(`used timeslots: ${usedTimeBlocks}`);
+		if (false) {
+			usedTimeBlocks.sort((a,b) => a - b);
+			debug(`used timeslots: ${usedTimeBlocks}`);
+		}
 	}
 
 	/////////////////////////////////////////////////// "CAMPAIGN STATUS" ///////////////////////////////////////////////////
