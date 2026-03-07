@@ -70,10 +70,6 @@ function runGameEndedWatchdog() {
 	}
 }
 
-function runIntelligence() {
-	hq.runIntelligence(state)
-}
-
 function runC2() {
 	hq.runCombatOperations(state);
 }
@@ -83,14 +79,24 @@ function runLogistics() {
 }
 
 function runMissionManager() {
-	hq.runMissionManager(state);
+	hq.toc.manageMissions(state);
 }
 
 function scheduleCoreFunctions() {
 	if (state.botIsActive) {
 		const OFFSET = 0;	// ms
-		const CORE_FUNCTION_NAMES = ["runIntelligence", "runC2", "runLogistics", "runMissionManager"];
+		const CORE_FUNCTION_NAMES = ["runC2", "runLogistics"];
 		CORE_FUNCTION_NAMES.forEach((f, idx) => queue(f, idx * OFFSET))
+	}
+}
+
+function scheduleCoreFunctions2() {
+	if (state.botIsActive) {
+		state.currWorkerID = Math.floor(gameTime / state.TIME_BLOCK_MS) % state.INTERVALS_PER_MIN;
+
+		hq.runIntelligence(state);
+
+		queue("runMissionManager", 100 * (2 * Math.floor(Math.random() * 2) + 1));		// this will not clash with any of this FishBot's functions
 	}
 }
 
@@ -98,7 +104,7 @@ function setupFishBot() {
 	// This function queued with a player-specific delay          
 	const FISHBOT_DECISION_INTERVAL = 1000;
 	setTimer("scheduleCoreFunctions", FISHBOT_DECISION_INTERVAL);
-
+	setTimer("scheduleCoreFunctions2", state.TIME_BLOCK_MS);
 	setTimer("runGameEndedWatchdog", 60000);
 }
 
@@ -135,8 +141,8 @@ function eventStartLevel() {
 		transformPlayerToSpectator(0);		// remove default human player (force-added in challenge mode)
 	}
 
-	queue("setupFishBot", me * 77);		// 77 is a random number which has LCM which seems unlikely to line up with other bots (other bots use multiples of 100ms for scheduling)
-	
+	queue("setupFishBot", me * 100);		
+
 	// Run construction tasks right away
 	queue("runLogistics");				
 	queue("runMissionManager");
