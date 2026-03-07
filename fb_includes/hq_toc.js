@@ -16,7 +16,7 @@
 */
 
 class TacticalOperationsCenter {
-	// This is the central place where all missions are planned, controlled & monitored.
+	// This is the central location where all missions are planned, controlled & monitored.
 	constructor() {
 		
 		this.pendingIntelReports = [];
@@ -88,7 +88,7 @@ class TacticalOperationsCenter {
 					case MISSION_STATUS.SUCCEEDED:
 
 						// Handle other retval payload based on missionType
-						if ([MISSION_TYPE.SECTOR_RECON_ENGINE].includes(retval.missionType)) {
+						if ([MISSION_TYPE.SECTOR_RECON_ENGINE, MISSION_TYPE.OIL_DOMINANCE_CHECK].includes(md.missionType)) {
 							// send intel to pending intel
 							this.pendingIntelReports.push(retval.intelReport);
 						}
@@ -143,26 +143,22 @@ class TacticalOperationsCenter {
 		}
 	}
 
-	assignReconMissions({reconTasks, state}) {
-		// Application service:
+	assignIntelMissions({intelTasks, state}) {
 
 		// debug(`assignReconMissions(): reconTasks.length = ${reconTasks.length}`);
-		for (let i=0; i<reconTasks.length; i++) {
+		for (let i=0; i<intelTasks.length; i++) {
 
 			// This function just executes, it doesn't reason (e.g. it doesn't stop a new mission from being scheduled if there's already an active one)
 
-			// TEMPORARY: FIGURE OUT A BETTER WAY TO DIFFERENTIATE ENGINE TASKS VS AIR RECON TASKS
-			let missionType = MISSION_TYPE.AIR_RECON_SILENT;
-			if (reconTasks[i].featureType === FEATURE_TYPE.SECTOR) {
-				missionType = MISSION_TYPE.SECTOR_RECON_ENGINE;
-			}
-			
-			// args follow: 'value', 'key', 'array' (array is not required so is not passed) 
-			const missionData = this.createNewMission({missionType: missionType, priority: MISSION_PRIORITY.HIGH}, reconTasks[i], i);
+			const missionType = intelTasks[i].missionType;
+			const payload = intelTasks[i].payload;
+			const priority = intelTasks[i].priority;
+
+			const missionData = this.createNewMission({missionType: missionType, priority: priority}, payload, i);
 			
 			if (defined(missionData)) {
 				state.activeMissions.push(missionData);
-				// debug(`scheduled ${missionData.id} (${missionType}), ${reconTasks[i].id} ftype ${reconTasks[i].featureType}`);
+				// debug(`scheduled ${missionData.id} (${missionType}) @${gameTime}`);
 				continue;
 			} 
 		}
@@ -240,6 +236,9 @@ class TacticalOperationsCenter {
 			case MISSION_TYPE.SECTOR_RECON_ENGINE:
 				md = intelligence.createSectorReconEngineMission({sectorInfo: args[0], missionType: missionType, tickUID: args[1]});		
 				break;
+			case MISSION_TYPE.OIL_DOMINANCE_CHECK:
+				md = intelligence.createOilDominanceCheckMission({payload: args[0], missionType: missionType, tickUID: args[1]});
+				break;
 
 			/*
 				CONSTRUCTION MISSIONS
@@ -280,15 +279,25 @@ class TacticalOperationsCenter {
 		}
 	}
 
-	compileIntelIntoCOP(reports, state) {
+	compileSectorIntelIntoCOP(reports, state) {
         // Application service: compiles & saves available sector intelligence reports returned from 
         //  - getSectorIntelFromGameEngine()
         // into the main game state.
 
-		// debug(`in compileIntoCOP(): reports.length = ${reports.length}`);
-
 		for (let i=0; i<reports.length; i++) {
-			const currSectorReport = reports[i];
+			const r = reports[i];
+
+			// Process OIL_DOMINANCE_CHECK
+			if (r['missionType'] === MISSION_TYPE.OIL_DOMINANCE_CHECK) {
+				if (state.oilDominance !== r['report']) {
+					debug(`oil dominance changed to ${r['report']} @ ${gameTime} ms`);
+					state.oilDominance = r['report'];
+				};
+				continue;
+			}
+
+			// Else, assume it is SECTOR_RECON_ENGINE
+			let currSectorReport = r['report'];
 
 			// Find the sector
             const relevantSectorList = state.sectors.filter(sector => sector.id === currSectorReport.id);

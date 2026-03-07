@@ -20,19 +20,32 @@ class armyIntelligence {
 
 	}
 
-	requestCollection(state) {
-		// System: Looks at the state & generate options for reconnaissance
+	#createIntelRequest({missionType, payload, priority=MISSION_PRIORITY.LOW}) {
+		return {
+			'missionType': missionType,
+			'payload': payload,
+			'priority': priority
+		};
+	}
 
-		// For now, recon all sectors equally
-		let sectorsToRecon = [];
-		for (let i=0; i<state.sectors.length; i++) {
-			const currSector = state.sectors[i];
-			sectorsToRecon.push(currSector);
+	requestIntelCollection(state) {
+		// Generates options for intelligence gathering
+		let c = {
+			'sectorUpdate': [], 
+			'oilDominanceCheck': [],
 		}
 
-		let intelligenceTasks = sectorsToRecon;
+		// SECTOR RECON
+		state.sectors.forEach(s => 
+			c['sectorUpdate'].push(this.#createIntelRequest({missionType: MISSION_TYPE.SECTOR_RECON_ENGINE, payload: s}))
+		);
 
-		return intelligenceTasks;
+		// OIL DOMINANCE CHECK
+		// payload = oilDominance percentage -> will be populated by hq-command
+		let oilDominanceCheck = this.#createIntelRequest({missionType: MISSION_TYPE.OIL_DOMINANCE_CHECK, payload: undefined});		
+		c['oilDominanceCheck'].push(oilDominanceCheck);
+
+		return c;
 	}
 
 	/*
@@ -79,11 +92,28 @@ class armyIntelligence {
 
 		md.sectorID = sectorInfo.id;
 
-		//md.missionType is set in the parent function (no duplication)
-		md.missionStatus = MISSION_STATUS.NOT_STARTED;
+		// Assign orders for conducting & ceasing operations			
+		md.orders = () => this.#mcb(getSectorIntelFromGameEngine, sectorInfo, missionType);		
+		md.ceaseOrders = () => this.#mcb(this.#finaliseEngineCall, md);
+
+		return md;
+	}
+
+	createOilDominanceCheckMission({payload: oilDominanceThreshold, missionType, tickUID}) {
+		// it returns either:
+		// 	- missionData object (according to missionDataTemplate), if mission successfully created, OR
+		//	- undefined, if mission was not able to be created
+		
+		let md = this.#createMissionOrders();
+
+		// Create mission details
+		const id = gameTime + "_OIL_DOMINANCE_CHECK_" + tickUID;
+		md.id = id;
+
+		md.sectorID = undefined;
 
 		// Assign orders for conducting & ceasing operations			
-		md.orders = () => this.#mcb(getSectorIntelFromGameEngine, sectorInfo, missionType);		// lambda is necessary otherwise md.orders is not interpreted as a function
+		md.orders = () => this.#mcb(getOilDominanceStatus, state, oilDominanceThreshold, missionType);		
 		md.ceaseOrders = () => this.#mcb(this.#finaliseEngineCall, md);
 
 		return md;
@@ -372,25 +402,6 @@ class armyIntelligence {
 
 		return proposedTargets;
 
-	}
-
-	getOilDominanceStatus(state, OIL_DOMINANCE_PERCENTAGE) {
-		let totalDerricks = 0, capturedDerricks = 0;
-
-		for (let i=0; i<state.sectors.length; i++) {
-			let d = state.sectors[i].derricks;
-			d.forEach(derrick => {
-				if (derrick.owner === REGION_OWNER.FRIENDLY) {
-					capturedDerricks++;
-				}
-				totalDerricks++;
-			})
-		}
-		if (Math.floor(capturedDerricks / totalDerricks * 100) > OIL_DOMINANCE_PERCENTAGE) {
-			return true;
-		} else {
-			return false;
-		}
 	}
 
 }

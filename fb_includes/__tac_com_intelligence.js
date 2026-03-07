@@ -131,8 +131,35 @@ function getSectorIntelFromGameEngine(sectorInfo, missionType) {
 
     return {
         status: MISSION_STATUS.SUCCEEDED,
-        missionType: missionType,
-        intelReport: sectorIntelReport
+        intelReport: {
+            'missionType': missionType,
+            'report': sectorIntelReport
+        }
     }
 
+}
+
+function getOilDominanceStatus(state, oilDominancePercentage, missionType) {
+
+    let totalDerricks = 0, capturedDerricks = 0;
+
+    for (let i=0; i<state.sectors.length; i++) {
+        let d = state.sectors[i].derricks;
+        d.forEach(derrick => {
+            if (derrick.owner === REGION_OWNER.FRIENDLY) {
+                capturedDerricks++;
+            }
+            totalDerricks++;
+        })
+    }
+
+    const isOilDominant = Math.floor(capturedDerricks / totalDerricks * 100) > oilDominancePercentage;
+
+    return {
+        status: MISSION_STATUS.SUCCEEDED,
+        intelReport: {
+            'missionType': missionType, 
+            'report': isOilDominant
+        }
+    }
 }

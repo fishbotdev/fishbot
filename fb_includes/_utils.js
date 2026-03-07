@@ -122,6 +122,17 @@ function getCurrGameTime() {
 	return currGameTime;
 }
 
+/**
+ * Generates an array of numbers starting from 0 and ending at integer stopNum (not including stopNum) 
+ */ 
+function generateRange(stopNum) {
+	const numbers = [];
+	for (let i=0; i < stopNum; i++) {
+		numbers.push(i);
+	}
+	return numbers;
+}
+
 function isT0Start() {
 	return !isStructureAvailable("A0ComDroidControl", me);
 }

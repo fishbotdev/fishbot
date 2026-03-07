@@ -18,15 +18,53 @@
 class CommandCenter {
 
 	constructor() {
+
+		/*
+			This constructor is intended to contain *all* FishBot parameters which change how it behaves.
+		*/
+
 		this.campaignStatus = CAMPAIGN_STATUS.BUILDUP;	
 		
 		this.toc = new TacticalOperationsCenter();
 
-		this.oilDominance = false;
 		this.OIL_DOMINANCE_PERCENTAGE = 55;
 
-		this.RECON_COOLDOWN_TIME = 1900;		// this number depends on FishBot's ticks, if we want recon to be conducted every 2 * DECISION_INTERVAL = 2000 ms then we need to set a number smaller than 2000 
-		this.lastConductedRecon = -2 * this.RECON_COOLDOWN_TIME;
+		// Order these in terms of priority for performance reasons
+		this.REQUESTS_PER_MINUTE = {
+			'sectorUpdate': 30,
+			'oilDominanceCheck': 2,
+		};
+
+		// Game performance related parameters
+		this.WORKER_IDS = {
+			'sectorUpdate': [],
+			'oilDominanceCheck': []
+		}
+
+		this.#setWorkerIDs();
+
+	}
+
+	#setWorkerIDs() {
+		const INTERVALS_PER_MIN = 60;		// one bin every 1000ms
+		const r = generateRange(INTERVALS_PER_MIN);		
+		let used = [];
+
+		for (const [key, value] of Object.entries(this.WORKER_IDS)) {
+			// assign bin based on modulus.
+			const requestInterval = Math.floor(INTERVALS_PER_MIN / this.REQUESTS_PER_MINUTE[key]);
+
+			for (let i=0; i<r.length; i++) {
+				if (r[i] % requestInterval !== 0) {
+					continue;
+				}
+
+				used.push(i);
+				this.WORKER_IDS[key].push(i);		// todo resolve t=0 pileup
+			}									
+		}
+
+		debug(`used timeslots: ${used}`);
 	}
 
 	/////////////////////////////////////////////////// STATE INITIALISATION ///////////////////////////////////////////////////
@@ -223,8 +261,8 @@ class CommandCenter {
 
 		// TEMPORARY -> Will be replaced by intelligent merge sort based on weighted priority
 		const prioritiseCasTargets = nearbyTargetCount >= 3;
-		const prioritiseRaidTargets = !this.oilDominance;
-		const prioritiseIndustrialTargets = this.oilDominance;
+		const prioritiseRaidTargets = !state.oilDominance;
+		const prioritiseIndustrialTargets = state.oilDominance;
 
 		let highestNewTargetPriority = MISSION_PRIORITY.LOW;
 
@@ -307,13 +345,6 @@ class CommandCenter {
 
 	runCombatOperations(state) {
 
-		if (!this.oilDominance) {
-			this.oilDominance = intelligence.getOilDominanceStatus(state, this.OIL_DOMINANCE_PERCENTAGE);
-			if (this.oilDominance) {
-				debug(`oil dominance at: ${getCurrGameTime()} ms.`)
-			}
-		}
-
 		const campaignStatus = this.getCampaignStatus();
 
 		// GROUND FORCES
@@ -358,28 +389,36 @@ class CommandCenter {
 
 	/////////////////////////////////////////////////// INTELLIGENCE ///////////////////////////////////////////////////
 
-	prioritiseIntelTasks(intelTasks) {
-		const currTime = getCurrGameTime();
-		
-		if (currTime - this.lastConductedRecon > this.RECON_COOLDOWN_TIME) {
-			if (false) debug(`issueIntelTasking(): scheduling recon -> ${currTime}`);
-			this.lastConductedRecon = currTime;
+	prioritiseIntelTasks(intelRequests) {
+		const currGt = getCurrGameTime();
 
-			// automatic approval of intel tasks
-			return intelTasks;
-		} else {
-			return [];
+		// This function implements basic scheduling in requests (todo: move this to the top level function)
+		const bucket = Math.floor(currGt / 1000) % 60;				// per second
+		// debug(`${bucket}`);
+
+		let approvedIntelTasks = [];
+		
+		// Execute tasks based on schedule
+		if (this.WORKER_IDS['sectorUpdate'].includes(bucket)) { 
+			approvedIntelTasks.push(...intelRequests['sectorUpdate']);
 		}
+
+		if (this.WORKER_IDS['oilDominanceCheck'].includes(bucket)) {
+			intelRequests['oilDominanceCheck'].forEach(t => t.payload = this.OIL_DOMINANCE_PERCENTAGE);
+			approvedIntelTasks.push(...intelRequests['oilDominanceCheck']);
+		}
+
+		return approvedIntelTasks;
 	}
 
 	runIntelligence(state) {
-		const intelTasks = intelligence.requestCollection(state);						// g2-intelligence: this proposes targets to recon
-		const approvedIntelTasks = this.prioritiseIntelTasks(intelTasks);			// hq: this selects targets from that list to recon
+		const intelRequests = intelligence.requestIntelCollection(state);							// g2-intelligence: this proposes targets to recon
+		const approvedIntelTasks = this.prioritiseIntelTasks(intelRequests);					// hq: this selects targets from that list to recon
 
 		if (approvedIntelTasks.length > 0) {
-			this.toc.assignReconMissions({reconTasks: approvedIntelTasks, state: state});					// hq/toc: this translates orders (previous step) into missions
+			this.toc.assignIntelMissions({intelTasks: approvedIntelTasks, state: state});					// hq/toc: this translates orders (previous step) into missions
 			const observations = this.toc.getCompletedIntelMissionReports();				// hq/toc: gets completed data (intelligence reports)
-			this.toc.compileIntelIntoCOP(observations, state);								// hq/toc: processes intelligence reports & updates state ("Common Operational Picture")
+			this.toc.compileSectorIntelIntoCOP(observations, state);								// hq/toc: processes intelligence reports & updates state ("Common Operational Picture")
 
 			this.toc.updateHighRiskSectors(state);
 		}

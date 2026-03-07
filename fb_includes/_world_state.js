@@ -32,6 +32,25 @@
  *      4. Decision maker (coordinator)                                      -- fulfilled by: hq_command
  */
 
+class worldState {
+    // State: this class stores the game state from FishBot's perspective.
+    // All functions in FishBot use this class as the current ground truth.
+    constructor() {
+
+        this.g = new fbGroup();
+        
+        this.sectors = [];
+        this.highRiskSectors = [];
+
+        this.activeMissions = [];
+
+        this.botIsActive = true;
+
+        this.oilDominance = false;
+    }
+}
+
+
 class worldStateBuilder {
 
     #_createDerrickFromTemplate({location}) {
@@ -80,7 +99,7 @@ class worldStateBuilder {
             'base': base,
             'derricks': [],
             'adjacentSectors': [],
-
+            
             'priority': MISSION_PRIORITY.LOW,
             'friendlyDefenceCount': undefined,
             'enemyDefenceCount': undefined,
@@ -190,21 +209,5 @@ class worldStateBuilder {
         // Application service: Initialises 'worldState' to defaults
         this.#initialiseFbGroups(state);
         this.#initialiseSectors(state);
-    }
-}
-
-
-class worldState {
-    // State: this class stores the common game state from FishBot's perspective
-    constructor() {
-
-        this.g = new fbGroup();
-        
-        this.sectors = [];
-        this.highRiskSectors = [];
-
-        this.activeMissions = [];
-
-        this.botIsActive = true;
     }
 }
