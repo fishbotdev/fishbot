@@ -339,7 +339,7 @@ class CommandCenter {
 			
 			if (c.missionType === MISSION_TYPE.CAS_STRIKE) {
 				const currObj = getObject(c.target.type, c.target.player, c.target.id);
-				if (!defined(currObj)) {
+				if (!defined(currObj) || !defined(groupPosition)) {
 					continue;
 				}
 				if (distSq(currObj.x, groupPosition.x, currObj.y, groupPosition.y) >= CAS_RADIUS ** 2) {
