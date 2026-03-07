@@ -32,7 +32,8 @@ class CommandCenter {
 		// Put high requests at the start
 		this.REQUESTS_PER_MINUTE = {
 			'global_missionManager': 60,
-
+			'combat_runC2': 60,
+			'runLogistics': 60,
 			'intel_manageMissions': 60,
 			'intel_sectorUpdate': 30,			
 			'intel_checkTargetsNearby': 15,

@@ -84,27 +84,27 @@ function runMissionManager() {
 
 function scheduleCoreFunctions() {
 	if (state.botIsActive) {
-		const OFFSET = 0;	// ms
-		const CORE_FUNCTION_NAMES = ["runC2", "runLogistics"];
-		CORE_FUNCTION_NAMES.forEach((f, idx) => queue(f, idx * OFFSET))
-	}
-}
-
-function scheduleCoreFunctions2() {
-	if (state.botIsActive) {
 		state.currWorkerID = Math.floor(gameTime / state.TIME_BLOCK_MS) % state.INTERVALS_PER_MIN;
 
 		hq.runIntelligence(state);
 
-		queue("runMissionManager", 100 * (2 * Math.floor(Math.random() * 2) + 1));		// this will not clash with any of this FishBot's functions
+		if (state.WORKER_IDS['runLogistics'][state.currWorkerID]) {
+			queue("runLogistics");
+		}
+
+		if (state.WORKER_IDS['combat_runC2'][state.currWorkerID]) {
+			queue("runC2");
+		}
+
+		if (state.WORKER_IDS['global_missionManager'][state.currWorkerID]) {
+			queue("runMissionManager");		// this will not clash with any of the current FishBot's functions
+		}
 	}
 }
 
 function setupFishBot() {
 	// This function queued with a player-specific delay          
-	const FISHBOT_DECISION_INTERVAL = 1000;
-	setTimer("scheduleCoreFunctions", FISHBOT_DECISION_INTERVAL);
-	setTimer("scheduleCoreFunctions2", state.TIME_BLOCK_MS);
+	setTimer("scheduleCoreFunctions", state.TIME_BLOCK_MS);
 	setTimer("runGameEndedWatchdog", 60000);
 }
 
