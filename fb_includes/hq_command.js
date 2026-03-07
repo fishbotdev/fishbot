@@ -29,17 +29,16 @@ class CommandCenter {
 
 		this.OIL_DOMINANCE_PERCENTAGE = 55;
 
-		// Put high requests at the start
+		// Put regular, computationally demanding tasks at the front
 		this.REQUESTS_PER_MINUTE = {
 			'global_missionManager': 60,
 			'combat_runC2': 60,
-			'runLogistics': 60,
 			'intel_manageMissions': 60,
-			'intel_sectorUpdate': 30,			
+			'intel_sectorUpdate': 30,	
+			'runLogistics': 60,		
 			'intel_checkTargetsNearby': 15,
 			'intel_checkCampaignStatus': 15,
 			'intel_checkOilDominance': 2,
-
 		};
 
 		this.approvedIntelTasks = [];
