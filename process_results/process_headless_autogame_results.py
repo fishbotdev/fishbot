@@ -189,8 +189,9 @@ def show_medium_cobra_results():
     # test_1 = getcwd() + rf"\process_results/v4/" + "a2e13b4,med,cobra_v3_release" + ".txt"    # v3 release: retesting [98 / 100 wins]
     # test_1 = getcwd() + rf"\process_results/v4/" + "1e3edc5,med,cobra" + ".txt"               # v4 dev: before perf optimisations [96 / 100 won]
     # test_1 = getcwd() + rf"\process_results/v4/" + "0c6d165,med,cobra,100g" + ".txt"               # perf: removed getAllBaseTargets [95 / 100 won]
-    test_1 = getcwd() + rf"\process_results/v4/" + "2167472,med,cobra,50g" + ".txt"               # perf: before merging performance-improvements [49 / 49 won]
-    test_2 = getcwd() + rf"\process_results/v4/" + "f9d0fd4,med,cobra,50g" + ".txt"               # perf: after merging perf-optim2 [49 / 50 won], higher K/D
+    # test_1 = getcwd() + rf"\process_results/v4/" + "2167472,med,cobra,50g" + ".txt"               # perf: before merging performance-improvements [49 / 49 won]
+    test_1 = getcwd() + rf"\process_results/v4/" + "f9d0fd4,med,cobra,50g" + ".txt"               # perf: after merging perf-optim2 [49 / 50 won], higher K/D
+    test_2 = getcwd() + rf"\process_results/v4/" + "45635e6,med,cobra,100g" + ".txt"               # perf: after migrating into fixed time hashing [96 / 100 won]
     
     commit1 = test_1.split(rf"v4/")[1].split(",")[0]
     commit2 = test_2.split(rf"v4/")[1].split(",")[0]
@@ -222,8 +223,13 @@ def show_hard_cobra_results():
     # test_1 = getcwd() + rf"\process_results/v3/" + "68275e8,hard" + ".txt"              # v3 dev: 4.6.2, [40/50 wins] optimised oil cap, optimised cyborgs and research
     # test_1 = getcwd() + rf"\process_results/v3/" + "29ceeb0,hard,463" + ".txt"              # v3 dev: 4.6.3, [63/86 wins] long term test
     # test_1 = getcwd() + rf"\process_results/v4/" + "ca33b28,hard,cobra,100g" + ".txt"              # v4 dev: 4.6.3, [55 / 100 wins] regression after perf-optimisation
-    test_1 = getcwd() + rf"\process_results/v4/" + "e18c4c4,hard,cobra,50g" + ".txt"              # v4 dev: 4.6.3, [40 / 50 wins] after simultaneous-VTOL & CAS improvements; regression fixed
-    test_2 = getcwd() + rf"\process_results/v4/" + "83ebcd1,hard,cobra,50g" + ".txt"              # v4 dev: 4.6.3, [34 / 50 wins] after first intel optimisation
+    # test_1 = getcwd() + rf"\process_results/v4/" + "e18c4c4,hard,cobra,50g" + ".txt"              # v4 dev: 4.6.3, [40 / 50 wins] after simultaneous-VTOL & CAS improvements; regression fixed
+    test_1 = getcwd() + rf"\process_results/v4/" + "83ebcd1,hard,cobra,50g" + ".txt"              # v4 dev: 4.6.3, [34 / 50 wins] after first intel optimisation
+    test_2 = getcwd() + rf"\process_results/v4/" + "fd4692d,hard,cobra,50g" + ".txt"              # v4 dev: 4.6.3, [36 / 50 wins] after migrating all functions to the new scheduler
+
+
+
+
     commit1 = test_1.split(rf"v4/")[1].split(",")[0]
     commit2 = test_2.split(rf"v4/")[1].split(",")[0]
 
@@ -246,8 +252,8 @@ def show_insane_diff_results():
     show_stats(*get_stats(test_2), title=f"{commit2} (newer)", legend=[commit1, commit2], figNum=3)    
 
 
-# show_medium_cobra_results()
-show_hard_cobra_results()
+show_medium_cobra_results()
+# show_hard_cobra_results()
 # show_insane_diff_results()
 
 import matplotlib.pyplot as plt

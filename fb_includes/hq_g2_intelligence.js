@@ -20,32 +20,12 @@ class armyIntelligence {
 
 	}
 
-	#createIntelRequest({missionType, payload, priority=MISSION_PRIORITY.LOW}) {
+	createIntelRequest({missionType, payload, priority=MISSION_PRIORITY.LOW}) {
 		return {
 			'missionType': missionType,
 			'payload': payload,
 			'priority': priority
 		};
-	}
-
-	requestIntelCollection(state) {
-		// Generates options for intelligence gathering
-		let c = {
-			'sectorUpdate': [], 
-			'checkOilDominance': [],
-		}
-
-		// SECTOR RECON
-		state.sectors.forEach(s => 
-			c['sectorUpdate'].push(this.#createIntelRequest({missionType: MISSION_TYPE.SECTOR_RECON_ENGINE, payload: s}))
-		);
-
-		// OIL DOMINANCE CHECK
-		// payload = oilDominance percentage -> will be populated by hq-command
-		let checkOilDominance = this.#createIntelRequest({missionType: MISSION_TYPE.CHECK_OIL_DOMINANCE, payload: undefined});		
-		c['checkOilDominance'].push(checkOilDominance);
-
-		return c;
 	}
 
 	/*

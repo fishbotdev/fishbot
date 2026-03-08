@@ -15,6 +15,10 @@
 	If not, see <https://www.gnu.org/licenses/>.
 */
 
+/*
+	This file defines generic event handlers defined by the WZ2100 engine.
+	FishBot might use these in the future for performance optimisation.
+*/
 
 function eventDroidBuilt(droid, structure) {	
 	// This is the only event handler that FishBot uses (avoids having to perform enumDroid continuously)
@@ -54,90 +58,4 @@ function eventBeaconRemoved(from, to) {
 function eventDestroyed(object) {
 	// this is regularly called if defined
 	// does nothing for now
-}
-
-function runGameEndedWatchdog() {
-	const gameIsFinished = gameHasEnded();
-
-	if (gameIsFinished && state.botIsActive) {
-		debug(`FishBot ${me}: gameHasEnded, stopping all function`);
-		state.botIsActive = false;
-	}
-
-	if (!gameIsFinished && !state.botIsActive) {
-		debug(`FishBot ${me}: is alive, resuming function`);
-		state.botIsActive = true;
-	}
-}
-
-function runIntelligence() {
-	hq.runIntelligence(state)
-}
-
-function runC2() {
-	hq.runCombatOperations(state);
-}
-
-function runLogistics() {
-	hq.runLogistics(state);
-}
-
-function runMissionManager() {
-	hq.runMissionManager(state);
-}
-
-function scheduleCoreFunctions() {
-	if (state.botIsActive) {
-		const OFFSET = 0;	// ms
-		const CORE_FUNCTION_NAMES = ["runIntelligence", "runC2", "runLogistics", "runMissionManager"];
-		CORE_FUNCTION_NAMES.forEach((f, idx) => queue(f, idx * OFFSET))
-	}
-}
-
-function setupFishBot() {
-	// This function queued with a player-specific delay          
-	const FISHBOT_DECISION_INTERVAL = 1000;
-	setTimer("scheduleCoreFunctions", FISHBOT_DECISION_INTERVAL);
-
-	setTimer("runGameEndedWatchdog", 60000);
-}
-
-function eventStartLevel() {
-
-	const initialTrucks = enumDroid(me, DROID_CONSTRUCT);
-	initialTrucks.forEach(droid => {
-		// Copied from NullBot:
-		// the following two lines are necessary to avoid some strange game bug when droids that
-		// are initially buried into the ground fail to move out of the way when a building
-		// is being placed right above them
-		const randomPerturbation = Math.floor(Math.random() * 3) - 1;		// [-1, 0, 1]
-		orderDroidLoc(droid, DORDER_MOVE, droid.x + randomPerturbation, droid.y + randomPerturbation);
-
-		state.g.addDroidToGroup({groupID: ENGINEERING.ENGINEERING_RESERVE, droidID: droid.id});
-	});
-
-	if (DEBUG_MODE_ON) {
-		// colour reference: 
-		const playerColours = {	// from js-functions.md
-			"pink" : 6,
-			"cyan": 7,
-			"yellow": 8,
-			"white": 10,
-			"bright-blue": 11,
-			"neon-green": 12,
-			"infra-red": 13,
-			"ultra-violet": 14,
-		};		
-		changePlayerColour(0, playerColours["white"]);
-		changePlayerColour(1, playerColours["yellow"]);		
-		changePlayerColour(2, playerColours["cyan"]);
-		changePlayerColour(3, playerColours["bright-blue"]);
-		transformPlayerToSpectator(0);		// remove default human player (force-added in challenge mode)
-	}
-
-	queue("setupFishBot", me * 77);		// 77 is a random number which has LCM which seems unlikely to line up with other bots (other bots use multiples of 100ms for scheduling)
-	
-	// Run construction tasks right away
-	queue("runLogistics");				
-	queue("runMissionManager");
 }
