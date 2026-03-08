@@ -191,14 +191,19 @@ function groundForceAttack({state, directFireTarget, fireSupportTarget, adaTarge
 	let currFireSupportTarget = undefined;
 	if (defined(fireSupportTarget)) {
 		currFireSupportTarget = getObject(fireSupportTarget.type, fireSupportTarget.player, fireSupportTarget.id);
-	} 
+	}
+	 
 	fireSupportReserve.forEach((droid) => {
-		if (distSq(droid.x, currDirectFireTarget.x, droid.y, currDirectFireTarget.y) <= 7 ** 2) {
+		const distSqToDirectFireTarget = distSq(droid.x, currDirectFireTarget.x, droid.y, currDirectFireTarget.y);
+		
+		if (distSqToDirectFireTarget <= 7 ** 2 || (_distSqToClosestDroid(currDirectFireTarget) > 12 ** 2 && distSqToDirectFireTarget < 12 ** 2)) {
 			// Fire support units should fall back if they find themselves on the front line
 			orderDroidLoc(droid, DORDER_MOVE, baseLocation.x, baseLocation.y);
 		} else {
 			if (defined(currFireSupportTarget)) {
 				attackTarget(droid, currFireSupportTarget);
+			} else {
+				orderDroidLoc(droid, DORDER_MOVE, baseLocation.x, baseLocation.y);				
 			}
 		}
 	});

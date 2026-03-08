@@ -279,7 +279,7 @@ class CommandCenter {
 			}
 		}
 
-		if (!defined(output["fireSupportTarget"])) {
+		if (!defined(output["fireSupportTarget"]) && defined(output["directFireTarget"])) {
 			output["fireSupportTarget"] = output["directFireTarget"];
 		}
 
@@ -329,7 +329,7 @@ class CommandCenter {
 		let industrialTargets = []; // temp until implemented
 
 		// TEMPORARY -> Will be replaced by intelligent merge sort based on weighted priority
-		const prioritiseCasTargets = nearbyTargetCount >= 3;
+		const prioritiseCasTargets = casTargets.length >= 4;
 		const prioritiseRaidTargets = !state.oilDominance;
 		const prioritiseIndustrialTargets = state.oilDominance;
 
