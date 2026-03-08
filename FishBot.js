@@ -107,13 +107,14 @@ var DEBUG_MODE_ON = true;
 	/*
 		STRATEGIC-LEVEL
 
-		These files decide what FishBot will do. Their main job is reasoning and delegating the carrying-out
-		of missions to the operational level functions.
+		These files reason about and then decide on next action that FishBot should take.
 	*/
 	include(FB_INCLUDES + "hq_toc.js");
 	include(FB_INCLUDES + "hq_command.js");		
 
-	// (The following two files contain event handlers and the hook for starting the game)
+	// (The following two files contain event handlers and the hook for starting the game). 
+	// The files must be included in this order.
 	include(FB_INCLUDES + "_init.js");	
 	include(FB_INCLUDES + "_events.js");						
+	include(FB_INCLUDES + "_run.js");						
 }
