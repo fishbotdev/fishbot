@@ -32,8 +32,8 @@ class CommandCenter {
 		// Put regular, computationally demanding tasks at the front
 		this.REQUESTS_PER_MINUTE = {
 			'combat_runC2': 60,
-			'global_missionManager': 60,
 			'runLogistics': 60,
+			'global_missionManager': 60,
 			'intel_updateCOP': 60,	
 			'intel_updateSectorInfo': 30,	
 			'intel_checkTargetsNearby': 15,
