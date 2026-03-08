@@ -227,8 +227,7 @@ def show_hard_cobra_results():
     # test_1 = getcwd() + rf"\process_results/v4/" + "83ebcd1,hard,cobra,50g" + ".txt"              # v4 dev: 4.6.3, [34 / 50 wins] after first intel optimisation
     # test_1 = getcwd() + rf"\process_results/v4/" + "fd4692d,hard,cobra,50g" + ".txt"              # v4 dev: 4.6.3, [36 / 50 wins] first new scheduler implementation
     test_1 = getcwd() + rf"\process_results/v4/" + "603cca0,hard,cobra,50g" + ".txt"              # v4 dev: 4.6.3, [34 / 50 wins] after full migration of existing functions to the new scheduler
-    test_2 = getcwd() + rf"\process_results/v4/" + "fbf5655,hard,cobra,50g" + ".txt"              # v4 dev: 4.6.3, [34 / 50 wins] after full migration of existing functions to the new scheduler
-
+    test_2 = getcwd() + rf"\process_results/v4/" + "fbf5655,hard,cobra,50g" + ".txt"              # v4 dev: 4.6.3, [35 / 50 wins] reduced COP integration from 1Hz to 1/2Hz
 
     commit1 = test_1.split(rf"v4/")[1].split(",")[0]
     commit2 = test_2.split(rf"v4/")[1].split(",")[0]
