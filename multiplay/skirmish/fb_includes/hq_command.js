@@ -185,7 +185,22 @@ class CommandCenter {
 		}
 
 		// DIRECT FIRE TARGETS
-		output["directFireTarget"] = targetInfo["closestObject"];
+		const c = targetInfo["closestObject"];
+		if (defined(getObject(c.type, c.player, c.id))) {
+			output["directFireTarget"] = targetInfo["closestObject"];
+		}
+		
+		if (!defined(output["directFireTarget"])) {
+			// This is a fallback to handle stale inputs
+			for (let i=0; i<targetInfo["closestObjects"].length; i++) {
+				const t = targetInfo["closestObjects"][i];
+				if (defined(getObject(t.type, t.player, t.id))) {
+					output["directFireTarget"] = t;
+					// debug(`fallback directFireTarget used @ ${gameTime} ms`);
+					break;
+				}
+			}
+		}
 
 		// CAS
 		output["casTargets"] = [...targetInfo["enemyArmor"], ...targetInfo["enemyADA"], ...targetInfo["enemyIndirectFire"]];

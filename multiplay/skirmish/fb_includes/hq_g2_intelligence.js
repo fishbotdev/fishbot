@@ -279,6 +279,7 @@ class armyIntelligence {
 			'enemyUtility': [], 
 			'enemyDefenses': [],
 			'closestObject': undefined,
+			'closestObjects': [],				// a temporary cache so this function can be executed less
 			'targetsInImmediateRadius': 0
 		};		
 
@@ -318,6 +319,7 @@ class armyIntelligence {
 				}
 				if (distSquaredToLoc <= immediateRadius ** 2) {
 					proposedTargets["targetsInImmediateRadius"] += 1;
+					proposedTargets["closestObjects"].push(obj);
 				}
 			}
 
