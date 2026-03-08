@@ -123,13 +123,15 @@ class CommandCenter {
 
 			const requestInterval = Math.floor(state.INTERVALS_PER_MIN / requestsPerMin);
 
-			const currModulusRemainder = (taskID * 2654435761) % requestInterval;
+			const taskHash = taskID * 2654435761;
 			taskID++;
 
 			// Creating long arrays of 'true' & 'false' in memory allows for simple lookup using the time index, 
 			// instead of using .includes() in final application in _run.js (more computationally efficient)
 			for (let i=0; i<r.length; i++) {
-				if (r[i] % requestInterval !== currModulusRemainder) {
+				const hash = taskHash + r[i] * 1013904223;
+
+				if (hash % requestInterval !== 0) {
 					state.WORKER_IDS[task].push(false);			
 				} else {
 					state.WORKER_IDS[task].push(true);
