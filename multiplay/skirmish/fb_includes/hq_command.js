@@ -102,14 +102,12 @@ class CommandCenter {
 
 	setSchedulerParameters(state) {
 
+		const SHOW_SCHEDULER_PARAMS = false;
+
 		const r = generateRange(state.INTERVALS_PER_MIN);		
 		let usedTimeBlocks = [];
 
-		let lastUsedModIdx = -1;
-		let currModIdx = -1;
-		let currModulusRemainder = 0;
-		const PRIME_MODULI = [0, 1, 2, 3, 5, 7, 11, 13, 17];		
-		const MAX_IDX = PRIME_MODULI.length - 1;
+		let taskID = 1;
 
 		for (const [task, requestsPerMin] of Object.entries(this.REQUESTS_PER_MINUTE)) {
 
@@ -118,29 +116,18 @@ class CommandCenter {
 				this.INTELLIGENCE_SUBTASK_NAMES.push(task);
 			}
 
-			// Initialise the schedule; prime modulus offsets are used to randomise the phase
+			// Initialise the schedule; a multiplicative-hash-function is used to produce a 'random' phase offset
 			state.WORKER_IDS[task] = [];		// make a new list
 
 			let u = [];		// debugging	
 
 			const requestInterval = Math.floor(state.INTERVALS_PER_MIN / requestsPerMin);
 
-			currModIdx = lastUsedModIdx + 1;
+			const currModulusRemainder = (taskID * 2654435761) % requestInterval;
+			taskID++;
 
-			if (currModIdx > MAX_IDX) {		
-				// overflow
-				currModIdx = 0;
-			} else if (PRIME_MODULI[currModIdx] >= requestInterval) {
-				// e.g. valid remainders are less than the divisor (e.g. can't get remainder 2 from dividing by 2)
-				currModIdx = 0;
-			} else {
-				// prime modulus is less than request interval = OK condition
-			}
-			currModulusRemainder = PRIME_MODULI[currModIdx];
-			
-			lastUsedModIdx = currModIdx;
-
-			// Creating long arrays of true & false allows for simple lookup using the time index rather than using .includes()
+			// Creating long arrays of 'true' & 'false' in memory allows for simple lookup using the time index, 
+			// instead of using .includes() in final application in _run.js (more computationally efficient)
 			for (let i=0; i<r.length; i++) {
 				if (r[i] % requestInterval !== currModulusRemainder) {
 					state.WORKER_IDS[task].push(false);			
@@ -151,14 +138,14 @@ class CommandCenter {
 				}
 			}
 
-			if (false) {
+			if (SHOW_SCHEDULER_PARAMS) {
 				u.sort((a,b) => a - b);
 				debug(`"${task}" used timeslots: ${u}`);
 			}
 			
 		}
 
-		if (false) {
+		if (SHOW_SCHEDULER_PARAMS) {
 			usedTimeBlocks.sort((a,b) => a - b);
 			debug(`used timeslots: ${usedTimeBlocks}`);
 		}
