@@ -1,11 +1,18 @@
 # Introduction
 FishBot is a Warzone 2100 AI bot compatible with Warzone 2100 v4.6.1+. It was initially forked from NullBot v3.
 
-To load it in the game, please import the cloned source code folder into:
-%MY_WARZONE2100_CONFIG_DIRECTORY_PATH%\mods\4.6.x\autoload\fishbot-v3\multiplay\skirmish\
-(For now, it's likely you'll have to create some folders yourself, I'll work on simplified distribution a bit later on)
-
 Please see CHANGELOG.md for a list of changes between major versions.
+
+## How to load the mod into Warzone 2100 v4.6.1+
+1. Download the source code as .zip from GitHub: <https://github.com/fishbotdev/fishbot>.
+2. Unzip the .zip file.
+3. Place the unzipped folder (without modification) into: `%MY_WARZONE2100_CONFIG_DIRECTORY_PATH% \ mods \ 4.6.x \ autoload`
+
+To check if the path is correct, you should be able to find `FishBot.js` in this location:
+
+`%MY_WARZONE2100_CONFIG_DIRECTORY_PATH% \ mods \ 4.6.x \ autoload \ fishbot \ multiplay \ skirmish \ FishBot.js`
+
+If you can find `Fishbot.js` here, the mod should automatically load on the next startup of Warzone 2100.
 
 ## Licensing Information
 

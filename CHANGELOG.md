@@ -2,7 +2,7 @@
 
 ## Fishbot v4
 ### _
-### https://github.com/fishbotdev/fishbot/compare/821b835..07d1080
+### https://github.com/fishbotdev/fishbot/compare/821b835..1cbde16
 
 - AI behaviour (v4 objectives)
     - Integrate enemy data/friendly data into state & modify strategy based on enemy data
