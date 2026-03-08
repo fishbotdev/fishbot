@@ -33,9 +33,9 @@ class CommandCenter {
 		this.REQUESTS_PER_MINUTE = {
 			'combat_runC2': 60,
 			'runLogistics': 60,
-			'global_missionManager': 60,
-			'intel_updateCOP': 60,	
 			'intel_updateSectorInfo': 30,	
+			'global_missionManager': 60,
+			'intel_updateCOP': 30,	
 			'intel_checkTargetsNearby': 15,
 			'intel_checkCampaignStatus': 15,
 			'intel_checkOilDominance': 2,
