@@ -31,11 +31,11 @@ class CommandCenter {
 
 		// Put regular, computationally demanding tasks at the front
 		this.REQUESTS_PER_MINUTE = {
-			'global_missionManager': 60,
 			'combat_runC2': 60,
-			'intel_manageMissions': 60,
-			'intel_sectorUpdate': 30,	
-			'runLogistics': 60,		
+			'global_missionManager': 60,
+			'intel_updateSectorInfo': 30,	
+			'runLogistics': 60,
+			'intel_updateCOP': 60,		
 			'intel_checkTargetsNearby': 15,
 			'intel_checkCampaignStatus': 15,
 			'intel_checkOilDominance': 2,
@@ -101,11 +101,11 @@ class CommandCenter {
 		let lastUsedMod = -1;
 		let currMod = 0;
 
-		for (const [key, value] of Object.entries(this.REQUESTS_PER_MINUTE)) {
+		for (const [task, requestsPerMin] of Object.entries(this.REQUESTS_PER_MINUTE)) {
 
-			state.WORKER_IDS[key] = [];		// make a new list
+			state.WORKER_IDS[task] = [];		// make a new list
 
-			const requestInterval = Math.floor(state.INTERVALS_PER_MIN / this.REQUESTS_PER_MINUTE[key]);
+			const requestInterval = Math.floor(state.INTERVALS_PER_MIN / requestsPerMin);
 
 			if (requestInterval >= lastUsedMod) {
 				lastUsedMod++;	
@@ -117,9 +117,9 @@ class CommandCenter {
 			// Creating long arrays of true & false allows for simple lookup using the time index rather than using .includes()
 			for (let i=0; i<r.length; i++) {
 				if (r[i] % requestInterval !== currMod) {
-					state.WORKER_IDS[key].push(false);			
+					state.WORKER_IDS[task].push(false);			
 				} else {
-					state.WORKER_IDS[key].push(true);
+					state.WORKER_IDS[task].push(true);
 					usedTimeBlocks.push(i);		// for debugging
 				}
 			}
@@ -416,78 +416,83 @@ class CommandCenter {
 
 	/////////////////////////////////////////////////// INTELLIGENCE ///////////////////////////////////////////////////
 
-	runIntelligence(state) {
+	/**
+	 * 	For performance reasons, this function was changed from linear to distributed.
+	 * 	The intent is:
+	 * 	1. Intelligence mission is scheduled
+	 * 	2. Intelligence mission is executed by the global mission manager / internally
+	 * 	3. Observations are compiled into the global 'state'
+	 */
+	runIntelligence(state, taskID) {
 
-		const SHOW_SCHEDULED = false;
+		switch(taskID) {
+			case 'intel_updateSectorInfo':
 
-		// Execute tasks based on schedule
-		if (state.WORKER_IDS['intel_manageMissions'][state.currWorkerID]) {
-			if (SHOW_SCHEDULED) debug(`${gameTime}:		intel_manageMissions`);
+				state.sectors.forEach(s => 
+					this.approvedIntelTasks.push(intelligence.createIntelRequest({missionType: MISSION_TYPE.SECTOR_RECON_ENGINE, payload: s}))
+				);
 
-			if (this.approvedIntelTasks.length > 0) {
 				this.toc.assignIntelMissions({intelTasks: this.approvedIntelTasks, state: state});					// hq/toc: this translates orders (previous step) into missions
+				this.approvedIntelTasks = [];		// clear list
+				break;
+
+			case 'intel_updateCOP':
+			
 				const observations = this.toc.getCompletedIntelMissionReports();				// hq/toc: gets completed data (intelligence reports)
 				this.toc.compileSectorIntelIntoCOP(observations, state);								// hq/toc: processes intelligence reports & updates state ("Common Operational Picture")
-
 				this.toc.updateHighRiskSectors(state);
-			}
+				break;
 
-			this.approvedIntelTasks = [];		// clear list
-		}
+			case 'intel_checkOilDominance':
 
-		if (state.WORKER_IDS['intel_sectorUpdate'][state.currWorkerID]) { 
-			if (SHOW_SCHEDULED) debug(`${gameTime}:		intel_sectorUpdate`);
+				this.approvedIntelTasks.push(intelligence.createIntelRequest({missionType: MISSION_TYPE.CHECK_OIL_DOMINANCE, payload: this.OIL_DOMINANCE_PERCENTAGE}));	
 
-			state.sectors.forEach(s => 
-				this.approvedIntelTasks.push(intelligence.createIntelRequest({missionType: MISSION_TYPE.SECTOR_RECON_ENGINE, payload: s}))
-			);
-		}
-
-		if (state.WORKER_IDS['intel_checkOilDominance'][state.currWorkerID]) {
-			if (SHOW_SCHEDULED) debug(`${gameTime}:		intel_checkOilDominance`);
-			this.approvedIntelTasks.push(intelligence.createIntelRequest({missionType: MISSION_TYPE.CHECK_OIL_DOMINANCE, payload: this.OIL_DOMINANCE_PERCENTAGE}));	
-		}
-
-		if (state.WORKER_IDS['intel_checkTargetsNearby'][state.currWorkerID]) {
-			// HACK: writes state directly; needs to be changed
-
-			// Update location(s) & composition(s) of active combat force(s) -- TEMPORARY IMPLEMENTATION
-			const mainForceLocation = groundForces.getForceMedianLocation(0);
-			state.forceLocation = mainForceLocation;
-
-			if (defined(state.forceLocation)) {
-				state.nearbyGroundTargets = intelligence.proposeTargetsInRadius({state: state, loc: state.forceLocation, searchRadius: 25, immediateRadius: 10});		
-				if (SHOW_SCHEDULED) debug(`${gameTime}:		intel_checkTargetsNearby; updated targets + force loc`);
-			} else {
-				if (SHOW_SCHEDULED) debug(`${gameTime}:		intel_checkTargetsNearby; updated force loc only`);
-			}
-		}
-
-		if (state.WORKER_IDS['intel_checkCampaignStatus'][state.currWorkerID]) {
-			if (SHOW_SCHEDULED) debug(`${gameTime}:		intel_checkCampaignStatus`);
-			// hack: writes to state (campaignStatus) directly
+				this.toc.assignIntelMissions({intelTasks: this.approvedIntelTasks, state: state});					// hq/toc: this translates orders (previous step) into missions
+				this.approvedIntelTasks = [];		// clear list
+				break;
 			
-			// ADVANCE CAMPAIGN BASED ON GAME STATE
-			let event = undefined;
-			if (groundForces.completedForceBuildup()) {
-				event = 'CompletedBuildup';
-			}
-			if (groundForces.completedStagingForAttack()) {
-				event = 'CompletedStaging';
-			}
-			if (defined(event)) {
-				const currCampaignStatus = this.getCampaignStatus();
-				this.updateCampaignStatus(event);
-				const newCampaignStatus = this.getCampaignStatus();
-				if (newCampaignStatus !== currCampaignStatus) {
-					debug(`Campaign event detected: ${event}, campaign status updated to: ${this.getCampaignStatus()}`);
-				}	
-				
-				if (newCampaignStatus === CAMPAIGN_STATUS.MAIN_ASSAULT) {
-					// then cancel all raid missions
+			case 'intel_checkTargetsNearby':
+
+				// Update location(s) & composition(s) of active combat force(s) -- TEMPORARY IMPLEMENTATION
+				const mainForceLocation = groundForces.getForceMedianLocation(0);
+				state.forceLocation = mainForceLocation;
+
+				if (defined(state.forceLocation)) {
+					state.nearbyGroundTargets = intelligence.proposeTargetsInRadius({state: state, loc: state.forceLocation, searchRadius: 25, immediateRadius: 10});		
 				}
-			}
+				break;
+			
+			case 'intel_checkCampaignStatus':
+
+				// ADVANCE CAMPAIGN BASED ON GAME STATE
+				let event = undefined;
+				if (groundForces.completedForceBuildup()) {
+					event = 'CompletedBuildup';
+				}
+				if (groundForces.completedStagingForAttack()) {
+					event = 'CompletedStaging';
+				}
+				if (defined(event)) {
+					const currCampaignStatus = this.getCampaignStatus();
+					this.updateCampaignStatus(event);
+					const newCampaignStatus = this.getCampaignStatus();
+					if (newCampaignStatus !== currCampaignStatus) {
+						debug(`Campaign event detected: ${event}, campaign status updated to: ${this.getCampaignStatus()}`);
+					}	
+					
+					if (newCampaignStatus === CAMPAIGN_STATUS.MAIN_ASSAULT) {
+						// then cancel all raid missions
+					}
+				}
+				break;
+			
+			default:
+				debug(`	WARNING	runIntelligence(): could not understand ${taskID} @ ${gameTime}`);
+				return;
 		}
+
+		if (false) debug(`${gameTime}:		${taskID}`);
+	
 	}
 
 	/////////////////////////////////////////////////// CONSTRUCTION ///////////////////////////////////////////////////

@@ -15,46 +15,9 @@
 	If not, see <https://www.gnu.org/licenses/>.
 */
 
-
-function eventDroidBuilt(droid, structure) {	
-	// This is the only event handler that FishBot uses (avoids having to perform enumDroid continuously)
-	supply.assignNewDroidIntoGroup(droid);	
-}
-
-function eventStructureReady(structure) {
-	// does nothing for now
-}
-
-function eventStructureBuilt(structure) {
-	// this is regularly called if defined		
-	// does nothing for now
-}
-
-function eventAttacked(victim, attacker) {
-	// this is regularly called if defined 
-	// does nothing for now (prevents auto-retaliate on friendly fire)
-}
-
-function eventChat(from, to, message) {
-	// does nothing for now
-}
-
-function eventObjectTransfer(object, from) {
-	// does nothing for now
-}
-
-function eventBeacon(x, y, from, to) {
-	// does nothing for now
-}
-
-function eventBeaconRemoved(from, to) {
-	// does nothing for now
-}
-
-function eventDestroyed(object) {
-	// this is regularly called if defined
-	// does nothing for now
-}
+/*
+	This file manages function scheduling and defines standard event handlers.
+*/
 
 function runGameEndedWatchdog() {
 	const gameIsFinished = gameHasEnded();
@@ -70,41 +33,65 @@ function runGameEndedWatchdog() {
 	}
 }
 
+function runIntelligence() {
+
+	if (state.botIsActive) {
+
+		let intelSubtasks = [
+			'intel_updateSectorInfo', 
+			'intel_updateCOP', 
+			'intel_checkTargetsNearby', 
+			'intel_checkCampaignStatus', 
+			'intel_checkOilDominance'
+		];
+
+		for (let i=0; i<intelSubtasks.length; i++) {
+			if (state.WORKER_IDS[intelSubtasks[i]][state.currWorkerID]) {
+				hq.runIntelligence(state, intelSubtasks[i]);
+			}
+		}
+	}
+}
+
 function runC2() {
-	hq.runCombatOperations(state);
+	if (state.botIsActive) {
+		if (state.WORKER_IDS['combat_runC2'][state.currWorkerID]) {
+			hq.runCombatOperations(state);
+		}
+	}
 }
 
 function runLogistics() {
-	hq.runLogistics(state);
+	if (state.botIsActive) {
+		if (state.WORKER_IDS['runLogistics'][state.currWorkerID]) {
+			hq.runLogistics(state);
+		}
+	}
 }
 
 function runMissionManager() {
-	hq.toc.manageMissions(state);
+	if (state.botIsActive) {
+		if (state.WORKER_IDS['global_missionManager'][state.currWorkerID]) {
+			hq.runMissionManager(state);
+		}
+	}
 }
 
 function scheduleCoreFunctions() {
 	if (state.botIsActive) {
 		state.currWorkerID = Math.floor(gameTime / state.TIME_BLOCK_MS) % state.INTERVALS_PER_MIN;
-
-		hq.runIntelligence(state);
-
-		if (state.WORKER_IDS['runLogistics'][state.currWorkerID]) {
-			queue("runLogistics");
-		}
-
-		if (state.WORKER_IDS['combat_runC2'][state.currWorkerID]) {
-			queue("runC2");
-		}
-
-		if (state.WORKER_IDS['global_missionManager'][state.currWorkerID]) {
-			queue("runMissionManager");		// this will not clash with any of the current FishBot's functions
-		}
 	}
 }
 
 function setupFishBot() {
 	// This function queued with a player-specific delay          
 	setTimer("scheduleCoreFunctions", state.TIME_BLOCK_MS);
+
+	setTimer("runIntelligence", state.TIME_BLOCK_MS);
+	setTimer("runC2", state.TIME_BLOCK_MS);
+	setTimer("runLogistics", state.TIME_BLOCK_MS);
+	setTimer("runMissionManager", state.TIME_BLOCK_MS);
+
 	setTimer("runGameEndedWatchdog", 60000);
 }
 
@@ -146,4 +133,49 @@ function eventStartLevel() {
 	// Run construction tasks right away
 	queue("runLogistics");				
 	queue("runMissionManager");
+}
+
+/*
+	Generic event handlers defined by the WZ2100 engine.
+	FishBot might use these in the future for performance optimisation.
+*/
+
+function eventDroidBuilt(droid, structure) {	
+	// This is the only event handler that FishBot uses (avoids having to perform enumDroid continuously)
+	supply.assignNewDroidIntoGroup(droid);	
+}
+
+function eventStructureReady(structure) {
+	// does nothing for now
+}
+
+function eventStructureBuilt(structure) {
+	// this is regularly called if defined		
+	// does nothing for now
+}
+
+function eventAttacked(victim, attacker) {
+	// this is regularly called if defined 
+	// does nothing for now (prevents auto-retaliate on friendly fire)
+}
+
+function eventChat(from, to, message) {
+	// does nothing for now
+}
+
+function eventObjectTransfer(object, from) {
+	// does nothing for now
+}
+
+function eventBeacon(x, y, from, to) {
+	// does nothing for now
+}
+
+function eventBeaconRemoved(from, to) {
+	// does nothing for now
+}
+
+function eventDestroyed(object) {
+	// this is regularly called if defined
+	// does nothing for now
 }
