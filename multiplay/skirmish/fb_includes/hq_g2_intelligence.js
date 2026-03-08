@@ -310,12 +310,15 @@ class armyIntelligence {
 
 			// Update closestDroid
 			const distSquaredToLoc = distSq(obj.x, loc.x, obj.y, loc.y);
-			if (distSquaredToLoc < closestDistSq) {
-				closestObject = obj;
-				closestDistSq = distSquaredToLoc;
-			}
-			if (distSquaredToLoc <= immediateRadius ** 2) {
-				proposedTargets["targetsInImmediateRadius"] += 1;
+
+			if (obj.isVTOL !== true) {
+				if (distSquaredToLoc < closestDistSq) {
+					closestObject = obj;
+					closestDistSq = distSquaredToLoc;
+				}
+				if (distSquaredToLoc <= immediateRadius ** 2) {
+					proposedTargets["targetsInImmediateRadius"] += 1;
+				}
 			}
 
 			// Classify, then compress the game object
