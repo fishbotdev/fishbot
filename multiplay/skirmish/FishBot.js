@@ -23,12 +23,12 @@
 	This is a bot designed for Tech Level 2+ duels (1v1) on low-oil maps (the maps that ship with WZ2100 as of v4.6.1+). 
 	Ironically, it does not work on sea maps :D. FishBot was developed to win against Insane difficulty AI (while it is Medium difficulty). 
 
-	FishBot's winning strategy revolves around intelligent, highly aggressive combined-arms warfare. It arranges each type of unit on 
-	the battlefield in a way which maximises their destructive effects while protecting the friendly force (minimising casualties).
+	FishBot's winning strategy revolves around intelligent, highly aggressive, combined-arms warfare. It arranges each type of unit on 
+	the battlefield in a way which maximises their destructive effects while protecting the friendly force.
 	
 	For challengers - I recommend to play against FishBot on Easy mode (or at very low gamespeed) when first playing against it.
 
-	Project started 15 Oct 2025
+	Project started: 15 Oct 2025
 	
 */
 

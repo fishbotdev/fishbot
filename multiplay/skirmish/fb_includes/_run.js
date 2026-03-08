@@ -36,19 +36,12 @@ function runGameEndedWatchdog() {
 
 function runIntelligence() {
 
+	const subtasks = hq.INTELLIGENCE_SUBTASK_NAMES;
+
 	if (state.botIsActive) {
-
-		let intelSubtasks = [
-			'intel_updateSectorInfo', 
-			'intel_updateCOP', 
-			'intel_checkTargetsNearby', 
-			'intel_checkCampaignStatus', 
-			'intel_checkOilDominance'
-		];
-
-		for (let i=0; i<intelSubtasks.length; i++) {
-			if (state.WORKER_IDS[intelSubtasks[i]][state.currWorkerID]) {
-				hq.runIntelligence(state, intelSubtasks[i]);
+		for (let i=0; i<subtasks.length; i++) {
+			if (state.WORKER_IDS[subtasks[i]][state.currWorkerID]) {
+				hq.runIntelligence(state, subtasks[i]);
 			}
 		}
 	}

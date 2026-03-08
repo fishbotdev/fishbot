@@ -44,7 +44,8 @@ class worldState {
 
         // Combat targeting
         this.forceLocation = undefined;
-        this.nearbyGroundTargets = undefined;   
+        this.nearbyGroundTargets = undefined;
+        this.aviationTargets = undefined;   
 
         // Mission management system
         this.g = new fbGroup();

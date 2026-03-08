@@ -29,19 +29,25 @@ class CommandCenter {
 
 		this.OIL_DOMINANCE_PERCENTAGE = 55;
 
-		// Put regular, computationally demanding tasks at the front
+
+		// Task scheduling parameters
+		// Add regular, high priority, high computational load tasks to the start of the list.
+		// The naming convention is important as this allows the handlers in _run.js to run the correct function.
+		// e.g. label intelligence tasks with 'intel_'.
 		this.REQUESTS_PER_MINUTE = {
 			'combat_runC2': 60,
 			'runLogistics': 60,
 			'intel_updateSectorInfo': 30,	
 			'global_missionManager': 60,
 			'intel_updateCOP': 30,	
-			'intel_checkTargetsNearby': 15,
+			'intel_getNearbyGroundTargets': 15,
 			'intel_checkCampaignStatus': 15,
+			'intel_getAviationTargets': 10,
 			'intel_checkOilDominance': 2,
 		};
 
-		this.approvedIntelTasks = [];
+		this.INTELLIGENCE_SUBTASK_NAMES = [];
+
 	}
 
 	/////////////////////////////////////////////////// STATE INITIALISATION ///////////////////////////////////////////////////
@@ -107,7 +113,14 @@ class CommandCenter {
 
 		for (const [task, requestsPerMin] of Object.entries(this.REQUESTS_PER_MINUTE)) {
 
+			// Classify
+			if (task.includes("intel_")) {
+				this.INTELLIGENCE_SUBTASK_NAMES.push(task);
+			}
+
+			// Initialise the schedule; prime modulus offsets are used to randomise the phase
 			state.WORKER_IDS[task] = [];		// make a new list
+
 			let u = [];		// debugging	
 
 			const requestInterval = Math.floor(state.INTERVALS_PER_MIN / requestsPerMin);
@@ -214,7 +227,8 @@ class CommandCenter {
 			// This is a fallback to handle stale inputs
 			for (let i=0; i<targetInfo["closestObjects"].length; i++) {
 				const t = targetInfo["closestObjects"][i];
-				if (defined(getObject(t.type, t.player, t.id))) {
+				const obj = getObject(t.type, t.player, t.id);
+				if (defined(obj)) {
 					output["directFireTarget"] = t;
 					// debug(`fallback directFireTarget used @ ${gameTime} ms`);
 					break;
@@ -322,11 +336,13 @@ class CommandCenter {
 		return output;
 	}
 
-	prioritiseAviationTargets(state, groupPosition, nearbyTargetCount, airRaidTargets, casTargets) {
+	prioritiseAviationTargets(state, groupPosition, nearbyTargetCount, airRaidTargets, casTargets, industrialTargets=[]) {
 		
 		let targetCandidates = [];
 
-		let industrialTargets = []; // temp until implemented
+		if (!defined(airRaidTargets)) {
+			airRaidTargets = [];
+		}
 
 		// TEMPORARY -> Will be replaced by intelligent merge sort based on weighted priority
 		const prioritiseCasTargets = casTargets.length >= 4;
@@ -342,6 +358,7 @@ class CommandCenter {
 			}
 			t.missionType = MISSION_TYPE.CAS_STRIKE;
 		});
+
 		airRaidTargets.forEach(t => {
 			if (prioritiseRaidTargets && airRaidTargets.length > 0) {
 				highestNewTargetPriority = MISSION_PRIORITY.HIGH;
@@ -349,6 +366,7 @@ class CommandCenter {
 			}
 			t.missionType = MISSION_TYPE.AIR_RAID;
 		});
+		
 		industrialTargets.forEach(t => {
 			if (prioritiseIndustrialTargets && industrialTargets.length > 0) {
 				highestNewTargetPriority = MISSION_PRIORITY.MEDIUM;
@@ -399,9 +417,15 @@ class CommandCenter {
 		}
 
 		// Remove already active missions (inefficient, loops through the list again)
+		// Also handles stale inputs, to be integrated with another part of the code later
 		let newAviationTargets = [], existingAviationTargets = [];
 
 		for (let i=0; i<targetCandidates.length; i++) {
+			const c = getObject(targetCandidates[i].type, targetCandidates[i].player, targetCandidates[i].id);
+			if (!defined(c)) {
+				continue;
+			}
+
 			if (!activeTargetIDs.includes(targetCandidates[i].id)) {
 				newAviationTargets.push(targetCandidates[i]);
 			} else {
@@ -442,9 +466,7 @@ class CommandCenter {
 			numTargetsInImmediateRadius = groundTargets["targetsInImmediateRadius"];
 		}
 
-		let airRaidTargets = intelligence.getAirRaidTargets(state);	
-
-		const aviationTargets = this.prioritiseAviationTargets(state, state.forceLocation, numTargetsInImmediateRadius, airRaidTargets, casTargets);
+		const aviationTargets = this.prioritiseAviationTargets(state, state.forceLocation, numTargetsInImmediateRadius, state.aviationTargets, casTargets);
 		// debug(`avTarg ${aviationTargets.length} = cas ${casTargets.length} + raid ${airRaidTargets.length}, ${numTargetsInImmediateRadius}`);
 		this.toc.assignAviationMissions(state, aviationTargets);					
 	}
@@ -463,30 +485,26 @@ class CommandCenter {
 		switch(taskID) {
 			case 'intel_updateSectorInfo':
 
-				state.sectors.forEach(s => 
-					this.approvedIntelTasks.push(intelligence.createIntelRequest({missionType: MISSION_TYPE.SECTOR_RECON_ENGINE, payload: s}))
-				);
-
-				this.toc.assignIntelMissions({intelTasks: this.approvedIntelTasks, state: state});					// hq/toc: this translates orders (previous step) into missions
-				this.approvedIntelTasks = [];		// clear list
+				let sectorUpdateTasks = [];
+				state.sectors.forEach(s => sectorUpdateTasks.push(intelligence.createIntelRequest({missionType: MISSION_TYPE.SECTOR_RECON_ENGINE, payload: s})));
+				this.toc.assignIntelMissions({intelTasks: sectorUpdateTasks, state: state});	// hq/toc: this translates orders (previous step) into missions	
 				break;
 
 			case 'intel_updateCOP':
 			
 				const observations = this.toc.getCompletedIntelMissionReports();				// hq/toc: gets completed data (intelligence reports)
-				this.toc.compileSectorIntelIntoCOP(observations, state);								// hq/toc: processes intelligence reports & updates state ("Common Operational Picture")
-				this.toc.updateHighRiskSectors(state);
+				this.toc.compileSectorIntelIntoCOP(observations, state);						// hq/toc: processes intelligence reports & updates state ("Common Operational Picture")
+				this.toc.updateHighRiskSectors(state);											// hq/toc: separated state update function
 				break;
 
 			case 'intel_checkOilDominance':
 
-				this.approvedIntelTasks.push(intelligence.createIntelRequest({missionType: MISSION_TYPE.CHECK_OIL_DOMINANCE, payload: this.OIL_DOMINANCE_PERCENTAGE}));	
-
-				this.toc.assignIntelMissions({intelTasks: this.approvedIntelTasks, state: state});					// hq/toc: this translates orders (previous step) into missions
-				this.approvedIntelTasks = [];		// clear list
+				let checkOilDominanceTasks = [];
+				checkOilDominanceTasks.push(intelligence.createIntelRequest({missionType: MISSION_TYPE.CHECK_OIL_DOMINANCE, payload: this.OIL_DOMINANCE_PERCENTAGE}));	
+				this.toc.assignIntelMissions({intelTasks: checkOilDominanceTasks, state: state});					
 				break;
 			
-			case 'intel_checkTargetsNearby':
+			case 'intel_getNearbyGroundTargets':
 
 				// Update location(s) & composition(s) of active combat force(s) -- TEMPORARY IMPLEMENTATION
 				const mainForceLocation = groundForces.getForceMedianLocation(0);
@@ -519,6 +537,10 @@ class CommandCenter {
 						// then cancel all raid missions
 					}
 				}
+				break;
+
+			case 'intel_getAviationTargets':
+				state.aviationTargets = intelligence.getAirRaidTargets(state);	
 				break;
 			
 			default:

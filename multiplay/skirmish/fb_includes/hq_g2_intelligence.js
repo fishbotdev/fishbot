@@ -300,85 +300,96 @@ class armyIntelligence {
 			hackMarkTiles();			
 		}
 
-		let closestObject = targetObjects[0];
-		let closestDistSq = distSq(closestObject.x, loc.x, closestObject.y, loc.y);
+		let closestObject = undefined;
+		let closestDistSq = 0;
 
 		for (let i=0; i<targetObjects.length; i++) {
 			const obj = targetObjects[i];
+			const t = this.#createNewTarget(obj);
+
 			if (SHOW_TARGETS) {
 				hackMarkTiles(obj.x, obj.y);
 			}
 
-			// Update closestDroid
-			const distSquaredToLoc = distSq(obj.x, loc.x, obj.y, loc.y);
-
+			// Update closestDroid (excludes VTOLs)
 			if (obj.isVTOL !== true) {
-				if (distSquaredToLoc < closestDistSq) {
-					closestObject = obj;
-					closestDistSq = distSquaredToLoc;
-				}
+
+				const distSquaredToLoc = distSq(obj.x, loc.x, obj.y, loc.y);
+
+				// Add closestObjects (should be called closestTargets)
 				if (distSquaredToLoc <= immediateRadius ** 2) {
+					proposedTargets["closestObjects"].push(t);
 					proposedTargets["targetsInImmediateRadius"] += 1;
-					proposedTargets["closestObjects"].push(obj);
+				}
+
+				// Update closestObject (should be called closestTarget)
+				if (!defined(closestObject)) {
+					closestObject = t;
+					closestDistSq = distSq(obj.x, loc.x, obj.y, loc.y);
+				} else {
+					if (distSquaredToLoc < closestDistSq) {
+						closestObject = t;
+						closestDistSq = distSquaredToLoc;
+					}
 				}
 			}
 
-			// Classify, then compress the game object
+			// Classify the object
 			if (isAntiAirDefense(obj)) {
-				proposedTargets["enemyADA"].push(this.#createNewTarget(obj));
+				proposedTargets["enemyADA"].push(t);
 				continue;
 			}
 
 			if (obj.type === DROID) {
 				if (obj.droidType === DROID_CONSTRUCT) {
-					proposedTargets["enemyConstructor"].push(this.#createNewTarget(obj));
+					proposedTargets["enemyConstructor"].push(t);
 					continue;
 				} 
 
 				if (obj.propulsion === PROPULSIONS["Cyborg Propulsion"]) {
 					// cyborg engineers were filtered out earlier
-					proposedTargets["enemyInfantry"].push(this.#createNewTarget(obj));		
+					proposedTargets["enemyInfantry"].push(t);		
 					continue;
 				}
 
 				if (obj.isVTOL === true) {
-					proposedTargets["enemyAviation"].push(this.#createNewTarget(obj));
+					proposedTargets["enemyAviation"].push(t);
 					continue;
 				}
 
 				if (obj.hasIndirect === true) {
 					// cyborg indirect (e.g. grenadier) & VTOL indirect (e.g. bombs) were filtered out earlier
-					proposedTargets["enemyIndirectFire"].push(this.#createNewTarget(obj));
+					proposedTargets["enemyIndirectFire"].push(t);
 					continue;
 				}
 
 				// This leaves only direct fire land vehicles & other utility vehicles e.g. sensors / commanders
 				if (obj.droidType === DROID_WEAPON) {
-					proposedTargets["enemyArmor"].push(this.#createNewTarget(obj));
+					proposedTargets["enemyArmor"].push(t);
 					continue;		
 				}
 
-				proposedTargets["enemyUtility"].push(this.#createNewTarget(obj));
+				proposedTargets["enemyUtility"].push(t);
 				continue;
 			}
 
 			if (obj.type === STRUCTURE) {
 				if (obj.hasIndirect === true) {
-					proposedTargets["enemyIndirectFire"].push(this.#createNewTarget(obj));
+					proposedTargets["enemyIndirectFire"].push(t);
 					continue;
 				}
 				
 				if (obj.stattype === DEFENSE) {
-					proposedTargets["enemyDefenses"].push(this.#createNewTarget(obj));
+					proposedTargets["enemyDefenses"].push(t);
 					continue;
 				}
 
 				if (INDUSTRIAL_TARGETS.includes(obj.stattype)) {
-					proposedTargets["enemyIndustrial"].push(this.#createNewTarget(obj));
+					proposedTargets["enemyIndustrial"].push(t);
 					continue;					
 				}
 
-				proposedTargets["enemyUtility"].push(this.#createNewTarget(obj));
+				proposedTargets["enemyUtility"].push(t);
 				continue;
 			}
 		}
