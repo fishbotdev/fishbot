@@ -6,7 +6,7 @@ Please see CHANGELOG.md for a list of changes between major versions.
 ## How to load the mod into Warzone 2100 v4.6.1+
 1. Download the source code as .zip from GitHub: <https://github.com/fishbotdev/fishbot>.
 2. Unzip the .zip file.
-3. Place the unzipped folder (without modification) into: `%MY_WARZONE2100_CONFIG_DIRECTORY_PATH% \ mods \ 4.6.x \ autoload`
+3. Place the unzipped folder contents into: `%MY_WARZONE2100_CONFIG_DIRECTORY_PATH% \ mods \ 4.6.x \ autoload`
 
 To check if the path is correct, you should be able to find `FishBot.js` in this location:
 
