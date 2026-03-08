@@ -33,9 +33,9 @@ class CommandCenter {
 		this.REQUESTS_PER_MINUTE = {
 			'combat_runC2': 60,
 			'global_missionManager': 60,
-			'intel_updateSectorInfo': 30,	
 			'runLogistics': 60,
-			'intel_updateCOP': 60,		
+			'intel_updateCOP': 60,	
+			'intel_updateSectorInfo': 30,	
 			'intel_checkTargetsNearby': 15,
 			'intel_checkCampaignStatus': 15,
 			'intel_checkOilDominance': 2,
@@ -98,31 +98,51 @@ class CommandCenter {
 
 		const r = generateRange(state.INTERVALS_PER_MIN);		
 		let usedTimeBlocks = [];
-		let lastUsedMod = -1;
-		let currMod = 0;
+
+		let lastUsedModIdx = -1;
+		let currModIdx = -1;
+		let currModulusRemainder = 0;
+		const PRIME_MODULI = [0, 1, 2, 3, 5, 7, 11, 13, 17];		
+		const MAX_IDX = PRIME_MODULI.length - 1;
 
 		for (const [task, requestsPerMin] of Object.entries(this.REQUESTS_PER_MINUTE)) {
 
 			state.WORKER_IDS[task] = [];		// make a new list
+			let u = [];		// debugging	
 
 			const requestInterval = Math.floor(state.INTERVALS_PER_MIN / requestsPerMin);
 
-			if (requestInterval >= lastUsedMod) {
-				lastUsedMod++;	
-				currMod = lastUsedMod;
+			currModIdx = lastUsedModIdx + 1;
+
+			if (currModIdx > MAX_IDX) {		
+				// overflow
+				currModIdx = 0;
+			} else if (PRIME_MODULI[currModIdx] >= requestInterval) {
+				// e.g. valid remainders are less than the divisor (e.g. can't get remainder 2 from dividing by 2)
+				currModIdx = 0;
 			} else {
-				currMod = 0;
+				// prime modulus is less than request interval = OK condition
 			}
+			currModulusRemainder = PRIME_MODULI[currModIdx];
+			
+			lastUsedModIdx = currModIdx;
 
 			// Creating long arrays of true & false allows for simple lookup using the time index rather than using .includes()
 			for (let i=0; i<r.length; i++) {
-				if (r[i] % requestInterval !== currMod) {
+				if (r[i] % requestInterval !== currModulusRemainder) {
 					state.WORKER_IDS[task].push(false);			
 				} else {
 					state.WORKER_IDS[task].push(true);
 					usedTimeBlocks.push(i);		// for debugging
+					u.push(i);
 				}
 			}
+
+			if (false) {
+				u.sort((a,b) => a - b);
+				debug(`"${task}" used timeslots: ${u}`);
+			}
+			
 		}
 
 		if (false) {
