@@ -224,10 +224,9 @@ def show_hard_cobra_results():
     # test_1 = getcwd() + rf"\process_results/v3/" + "29ceeb0,hard,463" + ".txt"              # v3 dev: 4.6.3, [63/86 wins] long term test
     # test_1 = getcwd() + rf"\process_results/v4/" + "ca33b28,hard,cobra,100g" + ".txt"              # v4 dev: 4.6.3, [55 / 100 wins] regression after perf-optimisation
     # test_1 = getcwd() + rf"\process_results/v4/" + "e18c4c4,hard,cobra,50g" + ".txt"              # v4 dev: 4.6.3, [40 / 50 wins] after simultaneous-VTOL & CAS improvements; regression fixed
-    test_1 = getcwd() + rf"\process_results/v4/" + "83ebcd1,hard,cobra,50g" + ".txt"              # v4 dev: 4.6.3, [34 / 50 wins] after first intel optimisation
-    test_2 = getcwd() + rf"\process_results/v4/" + "fd4692d,hard,cobra,50g" + ".txt"              # v4 dev: 4.6.3, [36 / 50 wins] after migrating all functions to the new scheduler
-
-
+    # test_1 = getcwd() + rf"\process_results/v4/" + "83ebcd1,hard,cobra,50g" + ".txt"              # v4 dev: 4.6.3, [34 / 50 wins] after first intel optimisation
+    test_1 = getcwd() + rf"\process_results/v4/" + "fd4692d,hard,cobra,50g" + ".txt"              # v4 dev: 4.6.3, [36 / 50 wins] first new scheduler implementation
+    test_2 = getcwd() + rf"\process_results/v4/" + "603cca0,hard,cobra,50g" + ".txt"              # v4 dev: 4.6.3, [34 / 50 wins] after full migration of existing functions to the new scheduler
 
 
     commit1 = test_1.split(rf"v4/")[1].split(",")[0]
@@ -252,8 +251,8 @@ def show_insane_diff_results():
     show_stats(*get_stats(test_2), title=f"{commit2} (newer)", legend=[commit1, commit2], figNum=3)    
 
 
-show_medium_cobra_results()
-# show_hard_cobra_results()
+# show_medium_cobra_results()
+show_hard_cobra_results()
 # show_insane_diff_results()
 
 import matplotlib.pyplot as plt

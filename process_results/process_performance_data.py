@@ -236,7 +236,8 @@ NEW TEST DATA (runC2 is split)
 # path1 = rf"{cwd()}\process_results\v4_perfdata\\" + rf"e18c4c4,hard,cobra,50g.log"
 # path1 = rf"{cwd()}\process_results\v4_perfdata\\" + rf"83ebcd1,hard,cobra,50g.log"
 path1 = rf"{cwd()}\process_results\v4_perfdata\\" + rf"fd4692d,hard,cobra,50g.log"
-path2 = rf"{cwd()}\process_results\v4_perfdata\\" + rf"45635e6,med,cobra,100g.log"
+# path2 = rf"{cwd()}\process_results\v4_perfdata\\" + rf"45635e6,med,cobra,100g.log"
+path2 = rf"{cwd()}\process_results\v4_perfdata\\" + rf"603cca0,hard,cobra,50g.log"
 
 
 
