@@ -225,8 +225,9 @@ def show_hard_cobra_results():
     # test_1 = getcwd() + rf"\process_results/v4/" + "ca33b28,hard,cobra,100g" + ".txt"              # v4 dev: 4.6.3, [55 / 100 wins] regression after perf-optimisation
     # test_1 = getcwd() + rf"\process_results/v4/" + "e18c4c4,hard,cobra,50g" + ".txt"              # v4 dev: 4.6.3, [40 / 50 wins] after simultaneous-VTOL & CAS improvements; regression fixed
     # test_1 = getcwd() + rf"\process_results/v4/" + "83ebcd1,hard,cobra,50g" + ".txt"              # v4 dev: 4.6.3, [34 / 50 wins] after first intel optimisation
-    test_1 = getcwd() + rf"\process_results/v4/" + "fd4692d,hard,cobra,50g" + ".txt"              # v4 dev: 4.6.3, [36 / 50 wins] first new scheduler implementation
-    test_2 = getcwd() + rf"\process_results/v4/" + "603cca0,hard,cobra,50g" + ".txt"              # v4 dev: 4.6.3, [34 / 50 wins] after full migration of existing functions to the new scheduler
+    # test_1 = getcwd() + rf"\process_results/v4/" + "fd4692d,hard,cobra,50g" + ".txt"              # v4 dev: 4.6.3, [36 / 50 wins] first new scheduler implementation
+    test_1 = getcwd() + rf"\process_results/v4/" + "603cca0,hard,cobra,50g" + ".txt"              # v4 dev: 4.6.3, [34 / 50 wins] after full migration of existing functions to the new scheduler
+    test_2 = getcwd() + rf"\process_results/v4/" + "fbf5655,hard,cobra,50g" + ".txt"              # v4 dev: 4.6.3, [34 / 50 wins] after full migration of existing functions to the new scheduler
 
 
     commit1 = test_1.split(rf"v4/")[1].split(",")[0]

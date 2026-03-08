@@ -235,9 +235,10 @@ NEW TEST DATA (runC2 is split)
 # path1 = rf"{cwd()}\process_results\v4_perfdata\\" + rf"f9d0fd4,med,cobra,50g.log"
 # path1 = rf"{cwd()}\process_results\v4_perfdata\\" + rf"e18c4c4,hard,cobra,50g.log"
 # path1 = rf"{cwd()}\process_results\v4_perfdata\\" + rf"83ebcd1,hard,cobra,50g.log"
-path1 = rf"{cwd()}\process_results\v4_perfdata\\" + rf"fd4692d,hard,cobra,50g.log"
+# path1 = rf"{cwd()}\process_results\v4_perfdata\\" + rf"fd4692d,hard,cobra,50g.log"
 # path2 = rf"{cwd()}\process_results\v4_perfdata\\" + rf"45635e6,med,cobra,100g.log"
-path2 = rf"{cwd()}\process_results\v4_perfdata\\" + rf"603cca0,hard,cobra,50g.log"
+path1 = rf"{cwd()}\process_results\v4_perfdata\\" + rf"603cca0,hard,cobra,50g.log"
+path2 = rf"{cwd()}\process_results\v4_perfdata\\" + rf"fbf5655,hard,cobra,50g.log"
 
 
 
@@ -245,20 +246,24 @@ if True:
     ########
     func1 = "runC2"
     func2 = "runMissionManager"
-    func3 = "scheduleCoreFunctions"
+    func3 = "runIntelligence"
+    func4 = "runLogistics"
     df_1 = extract_runC2(path1, function_name=func1)        
     df_2 = extract_runC2(path1, function_name=func2)       
     df_3 = extract_runC2(path1, function_name=func3)
+    df_4 = extract_runC2(path1, function_name=func4)
 
-    df_4 = extract_runC2(path2, function_name=func1)        
-    df_5 = extract_runC2(path2, function_name=func2)       
-    df_6 = extract_runC2(path2, function_name=func3) 
+    df_5 = extract_runC2(path2, function_name=func1)        
+    df_6 = extract_runC2(path2, function_name=func2)       
+    df_7 = extract_runC2(path2, function_name=func3) 
+    df_8 = extract_runC2(path2, function_name=func4) 
 
     commit_hash1 = path1.split(rf"\\")[-1].split(".log")[0]
     commit_hash2 = path2.split(rf"\\")[-1].split(".log")[0]
 
-    plot_comparative_histograms(df_1, df_4, label1=commit_hash1, label2=commit_hash2, suptitle=func1)
-    plot_comparative_histograms(df_2, df_5, label1=commit_hash1, label2=commit_hash2, suptitle=func2)
-    plot_comparative_histograms(df_3, df_6, label1=commit_hash1, label2=commit_hash2, suptitle=func3)
+    plot_comparative_histograms(df_1, df_5, label1=commit_hash1, label2=commit_hash2, suptitle=func1)
+    plot_comparative_histograms(df_2, df_6, label1=commit_hash1, label2=commit_hash2, suptitle=func2)
+    plot_comparative_histograms(df_3, df_7, label1=commit_hash1, label2=commit_hash2, suptitle=func3)
+    plot_comparative_histograms(df_4, df_8, label1=commit_hash1, label2=commit_hash2, suptitle=func4)
     plt.show()
 
