@@ -252,6 +252,8 @@ class armyIntelligence {
 		let closestObject = undefined;
 		let closestDistSq = 0;
 
+		let enemyVtols = [];
+
 		for (let i=0; i<targetObjects.length; i++) {
 			const obj = targetObjects[i];
 			const t = this.#createNewTarget(obj);
@@ -281,6 +283,8 @@ class armyIntelligence {
 						closestDistSq = distSquaredToLoc;
 					}
 				}
+			} else {
+				enemyVtols.push(t);
 			}
 
 			// Classify the object
@@ -343,7 +347,12 @@ class armyIntelligence {
 			}
 		}
 
-		proposedTargets["closestObject"] = closestObject;
+		if (defined(closestObject)) {
+			proposedTargets["closestObject"] = closestObject;
+		} else {
+			// VTOLs are only directly targeted if no other targets exist
+			proposedTargets["closestObject"] = enemyVtols[0];
+		}
 
 		return proposedTargets;
 

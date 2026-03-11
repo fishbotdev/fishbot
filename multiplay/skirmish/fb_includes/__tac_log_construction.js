@@ -359,13 +359,13 @@ function buildNearbyDefences(taskForceID, structureID, x, y) {
 	if (struct.length === 0) {
 		// If the structure cannot be built at x,y anymore, cancel it.
 		if (!structureCanFit(structureID, x, y)) {
-			debug(`buildNearbyDefences(): failed, something on ${x}, ${y} already`);
+			// debug(`buildNearbyDefences(): failed, something on ${x}, ${y} already`);
 			return {status: MISSION_STATUS.FAILED};		
 		}
 
 		const enemyUnits = enumRange(x, y, 1, ENEMIES, true).filter(obj => obj.type === DROID && isEnemy(obj.player));
 		if (enemyUnits.length > 0) {
-			debug(`buildNearbyDefences(): failed, enemy unit on construction point ${x} ${y}`);
+			// debug(`buildNearbyDefences(): failed, enemy unit on construction point ${x} ${y}`);
 			return {status: MISSION_STATUS.FAILED};		
 		}
 
