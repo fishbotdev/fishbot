@@ -320,6 +320,11 @@ class CommandCenter {
 			}
 		}		
 		
+		if (!defined(output["directFireTarget"]) && adaTargets.length > 0) {
+			// handle the case where there are only a few remaining enemy VTOLs & all other land units are dead
+			output["directFireTarget"] = adaTargets[0];
+		}
+
 		output["targetsInImmediateRadius"] = targetInfo["targetsInImmediateRadius"];
 
 		return output;

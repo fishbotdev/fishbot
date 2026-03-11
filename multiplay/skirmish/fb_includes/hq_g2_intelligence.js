@@ -177,57 +177,6 @@ class armyIntelligence {
 
 		return airRaidTargetList;
 	}
-
-	getAllEnemyBaseTargets(state) {
-		const alivePlayers = enumLivingPlayers();
-
-		let enemyBaseSectors = [];
-		state.sectors.forEach(sector => {
-			if (defined(sector.base)) {
-				if (sector.base.isEnemy && alivePlayers.includes(sector.base.playerID)) {
-					enemyBaseSectors.push(sector);
-				}
-			}
-		});
-
-		let aaGameObjects = [], economyGameObjects = [];
-
-		const ECONOMY_TARGET_STRUCTURES = [VTOL_FACTORY, CYBORG_FACTORY];
-		const LESS_IMPORTANT_ECONOMY_STRUCTURES = [REPAIR_FACILITY, FACTORY];
-
-		const SEARCH_RADIUS = Math.min(
-			Math.floor(mapHeight/alivePlayers.length), 
-			Math.floor(mapWidth/alivePlayers.length), 
-			20
-		);
-
-		for (let i=0; i<enemyBaseSectors.length; i++) {
-			let objList = enumRange(enemyBaseSectors[i].x, enemyBaseSectors[i].y, SEARCH_RADIUS, ENEMIES, false);
-			
-			if (objList.length === 0) {
-				debug(`getAllEnemyBaseTargets(): doubled search radius.`);
-				objList = enumRange(enemyBaseSectors[i].x, enemyBaseSectors[i].y, SEARCH_RADIUS * 2, ENEMIES, false);
-			}
-
-			// Anti-air targets
-			aaGameObjects.push(...objList.filter(o => isAntiAirDefense(o)));	
-
-			// Economy targets
-			economyGameObjects.push(...objList.filter(o => o.droidType === DROID_CONSTRUCT));
-			economyGameObjects.push(...objList.filter(o => ECONOMY_TARGET_STRUCTURES.includes(o.stattype)));	
-			economyGameObjects.push(...objList.filter(o => LESS_IMPORTANT_ECONOMY_STRUCTURES.includes(o.stattype)));
-		}
-
-		let aaTargets = [], economyTargets = [];
-		
-		aaGameObjects.sort((a,b) => 
-			distSq(a.x, baseLocation.x, a.y, baseLocation.y) - distSq(b.x, baseLocation.x, b.y, baseLocation.y));
-		aaGameObjects.forEach(obj => aaTargets.push(this.#createNewTarget(obj)));
-
-		economyGameObjects.forEach(obj => economyTargets.push(this.#createNewTarget(obj)));
-
-		return {"antiAirTargets": aaTargets, "economyTargets": economyTargets};
-	}
 	
 	#getNearestPlayerTargets({state, loc}) {
 		// Algorithm: Find the nearest alive enemy base closest to the current group location and head towards that.
