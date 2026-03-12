@@ -339,7 +339,7 @@ class CommandCenter {
 		}
 
 		// TEMPORARY -> Will be replaced by intelligent merge sort based on weighted priority
-		const prioritiseCasTargets = casTargets.length >= 4;
+		const prioritiseCasTargets = nearbyTargetCount >= 4;
 		const prioritiseRaidTargets = !state.oilDominance;
 		const prioritiseIndustrialTargets = state.oilDominance;
 

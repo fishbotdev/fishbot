@@ -105,6 +105,7 @@ function groundForceAttack({state, directFireTarget, fireSupportTarget, adaTarge
 	let infantryReserve = state.g.enumGroup(DIVISION.INFANTRY_RESERVE);
 	let fireSupportReserve = state.g.enumGroup(DIVISION.FIRE_SUPPORT_RESERVE);
 	let airDefenceArtilleryReserve = state.g.enumGroup(DIVISION.AIR_DEFENCE_RESERVE);
+	const sensorUnits = enumDroid(me, DROID_SENSOR);		// these have not been added to the grouping system yet!
 
 	if (generalReserve.length === 0) {
 		return;
@@ -118,6 +119,11 @@ function groundForceAttack({state, directFireTarget, fireSupportTarget, adaTarge
 	const closestDroidToTarget = findClosestDroidToTarget(generalReserve, currDirectFireTarget);
 
 	if (!defined(closestDroidToTarget) || !defined(currDirectFireTarget)) {
+		generalReserve.forEach(d => orderDroid(d, DORDER_RTB));
+		infantryReserve.forEach(d => orderDroid(d, DORDER_RTB));
+		fireSupportReserve.forEach(d => orderDroid(d, DORDER_RTB));
+		airDefenceArtilleryReserve.forEach(d => orderDroid(d, DORDER_RTB));
+		sensorUnits.forEach(d => orderDroid(d, DORDER_RTB));
 		return;
 	}
 
@@ -159,7 +165,7 @@ function groundForceAttack({state, directFireTarget, fireSupportTarget, adaTarge
 	}
 
 	// Hack: Sensor units
-	const sensorUnits = enumDroid(me, DROID_SENSOR);		// these have not been added to the grouping system yet!
+
 	sensorUnits.forEach((droid) => {
 		if (_distSqToClosestDroid(droid) > 5 ** 2) {
 			orderDroidLoc(droid, DORDER_MOVE, closestDroidToTarget.x, closestDroidToTarget.y);
