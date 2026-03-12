@@ -37,10 +37,16 @@ class worldState {
     // All functions in FishBot use this class as the current ground truth.
     constructor() {
 
-        // Map knowledge
+        // Sector system (original)
         this.sectors = [];
         this.highRiskSectors = [];
-        this.oilDominance = false;
+
+        // Sector system (new)
+        this.cellSize = 10;     // in game tiles
+        this.grid = undefined;
+
+        // Player knowledge
+        this.playerInfo = undefined;
 
         // Combat targeting
         this.forceLocation = undefined;
@@ -53,6 +59,7 @@ class worldState {
 
         // Bot attributes
         this.botIsActive = true;
+        this.oilDominance = false;
 
         // Load balancing parameters
         this.currWorkerID = -1;
@@ -217,9 +224,36 @@ class worldStateBuilder {
         }
     }
 
+    #_createNewGridCell() {
+        return {
+            'targets': [],
+        }
+    }
+
+    #initialiseGrid(state) {
+        // Implementation: A 2D-array is used to represent a square grid because:
+        //  - ease of searching for nearby sectors (numeric indices)
+        //  - removes need for constructing a string to index a grid entry        
+
+        const numXCells = Math.ceil(mapWidth / state.cellSize);
+        const numYCells = Math.ceil(mapHeight / state.cellSize);
+
+        this.grid = new Array(numXCells);
+
+        for (let x=0; x<numXCells; x++) {
+            this.grid[x] = new Array(numYCells);
+
+            for (let y=0; y<numYCells; y++) {
+                this.grid[x][y] = this.#_createNewGridCell();
+            }
+        }
+    }
+
     initialise(state) {
         // Application service: Initialises 'worldState' to defaults
         this.#initialiseFbGroups(state);
         this.#initialiseSectors(state);
+
+        this.#initialiseGrid(state);        // new sector system
     }
 }

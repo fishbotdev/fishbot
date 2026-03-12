@@ -212,7 +212,7 @@ function gameHasEnded() {
 	return false;
 }
 
-/*
+/**
 	fbGroup: FISHBOT v3 CUSTOM GROUPING SYSTEM
 
 	Fishbot custom implementation of groups
