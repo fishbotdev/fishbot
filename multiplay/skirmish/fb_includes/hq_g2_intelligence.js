@@ -299,7 +299,7 @@ class armyIntelligence {
 					continue;
 				} 
 
-				if (obj.propulsion === PROPULSIONS["Cyborg Propulsion"]) {
+				if (obj.propulsion === PROPULSIONS["Cyborg Propulsion"].id) {
 					// cyborg engineers were filtered out earlier
 					proposedTargets["enemyInfantry"].push(t);		
 					continue;
