@@ -612,7 +612,7 @@ class CommandCenter {
 		}
 
 		approvedConstructionTasks.push(...approvedSectorOilCapTasks);
-		if (approvedSectorOilCapTasks.length >= 1) {
+		if (approvedSectorOilCapTasks.length >= 2) {
 			return approvedConstructionTasks;
 		}
 
