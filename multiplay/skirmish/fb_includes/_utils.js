@@ -85,9 +85,9 @@ function distSq(x1, x2, y1, y2) {
 }
 
 /**
- * Converts a number to its binary representation (to 20 bits).
+ * Converts a number `n` to its binary representation (to 20 bits).
  * @param {number} n 
- * @returns 
+ * @returns {string}
  */
 function toBinary20(n) {
 	return n.toString(2).padStart(20, '0');

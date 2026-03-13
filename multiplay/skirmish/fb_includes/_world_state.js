@@ -68,6 +68,105 @@ class worldState {
         this.INTERVALS_PER_MIN = Math.floor(60000 / this.TIME_BLOCK_MS);
 		this.WORKER_IDS = {};
     }
+
+    /**
+     * Custom enumRange for FishBot; this uses FishBot's grid system. 
+     * The intent is to optimise for speed.
+     * @param {number} x central x-coord (game tiles)
+     * @param {number} y central y-coord (game tiles)
+     * @param {number} radius radial distance, inclusive (game tiles)
+     * @returns Object containing droids[], structs[], closestDroid: DroidObject and closestStruct: StructureObject
+     */
+    gridEnumRange(x, y, radius) {
+        let results = {
+            'droids': [],
+            'structs': [],
+            'closestDroid': undefined,
+            'closestStruct': undefined
+        };
+
+        if (!defined(this.grid)) {
+            debug(`WARNING: state/spatialQueryBox() could not read from undefined grid.`);
+            return results;
+        }
+
+        // Initialise closest droid / struct calculation
+        let closestDroidDistSq = 0, closestStructDistSq = 0;
+        let closestDroid = undefined, closestStruct = undefined;
+
+        const cx = Math.floor(x / this.cellSize);
+        const cy = Math.floor(y / this.cellSize);
+        const gr = Math.ceil(radius / this.cellSize);
+
+        for (let dx = -gr; dx <= gr; dx++) {
+            for (let dy = -gr; dy <= gr; dy++) {
+
+                // Compute deviations & test validity
+                const gx = cx + dx;
+                if (gx < 0 || gx > Math.ceil(mapWidth / this.cellSize)) {
+                    continue;
+                }
+                
+                const gy = cy + dy;
+                if (gy < 0 || gx > Math.ceil(mapHeight / this.cellSize)) {
+                    continue;
+                }
+
+                // Get corresponding grid entry
+                this.grid[gx][gy]['targetUnits'].forEach(t => {
+                    const obj = getObject(t.type, t.player, t.id);
+                    if (!defined(obj)) {
+                        return;
+                    }
+                    const d = distSq(x, obj.x, y, obj.y);
+                    if (d > radius ** 2) {
+                        return;
+                    }
+                    results['droids'].push(t);
+                    
+                    if (!(t.flags & OBJ_FLAGS.AVIATION)) {
+                        if (!defined(closestDroid)) {
+                            closestDroid = obj;
+                            closestDroidDistSq = d;
+                            return;
+                        }
+
+                        if (d < closestDroidDistSq) {
+                            closestDroid = obj;
+                            closestDroidDistSq = d;
+                        }
+                    }
+                });
+                results['closestDroid'] = closestDroid;
+                
+                this.grid[gx][gy]['targetStructures'].forEach(t => {
+                    const obj = getObject(t.type, t.player, t.id);
+                    if (!defined(obj)) {
+                        return;
+                    }
+                    const d = distSq(x, obj.x, y, obj.y);
+                    if (d > radius ** 2) {
+                        return;
+                    }
+                    results['structs'].push(t);
+
+                    if (!defined(closestStruct)) {
+                        closestStruct = obj;
+                        closestStructDistSq = d;
+                        return;
+                    }
+
+                    if (d < closestStructDistSq) {
+                        closestStruct = obj;
+                        closestStructDistSq = d;
+                    }
+                });
+                results['closestStruct'] = closestStruct;                
+            }
+        }
+
+        return results;
+    }
 }
 
 

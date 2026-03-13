@@ -540,7 +540,12 @@ class CommandCenter {
 				break;
 
 			case 'intel_getAviationTargets':
-				state.aviationTargets = intelligence.getAirRaidTargets(state);	
+				if (false) {
+					state.aviationTargets = intelligence.getAirRaidTargets(state);	
+				} else {
+					state.aviationTargets = intelligence.getDefencesNearDerricks(state);
+				}
+				
 				break;
 
 			case 'intel_getPerfectMapIntelligence':

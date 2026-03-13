@@ -322,6 +322,59 @@ class armyIntelligence {
 		}
 	}
 
+	getDefencesNearDerricks(state) {
+
+		const SEARCH_RADIUS = 8;
+
+		let lowPriorityTargets = [], medPriorityTargets = [], highPriorityTargets = [];
+
+		for (let i=0; i<state.sectors.length; i++) {
+			const currSector = state.sectors[i];
+
+			if (state.highRiskSectors.includes(currSector)) {
+				continue;
+			}
+
+			// For each derrick, find all nearby targets. Skip if derricks are assumed close together
+			let defences = [];
+			let NUM_SEARCH_ITERATIONS = currSector.derricks.length;
+			if (NUM_SEARCH_ITERATIONS >= 4) {
+				NUM_SEARCH_ITERATIONS = 1;		// usually this means the derricks are close together (to be verified)
+			}
+
+			for (let j=0; j<NUM_SEARCH_ITERATIONS; j++) {
+
+				const x = currSector.derricks[j].x;
+				const y = currSector.derricks[j].y;
+
+				const targets = state.gridEnumRange(x, y, SEARCH_RADIUS);
+				// Assume the outcome of this function produces fresh objects (getObject is not required)
+				if (targets.structs.length > 0) {
+					debug(`\ngetDefencesNearDerricks(): ${gameTime}`);
+				}
+				targets.structs.forEach(t => {
+					if (t.flags & OBJ_FLAGS.DEFENSIVE_STRUCTURE) {
+						debug(`		added ${t.name} (${t.id}) near ${x} ${y}`);
+						defences.push(this.#createNewTarget(t));
+					}
+				});
+			}
+
+			if (currSector.derricks.length >= 4) {
+				highPriorityTargets.push(...defences);
+			} else if (defences.length <= currSector.derricks.length) {	
+				medPriorityTargets.push(...defences); 	// "low hanging fruit"
+			} else {
+				lowPriorityTargets.push(...defences);		
+			}
+			
+		}
+
+		const airRaidTargetList = [...highPriorityTargets, ...medPriorityTargets, ...lowPriorityTargets];
+
+		return airRaidTargetList;
+	}
+
 	getAirRaidTargets(state) {
 
 		const SEARCH_RADIUS = 7;
