@@ -41,7 +41,7 @@ class CommandCenter {
 		// e.g. label intelligence tasks with 'intel_'.
 		this.REQUESTS_PER_MINUTE = {
 			'combat_runC2': 60,
-			'intel_getAllTargets': 10,
+			'intel_getPerfectMapIntelligence': 10,
 			'intel_getAviationTargets': 10,
 			'intel_getNearbyGroundTargets': 15,
 			'intel_updateSectorInfo': 30,
@@ -543,16 +543,18 @@ class CommandCenter {
 				state.aviationTargets = intelligence.getAirRaidTargets(state);	
 				break;
 
-			case 'intel_getAllTargets':
+			case 'intel_getPerfectMapIntelligence':
 				const allObjects = intelligence.getAllObjects(state.cellSize);
 
 				state.grid = allObjects['grid'];
 				state.playerInfo = allObjects['playerInfo'];
+				state.allTargets = allObjects['allTargets'];
 
 				if (false) {
-					allObjects['allTargets'].forEach(t => {
-						debug(`${t.name} (${t.flags})`);
-					})
+					debug(`\n${gameTime} allTargets`);
+					state.allTargets.forEach(t => {
+						debug(`\t${t.name}  ${t.id}  (player ${t.player})	(flags ${toBinary20(t.flags)})`);
+					});
 				}
 
 				if (false) {

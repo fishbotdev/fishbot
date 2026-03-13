@@ -42,6 +42,7 @@ class worldState {
         this.highRiskSectors = [];
 
         // Sector system (new)
+        this.allTargets = [];
         this.cellSize = 10;     // in game tiles
         this.grid = undefined;
 
