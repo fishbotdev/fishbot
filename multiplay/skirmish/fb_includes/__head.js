@@ -94,6 +94,34 @@ const FEATURE_TYPE = {
 Object.freeze(FEATURE_TYPE);
 
 
+const OBJ_FLAGS = {
+
+    // unit classes
+    ARMOUR:        				1 << 0,
+    INFANTRY:    				1 << 1,
+    INDIRECT_FIRE:     			1 << 2,
+    AVIATION:          			1 << 3,
+
+    // capabilities
+    ADA:          				1 << 4,
+    CONSTRUCTOR:      			1 << 5,
+
+	// propulsion
+	CYBORG_PROPULSION: 			1 << 12,
+	TRACKED_PROPULSION: 		1 << 13,
+	HALF_TRACKED_PROPULSION: 	1 << 14,
+	HOVER_PROPULSION: 			1 << 15,
+	WHEELED_PROPULSION: 		1 << 16,
+	VTOL_PROPULSION: 			1 << 17,
+
+    // structures
+    PRODUCTION:   				1 << 8,
+    RESOURCE_EXTRACTOR:       	1 << 9,
+    DEFENSIVE_STRUCTURE:      	1 << 10,
+};
+Object.freeze(OBJ_FLAGS);
+
+
 const MISSION_TYPE = {
 	ABORT_MISSION: 0,
 

@@ -15,8 +15,13 @@
 	If not, see <https://www.gnu.org/licenses/>.
 */
 
+/**
+The functions in this class:
+- Have the authority to write to the global state (typically delegated to `hq_toc.js`)
+- Should make decisions on what course action to take, but should handle no direct execution (this should be delegated to other functions)
+- Should be supported by proposals made by the staff functions hq_gX
+ */
 class CommandCenter {
-
 	constructor() {
 
 		this.toc = new TacticalOperationsCenter();
@@ -36,13 +41,14 @@ class CommandCenter {
 		// e.g. label intelligence tasks with 'intel_'.
 		this.REQUESTS_PER_MINUTE = {
 			'combat_runC2': 60,
+			'intel_getAllTargets': 10,
+			'intel_getAviationTargets': 10,
+			'intel_getNearbyGroundTargets': 15,
+			'intel_updateSectorInfo': 30,
 			'runLogistics': 60,
-			'intel_updateSectorInfo': 30,	
 			'global_missionManager': 60,
 			'intel_updateCOP': 30,	
-			'intel_getNearbyGroundTargets': 15,
 			'intel_checkCampaignStatus': 15,
-			'intel_getAviationTargets': 10,
 			'intel_checkOilDominance': 2,
 		};
 
@@ -511,7 +517,7 @@ class CommandCenter {
 			
 			case 'intel_checkCampaignStatus':
 
-				// ADVANCE CAMPAIGN BASED ON GAME STATE
+				// ADVANCE CAMPAIGN BASED ON GAME STATE -- TEMPORARY IMPLEMENTATION
 				let event = undefined;
 				if (groundForces.completedForceBuildup()) {
 					event = 'CompletedBuildup';
@@ -536,7 +542,44 @@ class CommandCenter {
 			case 'intel_getAviationTargets':
 				state.aviationTargets = intelligence.getAirRaidTargets(state);	
 				break;
-			
+
+			case 'intel_getAllTargets':
+				const allObjects = intelligence.getAllObjects(state.cellSize);
+
+				state.grid = allObjects['grid'];
+				state.playerInfo = allObjects['playerInfo'];
+
+				if (false) {
+					allObjects['allTargets'].forEach(t => {
+						debug(`${t.name} (${t.flags})`);
+					})
+				}
+
+				if (false) {
+					const numXCells = Math.ceil(mapWidth / state.cellSize);
+        			const numYCells = Math.ceil(mapHeight / state.cellSize);
+
+					for (let gx=0; gx<numXCells; gx++) {
+						for (let gy=0; gy<numYCells; gy++) {
+
+							if (allObjects['grid'][gx][gy]['targetUnits'].length > 0 || allObjects['grid'][gx][gy]['targetStructures'].length > 0) {
+								debug(`Objects in grid: (${gx} ${gy}) @ ${gameTime}`);
+
+								allObjects['grid'][gx][gy]['targetUnits'].forEach(t => debug(`	${t.name} (${t.id}): player ${t.player}`));							
+								allObjects['grid'][gx][gy]['targetStructures'].forEach(t => debug(`	${t.name} (${t.id}): player ${t.player} `));
+							}
+						}
+					}
+				}
+
+				if (false) {
+					allObjects['playerInfo'].forEach(p => {
+						debug(`${p.playerID} (${p.isFriendly})\n\tDROID tot ${p.numTotalUnits}, inf ${p.numInfantryUnits}, arm ${p.numArmourUnits}, air ${p.numAirUnits}, indi ${p.numIndirectUnits}, ada ${p.numADA}\n\tSTRUCTURE tot ${p.numStructs}, derr ${p.numDerricks}`);
+					});
+					debug('');
+				}
+				break;
+				
 			default:
 				debug(`	WARNING	runIntelligence(): could not understand ${taskID} @ ${gameTime}`);
 				return;

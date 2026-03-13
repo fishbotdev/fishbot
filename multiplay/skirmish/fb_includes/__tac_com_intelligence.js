@@ -15,6 +15,39 @@
 	If not, see <https://www.gnu.org/licenses/>.
 */
 
+
+// New sector system (v4)
+function createMinimalPlayerInfoEntry(playerID) {
+    return {
+        'playerID': playerID,
+        'droids': [],
+        'structs': []
+    };
+}
+
+function getDroidsAndStructsByPlayer(playerIdList=undefined) {
+
+    let objectsByPlayer = [];
+
+    if (!defined(playerIdList)) {
+        playerIdList = generateRange(maxPlayers);
+    }
+
+    for (let i=0; i<playerIdList.length; i++) {
+        const playerID = playerIdList[i];
+        
+        let playerInfo = createMinimalPlayerInfoEntry(playerID);
+        playerInfo['droids'].push(...enumDroid(playerID));
+        playerInfo['structs'].push(...enumStruct(playerID));
+
+        objectsByPlayer.push(playerInfo);
+    }
+
+    return objectsByPlayer;
+}
+
+// Old sector system (v3)
+
 function getSectorIntelFromGameEngine(sectorInfo, missionType) {
 
     // System: Returns "observations" from the game engine

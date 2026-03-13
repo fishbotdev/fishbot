@@ -103,9 +103,93 @@ class armyIntelligence {
 		REAL-TIME TARGETING
 	*/
 	
-	#createNewTarget(targetObject) {
+	#classifyObject(obj) {
+
+		let flags = 0;
+
+		// Object-type agnostic capability
+		if (isAntiAirDefense(obj)) {
+			flags |= OBJ_FLAGS.ADA;
+		}
+
+		if (obj.hasIndirect === true) {
+			flags |= OBJ_FLAGS.INDIRECT_FIRE;
+		}
+
+
+		if (obj.type === DROID) {
+
+			switch (obj.propulsion) {
+				case PROPULSIONS["Cyborg Propulsion"].id: 
+					flags |= OBJ_FLAGS.CYBORG_PROPULSION;
+					break;
+				case PROPULSIONS["Wheels"].id:
+					flags |= OBJ_FLAGS.WHEELED_PROPULSION;
+					break;
+				case PROPULSIONS["Half-tracks"].id:
+					flags |= OBJ_FLAGS.HALF_TRACKED_PROPULSION;
+					break;
+				case PROPULSIONS["Tracks"].id:
+					flags |= OBJ_FLAGS.TRACKED_PROPULSION;
+					break;
+				case PROPULSIONS["Hover"].id:
+					flags |= OBJ_FLAGS.HOVER_PROPULSION;
+					break;
+				case PROPULSIONS["VTOL"].id:
+					flags |= OBJ_FLAGS.VTOL_PROPULSION;
+					break;
+
+				default:
+					flags |= OBJ_FLAGS.TRACKED_PROPULSION;
+					debug(`WARNING	intelligence/#classifyObject(): obj.propulsion was not understood: ${obj.propulsion}`);
+			}
+
+			// Droid-specific capability
+			if (obj.droidType === DROID_CONSTRUCT) {
+				flags |= OBJ_FLAGS.CONSTRUCTOR;
+				return flags;
+			} 
+
+			const ARMOUR_MASK = OBJ_FLAGS.HALF_TRACKED_PROPULSION | OBJ_FLAGS.TRACKED_PROPULSION | OBJ_FLAGS.WHEELED_PROPULSION | OBJ_FLAGS.HOVER_PROPULSION;
+			if (obj.droidType === DROID_WEAPON || obj.droidType === DROID_CYBORG) {
+				if (flags & ARMOUR_MASK) {
+					flags |= OBJ_FLAGS.ARMOUR;
+				} else if (flags & OBJ_FLAGS.VTOL_PROPULSION) {
+					flags |= OBJ_FLAGS.AVIATION;
+				}
+			}
+
+			if (obj.droidType === DROID_CYBORG) {
+				flags |= OBJ_FLAGS.INFANTRY;
+			}
+
+			return flags;
+		}
+
+
+		if (obj.type === STRUCTURE) {
+			if (obj.stattype === DEFENSE) {
+				flags |= OBJ_FLAGS.DEFENSIVE_STRUCTURE;
+				return flags;
+			}
+
+			const INDUSTRIAL_TARGETS = [FACTORY, CYBORG_FACTORY, VTOL_FACTORY];	
+			if (INDUSTRIAL_TARGETS.includes(obj.stattype)) {
+				flags |= OBJ_FLAGS.PRODUCTION;
+				return flags;					
+			}
+
+			if (obj.stattype === RESOURCE_EXTRACTOR) {
+				flags |= OBJ_FLAGS.RESOURCE_EXTRACTOR;
+				return flags;
+			}
+		}
 		
-		let temp =  {
+		return flags;
+	}
+
+	#createNewTarget(targetObject, flags=0, gx=0, gy=0) {
+		return {
 			'name': targetObject.name,
 
 			// These 3 parameters allow 'getObject' to be used at a later point to retrieve up-to-date object information
@@ -113,10 +197,129 @@ class armyIntelligence {
 			'player': targetObject.player,
 			'id': targetObject.id,
 
+			'flags': flags,
+			'gx': gx,
+			'gy': gy,
+
+			// This is used by the mission management system to store the priority at the time of assignment
 			'priority': MISSION_PRIORITY.LOW,
 		};
+	}
 
-		return temp;
+	#createFullPlayerInfoEntry(playerID) {
+		return {
+			'playerID': playerID,
+			'isFriendly': !isEnemy(playerID), 
+
+			'numTotalUnits': 0,
+			'numInfantryUnits': 0,
+			'numArmourUnits': 0,
+			'numAirUnits': 0,
+			'numIndirectUnits': 0,
+			'numADA': 0,
+
+			'numStructs': 0,
+			'numDerricks': 0,
+		};
+	}
+
+	/**
+	`getAllObjects()`
+
+	This function performs multiple functions:
+	1. Gets all droids & structures on the map (like taking a satellite image of the whole map)
+	2. Classifies all droids & structures, populating a new `playerInfo` and a new `grid` 
+	 */
+	getAllObjects(cellSize) {
+		let objectsByPlayer = getDroidsAndStructsByPlayer();		// this information is fresh
+
+		let playerInfo = [];
+		let allTargets = [];
+		let grid = create2DGrid(cellSize, createNewGridCell);
+		
+		for (let i=0; i<objectsByPlayer.length; i++) {
+			const currPlayerEntry = objectsByPlayer[i];
+
+			let p = this.#createFullPlayerInfoEntry(currPlayerEntry['playerID']);
+
+			// Collate droid information
+			const IS_TARGET = !p['isFriendly'];
+
+			for (let j=0; j<currPlayerEntry['droids'].length; j++) {
+				const obj = currPlayerEntry['droids'][j];
+				const flags = this.#classifyObject(obj);
+
+				// Update player information
+				p['numTotalUnits']++;
+
+				const ARMOUR_FORBIDDEN_FLAGS = (OBJ_FLAGS.ADA | OBJ_FLAGS.INDIRECT_FIRE);
+				const INDIRECT_FIRE_FORBIDDEN_FLAGS = (OBJ_FLAGS.AVIATION | OBJ_FLAGS.INFANTRY);
+
+				if (flags & OBJ_FLAGS.ARMOUR && !(flags & ARMOUR_FORBIDDEN_FLAGS)) {
+					p['numArmourUnits']++;
+				} 
+
+				if (flags & OBJ_FLAGS.INDIRECT_FIRE && !(flags & INDIRECT_FIRE_FORBIDDEN_FLAGS)) {
+					p['numIndirectUnits']++;
+				}
+
+				if (flags & OBJ_FLAGS.INFANTRY) {
+					p['numInfantryUnits']++;
+				}
+
+				if (flags & OBJ_FLAGS.AVIATION) {
+					p['numAirUnits']++;
+				}
+
+				if (flags & OBJ_FLAGS.ADA) {
+					p['numADA']++;
+				}
+				
+				// Update target list
+				const gx = Math.floor(obj.x / cellSize), gy = Math.floor(obj.y / cellSize);		// cellSize is used for computing grid coords
+				const newObj = this.#createNewTarget(obj, flags, gx, gy);
+
+				if (IS_TARGET) {
+					grid[gx][gy]['targetUnits'].push(newObj);
+					allTargets.push(newObj);		
+				} else {
+					grid[gx][gy]['friendlyUnits'].push(newObj);
+				}
+			}	
+
+			// Collate structure information
+			for (let j=0; j<currPlayerEntry['structs'].length; j++) {
+				const obj = currPlayerEntry['structs'][j];
+				const flags = this.#classifyObject(obj);
+
+				// Update player information
+				p['numStructs'] += 1;
+
+				if (flags & OBJ_FLAGS.RESOURCE_EXTRACTOR) {
+					p['numDerricks']++;
+				}
+
+				// Update target list
+				const gx = Math.floor(obj.x / cellSize), gy = Math.floor(obj.y / cellSize);		// cellSize is used for computing grid coords
+				const newObj = this.#createNewTarget(obj, flags, gx, gy);
+
+				// Update target list
+				if (IS_TARGET) {
+					grid[gx][gy]['targetStructures'].push(newObj);
+					allTargets.push(newObj);		
+				} else {
+					grid[gx][gy]['friendlyStructures'].push(newObj);
+				}
+			}
+
+			playerInfo.push(p);
+		}
+
+		return {
+			'playerInfo': playerInfo,
+			'allTargets': allTargets,
+			'grid': grid
+		}
 	}
 
 	getAirRaidTargets(state) {
@@ -299,7 +502,7 @@ class armyIntelligence {
 					continue;
 				} 
 
-				if (obj.propulsion === PROPULSIONS["Cyborg Propulsion"]) {
+				if (obj.propulsion === PROPULSIONS["Cyborg Propulsion"].id) {
 					// cyborg engineers were filtered out earlier
 					proposedTargets["enemyInfantry"].push(t);		
 					continue;

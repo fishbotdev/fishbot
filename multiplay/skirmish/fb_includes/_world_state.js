@@ -54,7 +54,7 @@ class worldState {
         this.aviationTargets = undefined;   
 
         // Mission management system
-        this.g = new fbGroup();
+        this.g = undefined;
         this.activeMissions = [];
 
         // Bot attributes
@@ -131,17 +131,21 @@ class worldStateBuilder {
         return sectorTemplate;
     }
 
-    #initialiseFbGroups(state) {
-        // Application service: Generates initial values in FishBot v3 grouping system
-        state.g.createGroup(AIR_RESERVE);
+    #createFbGroupingSystem() {
+        // Generates initial values in FishBot v3 grouping system
+        let g = new fbGroup();
+
+        g.createGroup(AIR_RESERVE);
 
         for (const d in DIVISION) {
-            state.g.createGroup(DIVISION[d]);
+            g.createGroup(DIVISION[d]);
         }
         
         for (const e in ENGINEERING) {
-            state.g.createGroup(ENGINEERING[e]);
+            g.createGroup(ENGINEERING[e]);
         }
+
+        return g;
     }
 
     #initialiseSectors(state) {
@@ -224,36 +228,12 @@ class worldStateBuilder {
         }
     }
 
-    #_createNewGridCell() {
-        return {
-            'targets': [],
-        }
-    }
-
-    #initialiseGrid(state) {
-        // Implementation: A 2D-array is used to represent a square grid because:
-        //  - ease of searching for nearby sectors (numeric indices)
-        //  - removes need for constructing a string to index a grid entry        
-
-        const numXCells = Math.ceil(mapWidth / state.cellSize);
-        const numYCells = Math.ceil(mapHeight / state.cellSize);
-
-        this.grid = new Array(numXCells);
-
-        for (let x=0; x<numXCells; x++) {
-            this.grid[x] = new Array(numYCells);
-
-            for (let y=0; y<numYCells; y++) {
-                this.grid[x][y] = this.#_createNewGridCell();
-            }
-        }
-    }
-
     initialise(state) {
         // Application service: Initialises 'worldState' to defaults
-        this.#initialiseFbGroups(state);
-        this.#initialiseSectors(state);
+        state.g = this.#createFbGroupingSystem();
 
-        this.#initialiseGrid(state);        // new sector system
+        this.#initialiseSectors(state);        // to be deleted
+
+        state.grid = create2DGrid(state.cellSize, createNewGridCell);       // new sector system
     }
 }
