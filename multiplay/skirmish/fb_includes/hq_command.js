@@ -345,7 +345,7 @@ class CommandCenter {
 		}
 
 		// TEMPORARY -> Will be replaced by intelligent merge sort based on weighted priority
-		const prioritiseCasTargets = casTargets.length >= 4 && !state.oilDominance;
+		const prioritiseCasTargets = nearbyTargetCount >= 4 && !state.oilDominance;
 		const prioritiseRaidTargets = !state.oilDominance;
 		const prioritiseIndustrialTargets = state.oilDominance;
 
@@ -441,24 +441,29 @@ class CommandCenter {
 
 		}
 
-		// Remove already active missions (inefficient, loops through the list again)
-		// Also handles stale inputs, to be integrated with another part of the code later
-		let newAviationTargets = [], existingAviationTargets = [];
+		if (prioritiseIndustrialTargets) {
+			// In end-game, focus on closing out asap
+			return targetCandidates;
+		} else {
+			// Remove already active missions (inefficient, loops through the list again)
+			// Also handles stale inputs, to be integrated with another part of the code later
+			let newAviationTargets = [], existingAviationTargets = [];
 
-		for (let i=0; i<targetCandidates.length; i++) {
-			const c = getObject(targetCandidates[i].type, targetCandidates[i].player, targetCandidates[i].id);
-			if (!defined(c)) {
-				continue;
+			for (let i=0; i<targetCandidates.length; i++) {
+				const c = getObject(targetCandidates[i].type, targetCandidates[i].player, targetCandidates[i].id);
+				if (!defined(c)) {
+					continue;
+				}
+
+				if (!activeTargetIDs.includes(targetCandidates[i].id)) {
+					newAviationTargets.push(targetCandidates[i]);
+				} else {
+					existingAviationTargets.push(targetCandidates[i]);
+				}
 			}
 
-			if (!activeTargetIDs.includes(targetCandidates[i].id)) {
-				newAviationTargets.push(targetCandidates[i]);
-			} else {
-				existingAviationTargets.push(targetCandidates[i]);
-			}
+			return [...newAviationTargets, ...existingAviationTargets];
 		}
-
-		return [...newAviationTargets, ...existingAviationTargets];
 	}
 
 	runCombatOperations(state) {
