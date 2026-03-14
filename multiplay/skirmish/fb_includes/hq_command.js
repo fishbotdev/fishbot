@@ -805,7 +805,7 @@ class CommandCenter {
 
 			// Cancel if trucks & far away and the sector does not have a lot of oil (low value)
 			const assignedTrucks = state.g.enumGroup(currMission.id);
-			if (assignedTrucks.every(truck => distance(truck, dangerousSector) > 10)) {
+			if (assignedTrucks.every(truck => distance(truck, dangerousSector) > 6)) {
 				// debug(`Cancelling mission ${currMission.id} in sector ${currMission.sectorID} due to high threat`);
 				currMission.missionStatus = MISSION_STATUS.ABORT;
 			}
