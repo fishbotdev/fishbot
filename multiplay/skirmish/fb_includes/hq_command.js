@@ -511,7 +511,11 @@ class CommandCenter {
 				state.forceLocation = mainForceLocation;
 
 				if (defined(state.forceLocation)) {
-					state.nearbyGroundTargets = intelligence.proposeTargetsInRadius({state: state, loc: state.forceLocation, searchRadius: 25, immediateRadius: 10});		
+					if (false) {
+						state.nearbyGroundTargets = intelligence.proposeTargetsInRadius({state: state, loc: state.forceLocation, searchRadius: 25, immediateRadius: 10});		
+					} else {
+						state.nearbyGroundTargets = intelligence.proposeTargetsInRadius2({state: state, loc: state.forceLocation, searchRadius: 25, immediateRadius: 10});		
+					}
 				}
 				break;
 			
@@ -545,7 +549,6 @@ class CommandCenter {
 				} else {
 					state.aviationTargets = intelligence.getDefencesNearDerricks(state);
 				}
-				
 				break;
 
 			case 'intel_getPerfectMapIntelligence':

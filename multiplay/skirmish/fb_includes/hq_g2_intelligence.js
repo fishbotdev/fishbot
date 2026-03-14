@@ -242,8 +242,12 @@ class armyIntelligence {
 
 		let objectsByPlayer = getDroidsAndStructsByPlayer();		// this information is fresh
 
-		let playerInfo = [];
-		let allTargets = [];
+		let result = {
+			'playerInfo': [],
+			'allTargets': [],
+			'grid': grid
+		}
+
 		for (let i=0; i<objectsByPlayer.length; i++) {
 			const currPlayerEntry = objectsByPlayer[i];
 
@@ -288,7 +292,7 @@ class armyIntelligence {
 
 				if (IS_TARGET) {
 					grid[gx][gy]['targetUnits'].push(newObj);
-					allTargets.push(newObj);		
+					result.allTargets.push(newObj);		
 				} else {
 					grid[gx][gy]['friendlyUnits'].push(newObj);
 				}
@@ -313,20 +317,17 @@ class armyIntelligence {
 				// Update target list
 				if (IS_TARGET) {
 					grid[gx][gy]['targetStructures'].push(newObj);
-					allTargets.push(newObj);		
+					result.allTargets.push(newObj);		
 				} else {
 					grid[gx][gy]['friendlyStructures'].push(newObj);
 				}
 			}
 
-			playerInfo.push(p);
+			result.playerInfo.push(p);
 		}
 
-		return {
-			'playerInfo': playerInfo,
-			'allTargets': allTargets,
-			'grid': grid
-		}
+		return result;
+
 	}
 
 	getDefencesNearDerricks(state) {
@@ -443,6 +444,160 @@ class armyIntelligence {
 		return airRaidTargetList;
 	}
 	
+	/** 
+	 * This function performs these roles:
+	 *		- finding the closest droid
+	 *		- calculating how many targets are in the immediate radius
+	 *		- classifying each object into different, useful categories
+	 *		- compressing each gameObject for efficient storage & use
+	 * with O(N) algorithmic complexity. 
+	 */
+	proposeTargetsInRadius2({state, loc, searchRadius=20, immediateRadius=10}) {
+
+		let proposedTargets = {
+			'enemyArmor': [], 
+			'enemyInfantry': [], 
+			'enemyIndirectFire': [], 
+			'enemyADA': [], 
+			'enemyAviation': [], 
+			'enemyConstructor': [], 
+			'enemyIndustrial': [], 
+			'enemyUtility': [], 
+			'enemyDefenses': [],
+			'closestObject': undefined,
+			'closestObjects': [],				// a temporary cache so this function can be executed less
+			'targetsInImmediateRadius': 0
+		};		
+
+		const INDUSTRIAL_TARGETS = [FACTORY, CYBORG_FACTORY, VTOL_FACTORY];
+
+		if (!defined(loc)) {
+			debug(`WARNING:	proposeTargetsInRadius2(): 'loc' was undefined.`);
+			return proposedTargets;
+		}
+
+		const t = state.grid.enumRange(loc.x, loc.y, searchRadius); 
+
+		let targetList = [...t['droids'], ...t['structs']];
+		// debug(`t ${targetList.length} (d ${t['droids'].length}, s ${t['structs'].length}), allT ${state.allTargets.length}`);
+
+		if (targetList.length === 0) {
+			targetList = state.allTargets;
+		}
+
+		if (targetList.length === 0) {
+			return proposedTargets;
+		}
+
+		let closestObject = undefined;
+		let closestDistSq = 0;
+
+		let enemyVtols = [];
+
+		for (let i=0; i<targetList.length; i++) {
+			const t = targetList[i];
+			const obj = getObject(t.type, t.player, t.id);
+			if (!defined(obj)) {
+				// The target could come from a stale database e.g. allTargets
+				continue;
+			}
+
+			// Update closestDroid (excludes VTOLs)
+			if (obj.isVTOL !== true) {
+
+				const distSquaredToLoc = distSq(obj.x, loc.x, obj.y, loc.y);
+
+				// Add closestObjects (should be called closestTargets)
+				if (distSquaredToLoc <= immediateRadius ** 2) {
+					proposedTargets["closestObjects"].push(t);
+					proposedTargets["targetsInImmediateRadius"] += 1;
+				}
+
+				// Update closestObject (should be called closestTarget)
+				if (!defined(closestObject)) {
+					closestObject = t;
+					closestDistSq = distSq(obj.x, loc.x, obj.y, loc.y);
+				} else {
+					if (distSquaredToLoc < closestDistSq) {
+						closestObject = t;
+						closestDistSq = distSquaredToLoc;
+					}
+				}
+			} else {
+				enemyVtols.push(t);
+			}
+
+			// Classify the object
+			if (isAntiAirDefense(obj)) {
+				proposedTargets["enemyADA"].push(t);
+				continue;
+			}
+
+			if (obj.type === DROID) {
+				if (obj.droidType === DROID_CONSTRUCT) {
+					proposedTargets["enemyConstructor"].push(t);
+					continue;
+				} 
+
+				if (obj.propulsion === PROPULSIONS["Cyborg Propulsion"].id) {
+					// cyborg engineers were filtered out earlier
+					proposedTargets["enemyInfantry"].push(t);		
+					continue;
+				}
+
+				if (obj.isVTOL === true) {
+					proposedTargets["enemyAviation"].push(t);
+					continue;
+				}
+
+				if (obj.hasIndirect === true) {
+					// cyborg indirect (e.g. grenadier) & VTOL indirect (e.g. bombs) were filtered out earlier
+					proposedTargets["enemyIndirectFire"].push(t);
+					continue;
+				}
+
+				// This leaves only direct fire land vehicles & other utility vehicles e.g. sensors / commanders
+				if (obj.droidType === DROID_WEAPON) {
+					proposedTargets["enemyArmor"].push(t);
+					continue;		
+				}
+
+				proposedTargets["enemyUtility"].push(t);
+				continue;
+			}
+
+			if (obj.type === STRUCTURE) {
+				if (obj.hasIndirect === true) {
+					proposedTargets["enemyIndirectFire"].push(t);
+					continue;
+				}
+				
+				if (obj.stattype === DEFENSE) {
+					proposedTargets["enemyDefenses"].push(t);
+					continue;
+				}
+
+				if (INDUSTRIAL_TARGETS.includes(obj.stattype)) {
+					proposedTargets["enemyIndustrial"].push(t);
+					continue;					
+				}
+
+				proposedTargets["enemyUtility"].push(t);
+				continue;
+			}
+		}
+
+		if (defined(closestObject)) {
+			proposedTargets["closestObject"] = closestObject;
+		} else {
+			// VTOLs are only directly targeted if no other targets exist
+			proposedTargets["closestObject"] = enemyVtols[0];
+		}
+
+		return proposedTargets;
+
+	}
+
 	#getNearestPlayerTargets({state, loc}) {
 		// Algorithm: Find the nearest alive enemy base closest to the current group location and head towards that.
 		// Reason: This saves running enumDroid() and enumStruct() over all alive enemy players.

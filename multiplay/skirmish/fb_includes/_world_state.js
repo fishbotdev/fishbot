@@ -87,12 +87,12 @@ class fbGrid {
 
                 // Compute deviations & test validity
                 const gx = cx + dx;
-                if (gx < 0 || gx > Math.ceil(mapWidth / this.cellSize)) {
+                if (gx < 0 || gx >= this.numXCells) {
                     continue;
                 }
                 
                 const gy = cy + dy;
-                if (gy < 0 || gx > Math.ceil(mapHeight / this.cellSize)) {
+                if (gy < 0 || gx >= this.numYCells) {       // >= because of 0 indexing: [0, 1, ..., numYCells - 1]
                     continue;
                 }
 
