@@ -219,6 +219,7 @@ class armyIntelligence {
 			'numADA': 0,
 
 			'numStructs': 0,
+			'numFactories': 0,
 			'numDerricks': 0,
 		};
 	}
@@ -310,6 +311,10 @@ class armyIntelligence {
 					p['numDerricks']++;
 				}
 
+				if (flags & OBJ_FLAGS.PRODUCTION) {
+					p['numFactories']++;
+				}
+
 				// Update target list
 				const gx = Math.floor(obj.x / cellSize), gy = Math.floor(obj.y / cellSize);		// cellSize is used for computing grid coords
 				const newObj = this.#createNewTarget(obj, flags, gx, gy);
@@ -390,7 +395,7 @@ class armyIntelligence {
 		const gridEnumBoundingBox = (...args) => state.grid.enumBoundingBox(...args);
 		const bases = state.poi.bases;
 
-		const enemyPlayerIDs = enumLivingPlayers().filter(isEnemy); 
+		const enemyPlayerIDs = state.enumLivingPlayers().filter(isEnemy); 
 		const SEARCH_RADIUS = 30;
 
 		let result = {

@@ -257,7 +257,7 @@ class worldState {
         // Sector system (new)
         this.allTargets = [];
         this.grid = new fbGrid();
-        this.playerInfo = undefined;
+        this.playerInfo = [];
         this.poi = {
             'derricks': [], 
             'bases': []
@@ -286,6 +286,39 @@ class worldState {
         this.TIME_BLOCK_MS = 200;
         this.INTERVALS_PER_MIN = Math.floor(60000 / this.TIME_BLOCK_MS);
 		this.WORKER_IDS = {};
+    }
+
+    createPlayerInfoEntry(playerID) {
+        return {
+			'playerID': playerID,
+			'isFriendly': !isEnemy(playerID), 
+
+			'numTotalUnits': 0,
+			'numInfantryUnits': 0,
+			'numArmourUnits': 0,
+			'numAirUnits': 0,
+			'numIndirectUnits': 0,
+			'numADA': 0,
+
+			'numStructs': 0,
+            'numFactories': 0,
+			'numDerricks': 0,
+		};
+    }
+
+    /**
+     * Returns an array containing the playerIDs of alive players.
+     */
+    enumLivingPlayers() {   
+        let livingPlayerIDs = [];
+
+        this.playerInfo.forEach(p => {
+            if (p.numTotalUnits !== 0 || p.numFactories !== 0) {
+                livingPlayerIDs.push(p.playerID);
+            }
+        });
+
+        return livingPlayerIDs;
     }
 
 }
