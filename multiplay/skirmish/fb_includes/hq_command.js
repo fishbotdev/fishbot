@@ -549,9 +549,19 @@ class CommandCenter {
 				break;
 
 			case 'intel_getPerfectMapIntelligence':
-				const allObjects = intelligence.getAllObjects(state.cellSize);
+				const allObjects = intelligence.getAllObjects(state);
 
-				state.grid = allObjects['grid'];
+				// Write updated units to grid (only overwriting "KEYS" defined below)
+				const KEYS = ['friendlyUnits', 'targetUnits', 'friendlyStructures', 'targetStructures'];
+
+				for (let gx=0; gx<state.grid.numXCells; gx++) {
+					for (let gy=0; gy<state.grid.numYCells; gy++) {		
+						for (let i=0; i<KEYS.length; i++) {
+							state.grid.grid[gx][gy][KEYS[i]] = allObjects['grid'][gx][gy][KEYS[i]];
+						}
+					}
+				}
+				
 				state.playerInfo = allObjects['playerInfo'];
 				state.allTargets = allObjects['allTargets'];
 
@@ -563,17 +573,33 @@ class CommandCenter {
 				}
 
 				if (false) {
-					const numXCells = Math.ceil(mapWidth / state.cellSize);
-        			const numYCells = Math.ceil(mapHeight / state.cellSize);
+					const cellSize = state.grid.cellSize;
+					const numXCells = Math.ceil(mapWidth / cellSize);
+        			const numYCells = Math.ceil(mapHeight / cellSize);
+
+					if (false) {
+						for (let gx=0; gx<numXCells; gx++) {
+							for (let gy=0; gy<numYCells; gy++) {
+
+								if (allObjects['grid'][gx][gy]['targetUnits'].length > 0 || allObjects['grid'][gx][gy]['targetStructures'].length > 0) {
+									debug(`\nObjects in grid: (${gx} ${gy}) @ ${gameTime}`);
+
+									allObjects['grid'][gx][gy]['targetUnits'].forEach(t => debug(`	${t.name} (${t.id}): player ${t.player}`));							
+									allObjects['grid'][gx][gy]['targetStructures'].forEach(t => debug(`	${t.name} (${t.id}): player ${t.player} `));
+								}
+							}
+						}
+					}
 
 					for (let gx=0; gx<numXCells; gx++) {
 						for (let gy=0; gy<numYCells; gy++) {
 
-							if (allObjects['grid'][gx][gy]['targetUnits'].length > 0 || allObjects['grid'][gx][gy]['targetStructures'].length > 0) {
-								debug(`Objects in grid: (${gx} ${gy}) @ ${gameTime}`);
+							if (state.grid.grid[gx][gy]['targetUnits'].length > 0 || state.grid.grid[gx][gy]['targetStructures'].length > 0) {
+								debug(`Objects in actual grid: (${gx} ${gy}) @ ${gameTime}`);
 
-								allObjects['grid'][gx][gy]['targetUnits'].forEach(t => debug(`	${t.name} (${t.id}): player ${t.player}`));							
-								allObjects['grid'][gx][gy]['targetStructures'].forEach(t => debug(`	${t.name} (${t.id}): player ${t.player} `));
+								state.grid.grid[gx][gy]['targetUnits'].forEach(t => debug(`	${t.name} (${t.id}): player ${t.player}`));							
+								state.grid.grid[gx][gy]['targetStructures'].forEach(t => debug(`	${t.name} (${t.id}): player ${t.player} `));
+								debug(`${state.grid.grid[gx][gy]['derricks']}`);
 							}
 						}
 					}

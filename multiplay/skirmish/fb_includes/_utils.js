@@ -102,32 +102,18 @@ function defined(variable) {
 	return false;
 }
 
-function createNewGridCell() {
-	return {
-		'targetUnits': [],
-		'targetStructures': [],
-
-		'friendlyUnits': [],
-		'friendlyStructures': [],
-	}
-}
-
 /**
  * This function implements a square 2D-array.
  * 
  * This implementation is used to store the grid cells representation of the map because:
  *  - ease of use when searching nearby sectors (indices are already numeric)
  *  - numeric indices are more efficient than constructing a string to index a grid entry
- * @param {number} cellSize 
+ * @param {number} numXCells
+ * @param {number} numYCells
  * @param {function} cellFactory 
  * @returns {Array[]} 2D array (integer indexed)
  */
-function create2DGrid(cellSize, cellFactory) {
-	// Implementation: A 2D-array is used to represent a square grid on the map because:
-	//      
-
-	const numXCells = Math.ceil(mapWidth / cellSize);
-	const numYCells = Math.ceil(mapHeight / cellSize);
+function create2DGrid(numXCells, numYCells, cellFactory) {
 
 	let grid = new Array(numXCells);
 

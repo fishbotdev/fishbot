@@ -230,13 +230,20 @@ class armyIntelligence {
 	1. Gets all droids & structures on the map (like taking a satellite image of the whole map)
 	2. Classifies all droids & structures, populating a new `playerInfo` and a new `grid` 
 	 */
-	getAllObjects(cellSize) {
+	getAllObjects(state) {
+
+		// Note: trying a new pattern; extract all relevant parameters from state at the start
+		const numXCells = state.grid.numXCells;
+		const numYCells = state.grid.numYCells;
+		const cellSize = state.grid.cellSize;
+		const createNewFbGridCell = (...args) => state.grid.createNewFbGridCell(...args); 
+		
+		let grid = create2DGrid(numXCells, numYCells, createNewFbGridCell);
+
 		let objectsByPlayer = getDroidsAndStructsByPlayer();		// this information is fresh
 
 		let playerInfo = [];
 		let allTargets = [];
-		let grid = create2DGrid(cellSize, createNewGridCell);
-		
 		for (let i=0; i<objectsByPlayer.length; i++) {
 			const currPlayerEntry = objectsByPlayer[i];
 
@@ -324,55 +331,57 @@ class armyIntelligence {
 
 	getDefencesNearDerricks(state) {
 
-		const SEARCH_RADIUS = 8;
+		// Note: trying a new pattern; extract all relevant parameters from state at the start
+		const grid = state.grid.grid;
+		const gridEnumRange = (...args) => state.grid.enumRange(...args);
+		const numXCells = state.grid.numXCells;
+		const numYCells = state.grid.numYCells;
 
+		const SEARCH_RADIUS = 8;
 		let lowPriorityTargets = [], medPriorityTargets = [], highPriorityTargets = [];
 
-		for (let i=0; i<state.sectors.length; i++) {
-			const currSector = state.sectors[i];
+		// Here we use the grid definition of derricks; it includes the pre-computed spatial clustering
+		// This spatial clustering allows us to skip over multiple derricks
+		for (let gx=0; gx<numXCells; gx++) {
+			for (let gy=0; gy<numYCells; gy++) {
 
-			if (state.highRiskSectors.includes(currSector)) {
-				continue;
-			}
-
-			// For each derrick, find all nearby targets. Skip if derricks are assumed close together
-			let defences = [];
-			let NUM_SEARCH_ITERATIONS = currSector.derricks.length;
-			if (NUM_SEARCH_ITERATIONS >= 4) {
-				NUM_SEARCH_ITERATIONS = 1;		// usually this means the derricks are close together (to be verified)
-			}
-
-			for (let j=0; j<NUM_SEARCH_ITERATIONS; j++) {
-
-				const x = currSector.derricks[j].x;
-				const y = currSector.derricks[j].y;
-
-				const targets = state.gridEnumRange(x, y, SEARCH_RADIUS);
-				// Assume the outcome of this function produces fresh objects (getObject is not required)
-				if (targets.structs.length > 0) {
-					debug(`\ngetDefencesNearDerricks(): ${gameTime}`);
-				}
-				targets.structs.forEach(t => {
-					if (t.flags & OBJ_FLAGS.DEFENSIVE_STRUCTURE) {
-						debug(`		added ${t.name} (${t.id}) near ${x} ${y}`);
-						defences.push(this.#createNewTarget(t));
+				const nearbyDerricks = grid[gx][gy]['derricks'];
+				
+				for (let i=0; i<nearbyDerricks.length; i++) {
+					const d = nearbyDerricks[i];
+					const t = gridEnumRange(d.x, d.y, SEARCH_RADIUS);
+					if (t['structs'].length > 0) {
+						// debug(`t['structs'].length ${t['structs'].length}`);
 					}
-				});
-			}
+					
+					if (t['structs'].length - nearbyDerricks.length >= 5) {
+						// debug(`		skipped sector with derrick (near ${d.x} ${d.y})`);
+						break;		// intent: handle the case of old "dangerous sectors"
+					}
 
-			if (currSector.derricks.length >= 4) {
-				highPriorityTargets.push(...defences);
-			} else if (defences.length <= currSector.derricks.length) {	
-				medPriorityTargets.push(...defences); 	// "low hanging fruit"
-			} else {
-				lowPriorityTargets.push(...defences);		
+					let defences = [];
+
+					// find defensive structures
+					t['structs'].forEach(target => {
+						if (target.flags & OBJ_FLAGS.DEFENSIVE_STRUCTURE) {
+							// debug(`		added ${target.name} (${target.id}) near ${d.x} ${d.y}`);
+							defences.push(target);
+						}
+					});
+
+					if (nearbyDerricks.length >= 4) {
+						highPriorityTargets.push(...defences);
+						break;			// intent: handle the case of multiple derricks next to each other
+					} else if (nearbyDerricks.length >= defences.length) {
+						medPriorityTargets.push(...defences);
+					} else {
+						lowPriorityTargets.push(...defences);
+					}
+				}
 			}
-			
 		}
 
-		const airRaidTargetList = [...highPriorityTargets, ...medPriorityTargets, ...lowPriorityTargets];
-
-		return airRaidTargetList;
+		return [...highPriorityTargets, ...medPriorityTargets, ...lowPriorityTargets];
 	}
 
 	getAirRaidTargets(state) {

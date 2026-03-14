@@ -32,41 +32,25 @@
  *      4. Decision maker (coordinator)                                      -- fulfilled by: hq_command
  */
 
-class worldState {
-    // State: this class stores the game state from FishBot's perspective.
-    // All functions in FishBot use this class as the current ground truth.
+class fbGrid {
     constructor() {
-
-        // Sector system (original)
-        this.sectors = [];
-        this.highRiskSectors = [];
-
-        // Sector system (new)
-        this.allTargets = [];
         this.cellSize = 10;     // in game tiles
-        this.grid = undefined;
+        this.numXCells = Math.ceil(mapWidth / this.cellSize);
+        this.numYCells = Math.ceil(mapHeight / this.cellSize);
 
-        // Player knowledge
-        this.playerInfo = undefined;
+        this.grid = create2DGrid(this.numXCells, this.numYCells, this.createNewFbGridCell);        
+    }
 
-        // Combat targeting
-        this.forceLocation = undefined;
-        this.nearbyGroundTargets = undefined;
-        this.aviationTargets = undefined;   
+    createNewFbGridCell() {
+        return {
+            'targetUnits': [],
+            'targetStructures': [],
 
-        // Mission management system
-        this.g = undefined;
-        this.activeMissions = [];
+            'friendlyUnits': [],
+            'friendlyStructures': [],
 
-        // Bot attributes
-        this.botIsActive = true;
-        this.oilDominance = false;
-
-        // Load balancing parameters
-        this.currWorkerID = -1;
-        this.TIME_BLOCK_MS = 200;
-        this.INTERVALS_PER_MIN = Math.floor(60000 / this.TIME_BLOCK_MS);
-		this.WORKER_IDS = {};
+            'derricks': []
+        }
     }
 
     /**
@@ -77,7 +61,7 @@ class worldState {
      * @param {number} radius radial distance, inclusive (game tiles)
      * @returns Object containing droids[], structs[], closestDroid: DroidObject and closestStruct: StructureObject
      */
-    gridEnumRange(x, y, radius) {
+    enumRange(x, y, radius) {
         let results = {
             'droids': [],
             'structs': [],
@@ -167,6 +151,43 @@ class worldState {
 
         return results;
     }
+}
+
+class worldState {
+    // State: this class stores the game state from FishBot's perspective.
+    // All functions in FishBot use this class as the current ground truth.
+    constructor() {
+
+        // Sector system (original)
+        this.sectors = [];
+        this.highRiskSectors = [];
+
+        // Sector system (new)
+        this.allTargets = [];
+        this.grid = new fbGrid();
+        this.playerInfo = undefined;
+        this.poi = {'derricks': [], 'bases': []};
+
+        // Combat targeting
+        this.forceLocation = undefined;
+        this.nearbyGroundTargets = undefined;
+        this.aviationTargets = undefined;   
+
+        // Mission management system
+        this.g = undefined;
+        this.activeMissions = [];
+
+        // Bot attributes
+        this.botIsActive = true;
+        this.oilDominance = false;
+
+        // Load balancing parameters
+        this.currWorkerID = -1;
+        this.TIME_BLOCK_MS = 200;
+        this.INTERVALS_PER_MIN = Math.floor(60000 / this.TIME_BLOCK_MS);
+		this.WORKER_IDS = {};
+    }
+
 }
 
 
@@ -328,12 +349,60 @@ class worldStateBuilder {
         }
     }
 
+    #createNewDerrick(x, y, gx, gy) {
+        // Helper: derrickTemplate factory (new implementation to support new sector system)
+        return {
+            'id': `DERRICK_${x}_${y}`,
+            'featureType': FEATURE_TYPE.DERRICK, 
+
+            // Coordinates & grid coordinates
+            'x': x,
+            'y': y,
+            'gx': gx,
+            'gy': gy,
+            
+            'isClaimed': false,
+            'playerID': undefined,
+
+            'friendlyDefenceCount': undefined,
+            'enemyDefenceCount': undefined,
+            'owner': undefined,
+            'controlStability': undefined, 
+            'threatLevel': undefined,		
+        }
+    }
+
+    /**
+     * This modifies `state.grid` with derrick locations.
+     * @param {*} state 
+     */
+    #initialiseDerrickLocs(state) {
+        const cellSize = state.grid.cellSize;
+
+        let d = [];
+
+        for (let i=0; i<derrickPositions.length; i++) {
+            const x = derrickPositions[i].x;
+            const y = derrickPositions[i].y;
+
+            const gx = Math.floor(x / cellSize);
+            const gy = Math.floor(y / cellSize);
+
+            const derrick = this.#createNewDerrick(x, y, gx, gy);
+            d.push(derrick);
+            state.grid.grid[gx][gy].derricks.push(derrick);
+        }
+        return d;
+    }
+
     initialise(state) {
         // Application service: Initialises 'worldState' to defaults
         state.g = this.#createFbGroupingSystem();
 
-        this.#initialiseSectors(state);        // to be deleted
+        // old sector system
+        this.#initialiseSectors(state);        
 
-        state.grid = create2DGrid(state.cellSize, createNewGridCell);       // new sector system
+        // new sector system
+        state.poi.derricks = this.#initialiseDerrickLocs(state);   // this function also modifies each grid cell
     }
 }
