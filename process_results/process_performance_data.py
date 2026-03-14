@@ -239,8 +239,9 @@ NEW TEST DATA
 # path2 = rf"{cwd()}\process_results\v4_perfdata\\" + rf"45635e6,med,cobra,100g.log"
 # path1 = rf"{cwd()}\process_results\v4_perfdata\\" + rf"603cca0,hard,cobra,50g.log"
 # path1 = rf"{cwd()}\process_results\v4_perfdata\\" + rf"fbf5655,hard,cobra,50g.log"
-path1 = rf"{cwd()}\process_results\v4_perfdata\\" + rf"e0f8c66,hard,cobra,100g.log"
-path2 = rf"{cwd()}\process_results\v4_perfdata\\" + rf"29bb952,hard,cobra,100g.log"
+# path1 = rf"{cwd()}\process_results\v4_perfdata\\" + rf"e0f8c66,hard,cobra,100g.log"
+path1 = rf"{cwd()}\process_results\v4_perfdata\\" + rf"29bb952,hard,cobra,100g.log"
+path2 = rf"{cwd()}\process_results\v4_perfdata\\" + rf"4fb16f4,hard,cobra,100g.log"
 
 
 
