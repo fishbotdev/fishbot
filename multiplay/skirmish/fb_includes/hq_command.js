@@ -41,9 +41,9 @@ class CommandCenter {
 		// e.g. label intelligence tasks with 'intel_'.
 		this.REQUESTS_PER_MINUTE = {
 			'combat_runC2': 60,
-			'intel_getPerfectMapIntelligence': 10,
-			'intel_getAviationTargets': 10,
+			'intel_getPerfectMapIntelligence': 15,
 			'intel_getNearbyGroundTargets': 15,
+			'intel_getAviationTargets': 10,
 			'intel_updateSectorInfo': 30,
 			'runLogistics': 60,
 			'global_missionManager': 60,
@@ -232,7 +232,7 @@ class CommandCenter {
 		}
 
 		// CAS
-		output["casTargets"] = [...targetInfo["enemyArmor"], ...targetInfo["enemyADA"], ...targetInfo["enemyIndirectFire"]];
+		output["casTargets"] = [...targetInfo["enemyIndirectFire"], ...targetInfo["enemyADA"], ...targetInfo["enemyArmor"]];
 
 		// FIRE SUPPORT
 		const EFFECTIVE_SQ_FS_RADIUS = 12 ** 2;
@@ -345,7 +345,7 @@ class CommandCenter {
 		}
 
 		// TEMPORARY -> Will be replaced by intelligent merge sort based on weighted priority
-		const prioritiseCasTargets = nearbyTargetCount >= 5;
+		const prioritiseCasTargets = casTargets.length >= 4 && !state.oilDominance;
 		const prioritiseRaidTargets = !state.oilDominance;
 		const prioritiseIndustrialTargets = state.oilDominance;
 

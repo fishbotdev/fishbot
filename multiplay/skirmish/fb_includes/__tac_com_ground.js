@@ -184,7 +184,6 @@ function groundForceAttack({state, directFireTarget, fireSupportTarget, adaTarge
 		if (defined(currAdaTarget)) {
 			attackTarget(droid, currAdaTarget);		
 		} else {
-			// Move to the closest droid
 			if (_distSqToClosestDroid(droid) > 5 ** 2) {
 				orderDroidLoc(droid, DORDER_MOVE, closestDroidToTarget.x, closestDroidToTarget.y);
 			} else {
@@ -206,11 +205,11 @@ function groundForceAttack({state, directFireTarget, fireSupportTarget, adaTarge
 			// Fire support units should fall back if they find themselves on the front line
 			orderDroidLoc(droid, DORDER_MOVE, baseLocation.x, baseLocation.y);
 		} else {
-			if (defined(currFireSupportTarget)) {
-				attackTarget(droid, currFireSupportTarget);
+			if (_distSqToClosestDroid(droid) > 8 ** 2 || !defined(currFireSupportTarget)) {
+				orderDroidLoc(droid, DORDER_MOVE, closestDroidToTarget.x, closestDroidToTarget.y);
 			} else {
-				orderDroidLoc(droid, DORDER_MOVE, baseLocation.x, baseLocation.y);				
-			}
+				attackTarget(droid, currFireSupportTarget);
+			}			
 		}
 	});
 
