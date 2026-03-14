@@ -468,7 +468,7 @@ class armyEngineering {
 
 		const loc = pickStructLocation(engineeringReserve[0], buildTask.structureID, baseLocation.x, baseLocation.y);		
 		if (!defined(loc)) {
-			debug(`#createBuildBaseStructureTask(): pickStructLocation() couldn't find a good location for ${buildTask.structureID}.`);
+			// debug(`#createBuildBaseStructureTask(): pickStructLocation() couldn't find a good location for ${buildTask.structureID}.`);
 			return undefined;
 		}
 

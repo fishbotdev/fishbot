@@ -41,14 +41,14 @@ class CommandCenter {
 		// e.g. label intelligence tasks with 'intel_'.
 		this.REQUESTS_PER_MINUTE = {
 			'combat_runC2': 60,
+			'global_missionManager': 60,
+			'runLogistics': 60,
+			'intel_updateSectorInfo': 30,
+			'intel_updateCOP': 30,	
 			'intel_getPerfectMapIntelligence': 15,
 			'intel_getNearbyGroundTargets': 15,
-			'intel_getAviationTargets': 10,
-			'intel_updateSectorInfo': 30,
-			'runLogistics': 60,
-			'global_missionManager': 60,
-			'intel_updateCOP': 30,	
 			'intel_checkCampaignStatus': 15,
+			'intel_getAviationTargets': 6,
 			'intel_checkOilDominance': 2,
 		};
 
@@ -345,7 +345,7 @@ class CommandCenter {
 		}
 
 		// TEMPORARY -> Will be replaced by intelligent merge sort based on weighted priority
-		const prioritiseCasTargets = nearbyTargetCount >= 4 && !state.oilDominance;
+		const prioritiseCasTargets = (nearbyTargetCount >= 4 && !state.oilDominance) || (state.oilDominance && airRaidTargets.length <= 1);
 		const prioritiseRaidTargets = !state.oilDominance;
 		const prioritiseIndustrialTargets = state.oilDominance;
 
