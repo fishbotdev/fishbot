@@ -634,8 +634,6 @@ class armyIntelligence {
 	 * with O(N) algorithmic complexity. 
 	 */
 	proposeTargetsInRadius({state, loc, searchRadius=20, immediateRadius=10}) {
-
-		const SHOW_TARGETS = false;
 		
 		let proposedTargets = {
 			'enemyArmor': [], 
@@ -665,10 +663,6 @@ class armyIntelligence {
 			return proposedTargets;
 		}
 
-		if (SHOW_TARGETS) {
-			hackMarkTiles();			
-		}
-
 		let closestObject = undefined;
 		let closestDistSq = 0;
 
@@ -677,10 +671,6 @@ class armyIntelligence {
 		for (let i=0; i<targetObjects.length; i++) {
 			const obj = targetObjects[i];
 			const t = this.#createNewTarget(obj);
-
-			if (SHOW_TARGETS) {
-				hackMarkTiles(obj.x, obj.y);
-			}
 
 			// Update closestDroid (excludes VTOLs)
 			if (obj.isVTOL !== true) {
