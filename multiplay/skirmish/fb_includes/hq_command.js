@@ -347,7 +347,7 @@ class CommandCenter {
 		// TEMPORARY -> Will be replaced by intelligent merge sort based on weighted priority
 		const prioritiseCasTargets = (nearbyTargetCount >= 4 && !state.oilDominance) || (state.oilDominance && airRaidTargets.length <= 1);
 		const prioritiseRaidTargets = !state.oilDominance;
-		const prioritiseIndustrialTargets = state.oilDominance;
+		const prioritiseIndustrialTargets = (state.oilDominance && airRaidTargets.length <= 1);
 
 		let highestNewTargetPriority = MISSION_PRIORITY.LOW;
 
