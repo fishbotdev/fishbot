@@ -336,7 +336,7 @@ class CommandCenter {
 		return output;
 	}
 
-	prioritiseAviationTargets(state, groupPosition, nearbyTargetCount, airRaidTargets, casTargets, industrialTargets=[]) {
+	prioritiseAviationTargets(state, groupPosition, nearbyTargetCount, airRaidTargets, casTargets, industrialTargets, adaTargets) {
 		
 		let targetCandidates = [];
 
@@ -345,7 +345,7 @@ class CommandCenter {
 		}
 
 		// TEMPORARY -> Will be replaced by intelligent merge sort based on weighted priority
-		const prioritiseCasTargets = nearbyTargetCount >= 4;
+		const prioritiseCasTargets = nearbyTargetCount >= 5;
 		const prioritiseRaidTargets = !state.oilDominance;
 		const prioritiseIndustrialTargets = state.oilDominance;
 
@@ -374,13 +374,38 @@ class CommandCenter {
 			}
 			t.missionType = MISSION_TYPE.DAS_STRIKE;
 		});
+		adaTargets.forEach(t => {
+			if (prioritiseIndustrialTargets && adaTargets.length > 0) {
+				highestNewTargetPriority = MISSION_PRIORITY.VERY_HIGH;
+				t.priority = highestNewTargetPriority;
+			}
+			t.missionType = MISSION_TYPE.DAS_STRIKE;
+		});
 
 		if (prioritiseCasTargets) {
 			targetCandidates = [...casTargets, ...airRaidTargets];
 		} else if (prioritiseRaidTargets) {
-			targetCandidates = [...airRaidTargets, ...casTargets, ...industrialTargets];
+			targetCandidates = [...airRaidTargets, ...casTargets];
 		} else {
-			targetCandidates = [...industrialTargets, ...casTargets, ...airRaidTargets];
+			// assuming industrial targets are prioritised
+			const MAX_ADA_TARGETS = 4;
+			const MIN_ADA_TARGETS = 2;
+			const ENOUGH_RESERVE_UNITS = state.g.enumGroup(AIR_RESERVE).length >= MAX_ADA_TARGETS * 2;
+			const MANAGEABLE_ADA_FORTIFICATIONS = adaTargets.length >= MIN_ADA_TARGETS && adaTargets.length <= MAX_ADA_TARGETS;
+			const AIR_SUPERIORITY = adaTargets.length < MIN_ADA_TARGETS;
+
+			if (MANAGEABLE_ADA_FORTIFICATIONS) {
+				if (ENOUGH_RESERVE_UNITS) {
+					targetCandidates = [... adaTargets];
+				} else {
+					targetCandidates = [...airRaidTargets];
+				}
+			} else if (AIR_SUPERIORITY) {
+				targetCandidates = [...industrialTargets, ...casTargets,  ...airRaidTargets, ...adaTargets];
+			} else {
+				// assume that the coverage is too heavy
+				targetCandidates = [...airRaidTargets, ...casTargets];
+			}
 		}
 
 		// Terminate current missions which are TWO PRIORITY LEVELS below e.g.
@@ -390,7 +415,7 @@ class CommandCenter {
 										filter(m => OFFENSIVE_MISSION_TYPES.includes(m.missionType));
 
 		let activeTargetIDs = [];
-		const CAS_RADIUS = 18;
+		const CAS_RADIUS = 15;
 
 		for (let i=0; i<activeMissions.length; i++) {
 			let c = activeMissions[i];
@@ -466,7 +491,15 @@ class CommandCenter {
 			numTargetsInImmediateRadius = groundTargets["targetsInImmediateRadius"];
 		}
 
-		const aviationTargets = this.prioritiseAviationTargets(state, state.forceLocation, numTargetsInImmediateRadius, state.aviationTargets, casTargets);
+		const aviationTargets = this.prioritiseAviationTargets(state, 
+			state.forceLocation, 
+			numTargetsInImmediateRadius, 
+			state.aviationTargets['raidTargets'], 
+			casTargets, 
+			state.aviationTargets['productionTargets'],
+			state.aviationTargets['adaTargets'],
+		);
+
 		// debug(`avTarg ${aviationTargets.length} = cas ${casTargets.length} + raid ${airRaidTargets.length}, ${numTargetsInImmediateRadius}`);
 		this.toc.assignAviationMissions(state, aviationTargets);					
 	}
@@ -545,9 +578,14 @@ class CommandCenter {
 
 			case 'intel_getAviationTargets':
 				if (false) {
-					state.aviationTargets = intelligence.getAirRaidTargets(state);	
+					state.aviationTargets['raidTargets'] = intelligence.getAirRaidTargets(state);	
 				} else {
-					state.aviationTargets = intelligence.getDefencesNearDerricks(state);
+					state.aviationTargets['raidTargets'] = intelligence.getDefencesNearDerricks(state);
+					
+					const baseTargets = intelligence.getBaseTargets(state);
+					state.aviationTargets['productionTargets'] = baseTargets['productionTargets'];
+					state.aviationTargets['adaTargets'] = baseTargets['adaTargets'];
+					// debug(`productionTargets ${state.aviationTargets['productionTargets'].length}, adaTargets ${state.aviationTargets['adaTargets'].length}`);
 				}
 				break;
 

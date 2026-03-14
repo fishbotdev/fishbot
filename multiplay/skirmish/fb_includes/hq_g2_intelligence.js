@@ -385,6 +385,48 @@ class armyIntelligence {
 		return [...highPriorityTargets, ...medPriorityTargets, ...lowPriorityTargets];
 	}
 
+	getBaseTargets(state) {
+		// Note: trying a new pattern; extract all relevant parameters from state at the start
+		const gridEnumBoundingBox = (...args) => state.grid.enumBoundingBox(...args);
+		const bases = state.poi.bases;
+
+		const enemyPlayerIDs = enumLivingPlayers().filter(isEnemy); 
+		const SEARCH_RADIUS = 30;
+
+		let result = {
+			'productionTargets': [],
+			'adaTargets': [],
+		}
+
+		for (let i=0; i<bases.length; i++) {
+			if (!enemyPlayerIDs.includes(i)) {
+				continue;
+			}
+
+			// this is a version of grid.enumRange where positional accuracy is not critical
+			const t = gridEnumBoundingBox(bases[i].x, bases[i].y, SEARCH_RADIUS);		
+
+			for (let j=0; j<t['structs'].length; j++) {
+				if (t['structs'][j].flags & OBJ_FLAGS.ADA) {
+					result.adaTargets.push(t['structs'][j]);
+					continue;
+				}
+				if (t['structs'][j].flags & OBJ_FLAGS.PRODUCTION) {
+					result.productionTargets.push(t['structs'][j]);
+					continue;
+				}
+			}
+
+			for (let j=0; j<t['droids'].length; j++) {
+				if (t['droids'][j].flags & OBJ_FLAGS.ADA) {
+					result.adaTargets.push(t['droids'][j]);
+				}
+			}
+		}	
+
+		return result;
+	}
+
 	getAirRaidTargets(state) {
 
 		const SEARCH_RADIUS = 7;

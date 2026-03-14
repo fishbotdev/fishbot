@@ -49,8 +49,100 @@ class fbGrid {
             'friendlyUnits': [],
             'friendlyStructures': [],
 
-            'derricks': []
+            'derricks': [],
+            'bases': []
         }
+    }
+
+    enumBoundingBox(x, y, radius) {
+        let results = {
+            'droids': [],
+            'structs': [],
+            'closestDroid': undefined,
+            'closestStruct': undefined
+        };
+
+        if (!defined(this.grid)) {
+            debug(`WARNING: state/spatialQueryBox() could not read from undefined grid.`);
+            return results;
+        }
+
+        // Initialise closest droid / struct calculation
+        let closestDroidDistSq = 0, closestStructDistSq = 0;
+        let closestDroid = undefined, closestStruct = undefined;
+
+        const cx = Math.floor(x / this.cellSize);
+        const cy = Math.floor(y / this.cellSize);
+        const gr = Math.ceil(radius / this.cellSize);
+
+        for (let dx = -gr; dx <= gr; dx++) {
+            for (let dy = -gr; dy <= gr; dy++) {
+
+                // Compute deviations & test validity
+                const gx = cx + dx;
+                if (gx < 0 || gx >= this.numXCells) {
+                    continue;
+                }
+                
+                const gy = cy + dy;
+                if (gy < 0 || gx >= this.numYCells) {       // >= because of 0 indexing: [0, 1, ..., numYCells - 1]
+                    continue;
+                }
+
+                // Get corresponding grid entry
+                this.grid[gx][gy]['targetUnits'].forEach(t => {
+                    const obj = getObject(t.type, t.player, t.id);
+                    if (!defined(obj)) {
+                        return;
+                    }
+                    const d = distSq(x, obj.x, y, obj.y);
+
+                    // distSq check is removed here
+
+                    results['droids'].push(t);
+                    
+                    if (!(t.flags & OBJ_FLAGS.AVIATION)) {
+                        if (!defined(closestDroid)) {
+                            closestDroid = obj;
+                            closestDroidDistSq = d;
+                            return;
+                        }
+
+                        if (d < closestDroidDistSq) {
+                            closestDroid = obj;
+                            closestDroidDistSq = d;
+                        }
+                    }
+                });
+                results['closestDroid'] = closestDroid;
+                
+                this.grid[gx][gy]['targetStructures'].forEach(t => {
+                    const obj = getObject(t.type, t.player, t.id);
+                    if (!defined(obj)) {
+                        return;
+                    }
+                    const d = distSq(x, obj.x, y, obj.y);
+
+                    // distSq check is removed here
+
+                    results['structs'].push(t);
+
+                    if (!defined(closestStruct)) {
+                        closestStruct = obj;
+                        closestStructDistSq = d;
+                        return;
+                    }
+
+                    if (d < closestStructDistSq) {
+                        closestStruct = obj;
+                        closestStructDistSq = d;
+                    }
+                });
+                results['closestStruct'] = closestStruct;                
+            }
+        }
+
+        return results;
     }
 
     /**
@@ -166,12 +258,20 @@ class worldState {
         this.allTargets = [];
         this.grid = new fbGrid();
         this.playerInfo = undefined;
-        this.poi = {'derricks': [], 'bases': []};
+        this.poi = {
+            'derricks': [], 
+            'bases': []
+        };
 
         // Combat targeting
         this.forceLocation = undefined;
         this.nearbyGroundTargets = undefined;
-        this.aviationTargets = undefined;   
+        this.aviationTargets = {
+            'raidTargets': [],
+            'casTargets': [],
+            'productionTargets': [],
+            'adaTargets': []
+        }; 
 
         // Mission management system
         this.g = undefined;
@@ -395,6 +495,42 @@ class worldStateBuilder {
         return d;
     }
 
+    #createNewBase(playerID, x, y, gx, gy) {
+        // Helper: baseTemplate factory (new implementation to support new sector system)
+        let baseTemplate = {
+            'id': `BASE_${playerID}_${x}_${y}`,     // this was changed to add playerID
+            'featureType': FEATURE_TYPE.BASE,
+
+            'x': x,
+            'y': y,
+            'gx': gx,
+            'gy': gy,
+
+            'playerID': playerID,
+            'isEnemy': isEnemy(playerID),
+        }
+        return baseTemplate;
+    }
+
+    #initialiseBaseLocs(state) {
+        const cellSize = state.grid.cellSize;
+
+        let b = [];
+
+        for (let i=0; i<startPositions.length; i++) {
+            const x = startPositions[i].x;
+            const y = startPositions[i].y;
+
+            const gx = Math.floor(x / cellSize);
+            const gy = Math.floor(y / cellSize);
+
+            const base = this.#createNewBase(i, x, y, gx, gy);
+            b.push(base);
+            state.grid.grid[gx][gy].bases.push(base);
+        }
+        return b;
+    }
+
     initialise(state) {
         // Application service: Initialises 'worldState' to defaults
         state.g = this.#createFbGroupingSystem();
@@ -403,6 +539,7 @@ class worldStateBuilder {
         this.#initialiseSectors(state);        
 
         // new sector system
-        state.poi.derricks = this.#initialiseDerrickLocs(state);   // this function also modifies each grid cell
+        state.poi.derricks = this.#initialiseDerrickLocs(state);    // this function also modifies each grid cell
+        state.poi.bases = this.#initialiseBaseLocs(state);          // this function also modifies each grid cell
     }
 }
