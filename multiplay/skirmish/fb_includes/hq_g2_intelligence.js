@@ -511,8 +511,6 @@ class armyIntelligence {
 			'targetsInImmediateRadius': 0
 		};		
 
-		const INDUSTRIAL_TARGETS = [FACTORY, CYBORG_FACTORY, VTOL_FACTORY];
-
 		if (!defined(loc)) {
 			debug(`WARNING:	proposeTargetsInRadius2(): 'loc' was undefined.`);
 			return proposedTargets;
@@ -524,7 +522,7 @@ class armyIntelligence {
 		// debug(`t ${targetList.length} (d ${t['droids'].length}, s ${t['structs'].length}), allT ${state.allTargets.length}`);
 
 		if (targetList.length === 0) {
-			targetList = state.allTargets;
+			targetList = state.allTargets;			
 		}
 
 		if (targetList.length === 0) {
@@ -545,7 +543,7 @@ class armyIntelligence {
 			}
 
 			// Update closestDroid (excludes VTOLs)
-			if (obj.isVTOL !== true) {
+			if (!(t.flags & OBJ_FLAGS.AVIATION)) {
 
 				const distSquaredToLoc = distSq(obj.x, loc.x, obj.y, loc.y);
 
@@ -570,36 +568,35 @@ class armyIntelligence {
 			}
 
 			// Classify the object
-			if (isAntiAirDefense(obj)) {
+			if (t.flags & OBJ_FLAGS.ADA) {
 				proposedTargets["enemyADA"].push(t);
 				continue;
 			}
 
 			if (obj.type === DROID) {
-				if (obj.droidType === DROID_CONSTRUCT) {
+				if (t.flags & OBJ_FLAGS.CONSTRUCTOR) {
 					proposedTargets["enemyConstructor"].push(t);
 					continue;
 				} 
 
-				if (obj.propulsion === PROPULSIONS["Cyborg Propulsion"].id) {
-					// cyborg engineers were filtered out earlier
+				if (t.flags & OBJ_FLAGS.INFANTRY) {
 					proposedTargets["enemyInfantry"].push(t);		
 					continue;
 				}
 
-				if (obj.isVTOL === true) {
+				if (t.flags & OBJ_FLAGS.AVIATION) {
 					proposedTargets["enemyAviation"].push(t);
 					continue;
 				}
 
-				if (obj.hasIndirect === true) {
+				if (t.flags & OBJ_FLAGS.INDIRECT_FIRE) {
 					// cyborg indirect (e.g. grenadier) & VTOL indirect (e.g. bombs) were filtered out earlier
 					proposedTargets["enemyIndirectFire"].push(t);
 					continue;
 				}
 
 				// This leaves only direct fire land vehicles & other utility vehicles e.g. sensors / commanders
-				if (obj.droidType === DROID_WEAPON) {
+				if (t.flags & OBJ_FLAGS.ARMOUR) {
 					proposedTargets["enemyArmor"].push(t);
 					continue;		
 				}
@@ -609,17 +606,17 @@ class armyIntelligence {
 			}
 
 			if (obj.type === STRUCTURE) {
-				if (obj.hasIndirect === true) {
+				if (t.flags & OBJ_FLAGS.INDIRECT_FIRE) {
 					proposedTargets["enemyIndirectFire"].push(t);
 					continue;
 				}
 				
-				if (obj.stattype === DEFENSE) {
+				if (t.flags & OBJ_FLAGS.DEFENSIVE_STRUCTURE) {
 					proposedTargets["enemyDefenses"].push(t);
 					continue;
 				}
 
-				if (INDUSTRIAL_TARGETS.includes(obj.stattype)) {
+				if (t.flags & OBJ_FLAGS.PRODUCTION) {
 					proposedTargets["enemyIndustrial"].push(t);
 					continue;					
 				}
