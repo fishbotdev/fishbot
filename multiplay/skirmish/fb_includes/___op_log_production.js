@@ -85,7 +85,7 @@ class armyQuartermaster {
             weights = {
                 'Heavy Cav': 10,
                 'Light Cav': 2,
-                'Fire Support': 4,
+                'Fire Support': 2,
                 'Air Defence': 2,
                 'Sensor': 1
             };
@@ -99,7 +99,7 @@ class armyQuartermaster {
                 'Heavy Cav': 10,
                 'Light Cav': 3,
                 'Fire Support': 3,
-                'Air Defence': 2,
+                'Air Defence': 3,
                 'Sensor': 1
             };
         }

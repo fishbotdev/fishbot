@@ -27,7 +27,7 @@ class armyGroundForceCommand {
 		const fireSupportCount = state.g.enumGroup(DIVISION.FIRE_SUPPORT_RESERVE).length;
 		const directAssaultTanksCount = allTanksCount - fireSupportCount;
 
-		if (directAssaultTanksCount >= 4 && fireSupportCount >= 1)
+		if (directAssaultTanksCount >= 5)
 			return true;
 		else
 			return false;

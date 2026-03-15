@@ -95,6 +95,14 @@ function findClosestDroidToTarget(unitGroup, currGroundTarget) {
 }
 
 
+function retreatToBase(generalReserve, infantryReserve, fireSupportReserve, airDefenceArtilleryReserve, sensorUnits) {
+	generalReserve.forEach(d => orderDroid(d, DORDER_RTB));
+	infantryReserve.forEach(d => orderDroid(d, DORDER_RTB));
+	fireSupportReserve.forEach(d => orderDroid(d, DORDER_RTB));
+	airDefenceArtilleryReserve.forEach(d => orderDroid(d, DORDER_RTB));
+	sensorUnits.forEach(d => orderDroid(d, DORDER_RTB));
+}
+
 /*
     TAC SOP: ATTACKS A TARGET; REINFORCEMENTS ARRIVE AT CLOSEST DROID TO TARGET
 */
@@ -107,11 +115,15 @@ function groundForceAttack({state, directFireTarget, fireSupportTarget, adaTarge
 	let airDefenceArtilleryReserve = state.g.enumGroup(DIVISION.AIR_DEFENCE_RESERVE);
 	const sensorUnits = enumDroid(me, DROID_SENSOR);		// these have not been added to the grouping system yet!
 
+	const rtb = () => retreatToBase(generalReserve, infantryReserve, fireSupportReserve, airDefenceArtilleryReserve, sensorUnits);
+
 	if (generalReserve.length === 0) {
+		rtb();		
 		return;
 	}
 
 	if (!defined(directFireTarget)) {
+		rtb();	
 		return;
 	}
 
@@ -119,11 +131,7 @@ function groundForceAttack({state, directFireTarget, fireSupportTarget, adaTarge
 	const closestDroidToTarget = findClosestDroidToTarget(generalReserve, currDirectFireTarget);
 
 	if (!defined(closestDroidToTarget) || !defined(currDirectFireTarget)) {
-		generalReserve.forEach(d => orderDroid(d, DORDER_RTB));
-		infantryReserve.forEach(d => orderDroid(d, DORDER_RTB));
-		fireSupportReserve.forEach(d => orderDroid(d, DORDER_RTB));
-		airDefenceArtilleryReserve.forEach(d => orderDroid(d, DORDER_RTB));
-		sensorUnits.forEach(d => orderDroid(d, DORDER_RTB));
+		rtb();		
 		return;
 	}
 
