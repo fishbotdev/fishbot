@@ -43,10 +43,10 @@ class CommandCenter {
 			'combat_runC2': 60,
 			'global_missionManager': 60,
 			'runLogistics': 60,
+			'intel_getNearbyGroundTargets': 30,
 			'intel_updateSectorInfo': 30,
 			'intel_updateCOP': 30,	
 			'intel_getPerfectMapIntelligence': 15,
-			'intel_getNearbyGroundTargets': 15,
 			'intel_checkCampaignStatus': 15,
 			'intel_getAviationTargets': 6,
 			'intel_checkOilDominance': 2,
@@ -623,11 +623,7 @@ class CommandCenter {
 				state.forceLocation = mainForceLocation;
 
 				if (defined(state.forceLocation)) {
-					if (false) {
-						state.nearbyGroundTargets = intelligence.proposeTargetsInRadius({state: state, loc: state.forceLocation, searchRadius: 25, immediateRadius: 10});		
-					} else {
-						state.nearbyGroundTargets = intelligence.proposeTargetsInRadius2({state: state, loc: state.forceLocation, searchRadius: 25, immediateRadius: 10});		
-					}
+					state.nearbyGroundTargets = intelligence.proposeTargetsInRadius2({state: state, loc: state.forceLocation, searchRadius: 25, immediateRadius: 10});		
 				}
 				break;
 			
@@ -656,16 +652,11 @@ class CommandCenter {
 				break;
 
 			case 'intel_getAviationTargets':
-				if (false) {
-					state.aviationTargets['raidTargets'] = intelligence.getAirRaidTargets(state);	
-				} else {
-					state.aviationTargets['raidTargets'] = intelligence.getDefencesNearDerricks(state);
-					
-					const baseTargets = intelligence.getBaseTargets(state);
-					state.aviationTargets['productionTargets'] = baseTargets['productionTargets'];
-					state.aviationTargets['adaTargets'] = baseTargets['adaTargets'];
-					// debug(`productionTargets ${state.aviationTargets['productionTargets'].length}, adaTargets ${state.aviationTargets['adaTargets'].length}`);
-				}
+				state.aviationTargets['raidTargets'] = intelligence.getDefencesNearDerricks(state);
+
+				const baseTargets = intelligence.getBaseTargets(state);
+				state.aviationTargets['productionTargets'] = baseTargets['productionTargets'];
+				state.aviationTargets['adaTargets'] = baseTargets['adaTargets'];
 				break;
 
 			case 'intel_getPerfectMapIntelligence':
