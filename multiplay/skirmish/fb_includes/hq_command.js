@@ -377,9 +377,9 @@ class CommandCenter {
 		const VTOLS_AVOID_LOCATION = this.#getAdaHeatMap(state);
 
 		// TEMPORARY -> Will be replaced by intelligent merge sort based on weighted priority
-		const prioritiseCasTargets = (nearbyTargetCount >= 2 && !state.oilDominance) || (state.oilDominance && airRaidTargets.length <= 1);
+		const prioritiseCasTargets = (nearbyTargetCount >= 2 && !state.oilDominance) || (state.oilDominance && casTargets.length >= 4);
 		const prioritiseRaidTargets = !state.oilDominance;
-		const prioritiseIndustrialTargets = (state.oilDominance && airRaidTargets.length <= 1);
+		const prioritiseIndustrialTargets = state.oilDominance;
 
 		let highestNewTargetPriority = MISSION_PRIORITY.LOW;
 
@@ -426,7 +426,7 @@ class CommandCenter {
 			if (AIR_SUPERIORITY) {
 				targetCandidates = [...industrialTargets, ...casTargets,  ...airRaidTargets, ...adaTargets];
 			} else {
-				targetCandidates = [...airRaidTargets, ...adaTargets, ...casTargets];
+				targetCandidates = [];
 			}
 		}
 

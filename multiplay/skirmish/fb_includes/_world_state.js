@@ -425,7 +425,7 @@ class worldStateBuilder {
 
         let derrickLocations = derrickPositions.concat();
 
-        const PROXIMITY_TILES = 10;
+        const PROXIMITY_TILES = 14;
 
         for (let i=0; i<derrickLocations.length; i++) {
             const derrickLoc = derrickLocations[i];
