@@ -232,7 +232,8 @@ def show_hard_cobra_results():
     # test_1 = getcwd() + rf"\process_results/v4/" + "e0f8c66,hard,cobra,100g" + ".txt"              # v4 dev: 4.6.3, [57 / 99 = 56% wr]; thinking about releasing v3.1.0 with performance improvements
     # test_1 = getcwd() + rf"\process_results/v4/" + "29bb952,hard,cobra,100g" + ".txt"              # v4 dev: 4.6.3, [64 / 100 = 64% wr]; small AI behaviour improvements
     test_1 = getcwd() + rf"\process_results/v4/" + "4fb16f4,hard,cobra,100g" + ".txt"              # v4 dev: 4.6.3, [53 / 100 = 53% wr]; partial migration to new grid system
-    test_2 = getcwd() + rf"\process_results/v4/" + "91da685,hard,cobra" + ".txt"              # v4 dev: 4.6.3 [36% wr]
+    # test_2 = getcwd() + rf"\process_results/v4/" + "91da685,hard,cobra" + ".txt"              # v4 dev: 4.6.3 [36% wr]
+    test_2 = getcwd() + rf"\process_results/v4/" + "33200f9,hard,cobra,100g" + ".txt"              # v4 dev: 4.6.3 [19% wr]
 
     commit1 = test_1.split(rf"v4/")[1].split(",")[0]
     commit2 = test_2.split(rf"v4/")[1].split(",")[0]
@@ -256,8 +257,8 @@ def show_insane_diff_results():
     show_stats(*get_stats(test_2), title=f"{commit2} (newer)", legend=[commit1, commit2], figNum=3)    
 
 
-show_medium_cobra_results()
-# show_hard_cobra_results()
+# show_medium_cobra_results()
+show_hard_cobra_results()
 # show_insane_diff_results()
 
 import matplotlib.pyplot as plt
