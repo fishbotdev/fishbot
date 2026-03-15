@@ -432,6 +432,10 @@ class armyIntelligence {
 				if (t['droids'][j].flags & OBJ_FLAGS.ADA) {
 					result.adaTargets.push(t['droids'][j]);
 				}
+				if (t['droids'][j].flags & OBJ_FLAGS.CONSTRUCTOR) {
+					result.productionTargets.push(t['droids'][j]);
+				}
+
 			}
 		}	
 

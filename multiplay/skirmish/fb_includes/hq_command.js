@@ -377,7 +377,7 @@ class CommandCenter {
 		const VTOLS_AVOID_LOCATION = this.#getAdaHeatMap(state);
 
 		// TEMPORARY -> Will be replaced by intelligent merge sort based on weighted priority
-		const prioritiseCasTargets = (nearbyTargetCount >= 4 && !state.oilDominance) || (state.oilDominance && airRaidTargets.length <= 1);
+		const prioritiseCasTargets = (nearbyTargetCount >= 2 && !state.oilDominance) || (state.oilDominance && airRaidTargets.length <= 1);
 		const prioritiseRaidTargets = !state.oilDominance;
 		const prioritiseIndustrialTargets = (state.oilDominance && airRaidTargets.length <= 1);
 
@@ -414,13 +414,7 @@ class CommandCenter {
 			t.missionType = MISSION_TYPE.DAS_STRIKE;
 		});
 
-
-		const MAX_ADA_TARGETS = 4;
 		const MIN_ADA_TARGETS = 2;
-
-		const ENOUGH_RESERVE_UNITS = state.g.enumGroup(AIR_RESERVE).length >= adaTargets.length * 3;
-		const MANAGEABLE_ADA_FORTIFICATIONS = adaTargets.length >= MIN_ADA_TARGETS && adaTargets.length <= MAX_ADA_TARGETS;
-		const TOO_HEAVY_ADA_FORTIFICATIONS = adaTargets.length > MAX_ADA_TARGETS;
 		const AIR_SUPERIORITY = adaTargets.length < MIN_ADA_TARGETS;
 
 		if (prioritiseCasTargets) {
@@ -429,16 +423,10 @@ class CommandCenter {
 			targetCandidates = [...airRaidTargets, ...casTargets];
 		} else {
 			// assuming industrial targets are prioritised
-			if (MANAGEABLE_ADA_FORTIFICATIONS && ENOUGH_RESERVE_UNITS) {
-				targetCandidates = [...adaTargets];
-				targetCandidates = targetCandidates.slice(0,1); 	// focus on one ada emplacement at a time
-			} else if (AIR_SUPERIORITY) {
+			if (AIR_SUPERIORITY) {
 				targetCandidates = [...industrialTargets, ...casTargets,  ...airRaidTargets, ...adaTargets];
-			} else if (TOO_HEAVY_ADA_FORTIFICATIONS) {
-				targetCandidates = [...airRaidTargets, ...casTargets];
 			} else {
-				// e.g. MANAGEABLE_ADA_FORTIFICATIONS but not ENOUGH_RESERVE_UNITS
-				targetCandidates = [...airRaidTargets, ...casTargets];
+				targetCandidates = [...airRaidTargets, ...adaTargets, ...casTargets];
 			}
 		}
 
@@ -493,7 +481,7 @@ class CommandCenter {
 			}
 		}
 
-		const CLOSING_OUT = prioritiseIndustrialTargets && (AIR_SUPERIORITY || (MANAGEABLE_ADA_FORTIFICATIONS && ENOUGH_RESERVE_UNITS));
+		const CLOSING_OUT = prioritiseIndustrialTargets && AIR_SUPERIORITY;
 		
 		// Remove already active missions (inefficient, loops through the list again)
 		// Also handles stale inputs, to be integrated with another part of the code later
