@@ -50,7 +50,8 @@ class fbGrid {
             'friendlyStructures': [],
 
             'derricks': [],
-            'bases': []
+            'bases': [],
+            'adaCount': 0,
         }
     }
 

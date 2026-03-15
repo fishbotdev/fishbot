@@ -336,13 +336,45 @@ class CommandCenter {
 		return output;
 	}
 
-	prioritiseAviationTargets(state, groupPosition, nearbyTargetCount, airRaidTargets, casTargets, industrialTargets, adaTargets) {
+	#getAdaHeatMap(state) {
 		
+		let adaCells = [];
+
+		const grid = state.grid.grid;
+		const numXCells = state.grid.numXCells;
+		const numYCells = state.grid.numYCells;
+
+		const gridCoord = (gx, gy) => {return {'gx': gx, 'gy': gy}};
+
+		const DEBUG_SHOW_HEATMAP = false;
+		if (DEBUG_SHOW_HEATMAP) debug(`\nada heatmap @ ${gameTime}`);
+		for (let gy=0; gy<numYCells; gy++) {
+			let row = "";
+
+			for (let gx=0; gx<numXCells; gx++) {					
+				const cellAdaCount = grid[gx][gy].adaCount;
+				if (cellAdaCount > 1) {
+					adaCells.push(gridCoord(gx, gy));
+				}
+				if (DEBUG_SHOW_HEATMAP) row += `${cellAdaCount} `;
+			}
+			if (DEBUG_SHOW_HEATMAP) debug(row);
+		}
+
+		return adaCells;
+	}
+
+	prioritiseAviationTargets(state, groupPosition, nearbyTargetCount, airRaidTargets, casTargets, industrialTargets, adaTargets) {
+		const cellSize = state.grid.cellSize;
+
 		let targetCandidates = [];
 
 		if (!defined(airRaidTargets)) {
 			airRaidTargets = [];
 		}
+
+		// sectors from heatmap
+		const VTOLS_AVOID_LOCATION = this.#getAdaHeatMap(state);
 
 		// TEMPORARY -> Will be replaced by intelligent merge sort based on weighted priority
 		const prioritiseCasTargets = (nearbyTargetCount >= 4 && !state.oilDominance) || (state.oilDominance && airRaidTargets.length <= 1);
@@ -382,28 +414,29 @@ class CommandCenter {
 			t.missionType = MISSION_TYPE.DAS_STRIKE;
 		});
 
+
+		const MAX_ADA_TARGETS = 4;
+		const MIN_ADA_TARGETS = 2;
+
+		const ENOUGH_RESERVE_UNITS = state.g.enumGroup(AIR_RESERVE).length >= adaTargets.length * 3;
+		const MANAGEABLE_ADA_FORTIFICATIONS = adaTargets.length >= MIN_ADA_TARGETS && adaTargets.length <= MAX_ADA_TARGETS;
+		const TOO_HEAVY_ADA_FORTIFICATIONS = adaTargets.length > MAX_ADA_TARGETS;
+		const AIR_SUPERIORITY = adaTargets.length < MIN_ADA_TARGETS;
+
 		if (prioritiseCasTargets) {
 			targetCandidates = [...casTargets, ...airRaidTargets];
 		} else if (prioritiseRaidTargets) {
 			targetCandidates = [...airRaidTargets, ...casTargets];
 		} else {
 			// assuming industrial targets are prioritised
-			const MAX_ADA_TARGETS = 4;
-			const MIN_ADA_TARGETS = 2;
-			const ENOUGH_RESERVE_UNITS = state.g.enumGroup(AIR_RESERVE).length >= MAX_ADA_TARGETS * 2;
-			const MANAGEABLE_ADA_FORTIFICATIONS = adaTargets.length >= MIN_ADA_TARGETS && adaTargets.length <= MAX_ADA_TARGETS;
-			const AIR_SUPERIORITY = adaTargets.length < MIN_ADA_TARGETS;
-
-			if (MANAGEABLE_ADA_FORTIFICATIONS) {
-				if (ENOUGH_RESERVE_UNITS) {
-					targetCandidates = [... adaTargets];
-				} else {
-					targetCandidates = [...airRaidTargets];
-				}
+			if (MANAGEABLE_ADA_FORTIFICATIONS && ENOUGH_RESERVE_UNITS) {
+				targetCandidates = [...adaTargets];
 			} else if (AIR_SUPERIORITY) {
 				targetCandidates = [...industrialTargets, ...casTargets,  ...airRaidTargets, ...adaTargets];
+			} else if (TOO_HEAVY_ADA_FORTIFICATIONS) {
+				targetCandidates = [...airRaidTargets, ...casTargets];
 			} else {
-				// assume that the coverage is too heavy
+				// e.g. MANAGEABLE_ADA_FORTIFICATIONS but not ENOUGH_RESERVE_UNITS
 				targetCandidates = [...airRaidTargets, ...casTargets];
 			}
 		}
@@ -427,43 +460,65 @@ class CommandCenter {
 				continue;
 			}
 			
+			const currObj = getObject(c.target.type, c.target.player, c.target.id);
+			if (!defined(currObj) || !defined(groupPosition)) {
+				continue;
+			}
+
 			if (c.missionType === MISSION_TYPE.CAS_STRIKE) {
-				const currObj = getObject(c.target.type, c.target.player, c.target.id);
-				if (!defined(currObj) || !defined(groupPosition)) {
-					continue;
-				}
 				if (distSq(currObj.x, groupPosition.x, currObj.y, groupPosition.y) >= CAS_RADIUS ** 2) {
 					// debug(`aborted CAS_STRIKE: ${c.target.name} @ ${gameTime}, too far away`);
 					c.missionStatus = MISSION_STATUS.ABORT;					
 					continue;
 				}
 			}
-
 		}
 
-		if (prioritiseIndustrialTargets) {
-			// In end-game, focus on closing out asap
-			return targetCandidates;
-		} else {
-			// Remove already active missions (inefficient, loops through the list again)
-			// Also handles stale inputs, to be integrated with another part of the code later
-			let newAviationTargets = [], existingAviationTargets = [];
+		const CLOSING_OUT = prioritiseIndustrialTargets && (AIR_SUPERIORITY || (MANAGEABLE_ADA_FORTIFICATIONS && ENOUGH_RESERVE_UNITS));
+		
+		// Remove already active missions (inefficient, loops through the list again)
+		// Also handles stale inputs, to be integrated with another part of the code later
+		let newAviationTargets = [], existingAviationTargets = [], unsortedTargets = [];
 
-			for (let i=0; i<targetCandidates.length; i++) {
-				const c = getObject(targetCandidates[i].type, targetCandidates[i].player, targetCandidates[i].id);
-				if (!defined(c)) {
-					continue;
+		for (let i=0; i<targetCandidates.length; i++) {
+			const c = getObject(targetCandidates[i].type, targetCandidates[i].player, targetCandidates[i].id);
+			if (!defined(c)) {
+				continue;
+			}
+
+			// Depending on state, removes dangerous missions
+			if (!CLOSING_OUT) {
+				const gx = Math.floor(c.x / cellSize), gy = Math.floor(c.y / cellSize);
+				let skipIfDangerous = false;
+
+				for (let j=0; j<VTOLS_AVOID_LOCATION.length; j++) {
+					if (gx === VTOLS_AVOID_LOCATION[j].gx && gy === VTOLS_AVOID_LOCATION[j].gy) {
+						skipIfDangerous = true;
+						// debug(`	removed ${c.name} @ grid (${gx} ${gy})`);
+						break;
+					}
 				}
 
-				if (!activeTargetIDs.includes(targetCandidates[i].id)) {
-					newAviationTargets.push(targetCandidates[i]);
-				} else {
-					existingAviationTargets.push(targetCandidates[i]);
+				if (skipIfDangerous) {
+					continue;
 				}
 			}
 
+			unsortedTargets.push(targetCandidates[i]);
+
+			if (!activeTargetIDs.includes(targetCandidates[i].id)) {
+				newAviationTargets.push(targetCandidates[i]);
+			} else {
+				existingAviationTargets.push(targetCandidates[i]);
+			}
+		}
+
+		if (CLOSING_OUT) {
+			return unsortedTargets;
+		} else {
 			return [...newAviationTargets, ...existingAviationTargets];
 		}
+
 	}
 
 	runCombatOperations(state) {
@@ -598,7 +653,7 @@ class CommandCenter {
 				const allObjects = intelligence.getAllObjects(state);
 
 				// Write updated units to grid (only overwriting "KEYS" defined below)
-				const KEYS = ['friendlyUnits', 'targetUnits', 'friendlyStructures', 'targetStructures'];
+				const KEYS = ['friendlyUnits', 'targetUnits', 'friendlyStructures', 'targetStructures', 'adaCount'];
 
 				for (let gx=0; gx<state.grid.numXCells; gx++) {
 					for (let gy=0; gy<state.grid.numYCells; gy++) {		
@@ -616,6 +671,18 @@ class CommandCenter {
 					state.allTargets.forEach(t => {
 						debug(`\t${t.name}  ${t.id}  (player ${t.player})	(flags ${toBinary20(t.flags)})`);
 					});
+				}
+
+				if (false) {
+					debug(`\nada heatmap @ ${gameTime}`);
+					for (let gy=0; gy<state.grid.numYCells; gy++) {
+						let row = "";
+
+						for (let gx=0; gx<state.grid.numXCells; gx++) {					
+							row += `${state.grid.grid[gx][gy].adaCount} `;
+						}
+						debug(row);
+					}
 				}
 
 				if (false) {
@@ -639,7 +706,6 @@ class CommandCenter {
 
 					for (let gx=0; gx<numXCells; gx++) {
 						for (let gy=0; gy<numYCells; gy++) {
-
 							if (state.grid.grid[gx][gy]['targetUnits'].length > 0 || state.grid.grid[gx][gy]['targetStructures'].length > 0) {
 								debug(`Objects in actual grid: (${gx} ${gy}) @ ${gameTime}`);
 

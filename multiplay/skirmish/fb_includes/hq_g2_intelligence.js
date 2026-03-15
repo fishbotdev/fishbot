@@ -293,6 +293,9 @@ class armyIntelligence {
 
 				if (IS_TARGET) {
 					grid[gx][gy]['targetUnits'].push(newObj);
+					if (flags & OBJ_FLAGS.ADA) {
+						grid[gx][gy]['adaCount']++;
+					}
 					result.allTargets.push(newObj);		
 				} else {
 					grid[gx][gy]['friendlyUnits'].push(newObj);
@@ -322,6 +325,9 @@ class armyIntelligence {
 				// Update target list
 				if (IS_TARGET) {
 					grid[gx][gy]['targetStructures'].push(newObj);
+					if (flags & OBJ_FLAGS.ADA) {
+						grid[gx][gy]['adaCount']++;
+					}
 					result.allTargets.push(newObj);		
 				} else {
 					grid[gx][gy]['friendlyStructures'].push(newObj);

@@ -229,8 +229,9 @@ def show_hard_cobra_results():
     # test_1 = getcwd() + rf"\process_results/v4/" + "603cca0,hard,cobra,50g" + ".txt"              # v4 dev: 4.6.3, [34 / 50 wins] after full migration of existing functions to the new scheduler
     # test_1 = getcwd() + rf"\process_results/v4/" + "fbf5655,hard,cobra,50g" + ".txt"              # v4 dev: 4.6.3, [35 / 50 wins] reduced COP integration from 1Hz to 1/2Hz
     # test_1 = getcwd() + rf"\process_results/v4/" + "e0f8c66,hard,cobra,100g" + ".txt"              # v4 dev: 4.6.3, [57 / 99 = 56% wr]; thinking about releasing v3.1.0 with performance improvements
-    test_1 = getcwd() + rf"\process_results/v4/" + "29bb952,hard,cobra,100g" + ".txt"              # v4 dev: 4.6.3, [64 / 100 = 64% wr]; small AI behaviour improvements
-    test_2 = getcwd() + rf"\process_results/v4/" + "4fb16f4,hard,cobra,100g" + ".txt"              # v4 dev: 4.6.3, [53 / 100 = 53% wr]; partial migration to new grid system
+    # test_1 = getcwd() + rf"\process_results/v4/" + "29bb952,hard,cobra,100g" + ".txt"              # v4 dev: 4.6.3, [64 / 100 = 64% wr]; small AI behaviour improvements
+    test_1 = getcwd() + rf"\process_results/v4/" + "4fb16f4,hard,cobra,100g" + ".txt"              # v4 dev: 4.6.3, [53 / 100 = 53% wr]; partial migration to new grid system
+    test_2 = getcwd() + rf"\process_results/v4/" + "91da685,hard,cobra" + ".txt"              # v4 dev: 4.6.3 [36% wr]
 
     commit1 = test_1.split(rf"v4/")[1].split(",")[0]
     commit2 = test_2.split(rf"v4/")[1].split(",")[0]
