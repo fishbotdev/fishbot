@@ -86,11 +86,12 @@ class fbGrid {
                 }
                 
                 const gy = cy + dy;
-                if (gy < 0 || gx >= this.numYCells) {       // >= because of 0 indexing: [0, 1, ..., numYCells - 1]
+                if (gy < 0 || gy >= this.numYCells) {       // >= because of 0 indexing: [0, 1, ..., numYCells - 1]
                     continue;
                 }
 
                 // Get corresponding grid entry
+                // debug(`gx ${gx}, gy ${gy}, this.grid[gx][gy] ${this.grid[gx][gy]}, t ${this.grid[gx][gy]['targetUnits']}`);
                 this.grid[gx][gy]['targetUnits'].forEach(t => {
                     const obj = getObject(t.type, t.player, t.id);
                     if (!defined(obj)) {
@@ -185,7 +186,7 @@ class fbGrid {
                 }
                 
                 const gy = cy + dy;
-                if (gy < 0 || gx >= this.numYCells) {       // >= because of 0 indexing: [0, 1, ..., numYCells - 1]
+                if (gy < 0 || gy >= this.numYCells) {       // >= because of 0 indexing: [0, 1, ..., numYCells - 1]
                     continue;
                 }
 

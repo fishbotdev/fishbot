@@ -1,4 +1,4 @@
-for /L %%i in (1,1,100) do (
+for /L %%i in (1,1,50) do (
 	echo iteration %%i
 	"Warzone 2100\bin\warzone2100.exe" --configdir="C:\Users\%USERNAME%\OneDrive\Documents\wz2100_config_dir" --skirmish="GAMMA_HARD_COBRA_T2.json" --enableconsole --headless --autogame
 )
