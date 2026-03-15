@@ -431,6 +431,7 @@ class CommandCenter {
 			// assuming industrial targets are prioritised
 			if (MANAGEABLE_ADA_FORTIFICATIONS && ENOUGH_RESERVE_UNITS) {
 				targetCandidates = [...adaTargets];
+				targetCandidates = targetCandidates.slice(0,1); 	// focus on one ada emplacement at a time
 			} else if (AIR_SUPERIORITY) {
 				targetCandidates = [...industrialTargets, ...casTargets,  ...airRaidTargets, ...adaTargets];
 			} else if (TOO_HEAVY_ADA_FORTIFICATIONS) {
@@ -471,6 +472,24 @@ class CommandCenter {
 					c.missionStatus = MISSION_STATUS.ABORT;					
 					continue;
 				}
+
+				// Depending on state, removes dangerous missions
+				const gx = Math.floor(currObj.x / cellSize), gy = Math.floor(currObj.y / cellSize);
+				let skipIfDangerous = false;
+
+				for (let j=0; j<VTOLS_AVOID_LOCATION.length; j++) {
+					if (gx === VTOLS_AVOID_LOCATION[j].gx && gy === VTOLS_AVOID_LOCATION[j].gy) {
+						skipIfDangerous = true;
+						debug(`	removed active ${currObj.name} @ grid (${currObj.x} ${currObj.y})`);
+						break;
+					}
+				}
+
+				if (skipIfDangerous) {
+					c.missionStatus = MISSION_STATUS.ABORT;		
+					continue;
+				}
+				
 			}
 		}
 
