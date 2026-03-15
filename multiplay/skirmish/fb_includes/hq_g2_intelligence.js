@@ -116,7 +116,6 @@ class armyIntelligence {
 			flags |= OBJ_FLAGS.INDIRECT_FIRE;
 		}
 
-
 		if (obj.type === DROID) {
 
 			switch (obj.propulsion) {
@@ -148,7 +147,12 @@ class armyIntelligence {
 			if (obj.droidType === DROID_CONSTRUCT) {
 				flags |= OBJ_FLAGS.CONSTRUCTOR;
 				return flags;
-			} 
+			}
+			
+			if (obj.droidType === DROID_REPAIR) {
+				flags |= OBJ_FLAGS.REPAIR;
+				return flags;
+			}
 
 			const ARMOUR_MASK = OBJ_FLAGS.HALF_TRACKED_PROPULSION | OBJ_FLAGS.TRACKED_PROPULSION | OBJ_FLAGS.WHEELED_PROPULSION | OBJ_FLAGS.HOVER_PROPULSION;
 			if (obj.droidType === DROID_WEAPON || obj.droidType === DROID_CYBORG) {
@@ -181,6 +185,11 @@ class armyIntelligence {
 
 			if (obj.stattype === RESOURCE_EXTRACTOR) {
 				flags |= OBJ_FLAGS.RESOURCE_EXTRACTOR;
+				return flags;
+			}
+
+			if (obj.stattype === REPAIR_FACILITY) {
+				flags |= OBJ_FLAGS.REPAIR;
 				return flags;
 			}
 		}
@@ -371,9 +380,8 @@ class armyIntelligence {
 						break;		// intent: handle the case of old "dangerous sectors"
 					}
 
-					let defences = [];
+					let defences = [], trucks = [];
 
-					// find defensive structures
 					t['structs'].forEach(target => {
 						if (target.flags & OBJ_FLAGS.DEFENSIVE_STRUCTURE) {
 							// debug(`		added ${target.name} (${target.id}) near ${d.x} ${d.y}`);
@@ -381,13 +389,19 @@ class armyIntelligence {
 						}
 					});
 
+					t['droids'].forEach(target => {
+						if (target.flags & OBJ_FLAGS.CONSTRUCTOR) {
+							trucks.push(target);
+						}
+					})
+
 					if (nearbyDerricks.length >= 4) {
-						highPriorityTargets.push(...defences);
+						highPriorityTargets.push(...defences, ...trucks);
 						break;			// intent: handle the case of multiple derricks next to each other
 					} else if (nearbyDerricks.length >= defences.length) {
-						medPriorityTargets.push(...defences);
+						medPriorityTargets.push(...trucks, ...defences);
 					} else {
-						lowPriorityTargets.push(...defences);
+						lowPriorityTargets.push(...trucks, ...defences);
 					}
 				}
 			}
@@ -401,14 +415,17 @@ class armyIntelligence {
 		const gridEnumBoundingBox = (...args) => state.grid.enumBoundingBox(...args);
 		const bases = state.poi.bases;
 
-		const enemyPlayerIDs = state.enumLivingPlayers().filter(isEnemy); 
-		const SEARCH_RADIUS = 30;
-
 		let result = {
 			'productionTargets': [],
 			'adaTargets': [],
 		}
 
+		const enemyPlayerIDs = state.enumLivingPlayers().filter(isEnemy); 
+		if (enemyPlayerIDs.length === 0) {
+			return result;
+		}
+
+		const SEARCH_RADIUS = 30;
 		for (let i=0; i<bases.length; i++) {
 			if (!enemyPlayerIDs.includes(i)) {
 				continue;
@@ -424,6 +441,10 @@ class armyIntelligence {
 				}
 				if (t['structs'][j].flags & OBJ_FLAGS.PRODUCTION) {
 					result.productionTargets.push(t['structs'][j]);
+					continue;
+				}
+				if (t['structs'][j].flags & OBJ_FLAGS.REPAIR) {
+					result.productionTargets.unshift(t['structs'][j]);
 					continue;
 				}
 			}

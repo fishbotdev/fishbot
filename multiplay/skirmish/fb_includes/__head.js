@@ -105,6 +105,7 @@ const OBJ_FLAGS = {
     // capabilities
     ADA:          				1 << 4,
     CONSTRUCTOR:      			1 << 5,
+	REPAIR:						1 << 6,
 
 	// propulsion
 	CYBORG_PROPULSION: 			1 << 12,

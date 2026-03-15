@@ -426,7 +426,7 @@ class CommandCenter {
 			if (AIR_SUPERIORITY) {
 				targetCandidates = [...industrialTargets, ...casTargets,  ...airRaidTargets, ...adaTargets];
 			} else {
-				targetCandidates = [];
+				targetCandidates = [...casTargets, ...airRaidTargets];
 			}
 		}
 

@@ -129,9 +129,9 @@ class TacticalOperationsCenter {
 
 			const missionType = newMissionRequest.missionType;
 			let NUM_UNITS = 2;
-			// if (missionType === MISSION_TYPE.CAS_STRIKE) {
-			// 	NUM_UNITS = 1;
-			// }		
+			if (missionType === MISSION_TYPE.AIR_RAID) {
+				NUM_UNITS = 1;
+			}		
 			const priority = newMissionRequest.priority;
 
 			const missionData = this.createNewMission({missionType: missionType, priority: priority}, newMissionRequest, NUM_UNITS, i);
