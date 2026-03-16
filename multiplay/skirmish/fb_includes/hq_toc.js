@@ -553,38 +553,65 @@ class TacticalOperationsCenter {
 		state.highRiskSectors = adjSectors;
 	}
 
-	updateIntelOnGrid(state, objectData) {
-		// Write updated units to grid (only overwriting "KEYS" defined below)
-		const KEYS = ['friendlyUnits', 'targetUnits', 'friendlyStructures', 'targetStructures', 'adaCount'];
 
-		for (let gx=0; gx<state.grid.numXCells; gx++) {
-			for (let gy=0; gy<state.grid.numYCells; gy++) {		
-				for (let i=0; i<KEYS.length; i++) {
-					state.grid.grid[gx][gy][KEYS[i]] = objectData['grid'][gx][gy][KEYS[i]];
+	updateSpatialFields(state, newGrid) {
+		const numXCells = state.grid.numXCells;
+		const numYCells = state.grid.numYCells;
+		const grid = newGrid;
+
+		for (let gx=0; gx<numXCells; gx++) {
+			for (let gy=0; gy<numYCells; gy++) {
+				state.heatmaps.adaThreat[gx][gy] = grid[gx][gy]['adaCount'];
+			}	
+		}	
+
+		if (false) {
+			const heatmap = state.heatmaps.adaThreat;
+
+			debug(`\nupdateSpatialFields(): ada heatmap @ ${gameTime}`);
+			for (let gy=0; gy<numYCells; gy++) {
+				let row = "";
+
+				for (let gx=0; gx<numXCells; gx++) {					
+					row += `${heatmap[gx][gy]} `;
 				}
+				debug(row);
+			}
+		}
+	}
+
+	/**
+	 * This function writes the result of blanket `enumDroid` and `enumStruct` calls to `state`.
+	 * @param {Object} state 
+	 * @param {any[][]} newGrid 
+	 * @param {Array} playerInfo 
+	 * @param {Array} allTargets 
+	 * @returns {void}
+	 */
+	setCoreIntelParameters(state, newGrid, playerInfo, allTargets) {
+		// Write updated units to grid (only overwriting "KEYS" defined below)
+		const numXCells = state.grid.numXCells;
+		const numYCells = state.grid.numYCells;
+
+		state.playerInfo = playerInfo;
+		state.allTargets = allTargets;
+
+		// Update grid 
+		// TODO: see if spatial fields should also be updated here for performance reasons
+		const CATEGORIES = ['friendlyUnits', 'targetUnits', 'friendlyStructures', 'targetStructures'];
+		for (let gx=0; gx<numXCells; gx++) {
+			for (let gy=0; gy<numYCells; gy++) {		
+				CATEGORIES.forEach(category => {
+					state.grid.grid[gx][gy][category] = newGrid[gx][gy][category];
+				});
 			}
 		}
 		
-		state.playerInfo = objectData['playerInfo'];
-		state.allTargets = objectData['allTargets'];
-
 		if (false) {
 			debug(`\n${gameTime} allTargets`);
 			state.allTargets.forEach(t => {
 				debug(`\t${t.name}  ${t.id}  (player ${t.player})	(flags ${toBinary20(t.flags)})`);
 			});
-		}
-
-		if (false) {
-			debug(`\nada heatmap @ ${gameTime}`);
-			for (let gy=0; gy<state.grid.numYCells; gy++) {
-				let row = "";
-
-				for (let gx=0; gx<state.grid.numXCells; gx++) {					
-					row += `${state.grid.grid[gx][gy].adaCount} `;
-				}
-				debug(row);
-			}
 		}
 
 		if (false) {
@@ -596,11 +623,11 @@ class TacticalOperationsCenter {
 				for (let gx=0; gx<numXCells; gx++) {
 					for (let gy=0; gy<numYCells; gy++) {
 
-						if (objectData['grid'][gx][gy]['targetUnits'].length > 0 || objectData['grid'][gx][gy]['targetStructures'].length > 0) {
+						if (newGrid[gx][gy]['targetUnits'].length > 0 || newGrid[gx][gy]['targetStructures'].length > 0) {
 							debug(`\nObjects in grid: (${gx} ${gy}) @ ${gameTime}`);
 
-							objectData['grid'][gx][gy]['targetUnits'].forEach(t => debug(`	${t.name} (${t.id}): player ${t.player}`));							
-							objectData['grid'][gx][gy]['targetStructures'].forEach(t => debug(`	${t.name} (${t.id}): player ${t.player} `));
+							newGrid[gx][gy]['targetUnits'].forEach(t => debug(`	${t.name} (${t.id}): player ${t.player}`));							
+							newGrid[gx][gy]['targetStructures'].forEach(t => debug(`	${t.name} (${t.id}): player ${t.player} `));
 						}
 					}
 				}
@@ -620,7 +647,7 @@ class TacticalOperationsCenter {
 		}
 
 		if (false) {
-			objectData['playerInfo'].forEach(p => {
+			playerInfo.forEach(p => {
 				debug(`${p.playerID} (${p.isFriendly})\n\tDROID tot ${p.numTotalUnits}, inf ${p.numInfantryUnits}, arm ${p.numArmourUnits}, air ${p.numAirUnits}, indi ${p.numIndirectUnits}, ada ${p.numADA}\n\tSTRUCTURE tot ${p.numStructs}, derr ${p.numDerricks}`);
 			});
 			debug('');

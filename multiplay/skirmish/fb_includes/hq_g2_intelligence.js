@@ -206,10 +206,10 @@ class armyIntelligence {
 		const numXCells = state.grid.numXCells;
 		const numYCells = state.grid.numYCells;
 		const cellSize = state.grid.cellSize;
-		const createNewFbGridCell = (...args) => state.grid.createNewFbGridCell(...args); 
+		const createExpandedFbGridCell = () => state.grid.createNewFbGridCell(true); 
 		const createPlayerInfoEntry = (...args) => state.createPlayerInfoEntry(...args);
-		
-		let grid = create2DGrid(numXCells, numYCells, createNewFbGridCell);
+
+		let grid = create2DGrid(numXCells, numYCells, createExpandedFbGridCell);
 
 		let objectsByPlayer = getDroidsAndStructsByPlayer();		// this information is fresh
 

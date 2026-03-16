@@ -51,21 +51,36 @@ class fbGrid {
         this.cellSize = 10;     // in game tiles
         this.numXCells = Math.ceil(mapWidth / this.cellSize);
         this.numYCells = Math.ceil(mapHeight / this.cellSize);
-
-        this.grid = create2DGrid(this.numXCells, this.numYCells, this.createNewFbGridCell);        
+        const createStandardFbGridCell = () => this.createNewFbGridCell(false);
+        this.grid = create2DGrid(this.numXCells, this.numYCells, createStandardFbGridCell);        
     }
 
-    createNewFbGridCell() {
-        return {
-            'targetUnits': [],
-            'targetStructures': [],
+    createNewFbGridCell(expanded=false) {
+        if (!expanded) {
+            return {
+                'targetUnits': [],
+                'targetStructures': [],
 
-            'friendlyUnits': [],
-            'friendlyStructures': [],
+                'friendlyUnits': [],
+                'friendlyStructures': [],
 
-            'derricks': [],
-            'bases': [],
-            'adaCount': 0,
+                'derricks': [],
+                'bases': []
+            }
+        } else {
+            // Expanded set of parameters; used only during intelligence gathering
+            return {
+                'targetUnits': [],
+                'targetStructures': [],
+
+                'friendlyUnits': [],
+                'friendlyStructures': [],
+
+                'derricks': [],
+                'bases': [],
+
+                'adaCount': 0,
+            }
         }
     }
 
@@ -277,6 +292,12 @@ class worldState {
         this.poi = {
             'derricks': [], 
             'bases': []
+        };
+
+        const emptyCell = () => {return 0;};
+        const createEmptyGrid = () => {return create2DGrid(this.grid.numXCells, this.grid.numYCells, emptyCell);};
+        this.heatmaps = {
+            'adaThreat': createEmptyGrid(),
         };
 
         // Combat targeting

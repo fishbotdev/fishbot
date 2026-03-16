@@ -102,7 +102,7 @@ function defined(variable) {
 }
 
 /**
- * This function implements a square 2D-array.
+ * This function implements a 2D-array.
  * 
  * This implementation is used to store the grid cells representation of the map because:
  *  - ease of use when searching nearby sectors (indices are already numeric)

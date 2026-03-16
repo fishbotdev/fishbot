@@ -366,31 +366,29 @@ class CommandCenter {
 		return output;
 	}
 
-	#getAdaHeatMap(state) {
-		
-		let adaCells = [];
-
-		const grid = state.grid.grid;
+	#processAdaHeatmap(state){ 
+		const heatmap = state.heatmaps.adaThreat;
 		const numXCells = state.grid.numXCells;
-		const numYCells = state.grid.numYCells;
+		const numYCells = state.grid.numYCells;	
 
 		const gridCoord = (gx, gy) => {return {'gx': gx, 'gy': gy}};
 
-		const DEBUG_SHOW_HEATMAP = false;
-		if (DEBUG_SHOW_HEATMAP) debug(`\nada heatmap @ ${gameTime}`);
+		let adaCells = [];
+
+		const PRINT_HEATMAP = false;
+		
+		if (PRINT_HEATMAP) debug(`\processAdaHeatmap(): ada heatmap @ ${gameTime}`);
 		for (let gy=0; gy<numYCells; gy++) {
 			let row = "";
-
-			for (let gx=0; gx<numXCells; gx++) {					
-				const cellAdaCount = grid[gx][gy].adaCount;
-				if (cellAdaCount > 1) {
+			for (let gx=0; gx<numXCells; gx++) {
+				if (heatmap[gx][gy] > 1) {
 					adaCells.push(gridCoord(gx, gy));
 				}
-				if (DEBUG_SHOW_HEATMAP) row += `${cellAdaCount} `;
+				if (PRINT_HEATMAP) row += `${heatmap[gx][gy]} `;
 			}
-			if (DEBUG_SHOW_HEATMAP) debug(row);
+			if (PRINT_HEATMAP) debug(row);
 		}
-
+	
 		return adaCells;
 	}
 
@@ -405,7 +403,7 @@ class CommandCenter {
 		}
 
 		// sectors from heatmap
-		const VTOLS_AVOID_LOCATION = this.#getAdaHeatMap(state);
+		const VTOLS_AVOID_LOCATION = this.#processAdaHeatmap(state);
 
 		// TEMPORARY -> Will be replaced by intelligent merge sort based on weighted priority
 		const prioritiseCasTargets = (nearbyTargetCount >= 2 && !IS_OIL_DOMINANT) || (IS_OIL_DOMINANT && casTargets.length >= 4);
@@ -667,7 +665,8 @@ class CommandCenter {
 			case 'intel_getMapIntelligence':
 
 				const objectData = intelligence.getAllObjects(state);
-				this.toc.updateIntelOnGrid(state, objectData);
+				this.toc.setCoreIntelParameters(state, objectData['grid'], objectData['playerInfo'], objectData['allTargets']);
+				this.toc.updateSpatialFields(state, objectData['grid']);
 				break;
 				
 			default:
