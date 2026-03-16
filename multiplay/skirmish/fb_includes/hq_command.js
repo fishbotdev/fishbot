@@ -46,7 +46,7 @@ class CommandCenter {
 			'intel_getNearbyGroundTargets': 30,
 			'intel_updateSectorInfo': 30,
 			'intel_updateCOP': 30,	
-			'intel_getPerfectMapIntelligence': 15,
+			'intel_getMapIntelligence': 15,
 			'intel_checkCampaignStatus': 15,
 			'intel_getAviationTargets': 6,
 			'intel_checkOilDominance': 2,
@@ -647,80 +647,9 @@ class CommandCenter {
 				state.aviationTargets['adaTargets'] = baseTargets['adaTargets'];
 				break;
 
-			case 'intel_getPerfectMapIntelligence':
-				const allObjects = intelligence.getAllObjects(state);
-
-				// Write updated units to grid (only overwriting "KEYS" defined below)
-				const KEYS = ['friendlyUnits', 'targetUnits', 'friendlyStructures', 'targetStructures', 'adaCount'];
-
-				for (let gx=0; gx<state.grid.numXCells; gx++) {
-					for (let gy=0; gy<state.grid.numYCells; gy++) {		
-						for (let i=0; i<KEYS.length; i++) {
-							state.grid.grid[gx][gy][KEYS[i]] = allObjects['grid'][gx][gy][KEYS[i]];
-						}
-					}
-				}
-				
-				state.playerInfo = allObjects['playerInfo'];
-				state.allTargets = allObjects['allTargets'];
-
-				if (false) {
-					debug(`\n${gameTime} allTargets`);
-					state.allTargets.forEach(t => {
-						debug(`\t${t.name}  ${t.id}  (player ${t.player})	(flags ${toBinary20(t.flags)})`);
-					});
-				}
-
-				if (false) {
-					debug(`\nada heatmap @ ${gameTime}`);
-					for (let gy=0; gy<state.grid.numYCells; gy++) {
-						let row = "";
-
-						for (let gx=0; gx<state.grid.numXCells; gx++) {					
-							row += `${state.grid.grid[gx][gy].adaCount} `;
-						}
-						debug(row);
-					}
-				}
-
-				if (false) {
-					const cellSize = state.grid.cellSize;
-					const numXCells = Math.ceil(mapWidth / cellSize);
-        			const numYCells = Math.ceil(mapHeight / cellSize);
-
-					if (false) {
-						for (let gx=0; gx<numXCells; gx++) {
-							for (let gy=0; gy<numYCells; gy++) {
-
-								if (allObjects['grid'][gx][gy]['targetUnits'].length > 0 || allObjects['grid'][gx][gy]['targetStructures'].length > 0) {
-									debug(`\nObjects in grid: (${gx} ${gy}) @ ${gameTime}`);
-
-									allObjects['grid'][gx][gy]['targetUnits'].forEach(t => debug(`	${t.name} (${t.id}): player ${t.player}`));							
-									allObjects['grid'][gx][gy]['targetStructures'].forEach(t => debug(`	${t.name} (${t.id}): player ${t.player} `));
-								}
-							}
-						}
-					}
-
-					for (let gx=0; gx<numXCells; gx++) {
-						for (let gy=0; gy<numYCells; gy++) {
-							if (state.grid.grid[gx][gy]['targetUnits'].length > 0 || state.grid.grid[gx][gy]['targetStructures'].length > 0) {
-								debug(`Objects in actual grid: (${gx} ${gy}) @ ${gameTime}`);
-
-								state.grid.grid[gx][gy]['targetUnits'].forEach(t => debug(`	${t.name} (${t.id}): player ${t.player}`));							
-								state.grid.grid[gx][gy]['targetStructures'].forEach(t => debug(`	${t.name} (${t.id}): player ${t.player} `));
-								debug(`${state.grid.grid[gx][gy]['derricks']}`);
-							}
-						}
-					}
-				}
-
-				if (false) {
-					allObjects['playerInfo'].forEach(p => {
-						debug(`${p.playerID} (${p.isFriendly})\n\tDROID tot ${p.numTotalUnits}, inf ${p.numInfantryUnits}, arm ${p.numArmourUnits}, air ${p.numAirUnits}, indi ${p.numIndirectUnits}, ada ${p.numADA}\n\tSTRUCTURE tot ${p.numStructs}, derr ${p.numDerricks}`);
-					});
-					debug('');
-				}
+			case 'intel_getMapIntelligence':
+				const objectData = intelligence.getAllObjects(state);
+				this.toc.updateIntelOnGrid(state, objectData);
 				break;
 				
 			default:
