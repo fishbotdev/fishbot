@@ -40,8 +40,8 @@ function arrayMedian(arr) {
 	- distance(x1,y1,x2,y2)
  * @param {BaseObject | number} obj1 
  * @param {BaseObject | number} obj2 
- * @param {BaseObject | number} obj3 
- * @param {BaseObject | number} obj4 
+ * @param {BaseObject | number} [obj3] optional obj3
+ * @param {BaseObject | number} [obj4] optional obj4
  * @returns {number} Euclidean distance
  */
 function distance(obj1, obj2, obj3, obj4) {

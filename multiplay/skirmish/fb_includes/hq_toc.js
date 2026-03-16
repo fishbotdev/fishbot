@@ -88,7 +88,7 @@ class TacticalOperationsCenter {
 					case MISSION_STATUS.SUCCEEDED:
 
 						// Handle other retval payload based on missionType
-						if ([MISSION_TYPE.SECTOR_RECON_ENGINE, MISSION_TYPE.CHECK_OIL_DOMINANCE].includes(md.missionType)) {
+						if ([MISSION_TYPE.SECTOR_RECON_ENGINE].includes(md.missionType)) {
 							// send intel to pending intel
 							this.pendingIntelReports.push(retval.intelReport);
 						}
@@ -236,9 +236,6 @@ class TacticalOperationsCenter {
 			case MISSION_TYPE.SECTOR_RECON_ENGINE:
 				md = intelligence.createSectorReconEngineMission({sectorInfo: args[0], missionType: missionType, tickUID: args[1]});		
 				break;
-			case MISSION_TYPE.CHECK_OIL_DOMINANCE:
-				md = intelligence.createCheckOilDominanceMission({payload: args[0], missionType: missionType, tickUID: args[1]});
-				break;
 
 			/*
 				CONSTRUCTION MISSIONS
@@ -287,14 +284,16 @@ class TacticalOperationsCenter {
 		for (let i=0; i<reports.length; i++) {
 			const r = reports[i];
 
-			// Process OIL_DOMINANCE_CHECK
-			if (r['missionType'] === MISSION_TYPE.CHECK_OIL_DOMINANCE) {
+			// Process other check (example only)
+			/*
+			if (r['missionType'] === MISSION_TYPE.[INSERT_MISSION_HERE]]) {
 				if (state.oilDominance !== r['report']) {
 					debug(`oil dominance changed to ${r['report']} @ ${gameTime} ms`);
 					state.oilDominance = r['report'];
 				};
 				continue;
 			}
+			*/
 
 			// Else, assume it is SECTOR_RECON_ENGINE
 			let currSectorReport = r['report'];
@@ -626,6 +625,19 @@ class TacticalOperationsCenter {
 			});
 			debug('');
 		}
+	}
+
+	/**
+	 * This function writes `oilDominance` to `state`.
+	 */
+	setOilDominanceStatus(state, isOilDominant) {
+
+		if (state.oilDominance === isOilDominant) {
+			return;
+		}
+
+		debug(`${gameTime}: oil dominance changed to ${isOilDominant}`);
+		state.oilDominance = isOilDominant;
 	}
 
 }

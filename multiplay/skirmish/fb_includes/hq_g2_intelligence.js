@@ -79,26 +79,6 @@ class armyIntelligence {
 		return md;
 	}
 
-	createCheckOilDominanceMission({payload: oilDominanceThreshold, missionType, tickUID}) {
-		// it returns either:
-		// 	- missionData object (according to missionDataTemplate), if mission successfully created, OR
-		//	- undefined, if mission was not able to be created
-		
-		let md = this.#createMissionOrders();
-
-		// Create mission details
-		const id = gameTime + "_OIL_DOMINANCE_CHECK_" + tickUID;
-		md.id = id;
-
-		md.sectorID = undefined;
-
-		// Assign orders for conducting & ceasing operations			
-		md.orders = () => this.#mcb(checkOilDominance, state, oilDominanceThreshold, missionType);		
-		md.ceaseOrders = () => this.#mcb(this.#finaliseEngineCall, md);
-
-		return md;
-	}
-
 	/*
 		REAL-TIME TARGETING
 	*/
@@ -215,24 +195,6 @@ class armyIntelligence {
 		};
 	}
 
-	#createFullPlayerInfoEntry(playerID) {
-		return {
-			'playerID': playerID,
-			'isFriendly': !isEnemy(playerID), 
-
-			'numTotalUnits': 0,
-			'numInfantryUnits': 0,
-			'numArmourUnits': 0,
-			'numAirUnits': 0,
-			'numIndirectUnits': 0,
-			'numADA': 0,
-
-			'numStructs': 0,
-			'numFactories': 0,
-			'numDerricks': 0,
-		};
-	}
-
 	/**
 	`getAllObjects()`
 
@@ -247,6 +209,7 @@ class armyIntelligence {
 		const numYCells = state.grid.numYCells;
 		const cellSize = state.grid.cellSize;
 		const createNewFbGridCell = (...args) => state.grid.createNewFbGridCell(...args); 
+		const createPlayerInfoEntry = (...args) => state.createPlayerInfoEntry(...args);
 		
 		let grid = create2DGrid(numXCells, numYCells, createNewFbGridCell);
 
@@ -261,7 +224,7 @@ class armyIntelligence {
 		for (let i=0; i<objectsByPlayer.length; i++) {
 			const currPlayerEntry = objectsByPlayer[i];
 
-			let p = this.#createFullPlayerInfoEntry(currPlayerEntry['playerID']);
+			let p = createPlayerInfoEntry(currPlayerEntry['playerID']);
 
 			// Collate droid information
 			const IS_TARGET = !p['isFriendly'];

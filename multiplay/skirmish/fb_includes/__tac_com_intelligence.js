@@ -17,31 +17,20 @@
 
 
 // New sector system (v4)
-function createMinimalPlayerInfoEntry(playerID) {
-    return {
-        'playerID': playerID,
-        'droids': [],
-        'structs': []
-    };
-}
-
 function getDroidsAndStructsByPlayer(playerIdList=undefined) {
+
+    const createPlayerBucket = (id, droids, structs) => {return {'playerID': id, 'droids': droids, 'structs': structs}};  
 
     let objectsByPlayer = [];
 
     if (!defined(playerIdList)) {
-        playerIdList = generateRange(maxPlayers);
+        playerIdList = generateRange(maxPlayers);       // will create 0-indexed playerIDs from 0, 1, 2, ..., maxPlayers - 1
     }
 
-    for (let i=0; i<playerIdList.length; i++) {
-        const playerID = playerIdList[i];
-        
-        let playerInfo = createMinimalPlayerInfoEntry(playerID);
-        playerInfo['droids'].push(...enumDroid(playerID));
-        playerInfo['structs'].push(...enumStruct(playerID));
-
-        objectsByPlayer.push(playerInfo);
-    }
+    playerIdList.forEach(id => {
+        const p = createPlayerBucket(id, enumDroid(id), enumStruct(id));
+        objectsByPlayer.push(p);
+    });
 
     return objectsByPlayer;
 }
@@ -172,27 +161,17 @@ function getSectorIntelFromGameEngine(sectorInfo, missionType) {
 
 }
 
-function checkOilDominance(state, oilDominancePercentage, missionType) {
+function checkOilDominance(state, oilDominancePercentage) {
+    const playerInfo = state.playerInfo;
+    const totalDerricks = state.poi.derricks.length;
 
-    let totalDerricks = 0, capturedDerricks = 0;
-
-    for (let i=0; i<state.sectors.length; i++) {
-        let d = state.sectors[i].derricks;
-        d.forEach(derrick => {
-            if (derrick.owner === REGION_OWNER.FRIENDLY) {
-                capturedDerricks++;
-            }
-            totalDerricks++;
-        })
-    }
-
-    const isOilDominant = Math.floor(capturedDerricks / totalDerricks * 100) > oilDominancePercentage;
-
-    return {
-        status: MISSION_STATUS.SUCCEEDED,
-        intelReport: {
-            'missionType': missionType, 
-            'report': isOilDominant
+    for (let i=0; i<playerInfo.length; i++) {
+        if (playerInfo[i]['playerID'] !== me) {
+            continue;
         }
-    }
+        
+        const pc = playerInfo[i]['numDerricks'] / totalDerricks * 100;
+        // debug(` ${gameTime}: captured ${playerInfo[i]['numDerricks']} out of ${totalDerricks} (${pc}%)`);
+        return (pc > oilDominancePercentage);        
+    }    
 }

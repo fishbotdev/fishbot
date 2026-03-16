@@ -581,6 +581,8 @@ class CommandCenter {
 	 * 	3. Observations are compiled into the global 'state'
 	 */
 	runIntelligence(state, taskID) {
+		
+		// Note: For performance reasons, anything which can be executed immediately should not use the mission management system.
 
 		switch(taskID) {
 			case 'intel_updateSectorInfo':
@@ -598,10 +600,8 @@ class CommandCenter {
 				break;
 
 			case 'intel_checkOilDominance':
-
-				let checkOilDominanceTasks = [];
-				checkOilDominanceTasks.push(intelligence.createIntelRequest({missionType: MISSION_TYPE.CHECK_OIL_DOMINANCE, payload: this.OIL_DOMINANCE_PERCENTAGE}));	
-				this.toc.assignIntelMissions({intelTasks: checkOilDominanceTasks, state: state});					
+				const isOilDominant = checkOilDominance(state, this.OIL_DOMINANCE_PERCENTAGE);
+				this.toc.setOilDominanceStatus(state, isOilDominant);
 				break;
 			
 			case 'intel_getNearbyGroundTargets':
