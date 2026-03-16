@@ -28,8 +28,22 @@
  *  In the Domain Services architecture, we need a 
  *      1. Central database which stores the current game state ("state")    -- fulfilled by: this file _world_state.js
  *      2. State observer/reporter ("system")                                -- fulfilled by: operational level functions hq_gX
- *      3. State mutator ("service")                                         -- fulfilled by: hq_toc (delegated by hq_command) / hq_command
- *      4. Decision maker (coordinator)                                      -- fulfilled by: hq_command
+ *      3. State mutator ("service")                                         -- fulfilled by: hq_toc (delegated by hq_command) 
+ *      4. Decision maker ("coordinator")                                    -- fulfilled by: hq_command
+ * 
+ *  Systems which access the state should 'extract' all of the relevant information from state 
+ *  at the start of the function where possible e.g.
+ *  
+ *  function getGridCoordsExample() {
+ *      const cellSize = state.grid.cellSize;
+ *      ...
+ *      const gx = Math.floor(obj.x / cellSize);
+ *      ...
+ *  }
+ * 
+ *  Services which mutate (modify) the state should be centralised in one location. 
+ *  In the current implementation (0.4.0+), state mutation is handled by `hq_toc.js` (delegated by `hq_command.js`).
+ *  If the core state management happens in one place, this makes it much easier to reason about, modify, and debug.
  */
 
 class fbGrid {

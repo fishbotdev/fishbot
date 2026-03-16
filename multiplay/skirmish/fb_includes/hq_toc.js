@@ -640,4 +640,26 @@ class TacticalOperationsCenter {
 		state.oilDominance = isOilDominant;
 	}
 
+	/**
+	 * This function writes `forceLocation` to `state`.
+	 */
+	setForceLocation(state, forceLocation) {
+		state.forceLocation = forceLocation;
+	}
+
+	/**
+	 * This function writes `nearbyGroundTargets` to `state`.
+	 */
+	setNearbyGroundTargets(state, nearbyGroundTargets) {
+		state.nearbyGroundTargets = nearbyGroundTargets;
+	}
+
+	/**
+	 * This function writes `aviationTargets` to `state`.
+	 */
+	setAviationTargets(state, raidTargets, productionTargets, adaTargets) {
+		state.aviationTargets['raidTargets'] = raidTargets;
+		state.aviationTargets['productionTargets'] = productionTargets;
+		state.aviationTargets['adaTargets'] = adaTargets;
+	}
 }

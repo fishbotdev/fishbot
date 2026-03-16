@@ -59,6 +59,8 @@ class CommandCenter {
 	/////////////////////////////////////////////////// STATE INITIALISATION ///////////////////////////////////////////////////
 
 	setDefaultSectorParameters(state) {
+		// TODO: mutates the state. move to hq_toc
+
 		// Service: run once - establishes default sector info based on real sector data
 
 		// Simple heuristic rule to set initial threat level
@@ -97,6 +99,8 @@ class CommandCenter {
 	}
 
 	setDefaultMissions(state) {
+		// TODO: mutates the state. move to hq_toc
+
 		// Aviation - rearming
 		const md1 = this.toc.createNewMission({missionType: MISSION_TYPE.VTOL_STAGING_MISSION, priority: MISSION_PRIORITY.LOW});		
 
@@ -107,10 +111,12 @@ class CommandCenter {
 	}
 
 	setSchedulerParameters(state) {
+		// TODO: mutates the state. move to hq_toc
 
 		const SHOW_SCHEDULER_PARAMS = false;
+		const INTERVALS_PER_MIN = state.INTERVALS_PER_MIN;
 
-		const r = generateRange(state.INTERVALS_PER_MIN);		
+		const r = generateRange(INTERVALS_PER_MIN);		
 		let usedTimeBlocks = [];
 
 		let taskID = 1;
@@ -127,7 +133,7 @@ class CommandCenter {
 
 			let u = [];		// debugging	
 
-			const requestInterval = Math.floor(state.INTERVALS_PER_MIN / requestsPerMin);
+			const requestInterval = Math.floor(INTERVALS_PER_MIN / requestsPerMin);
 
 			const taskHash = taskID * 2654435761;
 			taskID++;
@@ -390,6 +396,7 @@ class CommandCenter {
 
 	prioritiseAviationTargets(state, groupPosition, nearbyTargetCount, airRaidTargets, casTargets, industrialTargets, adaTargets) {
 		const cellSize = state.grid.cellSize;
+		const IS_OIL_DOMINANT = state.oilDominance;
 
 		let targetCandidates = [];
 
@@ -401,9 +408,9 @@ class CommandCenter {
 		const VTOLS_AVOID_LOCATION = this.#getAdaHeatMap(state);
 
 		// TEMPORARY -> Will be replaced by intelligent merge sort based on weighted priority
-		const prioritiseCasTargets = (nearbyTargetCount >= 2 && !state.oilDominance) || (state.oilDominance && casTargets.length >= 4);
-		const prioritiseRaidTargets = !state.oilDominance;
-		const prioritiseIndustrialTargets = state.oilDominance;
+		const prioritiseCasTargets = (nearbyTargetCount >= 2 && !IS_OIL_DOMINANT) || (IS_OIL_DOMINANT && casTargets.length >= 4);
+		const prioritiseRaidTargets = !IS_OIL_DOMINANT;
+		const prioritiseIndustrialTargets = IS_OIL_DOMINANT;
 
 		let highestNewTargetPriority = MISSION_PRIORITY.LOW;
 
@@ -554,10 +561,13 @@ class CommandCenter {
 
 	runCombatOperations(state) {
 
+		const nearbyGroundTargets = state.nearbyGroundTargets;
+		const forceLocation = state.forceLocation;
+		const raidTargets = state.aviationTargets['raidTargets'];
+		const productionTargets = state.aviationTargets['productionTargets'];
+		const adaTargets = state.aviationTargets['adaTargets'];
+
 		const campaignStatus = this.#getCampaignStatus();
-
-		// GROUND FORCES
-
 		const readyToAttack = campaignStatus === CAMPAIGN_STATUS.MAIN_ASSAULT || campaignStatus === CAMPAIGN_STATUS.STAGING;
 
 		let casTargets = [];
@@ -565,7 +575,7 @@ class CommandCenter {
 
 		if (readyToAttack) {
 			// Prioritise & assign targets
-			const groundTargets = this.prioritiseLandForceTargets(state.nearbyGroundTargets, state.forceLocation);
+			const groundTargets = this.prioritiseLandForceTargets(nearbyGroundTargets, forceLocation);
 
 			// Attack ground targets; HACK: directly calls tactical level function
 			groundForceAttack({
@@ -583,12 +593,12 @@ class CommandCenter {
 		}
 
 		const aviationTargets = this.prioritiseAviationTargets(state, 
-			state.forceLocation, 
+			forceLocation, 
 			numTargetsInImmediateRadius, 
-			state.aviationTargets['raidTargets'], 
+			raidTargets, 
 			casTargets, 
-			state.aviationTargets['productionTargets'],
-			state.aviationTargets['adaTargets'],
+			productionTargets,
+			adaTargets,
 		);
 
 		// debug(`avTarg ${aviationTargets.length} = cas ${casTargets.length} + raid ${airRaidTargets.length}, ${numTargetsInImmediateRadius}`);
@@ -617,13 +627,14 @@ class CommandCenter {
 				break;
 
 			case 'intel_updateCOP':
-			
+
 				const observations = this.toc.getCompletedIntelMissionReports();				// hq/toc: gets completed data (intelligence reports)
 				this.toc.compileSectorIntelIntoCOP(observations, state);						// hq/toc: processes intelligence reports & updates state ("Common Operational Picture")
 				this.toc.updateHighRiskSectors(state);											// hq/toc: separated state update function
 				break;
 
 			case 'intel_checkOilDominance':
+
 				const isOilDominant = checkOilDominance(state, this.OIL_DOMINANCE_PERCENTAGE);
 				this.toc.setOilDominanceStatus(state, isOilDominant);
 				break;
@@ -632,26 +643,29 @@ class CommandCenter {
 
 				// Update location(s) & composition(s) of active combat force(s) -- TEMPORARY IMPLEMENTATION
 				const mainForceLocation = groundForces.getForceMedianLocation(0);
-				state.forceLocation = mainForceLocation;
+				this.toc.setForceLocation(state, mainForceLocation);
 
 				if (defined(state.forceLocation)) {
-					state.nearbyGroundTargets = intelligence.proposeTargetsInRadius2({state: state, loc: state.forceLocation, searchRadius: 25, immediateRadius: 10});		
+					const nearbyGroundTargets = intelligence.proposeTargetsInRadius2({state: state, loc: state.forceLocation, searchRadius: 25, immediateRadius: 10});		
+					hq.toc.setNearbyGroundTargets(state, nearbyGroundTargets);
 				}
 				break;
 			
 			case 'intel_checkCampaignStatus':
+
 				this.checkCampaignStatus(state);
 				break;
 
 			case 'intel_getAviationTargets':
-				state.aviationTargets['raidTargets'] = intelligence.getDefencesNearDerricks(state);
 
+				const raidTargets = intelligence.getDefencesNearDerricks(state);
 				const baseTargets = intelligence.getBaseTargets(state);
-				state.aviationTargets['productionTargets'] = baseTargets['productionTargets'];
-				state.aviationTargets['adaTargets'] = baseTargets['adaTargets'];
+				hq.toc.setAviationTargets(state, raidTargets, baseTargets['productionTargets'], baseTargets['adaTargets']);
+
 				break;
 
 			case 'intel_getMapIntelligence':
+
 				const objectData = intelligence.getAllObjects(state);
 				this.toc.updateIntelOnGrid(state, objectData);
 				break;

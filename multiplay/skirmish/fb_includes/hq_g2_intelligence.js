@@ -203,8 +203,6 @@ class armyIntelligence {
 	2. Classifies all droids & structures, populating a new `playerInfo` and a new `grid` 
 	 */
 	getAllObjects(state) {
-
-		// Note: trying a new pattern; extract all relevant parameters from state at the start
 		const numXCells = state.grid.numXCells;
 		const numYCells = state.grid.numYCells;
 		const cellSize = state.grid.cellSize;
@@ -377,13 +375,13 @@ class armyIntelligence {
 		// Note: trying a new pattern; extract all relevant parameters from state at the start
 		const gridEnumBoundingBox = (...args) => state.grid.enumBoundingBox(...args);
 		const bases = state.poi.bases;
+		const enemyPlayerIDs = state.enumLivingPlayers().filter(isEnemy); 
 
 		let result = {
 			'productionTargets': [],
 			'adaTargets': [],
 		}
 
-		const enemyPlayerIDs = state.enumLivingPlayers().filter(isEnemy); 
 		if (enemyPlayerIDs.length === 0) {
 			return result;
 		}
@@ -436,6 +434,9 @@ class armyIntelligence {
 	 */
 	proposeTargetsInRadius2({state, loc, searchRadius=20, immediateRadius=10}) {
 
+		const grid = state.grid;
+		const allTargets = state.allTargets;
+
 		let proposedTargets = {
 			'enemyArmor': [], 
 			'enemyInfantry': [], 
@@ -456,13 +457,13 @@ class armyIntelligence {
 			return proposedTargets;
 		}
 
-		const t = state.grid.enumRange(loc.x, loc.y, searchRadius); 
+		const t = grid.enumRange(loc.x, loc.y, searchRadius); 
 
 		let targetList = [...t['droids'], ...t['structs']];
-		// debug(`t ${targetList.length} (d ${t['droids'].length}, s ${t['structs'].length}), allT ${state.allTargets.length}`);
+		// debug(`t ${targetList.length} (d ${t['droids'].length}, s ${t['structs'].length}), allT ${allTargets.length}`);
 
 		if (targetList.length === 0) {
-			targetList = state.allTargets;			
+			targetList = allTargets;			
 		}
 
 		if (targetList.length === 0) {
