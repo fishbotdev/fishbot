@@ -160,12 +160,12 @@ class CommandCenter {
 	}
 
 	/////////////////////////////////////////////////// "CAMPAIGN STATUS" ///////////////////////////////////////////////////
-	getCampaignStatus() {
+	#getCampaignStatus() {
 		return this.campaignStatus;
 	}
 
-	updateCampaignStatus(event) {
-		const currState = this.getCampaignStatus();
+	#updateCampaignStatus(event) {
+		const currState = this.#getCampaignStatus();
 
 		// Advance the state machine on 'event'
 		let nextState = undefined;
@@ -177,6 +177,31 @@ class CommandCenter {
 			// debug(`Advanced to next campaign state ${nextState}`);
 			this.campaignStatus = nextState;
 		} 
+	}
+
+	checkCampaignStatus() {
+		// Note: this modifies 'campaignStatus' directly -> to be integrated into 'state'
+
+		// ADVANCE CAMPAIGN BASED ON GAME STATE -- TEMPORARY IMPLEMENTATION
+		let event = undefined;
+		if (groundForces.completedForceBuildup()) {
+			event = 'CompletedBuildup';
+		}
+		if (groundForces.completedStagingForAttack()) {
+			event = 'CompletedStaging';
+		}
+		if (defined(event)) {
+			const currCampaignStatus = this.#getCampaignStatus();
+			this.#updateCampaignStatus(event);
+			const newCampaignStatus = this.#getCampaignStatus();
+			if (newCampaignStatus !== currCampaignStatus) {
+				debug(`Campaign event detected: ${event}, campaign status updated to: ${this.#getCampaignStatus()}`);
+			}	
+			
+			if (newCampaignStatus === CAMPAIGN_STATUS.MAIN_ASSAULT) {
+				// then cancel all raid missions
+			}
+		}
 	}
 
 	/////////////////////////////////////////////////// COMBAT OPERATIONS ///////////////////////////////////////////////////
@@ -530,7 +555,7 @@ class CommandCenter {
 
 	runCombatOperations(state) {
 
-		const campaignStatus = this.getCampaignStatus();
+		const campaignStatus = this.#getCampaignStatus();
 
 		// GROUND FORCES
 
@@ -616,27 +641,7 @@ class CommandCenter {
 				break;
 			
 			case 'intel_checkCampaignStatus':
-
-				// ADVANCE CAMPAIGN BASED ON GAME STATE -- TEMPORARY IMPLEMENTATION
-				let event = undefined;
-				if (groundForces.completedForceBuildup()) {
-					event = 'CompletedBuildup';
-				}
-				if (groundForces.completedStagingForAttack()) {
-					event = 'CompletedStaging';
-				}
-				if (defined(event)) {
-					const currCampaignStatus = this.getCampaignStatus();
-					this.updateCampaignStatus(event);
-					const newCampaignStatus = this.getCampaignStatus();
-					if (newCampaignStatus !== currCampaignStatus) {
-						debug(`Campaign event detected: ${event}, campaign status updated to: ${this.getCampaignStatus()}`);
-					}	
-					
-					if (newCampaignStatus === CAMPAIGN_STATUS.MAIN_ASSAULT) {
-						// then cancel all raid missions
-					}
-				}
+				this.checkCampaignStatus();
 				break;
 
 			case 'intel_getAviationTargets':
