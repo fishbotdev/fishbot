@@ -23,12 +23,12 @@
  *      - There are multiple parts of the AI which either need to: 
  *          (1) look at the game state & make decisions     (but don't modify the game state)
  *          (2) change the game state
- *      - We want to avoid chaos (obscure modifications of the state, impossible debugging, duplication of logic, accidental rule violations)
+ *      - We want to avoid chaos (obscure modifications of the state, impossible debugging, duplication of logic)
  * 
  *  In the Domain Services architecture, we need a 
- *      1. Central database which stores the current game state ("state")    -- fulfilled by: worldState (this file)
+ *      1. Central database which stores the current game state ("state")    -- fulfilled by: this file _world_state.js
  *      2. State observer/reporter ("system")                                -- fulfilled by: operational level functions hq_gX
- *      3. State mutator ("service")                                         -- fulfilled by: hq_toc
+ *      3. State mutator ("service")                                         -- fulfilled by: hq_toc (delegated by hq_command) / hq_command
  *      4. Decision maker (coordinator)                                      -- fulfilled by: hq_command
  */
 
