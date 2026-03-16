@@ -1,14 +1,12 @@
 # Changelog
 
 ## Fishbot v4
-### _
-### https://github.com/fishbotdev/fishbot/compare/821b835..1cbde16
+### https://github.com/fishbotdev/fishbot/compare/821b835..0dee231
 
 - AI behaviour (v4 objectives)
-    - Integrate enemy data/friendly data into state & modify strategy based on enemy data
-    - Add threat from enemy unit presence into state
-    - Improve main group pathing based on strategy (move away from basic goal-seeking algorithm)
-    - Improve mission cancellation
+    - Integrate enemy data/friendly data into state 
+    - Modify strategy based on state information
+    - Improve combat group pathing based on strategy (i.e. improve the basic goal-seeking algorithm)
 - Architecture
     - Migrate all files to the new naming convention
     - Move all persistent game state data into 'state'
