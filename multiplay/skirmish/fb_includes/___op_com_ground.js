@@ -22,25 +22,34 @@ class armyGroundForceCommand {
 		
 	}
 
-	completedForceBuildup() {
-		let allTanksCount = enumDroid(me, DROID_WEAPON).filter((droid) => droid.isVTOL !== true).length;		// todo: replace with other
-		const fireSupportCount = state.g.enumGroup(DIVISION.FIRE_SUPPORT_RESERVE).length;
-		const directAssaultTanksCount = allTanksCount - fireSupportCount;
+	getGroundForceStatus(state) {
+		const playerInfo = state.playerInfo;
 
-		if (directAssaultTanksCount >= 5)
-			return true;
-		else
-			return false;
-	}
+		let result = {
+			'completedInitialBuildup': false,
+			'completedFinalBuildup': false,
+		};
 
-	completedStagingForAttack() {
-		let allTanksCount = enumDroid(me, DROID_WEAPON).filter((droid) => droid.isVTOL !== true).length;		// todo: replace with other
-		const fireSupportCount = state.g.enumGroup(DIVISION.FIRE_SUPPORT_RESERVE).length;
+		if (playerInfo.length === 0) {
+			return result;
+		}
 
-		if (allTanksCount >= 10 && fireSupportCount >= 3)		
-			return true;
-		else
-			return false;
+		for (let i=0; i<playerInfo.length; i++) {
+			if (playerInfo[i]['playerID'] !== me) {
+				continue;
+			}
+			
+			if (playerInfo[i]['numArmourUnits'] >= 5) {
+				result.completedInitialBuildup = true;
+			}
+			if (playerInfo[i]['numIndirectUnits'] >=3 && playerInfo[i]['numArmourUnits'] >= 7) {
+				result.completedFinalBuildup = true;
+			}
+			return result;
+		}
+
+		debug(`WARNING: getGroundForceStatus(): completed the loop but did not find the player id in state.playerInfo`);
+		return result;		
 	}
 
 	getForceMedianLocation(unused) {

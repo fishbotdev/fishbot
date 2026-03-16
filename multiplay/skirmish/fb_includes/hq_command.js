@@ -179,17 +179,20 @@ class CommandCenter {
 		} 
 	}
 
-	checkCampaignStatus() {
+	checkCampaignStatus(state) {
 		// Note: this modifies 'campaignStatus' directly -> to be integrated into 'state'
 
 		// ADVANCE CAMPAIGN BASED ON GAME STATE -- TEMPORARY IMPLEMENTATION
 		let event = undefined;
-		if (groundForces.completedForceBuildup()) {
+
+		const status = groundForces.getGroundForceStatus(state);
+		if (status['completedInitialBuildup']) {
 			event = 'CompletedBuildup';
 		}
-		if (groundForces.completedStagingForAttack()) {
+		if (status['completedFinalBuildup']) {
 			event = 'CompletedStaging';
 		}
+
 		if (defined(event)) {
 			const currCampaignStatus = this.#getCampaignStatus();
 			this.#updateCampaignStatus(event);
@@ -197,10 +200,6 @@ class CommandCenter {
 			if (newCampaignStatus !== currCampaignStatus) {
 				debug(`Campaign event detected: ${event}, campaign status updated to: ${this.#getCampaignStatus()}`);
 			}	
-			
-			if (newCampaignStatus === CAMPAIGN_STATUS.MAIN_ASSAULT) {
-				// then cancel all raid missions
-			}
 		}
 	}
 
@@ -641,7 +640,7 @@ class CommandCenter {
 				break;
 			
 			case 'intel_checkCampaignStatus':
-				this.checkCampaignStatus();
+				this.checkCampaignStatus(state);
 				break;
 
 			case 'intel_getAviationTargets':
