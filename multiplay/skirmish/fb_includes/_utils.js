@@ -19,10 +19,11 @@
 	Math functions 
 */
 
-function arrayMean(arr) {
-  return arr.reduce((s, v) => s + v, 0) / arr.length;
-}
-
+/**
+ * Calculates the median value of a numeric input array.
+ * @param {number[]} arr input array (numeric)
+ * @returns {number} array median
+ */
 function arrayMedian(arr) {
   const sorted = [...arr].sort((a, b) => a - b);
   const mid = Math.floor(sorted.length / 2);
@@ -31,26 +32,19 @@ function arrayMedian(arr) {
     : (sorted[mid - 1] + sorted[mid]) / 2;
 }
 
-function arrayIQR(arr) {
-	// Interquartile Range (IQR)
-	const sorted = [...arr].sort((a, b) => a - b);		// make shallow copy & arrange in ascending order
-	const q1 = sorted[Math.floor(sorted.length * 0.25)];
-	const q3 = sorted[Math.floor(sorted.length * 0.75)];
-	const iqr = q3 - q1;
-	return iqr;
-}
-
-function arrayRange(arr) {
-	const range = Math.max(...arr) - Math.min(...arr);
-	return range;
-}
-
-// Get distance between two points
-// acceptable arguments:
-//		distance(obj, obj)
-//		distance(x,y, obj)
-//		distance(obj,x,y)
-function distance (obj1, obj2, obj3, obj4) {
+/**
+ * Get Euclidean distance between two points. Acceptable uses include:
+	- distance(obj, obj)
+	- distance(x,y, obj)
+	- distance(obj,x,y)
+	- distance(x1,y1,x2,y2)
+ * @param {BaseObject | number} obj1 
+ * @param {BaseObject | number} obj2 
+ * @param {BaseObject | number} obj3 
+ * @param {BaseObject | number} obj4 
+ * @returns {number} Euclidean distance
+ */
+function distance(obj1, obj2, obj3, obj4) {
 	let x1, x2, y1, y2;
 	if (defined(obj1.x)) {
 		x1 = obj1.x;
@@ -78,16 +72,21 @@ function distance (obj1, obj2, obj3, obj4) {
 }
 
 /** 
- * ## distSq(x1, x2, y1, y2)
- * More computationally efficient than distance() - use this where order matters, but magnitude does not. */
+ * More computationally efficient than `distance()` - use this where order matters, but magnitude does not. 
+ * @param {number} x1 
+ * @param {number} x2 
+ * @param {number} y1 
+ * @param {number} y2 
+ * @returns {number}
+ */
 function distSq(x1, x2, y1, y2) {
 	return (x1-x2)**2 + (y1-y2)**2;
 }
 
 /**
- * Converts a number `n` to its binary representation (to 20 bits).
- * @param {number} n 
- * @returns {string}
+ * Converts a number `n` to its binary string representation (to 20 bits).
+ * @param {number} n integer
+ * @returns {string} binary string representation (to 20 bits) e.g. `"00001000010000100001"`
  */
 function toBinary20(n) {
 	return n.toString(2).padStart(20, '0');
@@ -128,6 +127,20 @@ function create2DGrid(numXCells, numYCells, cellFactory) {
 	return grid;
 }
 
+/**
+ * Generates an array of integers of length `stopNum`, starting with `0` and ending at integer `stopNum - 1`.
+ * e.g. `generateRange(5)` produces `[0, 1, 2, 3, 4]`. 
+ * @param {number} stopNum length of the array
+ * @returns {number[]} array of integers starting with `0` and ending at `stopNum - 1`.
+ */ 
+function generateRange(stopNum) {
+	let numbers = [];
+	for (let i=0; i < stopNum; i++) {
+		numbers.push(i);
+	}
+	return numbers;
+}
+
 /*
 	structure enumeration helpers
 */
@@ -156,31 +169,12 @@ function getCurrGameTime() {
 	return currGameTime;
 }
 
-/**
- * Generates an array of numbers starting from 0 and ending at integer stopNum (not including stopNum) 
- */ 
-function generateRange(stopNum) {
-	const numbers = [];
-	for (let i=0; i < stopNum; i++) {
-		numbers.push(i);
-	}
-	return numbers;
-}
-
-function isT0Start() {
-	return !isStructureAvailable("A0ComDroidControl", me);
-}
-
 function myPower() {
 	return playerPower(me) - queuedPower(me);
 }
 
-function hoverAvailable() {
-	return HOVER_PROPULSIONS.some((hoverPropulsion) => componentAvailable(hoverPropulsion.id));
-}
-
 /*
-	OTHER PLAYER INFORMATION
+	PLAYER INFORMATION
 */
 function isEnemy(playerID) {
 	if (!defined(playerID)) {
