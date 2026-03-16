@@ -243,7 +243,7 @@ NEW TEST DATA
 # path1 = rf"{cwd()}\process_results\v4_perfdata\\" + rf"29bb952,hard,cobra,100g.log"
 path1 = rf"{cwd()}\process_results\v4_perfdata\\" + rf"4fb16f4,hard,cobra,100g.log"
 # path2 = rf"{cwd()}\process_results\v4_perfdata\\" + rf"7ee8c56,med,cobra,100g.log"
-path2 = rf"{cwd()}\process_results\v4_perfdata\\" + rf"6730392,hard,cobra,50g.log"
+path2 = rf"{cwd()}\process_results\v4_perfdata\\" + rf"6730392,hard,cobra,100g.log"
 
 
 

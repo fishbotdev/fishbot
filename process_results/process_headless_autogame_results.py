@@ -235,7 +235,7 @@ def show_hard_cobra_results():
     # test_2 = getcwd() + rf"\process_results/v4/" + "91da685,hard,cobra" + ".txt"              # v4 dev: 4.6.3 [36% wr]
     # test_2 = getcwd() + rf"\process_results/v4/" + "33200f9,hard,cobra,100g" + ".txt"              # v4 dev: 4.6.3 [19% wr]
     # test_2 = getcwd() + rf"\process_results/v4/" + "ce09727,hard,cobra,50g" + ".txt"              # v4 dev: 4.6.3 [52 % wr]
-    test_2 = getcwd() + rf"\process_results/v4/" + "6730392,hard,cobra,50g" + ".txt"              # v4 dev: 4.6.3 [70 % wr]
+    test_2 = getcwd() + rf"\process_results/v4/" + "6730392,hard,cobra,100g" + ".txt"              # v4 dev: 4.6.3 [65 % wr]
 
     commit1 = test_1.split(rf"v4/")[1].split(",")[0]
     commit2 = test_2.split(rf"v4/")[1].split(",")[0]
