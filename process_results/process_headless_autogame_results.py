@@ -192,8 +192,9 @@ def show_medium_cobra_results():
     # test_1 = getcwd() + rf"\process_results/v4/" + "2167472,med,cobra,50g" + ".txt"               # perf: before merging performance-improvements [49 / 49 won]
     # test_1 = getcwd() + rf"\process_results/v4/" + "f9d0fd4,med,cobra,50g" + ".txt"               # perf: after merging perf-optim2 [49 / 50 won], higher K/D
     # test_1 = getcwd() + rf"\process_results/v4/" + "45635e6,med,cobra,100g" + ".txt"               # perf: after migrating into fixed time hashing [96 / 100 won]
-    test_1 = getcwd() + rf"\process_results/v4/" + "7ee8c56,med,cobra,100g" + ".txt"               # perf: migrating to new grid system [91 / 100 won (regression)]
-    test_2 = getcwd() + rf"\process_results/v4/" + "df4a549,med,cobra,100g" + ".txt"               # perf: migrating to new grid system [97 / 100 won; regression fixed]
+    # test_1 = getcwd() + rf"\process_results/v4/" + "7ee8c56,med,cobra,100g" + ".txt"               # perf: migrating to new grid system [91 / 100 won (regression)]
+    test_1 = getcwd() + rf"\process_results/v4/" + "df4a549,med,cobra,100g" + ".txt"               # perf: migrating to new grid system [97 / 100 won; regression fixed]
+    test_2 = getcwd() + rf"\process_results/v4/" + "a686079,med,cobra,100g" + ".txt"               # 99 / 100 won, after vtol optimisations
     
     commit1 = test_1.split(rf"v4/")[1].split(",")[0]
     commit2 = test_2.split(rf"v4/")[1].split(",")[0]
@@ -223,7 +224,7 @@ def show_hard_cobra_results():
     # test_1 = getcwd() + rf"\process_results/v3/" + "6f04840,hard" + ".txt"              # v3 dev: 4.6.2, 
     # test_1 = getcwd() + rf"\process_results/v3/" + "5c6703a,hard" + ".txt"              # v3 dev: 4.6.2, 
     # test_1 = getcwd() + rf"\process_results/v3/" + "68275e8,hard" + ".txt"              # v3 dev: 4.6.2, [40/50 wins] optimised oil cap, optimised cyborgs and research
-    # test_1 = getcwd() + rf"\process_results/v3/" + "29ceeb0,hard,463" + ".txt"              # v3 dev: 4.6.3, [63/86 wins] long term test
+    test_1 = getcwd() + rf"\process_results/v3/" + "29ceeb0,hard,463" + ".txt"              # v3 dev: 4.6.3, [63/86 wins] long term test
     # test_1 = getcwd() + rf"\process_results/v4/" + "ca33b28,hard,cobra,100g" + ".txt"              # v4 dev: 4.6.3, [55 / 100 wins] regression after perf-optimisation
     # test_1 = getcwd() + rf"\process_results/v4/" + "e18c4c4,hard,cobra,50g" + ".txt"              # v4 dev: 4.6.3, [40 / 50 wins] after simultaneous-VTOL & CAS improvements; regression fixed
     # test_1 = getcwd() + rf"\process_results/v4/" + "83ebcd1,hard,cobra,50g" + ".txt"              # v4 dev: 4.6.3, [34 / 50 wins] after first intel optimisation
@@ -232,13 +233,14 @@ def show_hard_cobra_results():
     # test_1 = getcwd() + rf"\process_results/v4/" + "fbf5655,hard,cobra,50g" + ".txt"              # v4 dev: 4.6.3, [35 / 50 wins] reduced COP integration from 1Hz to 1/2Hz
     # test_1 = getcwd() + rf"\process_results/v4/" + "e0f8c66,hard,cobra,100g" + ".txt"              # v4 dev: 4.6.3, [57 / 99 = 56% wr]; thinking about releasing v3.1.0 with performance improvements
     # test_1 = getcwd() + rf"\process_results/v4/" + "29bb952,hard,cobra,100g" + ".txt"              # v4 dev: 4.6.3, [64 / 100 = 64% wr]; small AI behaviour improvements
-    test_1 = getcwd() + rf"\process_results/v4/" + "4fb16f4,hard,cobra,100g" + ".txt"              # v4 dev: 4.6.3, [53 / 100 = 53% wr]; partial migration to new grid system
+    # test_1 = getcwd() + rf"\process_results/v4/" + "4fb16f4,hard,cobra,100g" + ".txt"              # v4 dev: 4.6.3, [53 / 100 = 53% wr]; partial migration to new grid system
     # test_2 = getcwd() + rf"\process_results/v4/" + "91da685,hard,cobra" + ".txt"              # v4 dev: 4.6.3 [36% wr]
     # test_2 = getcwd() + rf"\process_results/v4/" + "33200f9,hard,cobra,100g" + ".txt"              # v4 dev: 4.6.3 [19% wr]
     # test_2 = getcwd() + rf"\process_results/v4/" + "ce09727,hard,cobra,50g" + ".txt"              # v4 dev: 4.6.3 [52 % wr]
-    test_2 = getcwd() + rf"\process_results/v4/" + "6730392,hard,cobra,100g" + ".txt"              # v4 dev: 4.6.3 [65 % wr]
+    # test_2 = getcwd() + rf"\process_results/v4/" + "6730392,hard,cobra,100g" + ".txt"              # v4 dev: 4.6.3 [65 % wr]
+    test_2 = getcwd() + rf"\process_results/v4/" + "a686079,hard,cobra,100g" + ".txt"              # v4 dev: 4.6.3 [65 % wr, same as before]
 
-    commit1 = test_1.split(rf"v4/")[1].split(",")[0]
+    commit1 = test_1.split(rf"v3/")[1].split(",")[0]
     commit2 = test_2.split(rf"v4/")[1].split(",")[0]
 
     show_stats(*get_stats(test_1), title=f"{commit1} (before)", figNum=2)                             
