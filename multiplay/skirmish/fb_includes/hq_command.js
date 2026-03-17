@@ -366,7 +366,7 @@ class CommandCenter {
 		return output;
 	}
 
-	#processAdaHeatmap(state){ 
+	#extractAdaThreatMap(state, threshold){ 
 		const heatmap = state.heatmaps.adaThreat;
 		const numXCells = state.grid.numXCells;
 		const numYCells = state.grid.numYCells;	
@@ -383,7 +383,7 @@ class CommandCenter {
 			for (let gx=0; gx<numXCells; gx++) {
 
 				// The following line determines the 'pain threshold' of the air force (0 = will be super safe)
-				if (heatmap[gx][gy] > 0) {
+				if (heatmap[gx][gy] > threshold) {
 					adaCells.push(gridCoord(gx, gy));
 				}
 				if (PRINT_HEATMAP) row += `${heatmap[gx][gy]} `;
@@ -398,7 +398,8 @@ class CommandCenter {
 		const cellSize = state.grid.cellSize;
 		const IS_OIL_DOMINANT = state.oilDominance;
 		const NUM_AIRCRAFT = state.playerInfo[me].numAirUnits;		// TODO: formalise if this is an expected access pattern
-		const AIR_UNIT_DOMINANCE = NUM_AIRCRAFT >= 20;
+		const AIR_UNIT_DOMINANCE = NUM_AIRCRAFT >= 10;
+		const AIR_UNIT_SHORTAGE = NUM_AIRCRAFT <= 6;
 
 		let targetCandidates = [];
 
@@ -406,16 +407,21 @@ class CommandCenter {
 			airRaidTargets = [];
 		}
 
-		// sectors from heatmap
-		const VTOLS_AVOID_LOCATION = this.#processAdaHeatmap(state);
-
-		// TEMPORARY -> Will be replaced by intelligent merge sort based on weighted priority
+		// TEMPORARY IMPLEMENTATION
 		const prioritiseCasTargets = (nearbyTargetCount >= 2 && !IS_OIL_DOMINANT) || (IS_OIL_DOMINANT && casTargets.length >= 4);
 		const prioritiseRaidTargets = !IS_OIL_DOMINANT;
 		const prioritiseIndustrialTargets = IS_OIL_DOMINANT;
+		const CLOSING_ANTI_AIR_MISSIONS = prioritiseIndustrialTargets && AIR_UNIT_DOMINANCE;
 
+		// Set no-fly regions
+		let threatThreshold = 0;
+		if (AIR_UNIT_DOMINANCE) {
+			threatThreshold = 1;
+		}
+		const NO_FLY_ZONES = this.#extractAdaThreatMap(state, threatThreshold);		
+
+		// Set priority of new missions (needs rework, don't know all the edge cases)
 		let highestNewTargetPriority = MISSION_PRIORITY.LOW;
-
 		casTargets.forEach(t => {
 			if (prioritiseCasTargets && casTargets.length > 0) {
 				highestNewTargetPriority = MISSION_PRIORITY.URGENT;
@@ -447,23 +453,16 @@ class CommandCenter {
 			t.missionType = MISSION_TYPE.DAS_STRIKE;
 		});
 
-		const MIN_ADA_TARGETS = 2;
-		const AIR_SUPERIORITY = adaTargets.length < MIN_ADA_TARGETS;
-
 		if (prioritiseCasTargets) {
 			targetCandidates = [...casTargets, ...airRaidTargets];
 		} else if (prioritiseRaidTargets) {
 			targetCandidates = [...airRaidTargets, ...casTargets];
 		} else {
 			// assuming industrial targets are prioritised
-			if (AIR_SUPERIORITY) {
-				targetCandidates = [...industrialTargets, ...casTargets,  ...airRaidTargets, ...adaTargets];
+			if (CLOSING_ANTI_AIR_MISSIONS) {
+				targetCandidates = [...adaTargets, ...industrialTargets, ...casTargets, ...airRaidTargets];
 			} else {
-				if (!AIR_UNIT_DOMINANCE) {
-					targetCandidates = [...casTargets, ...airRaidTargets];
-				} else {
-					targetCandidates = [...adaTargets, ...industrialTargets];
-				}
+				targetCandidates = [...industrialTargets, ...casTargets, ...airRaidTargets, ...adaTargets];			
 			}
 		}
 
@@ -497,15 +496,16 @@ class CommandCenter {
 					c.missionStatus = MISSION_STATUS.ABORT;					
 					continue;
 				}
+			}
 
-				// Depending on state, removes dangerous missions
+			if (!CLOSING_ANTI_AIR_MISSIONS) {
 				const gx = Math.floor(currObj.x / cellSize), gy = Math.floor(currObj.y / cellSize);
 				let skipIfDangerous = false;
 
-				for (let j=0; j<VTOLS_AVOID_LOCATION.length; j++) {
-					if (gx === VTOLS_AVOID_LOCATION[j].gx && gy === VTOLS_AVOID_LOCATION[j].gy) {
+				for (let j=0; j<NO_FLY_ZONES.length; j++) {
+					if (gx === NO_FLY_ZONES[j].gx && gy === NO_FLY_ZONES[j].gy) {
 						skipIfDangerous = true;
-						debug(`	removed active ${currObj.name} @ grid (${currObj.x} ${currObj.y})`);
+						// debug(`	removed active ${currObj.name} (${c.missionType}) @ grid (${currObj.x} ${currObj.y})`);
 						break;
 					}
 				}
@@ -516,9 +516,6 @@ class CommandCenter {
 				}
 			}
 		}
-
-		const CLOSING_OUT = prioritiseIndustrialTargets && AIR_SUPERIORITY;
-		const ANTI_AIR_MISSIONS = prioritiseIndustrialTargets && (!AIR_SUPERIORITY && AIR_UNIT_DOMINANCE);
 		
 		// Remove already active missions (inefficient, loops through the list again)
 		// Also handles stale inputs, to be integrated with another part of the code later
@@ -531,12 +528,12 @@ class CommandCenter {
 			}
 
 			// Depending on state, removes dangerous missions
-			if (!CLOSING_OUT && !ANTI_AIR_MISSIONS) {
+			if (!CLOSING_ANTI_AIR_MISSIONS) {
 				const gx = Math.floor(c.x / cellSize), gy = Math.floor(c.y / cellSize);
 				let skipIfDangerous = false;
 
-				for (let j=0; j<VTOLS_AVOID_LOCATION.length; j++) {
-					if (gx === VTOLS_AVOID_LOCATION[j].gx && gy === VTOLS_AVOID_LOCATION[j].gy) {
+				for (let j=0; j<NO_FLY_ZONES.length; j++) {
+					if (gx === NO_FLY_ZONES[j].gx && gy === NO_FLY_ZONES[j].gy) {
 						skipIfDangerous = true;
 						// debug(`	removed ${c.name} @ grid (${gx} ${gy})`);
 						break;
@@ -557,12 +554,31 @@ class CommandCenter {
 			}
 		}
 
-		if (CLOSING_OUT && !AIR_UNIT_DOMINANCE) {
-			return unsortedTargets;
+		let prioritisedTargets = {
+			'aviationTargets': undefined,
+			'minAircraft': 0
+		};
+
+		if (prioritiseIndustrialTargets) {		
+			if (CLOSING_ANTI_AIR_MISSIONS) {
+				// want simultaneous strikes on target
+				prioritisedTargets['aviationTargets'] = [...newAviationTargets, ...existingAviationTargets];	
+				prioritisedTargets['minAircraft'] = 3;			
+			} else {
+				// regular industrial strikes; priority is sequential destruction
+				prioritisedTargets['aviationTargets'] = unsortedTargets;
+				prioritisedTargets['minAircraft'] = 2;
+			}
 		} else {
-			return [...newAviationTargets, ...existingAviationTargets];
+			prioritisedTargets['aviationTargets'] = [...newAviationTargets, ...existingAviationTargets];
+			if (AIR_UNIT_SHORTAGE) {
+				prioritisedTargets['minAircraft'] = 1;
+			} else {
+				prioritisedTargets['minAircraft'] = 2;
+			}
 		}
 
+		return prioritisedTargets;
 	}
 
 	runCombatOperations(state) {
@@ -598,7 +614,7 @@ class CommandCenter {
 			numTargetsInImmediateRadius = groundTargets["targetsInImmediateRadius"];
 		}
 
-		const aviationTargets = this.prioritiseAviationTargets(state, 
+		const t = this.prioritiseAviationTargets(state, 
 			forceLocation, 
 			numTargetsInImmediateRadius, 
 			raidTargets, 
@@ -607,8 +623,7 @@ class CommandCenter {
 			adaTargets,
 		);
 
-		// debug(`avTarg ${aviationTargets.length} = cas ${casTargets.length} + raid ${airRaidTargets.length}, ${numTargetsInImmediateRadius}`);
-		this.toc.assignAviationMissions(state, aviationTargets);					
+		this.toc.assignAviationMissions(state, t['aviationTargets'], t['minAircraft']);					
 	}
 
 	/////////////////////////////////////////////////// INTELLIGENCE ///////////////////////////////////////////////////

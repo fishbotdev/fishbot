@@ -117,21 +117,16 @@ class TacticalOperationsCenter {
 		state.activeMissions = currActiveMissions;
 	}
 
-	assignAviationMissions(state, newAviationTargets) {
+	assignAviationMissions(state, aviationTargets, minAircraft) {
 
-		for (let i=0; i<newAviationTargets.length; i++) {
-			// Determine mission type based on target properties
-
-			// Meaningful parameters are stored in aviationTargets[i]; this function shouldn't make decisions
-			// It is the responsibility of higher command to determine what missions are worth devoting more resources to i.e. the priority beforehand
-
-			const newMissionRequest = newAviationTargets[i];
+		for (let i=0; i<aviationTargets.length; i++) {
+			// Note: This function shouldn't make decisions
+			// It is the responsibility of higher command to determine which missions are worth doing
+			
+			const newMissionRequest = aviationTargets[i];
+			const NUM_UNITS = minAircraft;
 
 			const missionType = newMissionRequest.missionType;
-			let NUM_UNITS = 2;
-			if (missionType === MISSION_TYPE.AIR_RAID) {
-				NUM_UNITS = 1;
-			}		
 			const priority = newMissionRequest.priority;
 
 			const missionData = this.createNewMission({missionType: missionType, priority: priority}, newMissionRequest, NUM_UNITS, i);
