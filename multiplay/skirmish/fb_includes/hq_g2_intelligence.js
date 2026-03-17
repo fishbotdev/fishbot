@@ -150,8 +150,11 @@ class armyIntelligence {
 			return flags;
 		}
 
-
 		if (obj.type === STRUCTURE) {
+			if (obj.status === BUILT) {
+				flags |= OBJ_FLAGS.IS_BUILT;
+			}
+
 			if (obj.stattype === DEFENSE) {
 				flags |= OBJ_FLAGS.DEFENSIVE_STRUCTURE;
 				return flags;
@@ -203,10 +206,25 @@ class armyIntelligence {
 	2. Classifies all droids & structures, populating a new `playerInfo` and a new `grid` 
 	 */
 	getAllObjects(state) {
-		const numXCells = state.grid.numXCells;
+		const numXCells = state.grid.numXCells;		// cellSize is used for computing grid coords
 		const numYCells = state.grid.numYCells;
 		const cellSize = state.grid.cellSize;
-		const createExpandedFbGridCell = () => state.grid.createNewFbGridCell(true); 
+		const createExpandedFbGridCell = () => {
+			let cell = state.grid.createNewFbGridCell();
+			// Add custom parameters
+			cell['adaCount'] = 0;				// for adaThreat      
+			cell['fixedDefenceCount'] = 0; 		// for enemyStaticDefences
+			cell['claimedDerricks'] = [];		// for updating of derrick information
+			return cell;
+		};
+
+		// Reduced version of the version in worldStateBuilder
+		const createNewClaimedDerrick = (x, y, playerID) => {       
+			return {
+				'id': `DERRICK_${x}_${y}`,				
+				'playerID': playerID,
+			}
+		};
 		const createPlayerInfoEntry = (...args) => state.createPlayerInfoEntry(...args);
 
 		let grid = create2DGrid(numXCells, numYCells, createExpandedFbGridCell);
@@ -229,7 +247,9 @@ class armyIntelligence {
 
 			for (let j=0; j<currPlayerEntry['droids'].length; j++) {
 				const obj = currPlayerEntry['droids'][j];
+
 				const flags = this.#classifyObject(obj);
+				const gx = Math.floor(obj.x / cellSize), gy = Math.floor(obj.y / cellSize);		
 
 				// Update player information
 				p['numTotalUnits']++;
@@ -258,15 +278,15 @@ class armyIntelligence {
 				}
 				
 				// Update target list
-				const gx = Math.floor(obj.x / cellSize), gy = Math.floor(obj.y / cellSize);		// cellSize is used for computing grid coords
 				const newObj = this.#createNewTarget(obj, flags, gx, gy);
-
 				if (IS_TARGET) {
+					result.allTargets.push(newObj);		
 					grid[gx][gy]['targetUnits'].push(newObj);
+
+					// Further classification (TODO: consider splitting into separate function)
 					if (flags & OBJ_FLAGS.ADA) {
 						grid[gx][gy]['adaCount']++;
 					}
-					result.allTargets.push(newObj);		
 				} else {
 					grid[gx][gy]['friendlyUnits'].push(newObj);
 				}
@@ -275,13 +295,16 @@ class armyIntelligence {
 			// Collate structure information
 			for (let j=0; j<currPlayerEntry['structs'].length; j++) {
 				const obj = currPlayerEntry['structs'][j];
+				
 				const flags = this.#classifyObject(obj);
+				const gx = Math.floor(obj.x / cellSize), gy = Math.floor(obj.y / cellSize);		
 
 				// Update player information
 				p['numStructs'] += 1;
 
 				if (flags & OBJ_FLAGS.RESOURCE_EXTRACTOR) {
 					p['numDerricks']++;
+					grid[gx][gy]['claimedDerricks'].push(createNewClaimedDerrick(obj.x, obj.y, obj.player));	
 				}
 
 				if (flags & OBJ_FLAGS.PRODUCTION) {
@@ -289,16 +312,22 @@ class armyIntelligence {
 				}
 
 				// Update target list
-				const gx = Math.floor(obj.x / cellSize), gy = Math.floor(obj.y / cellSize);		// cellSize is used for computing grid coords
 				const newObj = this.#createNewTarget(obj, flags, gx, gy);
 
-				// Update target list
 				if (IS_TARGET) {
+					result.allTargets.push(newObj);		
 					grid[gx][gy]['targetStructures'].push(newObj);
+					
+					// ADA defences
 					if (flags & OBJ_FLAGS.ADA) {
 						grid[gx][gy]['adaCount']++;
 					}
-					result.allTargets.push(newObj);		
+
+					// Ground defences
+					const BUILT_DEFENCE = OBJ_FLAGS.DEFENSIVE_STRUCTURE | OBJ_FLAGS.IS_BUILT;
+					if ((flags & BUILT_DEFENCE) === BUILT_DEFENCE && !(flags & OBJ_FLAGS.ADA)) {
+						grid[gx][gy]['fixedDefenceCount']++;
+					}
 				} else {
 					grid[gx][gy]['friendlyStructures'].push(newObj);
 				}

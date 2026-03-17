@@ -553,6 +553,20 @@ class TacticalOperationsCenter {
 		state.highRiskSectors = adjSectors;
 	}
 
+	#debugPrintSpatialField(heatmap, name) {
+		const numXCells = state.grid.numXCells;
+		const numYCells = state.grid.numYCells;
+
+		debug(`\nupdateSpatialFields(): ${name} @ ${gameTime}`);
+		for (let gy=0; gy<numYCells; gy++) {
+			let row = "";
+
+			for (let gx=0; gx<numXCells; gx++) {					
+				row += `${heatmap[gx][gy]} `;
+			}
+			debug(row);
+		}
+	}
 
 	updateSpatialFields(state, newGrid) {
 		const numXCells = state.grid.numXCells;
@@ -561,23 +575,15 @@ class TacticalOperationsCenter {
 
 		for (let gx=0; gx<numXCells; gx++) {
 			for (let gy=0; gy<numYCells; gy++) {
-				state.heatmaps.adaThreat[gx][gy] = grid[gx][gy]['adaCount'];
+				state.heatmaps['adaThreat'][gx][gy] = grid[gx][gy]['adaCount'];
+				state.heatmaps['enemyStaticDefenceThreat'][gx][gy] = grid[gx][gy]['fixedDefenceCount'];
+				state.heatmaps['enemyUnitThreat'][gx][gy] = grid[gx][gy]['targetUnits'].length;
 			}	
 		}	
 
-		if (false) {
-			const heatmap = state.heatmaps.adaThreat;
-
-			debug(`\nupdateSpatialFields(): ada heatmap @ ${gameTime}`);
-			for (let gy=0; gy<numYCells; gy++) {
-				let row = "";
-
-				for (let gx=0; gx<numXCells; gx++) {					
-					row += `${heatmap[gx][gy]} `;
-				}
-				debug(row);
-			}
-		}
+		if (false) this.#debugPrintSpatialField(state.heatmaps['adaThreat'], 'adaThreat');
+		if (false) this.#debugPrintSpatialField(state.heatmaps['enemyStaticDefenceThreat'], 'enemyStaticDefenceThreat');
+		if (false) this.#debugPrintSpatialField(state.heatmaps['enemyUnitThreat'], 'enemyUnitThreat');
 	}
 
 	/**
@@ -600,13 +606,60 @@ class TacticalOperationsCenter {
 		// TODO: see if spatial fields should also be updated here for performance reasons
 		const CATEGORIES = ['friendlyUnits', 'targetUnits', 'friendlyStructures', 'targetStructures'];
 		for (let gx=0; gx<numXCells; gx++) {
-			for (let gy=0; gy<numYCells; gy++) {		
+			for (let gy=0; gy<numYCells; gy++) {
+
 				CATEGORIES.forEach(category => {
 					state.grid.grid[gx][gy][category] = newGrid[gx][gy][category];
+				});
+
+				// Then update derrick information
+				const claimed = newGrid[gx][gy]['claimedDerricks'];
+				let derricksInCell = state.grid.grid[gx][gy]['derricks'];
+				derricksInCell.forEach(d => {
+					for (let i=0; i<claimed.length; i++) {
+						// if (true) debug(`derrick d${d.id}, claimed.length; ${claimed.length}`);
+						if (d.id !== claimed[i].id) {
+							continue;
+						}
+
+						d['isClaimed'] = true;
+						d['playerID'] = claimed[i]['playerID'];
+						return;
+					}
+					// Else unclaimed
+					d['isClaimed'] = false;
+					d['playerID'] = undefined;
+					return;			
 				});
 			}
 		}
 		
+		if (false) {
+			debug(`\nGrid-form derrickInfo @ ${gameTime}`);
+			for (let gy=0; gy<numYCells; gy++) {
+				let row = "\t";
+
+				for (let gx=0; gx<numXCells; gx++) {
+					let count = 0;
+
+					const derricksInCell = state.grid.grid[gx][gy]['derricks'];
+					derricksInCell.forEach(d => {
+						if (d.isClaimed) {
+							count++;
+						}
+					});
+					row += `${count} `;
+				}
+				debug(row);
+			}
+		}
+
+		if (false) {
+			// Test if grid['derricks'] & state.poi.derricks point to the same location in memory (yes)
+			debug(`List form - derrickInfo @ ${gameTime}`);
+			state.poi.derricks.forEach(d => debug(`	${d.id}\t\t${d.isClaimed ? `claimed by ${d.playerID}`: 'unclaimed'}`));
+		}
+
 		if (false) {
 			debug(`\n${gameTime} allTargets`);
 			state.allTargets.forEach(t => {

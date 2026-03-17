@@ -119,6 +119,7 @@ const OBJ_FLAGS = {
     PRODUCTION:   				1 << 8,
     RESOURCE_EXTRACTOR:       	1 << 9,
     DEFENSIVE_STRUCTURE:      	1 << 10,
+	IS_BUILT:					1 << 11,
 };
 Object.freeze(OBJ_FLAGS);
 

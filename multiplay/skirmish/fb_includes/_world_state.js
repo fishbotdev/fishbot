@@ -51,36 +51,19 @@ class fbGrid {
         this.cellSize = 10;     // in game tiles
         this.numXCells = Math.ceil(mapWidth / this.cellSize);
         this.numYCells = Math.ceil(mapHeight / this.cellSize);
-        const createStandardFbGridCell = () => this.createNewFbGridCell(false);
-        this.grid = create2DGrid(this.numXCells, this.numYCells, createStandardFbGridCell);        
+        this.grid = create2DGrid(this.numXCells, this.numYCells, this.createNewFbGridCell);        
     }
 
-    createNewFbGridCell(expanded=false) {
-        if (!expanded) {
-            return {
-                'targetUnits': [],
-                'targetStructures': [],
+    createNewFbGridCell() {
+        return {
+            'targetUnits': [],
+            'targetStructures': [],
 
-                'friendlyUnits': [],
-                'friendlyStructures': [],
+            'friendlyUnits': [],
+            'friendlyStructures': [],
 
-                'derricks': [],
-                'bases': []
-            }
-        } else {
-            // Expanded set of parameters; used only during intelligence gathering
-            return {
-                'targetUnits': [],
-                'targetStructures': [],
-
-                'friendlyUnits': [],
-                'friendlyStructures': [],
-
-                'derricks': [],
-                'bases': [],
-
-                'adaCount': 0,
-            }
+            'derricks': [],
+            'bases': []
         }
     }
 
@@ -298,6 +281,8 @@ class worldState {
         const createEmptyGrid = () => {return create2DGrid(this.grid.numXCells, this.grid.numYCells, emptyCell);};
         this.heatmaps = {
             'adaThreat': createEmptyGrid(),
+            'enemyStaticDefenceThreat': createEmptyGrid(),
+            'enemyUnitThreat': createEmptyGrid(),
         };
 
         // Combat targeting
@@ -523,9 +508,6 @@ class worldStateBuilder {
         // Helper: derrickTemplate factory (new implementation to support new sector system)
         return {
             'id': `DERRICK_${x}_${y}`,
-            'featureType': FEATURE_TYPE.DERRICK, 
-
-            // Coordinates & grid coordinates
             'x': x,
             'y': y,
             'gx': gx,
@@ -533,12 +515,6 @@ class worldStateBuilder {
             
             'isClaimed': false,
             'playerID': undefined,
-
-            'friendlyDefenceCount': undefined,
-            'enemyDefenceCount': undefined,
-            'owner': undefined,
-            'controlStability': undefined, 
-            'threatLevel': undefined,		
         }
     }
 
@@ -568,9 +544,7 @@ class worldStateBuilder {
     #createNewBase(playerID, x, y, gx, gy) {
         // Helper: baseTemplate factory (new implementation to support new sector system)
         let baseTemplate = {
-            'id': `BASE_${playerID}_${x}_${y}`,     // this was changed to add playerID
-            'featureType': FEATURE_TYPE.BASE,
-
+            'id': `BASE_${playerID}_${x}_${y}`,    
             'x': x,
             'y': y,
             'gx': gx,
