@@ -568,6 +568,47 @@ class TacticalOperationsCenter {
 		}
 	}
 
+	#filterHeatMap(state, heatmap) {
+		const numXCells = state.grid.numXCells;
+		const numYCells = state.grid.numYCells;
+		const emptyCell = () => {return 0;};
+		let filteredGrid = create2DGrid(numXCells, numYCells, emptyCell);
+
+		const KERNEL = [
+			[0.25, 0.5, 0.25],
+			[0.5,  1.0, 0.5 ],
+			[0.25, 0.5, 0.25]
+		];
+
+		const XDEV = 1;
+		const YDEV = 1;
+
+		for (let gx=0; gx<numXCells; gx++) {
+			for (let gy=0; gy<numYCells; gy++) {
+				if (heatmap[gx][gy] === 0) {
+					continue;
+				}
+
+				for (let dx=-XDEV; dx <= XDEV; dx++) {
+					if (gx + dx < 0 || gx + dx >= numXCells) {
+						continue;
+					}
+
+					for (let dy=-YDEV; dy <= YDEV; dy++) {
+						if (gy + dy < 0 || gy + dy >= numYCells) {
+							continue;
+						}
+						// Influence is rounded to the nearest integer to make easier.
+						const influence = Math.round(heatmap[gx][gy] * KERNEL[dy + YDEV][dx + XDEV]);		
+						filteredGrid[gx+dx][gy+dy] = Math.max(influence, heatmap[gx+dx][gy+dy]);
+					}
+				}
+			}
+		}
+
+		return filteredGrid;
+	}
+
 	updateSpatialFields(state, newGrid) {
 		const numXCells = state.grid.numXCells;
 		const numYCells = state.grid.numYCells;
@@ -581,7 +622,9 @@ class TacticalOperationsCenter {
 			}	
 		}	
 
-		if (false) this.#debugPrintSpatialField(state.heatmaps['adaThreat'], 'adaThreat');
+		if (false) this.#debugPrintSpatialField(state.heatmaps['adaThreat'], 'adaThreat - BEFORE FILTER');		
+		state.heatmaps['adaThreat'] = this.#filterHeatMap(state, state.heatmaps['adaThreat']);
+		if (false) this.#debugPrintSpatialField(state.heatmaps['adaThreat'], 'adaThreat - AFTER FILTER');
 		if (false) this.#debugPrintSpatialField(state.heatmaps['enemyStaticDefenceThreat'], 'enemyStaticDefenceThreat');
 		if (false) this.#debugPrintSpatialField(state.heatmaps['enemyUnitThreat'], 'enemyUnitThreat');
 	}

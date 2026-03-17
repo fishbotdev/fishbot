@@ -381,7 +381,9 @@ class CommandCenter {
 		for (let gy=0; gy<numYCells; gy++) {
 			let row = "";
 			for (let gx=0; gx<numXCells; gx++) {
-				if (heatmap[gx][gy] > 1) {
+
+				// The following line determines the 'pain threshold' of the air force (0 = will be super safe)
+				if (heatmap[gx][gy] > 0) {
 					adaCells.push(gridCoord(gx, gy));
 				}
 				if (PRINT_HEATMAP) row += `${heatmap[gx][gy]} `;
@@ -395,6 +397,8 @@ class CommandCenter {
 	prioritiseAviationTargets(state, groupPosition, nearbyTargetCount, airRaidTargets, casTargets, industrialTargets, adaTargets) {
 		const cellSize = state.grid.cellSize;
 		const IS_OIL_DOMINANT = state.oilDominance;
+		const NUM_AIRCRAFT = state.playerInfo[me].numAirUnits;		// TODO: formalise if this is an expected access pattern
+		const AIR_UNIT_DOMINANCE = NUM_AIRCRAFT >= 20;
 
 		let targetCandidates = [];
 
@@ -455,7 +459,11 @@ class CommandCenter {
 			if (AIR_SUPERIORITY) {
 				targetCandidates = [...industrialTargets, ...casTargets,  ...airRaidTargets, ...adaTargets];
 			} else {
-				targetCandidates = [...casTargets, ...airRaidTargets];
+				if (!AIR_UNIT_DOMINANCE) {
+					targetCandidates = [...casTargets, ...airRaidTargets];
+				} else {
+					targetCandidates = [...adaTargets, ...industrialTargets];
+				}
 			}
 		}
 
@@ -506,11 +514,11 @@ class CommandCenter {
 					c.missionStatus = MISSION_STATUS.ABORT;		
 					continue;
 				}
-				
 			}
 		}
 
 		const CLOSING_OUT = prioritiseIndustrialTargets && AIR_SUPERIORITY;
+		const ANTI_AIR_MISSIONS = prioritiseIndustrialTargets && (!AIR_SUPERIORITY && AIR_UNIT_DOMINANCE);
 		
 		// Remove already active missions (inefficient, loops through the list again)
 		// Also handles stale inputs, to be integrated with another part of the code later
@@ -523,7 +531,7 @@ class CommandCenter {
 			}
 
 			// Depending on state, removes dangerous missions
-			if (!CLOSING_OUT) {
+			if (!CLOSING_OUT && !ANTI_AIR_MISSIONS) {
 				const gx = Math.floor(c.x / cellSize), gy = Math.floor(c.y / cellSize);
 				let skipIfDangerous = false;
 
@@ -549,7 +557,7 @@ class CommandCenter {
 			}
 		}
 
-		if (CLOSING_OUT) {
+		if (CLOSING_OUT && !AIR_UNIT_DOMINANCE) {
 			return unsortedTargets;
 		} else {
 			return [...newAviationTargets, ...existingAviationTargets];
