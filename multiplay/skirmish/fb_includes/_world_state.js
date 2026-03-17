@@ -575,6 +575,14 @@ class worldStateBuilder {
         return b;
     }
 
+    #initialisePlayerInfo(state) {
+        let p = [];
+        const playerIdList = generateRange(maxPlayers);       // will create 0-indexed playerIDs from 0, 1, 2, ..., maxPlayers - 1
+        playerIdList.forEach(playerID => p.push(state.createPlayerInfoEntry(playerID)));
+        
+        return p;
+    }
+
     initialise(state) {
         // Application service: Initialises 'worldState' to defaults
         state.g = this.#createFbGroupingSystem();
@@ -585,5 +593,7 @@ class worldStateBuilder {
         // new sector system
         state.poi.derricks = this.#initialiseDerrickLocs(state);    // this function also modifies each grid cell
         state.poi.bases = this.#initialiseBaseLocs(state);          // this function also modifies each grid cell
+
+        state.playerInfo = this.#initialisePlayerInfo(state);
     }
 }
