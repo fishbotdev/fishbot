@@ -451,7 +451,7 @@ class TacticalOperationsCenter {
 		}
 
 		// 		Part 6: Set threat level of all sectors + derricks next to living enemy bases
-		const livingPlayers = enumLivingPlayers();
+		const livingPlayers = state.enumLivingPlayers();
 
 		for (let i=0; i<state.sectors.length; i++) {
 			let currSector = state.sectors[i];
@@ -528,7 +528,7 @@ class TacticalOperationsCenter {
 	}
 
 	updateHighRiskSectors(state) {
-		const alivePlayers = enumLivingPlayers();
+		const alivePlayers = state.enumLivingPlayers();
 
 		let enemyBaseSectors = [];
 		state.sectors.forEach(sector => {

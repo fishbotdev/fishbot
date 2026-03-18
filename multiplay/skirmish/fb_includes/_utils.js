@@ -33,7 +33,7 @@ function arrayMedian(arr) {
 }
 
 /**
- * Get Euclidean distance between two points. Acceptable uses include:
+ * Get Euclidean distance between two points (copied from NullBot). Acceptable uses include:
 	- distance(obj, obj)
 	- distance(x,y, obj)
 	- distance(obj,x,y)
@@ -92,6 +92,11 @@ function toBinary20(n) {
 	return n.toString(2).padStart(20, '0');
 }
 
+/**
+ * Returns `true` if `variable` is either `null` or `undefined`, otherwise, returns `false`.
+ * @param {any} variable 
+ * @returns {boolean} 
+ */
 function defined(variable) { 
 	if (typeof variable !== "undefined") {
 		if (variable !== null) {
@@ -142,7 +147,8 @@ function generateRange(stopNum) {
 }
 
 /*
-	structure enumeration helpers
+	WZ2100 helper functions (uses the WZ2100 Game Engine API).
+	Try to reduce the number of functions in this section.
 */
 
 function getIdleStructuresOfType({structureID, playerID=me}) {
@@ -163,8 +169,8 @@ function isAntiAirDefense(obj) {
 	return false;					
 }
 
-// GAME STATE
 function getCurrGameTime() {
+	// This function exists in the case I want to change the time units
 	const currGameTime = gameTime;
 	return currGameTime;
 }
@@ -183,61 +189,25 @@ function isEnemy(playerID) {
 	return !allianceExistsBetween(me, playerID);
 }
 
-function enumLivingPlayers() {
+function gameHasEnded(state) {
 
-	let FACTORY_ID = [STRUCTURES["Factory"].id, STRUCTURES["Cyborg Factory"].id, STRUCTURES["VTOL Factory"].id];
+	const playerIDs = state.enumLivingPlayers();
 
-	let livingPlayerIDs = [];
+	let foundEnemy = false, foundMyself = false;
 
-	for (let playerID=0; playerID<maxPlayers; playerID++) {
-
-		let factoryExists = false;
-		FACTORY_ID.forEach(factoryID => {
-			if (countStruct(factoryID, playerID) > 0) {
-				factoryExists = true;
-				return;
-			}
-		});
-
-		if (factoryExists) {
-			livingPlayerIDs.push(playerID);
-			continue;
+	playerIDs.forEach(pid => {
+		if (isEnemy(pid) && !foundEnemy) {
+			foundEnemy = true;
+		} else if (pid === me) {
+			foundMyself = true;
 		}
+	});
 
-		if (countDroid(DROID_ANY, playerID) > 0) {
-			livingPlayerIDs.push(playerID);
-			continue;
-		}
-	}
-
-	if (false) {
-		debug(`livingPlayerIDs:`);
-		livingPlayerIDs.forEach(p => debug(`	${p}`));
-	}
-
-	return livingPlayerIDs;
-}
-
-function gameHasEnded() {
-	const myDroids = enumDroid();
-
-	if (myDroids.length === 0) {
-		const myStructures = enumStruct();
-		if (myStructures.length === 0) {
-			return true;
-		}
-
-		const FACTORY_TYPES = [FACTORY, VTOL_FACTORY, CYBORG_FACTORY];
-		if (myStructures.filter(s => FACTORY_TYPES.includes(s.stattype)).length === 0) {
-			return true;
-		}
-	}
-
-	if (enumLivingPlayers().filter(isEnemy).length === 0) {
+	if (!foundEnemy || !foundMyself) {
 		return true;
+	} else {
+		return false;
 	}
-	
-	return false;
 }
 
 /**
