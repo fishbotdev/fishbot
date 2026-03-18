@@ -263,29 +263,30 @@ class worldState {
     // State: this class stores the game state from FishBot's perspective.
     // All functions in FishBot use this class as the current ground truth.
     constructor() {
-
-        // Sector system (original)
+        // Sector system (v3)
         this.sectors = [];
         this.highRiskSectors = [];
 
-        // Sector system (new)
-        this.allTargets = [];
+        // Grid system (new)
         this.grid = new fbGrid();
-        this.playerInfo = [];
         this.poi = {
             'derricks': [], 
             'bases': []
         };
-
         const emptyCell = () => {return 0;};
         const createEmptyGrid = () => {return create2DGrid(this.grid.numXCells, this.grid.numYCells, emptyCell);};
-        this.heatmaps = {
+        this.fields = {
             'adaThreat': createEmptyGrid(),
             'enemyStaticDefenceThreat': createEmptyGrid(),
             'enemyUnitThreat': createEmptyGrid(),
+            'distanceFromMyBase': createEmptyGrid(),
         };
 
+        // Player statistics
+        this.playerInfo = [];
+
         // Combat targeting
+        this.allTargets = [];
         this.forceLocation = undefined;
         this.nearbyGroundTargets = undefined;
         this.aviationTargets = {
@@ -538,6 +539,10 @@ class worldStateBuilder {
             d.push(derrick);
             state.grid.grid[gx][gy].derricks.push(derrick);
         }
+
+        // Order d in order of increasing order from base 
+        d.sort((a,b) => distSq(a.x, baseLocation.x, a.y, baseLocation.y) - distSq(b.x, baseLocation.x, b.y, baseLocation.y));
+
         return d;
     }
 

@@ -367,7 +367,7 @@ class CommandCenter {
 	}
 
 	#extractAdaThreatMap(state, threshold){ 
-		const heatmap = state.heatmaps.adaThreat;
+		const heatmap = state.fields.adaThreat;
 		const numXCells = state.grid.numXCells;
 		const numYCells = state.grid.numYCells;	
 

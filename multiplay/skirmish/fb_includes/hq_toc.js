@@ -563,7 +563,7 @@ class TacticalOperationsCenter {
 		}
 	}
 
-	#filterHeatMap(state, heatmap) {
+	#filterField(state, heatmap) {
 		const numXCells = state.grid.numXCells;
 		const numYCells = state.grid.numYCells;
 		const emptyCell = () => {return 0;};
@@ -611,17 +611,17 @@ class TacticalOperationsCenter {
 
 		for (let gx=0; gx<numXCells; gx++) {
 			for (let gy=0; gy<numYCells; gy++) {
-				state.heatmaps['adaThreat'][gx][gy] = grid[gx][gy]['adaCount'];
-				state.heatmaps['enemyStaticDefenceThreat'][gx][gy] = grid[gx][gy]['fixedDefenceCount'];
-				state.heatmaps['enemyUnitThreat'][gx][gy] = grid[gx][gy]['targetUnits'].length;
+				state.fields['adaThreat'][gx][gy] = grid[gx][gy]['adaCount'];
+				state.fields['enemyStaticDefenceThreat'][gx][gy] = grid[gx][gy]['fixedDefenceCount'];
+				state.fields['enemyUnitThreat'][gx][gy] = grid[gx][gy]['targetUnits'].length;
 			}	
 		}	
 
-		if (false) this.#debugPrintSpatialField(state.heatmaps['adaThreat'], 'adaThreat - BEFORE FILTER');		
-		state.heatmaps['adaThreat'] = this.#filterHeatMap(state, state.heatmaps['adaThreat']);
-		if (false) this.#debugPrintSpatialField(state.heatmaps['adaThreat'], 'adaThreat - AFTER FILTER');
-		if (false) this.#debugPrintSpatialField(state.heatmaps['enemyStaticDefenceThreat'], 'enemyStaticDefenceThreat');
-		if (false) this.#debugPrintSpatialField(state.heatmaps['enemyUnitThreat'], 'enemyUnitThreat');
+		if (false) this.#debugPrintSpatialField(state.fields['adaThreat'], 'adaThreat - BEFORE FILTER');		
+		state.fields['adaThreat'] = this.#filterField(state, state.fields['adaThreat']);
+		if (false) this.#debugPrintSpatialField(state.fields['adaThreat'], 'adaThreat - AFTER FILTER');
+		if (false) this.#debugPrintSpatialField(state.fields['enemyStaticDefenceThreat'], 'enemyStaticDefenceThreat');
+		if (false) this.#debugPrintSpatialField(state.fields['enemyUnitThreat'], 'enemyUnitThreat');
 	}
 
 	/**
