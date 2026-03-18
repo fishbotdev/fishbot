@@ -655,7 +655,7 @@ class CommandCenter {
 				break;
 
 			case 'intel_checkOilDominance':
-
+				engineering.requestOilCapture2(state);		// temp
 				const isOilDominant = checkOilDominance(state, this.OIL_DOMINANCE_PERCENTAGE);
 				this.toc.setOilDominanceStatus(state, isOilDominant);
 				break;

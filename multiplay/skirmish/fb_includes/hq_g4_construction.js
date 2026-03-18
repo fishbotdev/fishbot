@@ -256,6 +256,105 @@ class armyEngineering {
 	/*
 		Oil capture
 	*/
+
+	/**
+	 * The function assumes that `state.poi.derricks` is arranged in ascending order of distance from base. 
+	 * @param {*} state 
+	 */
+	requestOilCapture2(state) {
+		const derricks = state.poi.derricks;
+		
+		const grid = state.grid.grid;
+		const numXCells = state.grid.numXCells;
+		const numYCells = state.grid.numYCells;
+		const cellSize = state.grid.cellSize;
+
+		let highPriority = [], medPriority = [], lowPriority = [];
+
+		// Algorithm: 
+		// 1. Breadth-first search in the grid from baseLocation
+		// 2. >= 4 derricks which are close to one another (multiple in one grid) - add to high priority
+		// 3. 1-2 derricks which are less than half the map size away = med priority
+		// 4. 1-2 derricks which are more than half the map size away = low priority
+
+		const bgx = Math.floor(baseLocation.x / cellSize);
+		const bgy = Math.floor(baseLocation.y / cellSize);
+
+		// BFS parameters
+		const MAX_ITERS = numXCells * numYCells + 1;
+		let queue = [[bgx, bgy]];		// y = rows, x = cols => [row, col]
+		let queuedUp = [[bgx, bgy]];
+		let result = [];
+
+		const checkInBounds = (gc, bound) => {return (gc >= 0 && gc < bound)};
+
+		const DEBUG_ON = false;
+
+		let iters = 0;		// failsafe
+
+		while (queue.length > 0 && iters < MAX_ITERS) {
+			if (DEBUG_ON) debug(`queue: ${queue}`);
+
+			// Dequeue the next cell
+			const next = queue.shift();
+
+			if (DEBUG_ON) debug(`dequeued next cell: ${queue}`);
+
+			// Push to result
+			const gx = next[0], gy = next[1];
+			result.push([gx, gy]);
+
+			if (DEBUG_ON) {
+				debug(`gx gy: ${gx} ${gy}`);
+				debug(`result: ${result}`);
+			} 
+
+			// For each of the 4 adjacent cells, check the coordinates in bounds
+			const up = [gx, gy + 1];
+			const down = [gx, gy - 1];
+			const left = [gx - 1, gy];
+			const right = [gx + 1, gy];
+
+			if (DEBUG_ON) debug(`up ${up} down  ${down} left ${left} right ${right}`); 
+
+			let valid = [];
+			[up, down, left, right].forEach(coord => {
+				if (checkInBounds(coord[0], numXCells) && checkInBounds(coord[1], numYCells)) {
+					valid.push(coord);
+				}
+			});
+
+			if (DEBUG_ON) valid.forEach(v => debug(`\tvalid: ${v}`)); 
+
+			// Add unvisited values to the queue
+			valid.forEach(v => {
+				// Check if it has been visited before
+				for (let i=queuedUp.length - 1; i>= 0; i--) {
+					if (v[0] === queuedUp[i][0] && v[1] === queuedUp[i][1]) {
+						return;		// get out of this loop, onto the next valid value
+					}
+				}
+				// Add unvisited cell to the queue
+				queue.push(v);
+				// Remember newly queued values
+				queuedUp.push(v);
+			});			
+
+			if (DEBUG_ON) {
+				queuedUp.forEach(v => debug(`new queued: ${v}`)); 
+				queue.forEach(q => debug(`\tnew queue: ${q}`)); 
+			}
+
+			iters++;
+		}
+
+		if (false) {
+			debug(`requestOilCapture2 (BFS)`);
+			result.forEach(coord => debug(`\t${coord[0]} ${coord[1]}`));
+		}
+		
+	}
+
 	requestOilCapture(state) {
 		let sectorsWithOilToCapture = [];
 
