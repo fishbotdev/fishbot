@@ -17,6 +17,8 @@
 
 /*
 	Math functions 
+
+	These functions should only use the standard inbuilt JS libraries.
 */
 
 /**
@@ -147,7 +149,8 @@ function generateRange(stopNum) {
 }
 
 /*
-	WZ2100 helper functions (uses the WZ2100 Game Engine API).
+	WZ2100 helper functions (uses the WZ2100 JS API).
+
 	Try to reduce the number of functions in this section.
 */
 
@@ -179,9 +182,6 @@ function myPower() {
 	return playerPower(me) - queuedPower(me);
 }
 
-/*
-	PLAYER INFORMATION
-*/
 function isEnemy(playerID) {
 	if (!defined(playerID)) {
 		debug("isEnemy(): playerID is undefined. Check the calling function.");
@@ -189,33 +189,12 @@ function isEnemy(playerID) {
 	return !allianceExistsBetween(me, playerID);
 }
 
-function gameHasEnded(state) {
-
-	const playerIDs = state.enumLivingPlayers();
-
-	let foundEnemy = false, foundMyself = false;
-
-	playerIDs.forEach(pid => {
-		if (isEnemy(pid) && !foundEnemy) {
-			foundEnemy = true;
-		} else if (pid === me) {
-			foundMyself = true;
-		}
-	});
-
-	if (!foundEnemy || !foundMyself) {
-		return true;
-	} else {
-		return false;
-	}
-}
-
 /**
 	fbGroup: FISHBOT v3 CUSTOM GROUPING SYSTEM
 
 	Fishbot custom implementation of groups
 	Fishbot requires highly-temporary, one-to-many labelling to support its ability to maneuver troops.
-	As of Warzone 2100 v4.6.1, neither the built-in groups, nor labels, are suitable for temporary, one-to-many labelling.
+	As of Warzone 2100 v4.6.1, neither the built-in groups, nor labels, are suitable for transient, one-to-many labelling.
 */
 
 class fbGroup {

@@ -344,6 +344,31 @@ class worldState {
         return livingPlayerIDs;
     }
 
+    /**
+     * Returns `true` if the game has ended for this player, or for all enemy players.
+     * Otherwise, it will return `false`.
+     * @returns {boolean}
+     */
+    gameHasEnded() {
+        const playerIDs = this.enumLivingPlayers();
+
+        let foundEnemy = false, foundMyself = false;
+
+        playerIDs.forEach(pid => {
+            if (isEnemy(pid) && !foundEnemy) {
+                foundEnemy = true;
+            } else if (pid === me) {
+                foundMyself = true;
+            }
+        });
+
+        if (!foundEnemy || !foundMyself) {
+            return true;
+        } else {
+            return false;
+        }
+    }
+
 }
 
 

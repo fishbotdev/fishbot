@@ -21,7 +21,7 @@
 */
 
 function runGameEndedWatchdog() {
-	const gameIsFinished = gameHasEnded(state);
+	const gameIsFinished = state.gameHasEnded();
 
 	if (gameIsFinished && state.botIsActive) {
 		debug(`FishBot ${me}: gameHasEnded, stopping all function`);
