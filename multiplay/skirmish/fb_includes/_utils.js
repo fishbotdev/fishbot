@@ -35,6 +35,20 @@ function arrayMedian(arr) {
 }
 
 /**
+ * Generates an array of integers of length `stopNum`, starting with `0` and ending at integer `stopNum - 1`.
+ * e.g. `generateRange(5)` produces `[0, 1, 2, 3, 4]`. 
+ * @param {number} stopNum length of the array
+ * @returns {number[]} array of integers starting with `0` and ending at `stopNum - 1`.
+ */ 
+function generateRange(stopNum) {
+	let numbers = [];
+	for (let i=0; i < stopNum; i++) {
+		numbers.push(i);
+	}
+	return numbers;
+}
+
+/**
  * Get Euclidean distance between two points (copied from NullBot). Acceptable uses include:
 	- distance(obj, obj)
 	- distance(x,y, obj)
@@ -127,7 +141,7 @@ function create2DGrid(numXCells, numYCells, cellFactory) {
 		grid[x] = new Array(numYCells);
 
 		for (let y=0; y<numYCells; y++) {
-			grid[x][y] = cellFactory();
+			grid[x][y] = cellFactory(x, y);
 		}
 	}
 
@@ -135,18 +149,101 @@ function create2DGrid(numXCells, numYCells, cellFactory) {
 }
 
 /**
- * Generates an array of integers of length `stopNum`, starting with `0` and ending at integer `stopNum - 1`.
- * e.g. `generateRange(5)` produces `[0, 1, 2, 3, 4]`. 
- * @param {number} stopNum length of the array
- * @returns {number[]} array of integers starting with `0` and ending at `stopNum - 1`.
- */ 
-function generateRange(stopNum) {
-	let numbers = [];
-	for (let i=0; i < stopNum; i++) {
-		numbers.push(i);
+ * An objective function is evaluated on each grid coordinate (in BFS order); the result is appended to an equi-dimensional grid.
+ * e.g. BFS is conducted on a 2D grid of 12 x 12; result is returned in a new 2D grid of 12 x 12.
+ * @param {fbGrid} grid grid to iterate over to produce a result
+ * @param {number} bgx starting grid-x coordinate
+ * @param {number} bgy starting grid-y coordinate
+ * @param {Function} objectiveFunc The function to be evaluated for each grid cell.
+ * @returns {Object} the result of the objective function evaluated on each grid coordinate (returned as an equi-dimensioned grid)
+ */
+function breadthFirstSearch(grid, bgx, bgy, objectiveFunc) {
+	const numXCells = grid.numXCells;
+	const numYCells = grid.numYCells;
+	
+	const checkXInBounds = (gx) => {return (gx >= 0 && gx < numXCells)};
+	const checkYInBounds = (gy) => {return (gy >= 0 && gy < numYCells)};
+	
+	// Initialise BFS parameters
+	let iters = 0;		
+	const MAX_ITERS = numXCells * numYCells; 	// failsafe
+	
+	let queue = [[bgx, bgy]];		// y = rows, x = cols => [row, col]
+	let queuedUp = [[bgx, bgy]];
+
+	const objFunc = (grid, gx, gy) => {return objectiveFunc(grid, gx, gy);};
+	const createEmptyCell = (...args) => {return undefined;};
+	let gridResult = create2DGrid(numXCells, numYCells, createEmptyCell);
+	let orderedResult = [];
+
+	const DEBUG_ON = false;
+
+	while (queue.length > 0 && iters < MAX_ITERS) {
+		if (DEBUG_ON) debug(`queue: ${queue}`);
+
+		// Dequeue the next cell
+		const next = queue.shift();
+
+		if (DEBUG_ON) debug(`dequeued next cell: ${queue}`);
+
+		// Process & push to result
+		const gx = next[0], gy = next[1];
+		const result = objFunc(grid, gx, gy)
+		orderedResult.push(result);
+		gridResult[gx][gy] = {'idx': iters, 'result': result};
+
+		if (DEBUG_ON) {
+			debug(`gx gy: ${gx} ${gy}`);
+			debug(`result: ${orderedResult}`);
+		} 
+
+		// For each of the 4 adjacent cells, check the coordinates in bounds
+		const up = [gx, gy + 1];
+		const down = [gx, gy - 1];
+		const left = [gx - 1, gy];
+		const right = [gx + 1, gy];
+
+		if (DEBUG_ON) debug(`up ${up} down  ${down} left ${left} right ${right}`); 
+
+		let valid = [];
+		[up, down, left, right].forEach(coord => {
+			if (checkXInBounds(coord[0]) && checkYInBounds(coord[1])) {
+				valid.push(coord);
+			}
+		});
+
+		if (DEBUG_ON) valid.forEach(v => debug(`\tvalid: ${v}`)); 
+
+		// Add unvisited values to the queue
+		valid.forEach(v => {
+			// Check if it has been visited before
+			for (let i=queuedUp.length - 1; i>= 0; i--) {
+				if (v[0] === queuedUp[i][0] && v[1] === queuedUp[i][1]) {
+					return;		// get out of this loop, onto the next valid value
+				}
+			}
+			// Add unvisited cell to the queue
+			queue.push(v);
+			// Remember newly queued values
+			queuedUp.push(v);
+		});			
+
+		if (DEBUG_ON) {
+			queuedUp.forEach(v => debug(`new queued: ${v}`)); 
+			queue.forEach(q => debug(`\tnew queue: ${q}`)); 
+		}
+
+		iters++;
 	}
-	return numbers;
+
+	if (false) {
+		debug(`requestOilCapture2 (BFS)`);
+		orderedResult.forEach(coord => debug(`\t${coord[0]} ${coord[1]}`));
+	}
+
+	return {'ordered': orderedResult, 'grid': gridResult};
 }
+
 
 /*
 	WZ2100 helper functions (uses the WZ2100 JS API).

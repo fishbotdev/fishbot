@@ -51,11 +51,15 @@ class fbGrid {
         this.cellSize = 10;     // in game tiles
         this.numXCells = Math.ceil(mapWidth / this.cellSize);
         this.numYCells = Math.ceil(mapHeight / this.cellSize);
-        this.grid = create2DGrid(this.numXCells, this.numYCells, this.createNewFbGridCell);        
+
+        const createStandardGridCell = (gx, gy) => this.createNewFbGridCell(gx, gy);
+        this.grid = create2DGrid(this.numXCells, this.numYCells, createStandardGridCell);        
     }
 
-    createNewFbGridCell() {
+    createNewFbGridCell(gx, gy) {
         return {
+            'id': `${gx}_${gy}`,        
+
             'targetUnits': [],
             'targetStructures': [],
 
@@ -273,13 +277,15 @@ class worldState {
             'derricks': [], 
             'bases': []
         };
-        const emptyCell = () => {return 0;};
+        const emptyCell = (...args) => {return 0;};
         const createEmptyGrid = () => {return create2DGrid(this.grid.numXCells, this.grid.numYCells, emptyCell);};
         this.fields = {
             'adaThreat': createEmptyGrid(),
             'enemyStaticDefenceThreat': createEmptyGrid(),
             'enemyUnitThreat': createEmptyGrid(),
             'distanceFromMyBase': createEmptyGrid(),
+            'totalDerricksInCell': createEmptyGrid(),
+            'unclaimedDerricksInCell': createEmptyGrid(),
         };
 
         // Player statistics
@@ -563,6 +569,7 @@ class worldStateBuilder {
             const derrick = this.#createNewDerrick(x, y, gx, gy);
             d.push(derrick);
             state.grid.grid[gx][gy].derricks.push(derrick);
+            state.fields['totalDerricksInCell'][gx][gy]++;
         }
 
         // Order d in order of increasing order from base 

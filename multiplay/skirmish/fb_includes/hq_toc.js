@@ -566,7 +566,7 @@ class TacticalOperationsCenter {
 	#filterField(state, heatmap) {
 		const numXCells = state.grid.numXCells;
 		const numYCells = state.grid.numYCells;
-		const emptyCell = () => {return 0;};
+		const emptyCell = (...args) => {return 0;};
 		let filteredGrid = create2DGrid(numXCells, numYCells, emptyCell);
 
 		const KERNEL = [
@@ -607,13 +607,14 @@ class TacticalOperationsCenter {
 	updateSpatialFields(state, newGrid) {
 		const numXCells = state.grid.numXCells;
 		const numYCells = state.grid.numYCells;
-		const grid = newGrid;
+		const grid = state.grid.grid;
 
 		for (let gx=0; gx<numXCells; gx++) {
 			for (let gy=0; gy<numYCells; gy++) {
-				state.fields['adaThreat'][gx][gy] = grid[gx][gy]['adaCount'];
-				state.fields['enemyStaticDefenceThreat'][gx][gy] = grid[gx][gy]['fixedDefenceCount'];
-				state.fields['enemyUnitThreat'][gx][gy] = grid[gx][gy]['targetUnits'].length;
+				state.fields['adaThreat'][gx][gy] = newGrid[gx][gy]['adaCount'];
+				state.fields['enemyUnitThreat'][gx][gy] = newGrid[gx][gy]['enemyDirectFireUnitCount'];				
+				state.fields['enemyStaticDefenceThreat'][gx][gy] = newGrid[gx][gy]['fixedDefenceCount'];
+				state.fields['unclaimedDerricksInCell'][gx][gy] = grid[gx][gy]['derricks'].length - newGrid[gx][gy]['claimedDerricks'].length;
 			}	
 		}	
 
@@ -622,6 +623,7 @@ class TacticalOperationsCenter {
 		if (false) this.#debugPrintSpatialField(state.fields['adaThreat'], 'adaThreat - AFTER FILTER');
 		if (false) this.#debugPrintSpatialField(state.fields['enemyStaticDefenceThreat'], 'enemyStaticDefenceThreat');
 		if (false) this.#debugPrintSpatialField(state.fields['enemyUnitThreat'], 'enemyUnitThreat');
+		if (false) this.#debugPrintSpatialField(state.fields['unclaimedDerricksInCell'], 'unclaimedDerricksInCell');
 	}
 
 	/**

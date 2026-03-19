@@ -209,14 +209,16 @@ class armyIntelligence {
 		const numXCells = state.grid.numXCells;		// cellSize is used for computing grid coords
 		const numYCells = state.grid.numYCells;
 		const cellSize = state.grid.cellSize;
-		const createExpandedFbGridCell = () => {
-			let cell = state.grid.createNewFbGridCell();
+		const createExpandedFbGridCell = (gx, gy) => {
+			let cell = state.grid.createNewFbGridCell(gx, gy);
 			// Add custom parameters
-			cell['adaCount'] = 0;				// for adaThreat      
-			cell['fixedDefenceCount'] = 0; 		// for enemyStaticDefences
-			cell['claimedDerricks'] = [];		// for updating of derrick information
+			cell['adaCount'] = 0;					// for adaThreat      
+			cell['fixedDefenceCount'] = 0; 			// for enemyStaticDefences
+			cell['claimedDerricks'] = [];			// for updating of derrick information
+			cell['enemyDirectFireUnitCount'] = 0;	// for direct fire unit threat
 			return cell;
 		};
+		let grid = create2DGrid(numXCells, numYCells, createExpandedFbGridCell);
 
 		// Reduced version of the version in worldStateBuilder
 		const createNewClaimedDerrick = (x, y, playerID) => {       
@@ -226,8 +228,6 @@ class armyIntelligence {
 			}
 		};
 		const createPlayerInfoEntry = (...args) => state.createPlayerInfoEntry(...args);
-
-		let grid = create2DGrid(numXCells, numYCells, createExpandedFbGridCell);
 
 		let objectsByPlayer = getDroidsAndStructsByPlayer();		// this information is fresh
 
@@ -287,6 +287,12 @@ class armyIntelligence {
 					if (flags & OBJ_FLAGS.ADA) {
 						grid[gx][gy]['adaCount']++;
 					}
+
+					const DIRECT_FIRE_UNITS = OBJ_FLAGS.ARMOUR | OBJ_FLAGS.INDIRECT_FIRE | OBJ_FLAGS.INFANTRY;
+					if (flags & DIRECT_FIRE_UNITS) {
+						grid[gx][gy]['enemyDirectFireUnitCount']++;
+					}
+
 				} else {
 					grid[gx][gy]['friendlyUnits'].push(newObj);
 				}
