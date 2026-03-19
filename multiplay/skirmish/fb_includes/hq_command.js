@@ -843,11 +843,11 @@ class CommandCenter {
 			}
 		});
 
-		const DEBUG_ON = true;
-		let resultGrid = create2DGrid(numXCells, numYCells, (...args) => {return "_";});
+		const DEBUG_ON = false;
+		let debugGrid = create2DGrid(numXCells, numYCells, (...args) => {return "_";});
+		let valid = [];
 
 		// Iterate through the grid, find & remember valid cells
-		let highPrioDerricks = [], validDerrickIDs = [];
 		for (let gx=0; gx<numXCells; gx++) {
 			for (let gy=0; gy<numYCells; gy++) {
 
@@ -862,38 +862,61 @@ class CommandCenter {
 					if (existingQueuedDerrickIDs.indexOf(d.id) !== -1) continue; 	// === found an existing mission 
 
 					if (derricksInCell.length >= 4) {
-						highPrioDerricks.push(engineering.translateIntoBuildRequest({
+						const br = engineering.translateIntoBuildRequest({
 							missionType: MISSION_TYPE.CONSTRUCT_ALL_DERRICKS_IN_SECTOR, 
 							structureData: STRUCTURES["Oil Derrick"],
 							payload: grid[gx][gy]		// needs to have the '.derricks' property to work with the existing system
-						}));
-						if (DEBUG_ON) resultGrid[gx][gy] = "X";
+						});
+						valid.push([d.id, br]);
+						if (DEBUG_ON) debugGrid[gx][gy] = "X";
 						break;
 					} else {
-						validDerrickIDs.push(engineering.translateIntoBuildRequest({
+						const br = engineering.translateIntoBuildRequest({
 							missionType: MISSION_TYPE.CONSTRUCT_OIL_DERRICK, 
 							structureData: STRUCTURES["Oil Derrick"],
 							payload: d
-						}));
-						if (DEBUG_ON) resultGrid[gx][gy] = "X";
+						});
+						valid.push([d.id, br]);
+						if (DEBUG_ON) debugGrid[gx][gy] = "X";
 					}
 				}
 			}
 		}
 
-		const result = [...highPrioDerricks, ...validDerrickIDs]
-
-		if (true) {
-			debug(`prioritiseOilCapTasks() @ ${gameTime} ms: result array len ${result.length}`);
+		if (DEBUG_ON) {
+			debug(`prioritiseOilCapTasks() @ ${gameTime} ms`);
 
 			for (let gy=0; gy<numYCells; gy++) {
 				let row = "";
 
 				for (let gx=0; gx<numXCells; gx++) {					
-					row += `${resultGrid[gx][gy]} `;
+					row += `${debugGrid[gx][gy]} `;
 				}
 				debug(row);
 			}
+		}
+
+		let result = [];
+		if (valid.length === 0) {
+			return result;
+		}
+		
+		// Order the tasks in order of decreasing distance from base
+		let count = 0;
+		state.poi.derricks.forEach(d => {
+			for (let i=0; i<valid.length; i++) {
+				if (d.id === valid[i][0]) {
+					result.push(valid[i][1]);
+					count++;
+					return;
+				}
+			}
+		});
+
+		if (count !== valid.length) {
+			debug(`WARNING: prioritiseOilCapTasks(): count !== valid.length!`);
+		} else {
+			if (DEBUG_ON) result.forEach(br => debug (`\t${br.payload.id}`));
 		}
 
 		return result;
