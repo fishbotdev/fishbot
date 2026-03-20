@@ -198,7 +198,7 @@ class armyQuartermaster {
         // 100% chance to produce cyborg if less than 5 (temporary)
         // 25% chance for vtol, 75% for tank
 
-        const MIN_CYBORGS = 5;
+        const MIN_CYBORGS = 8;
         if (enumDroid(me, DROID_CYBORG).length < MIN_CYBORGS) {
             if (this.#checkCyborgProduction()) return;
         }
@@ -216,7 +216,7 @@ class armyQuartermaster {
         if (myPower() > TOO_MUCH_POWER) {
             this.#checkTankProduction();
             this.#checkVtolProduction();
-            // this.#checkCyborgProduction();
+            this.#checkCyborgProduction();
         }
 
     }
