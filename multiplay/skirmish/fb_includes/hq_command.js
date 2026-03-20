@@ -962,57 +962,14 @@ class CommandCenter {
 			});
 
 			if (moreThanOneCellAway) {
-				debug(`aborted (${md.id}) @ (~ tileco ${md.gx * cellSize} ${md.gy * cellSize}); high threat`);
+				// debug(`aborted (${md.id}) @ (~ tileco ${md.gx * cellSize} ${md.gy * cellSize}); high threat`);
 				md.missionStatus = MISSION_STATUS.ABORT;
 			}
 		});
 	}
 
-	abortDangerousConstructionTasks(state) {
-		// Cancel tasks where the area is now dangerous but the units are far away (> 10 tiles away).
-
-		const activeMissions = this.toc.getActiveConstructionMissions(state);
-		
-		let dangerousDerricks = [];
-
-		for (let i=0; i<state.sectors.length; i++) {
-			let currSector = state.sectors[i];
-			currSector.derricks.forEach(d => {
-				if (d.threatLevel > REGION_THREAT_LEVEL.MEDIUM) {
-					dangerousDerricks.push(d);
-				}
-			});
-		}
-
-		for (let i=0; i<activeMissions.length; i++) {
-			
-			let currMission = activeMissions[i];
-
-			let dangerousSector = undefined;
-			dangerousSector = dangerousDerricks.find(s => (s.id === currMission.sectorID));		// TODO: 'sectorID': is derrickID for derricks, is "positionUID" more appropriate?
-
-			if (!defined(dangerousSector)) {
-				continue;
-			}
-
-			// Cancel if trucks & far away and the sector does not have a lot of oil (low value)
-			const assignedTrucks = state.g.enumGroup(currMission.id);
-			if (assignedTrucks.every(truck => distance(truck, dangerousSector) > 6)) {
-				// debug(`Cancelling mission ${currMission.id} in sector ${currMission.sectorID} due to high threat`);
-				currMission.missionStatus = MISSION_STATUS.ABORT;
-			}
-		}
-	}
-
-	runConstructionTasks(state) {
-
-		let sectorOilCaptureBuildTasks;	
-		if (false) {
-			sectorOilCaptureBuildTasks = engineering.requestOilCapture(state);
-			this.prioritiseOilCapTasks(state);	
-		} else {
-			sectorOilCaptureBuildTasks = this.prioritiseOilCapTasks(state);	
-		}
+	runConstructionTasks(state) {		
+		const sectorOilCaptureBuildTasks = this.prioritiseOilCapTasks(state);	
 
 		const baseBuildTasks = engineering.requestBaseConstruction(state);
 		const sectorDefenceBuildTasks = engineering.requestSectorDefenceConstruction(state);	
@@ -1020,12 +977,7 @@ class CommandCenter {
 		const approvedTasks = this.prioritiseConstructionTasks(sectorOilCaptureBuildTasks, baseBuildTasks, sectorDefenceBuildTasks, undefined, state);
 		this.toc.assignConstructionTasks({approvedTasks: approvedTasks, state: state});
 	
-		if (false) {
-			this.abortDangerousConstructionTasks(state);
-		} else {
-			this.abortDangerousConstructionTasks2(state);
-		}
-		
+		this.abortDangerousConstructionTasks2(state);
 	}
 
 	runLogistics(state) {
