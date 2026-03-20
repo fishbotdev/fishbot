@@ -480,7 +480,7 @@ class armyEngineering {
 		}
 
 		// Select closest trucks to new location
-		engineeringReserve.sort((first, second) => distance(first, buildTask) - distance(second, buildTask));
+		engineeringReserve.sort((a,b) => distSq(a.x, buildTask.x, a.y, buildTask.y) - distSq(b.x, buildTask.x, b.y, buildTask.y));
 		const taskForceUnits = engineeringReserve.slice(0, MAX_TRUCKS); 
 
 		let md = this.#createMissionOrders();
@@ -523,7 +523,7 @@ class armyEngineering {
 		let MAX_TRUCKS = 1;
 		
 		// Select closest trucks to sector
-		engineeringReserve.sort((first, second) => distance(first, buildTask) - distance(second, buildTask));		// buildTask = state.sector -> has x,y
+		engineeringReserve.sort((a,b) => distSq(a.x, buildTask.x, a.y, buildTask.y) - distSq(b.x, buildTask.x, b.y, buildTask.y));
 		const taskForceUnits = engineeringReserve.slice(0, MAX_TRUCKS);
 
 		if (!isStructureAvailable(buildTask.structureID, me)) {
@@ -573,7 +573,7 @@ class armyEngineering {
 		let MAX_TRUCKS = 1;
 		
 		// Select closest trucks to sector
-		engineeringReserve.sort((first, second) => distance(first, buildTask) - distance(second, buildTask));		
+		engineeringReserve.sort((a,b) => distSq(a.x, buildTask.x, a.y, buildTask.y) - distSq(b.x, buildTask.x, b.y, buildTask.y));	
 		const taskForceUnits = engineeringReserve.slice(0, MAX_TRUCKS);
 
 		if (!isStructureAvailable(buildTask.structureID, me)) {
@@ -660,7 +660,7 @@ class armyEngineering {
 		const numFinishedModules = baseStructures[0].modules + 1;
 
 		// Select closest trucks to location
-		engineeringReserve.sort((first, second) => distance(first, buildTask) - distance(second, buildTask));
+		engineeringReserve.sort((a,b) => distSq(a.x, buildTask.x, a.y, buildTask.y) - distSq(b.x, buildTask.x, b.y, buildTask.y));
 		const taskForceUnits = engineeringReserve.slice(0, MAX_TRUCKS); 
 
 		let md = this.#createMissionOrders();
@@ -704,7 +704,7 @@ class armyEngineering {
 
 		// Select closest trucks to new location
 		const currDerrick = buildTask.payload;
-		engineeringReserve.sort((first, second) => distance(first, currDerrick) - distance(second, currDerrick));
+		engineeringReserve.sort((a,b) => distSq(a.x, currDerrick.x, a.y, currDerrick.y) - distSq(b.x, currDerrick.x, b.y, currDerrick.y));
 		const taskForceUnits = engineeringReserve.slice(0, MINIMUM_TRUCKS); 
 
 		if (!isStructureAvailable(buildTask.structureID, me)) {
