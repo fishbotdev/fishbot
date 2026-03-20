@@ -408,7 +408,8 @@ class CommandCenter {
 		}
 
 		// TEMPORARY IMPLEMENTATION
-		const prioritiseCasTargets = (nearbyTargetCount >= 1 && !IS_OIL_DOMINANT) || (IS_OIL_DOMINANT && casTargets.length >= 3);
+		const prioritiseCasTargets = nearbyTargetCount >= 1;
+		// debug(`nearbyTargetCount ${nearbyTargetCount}, prioritiseCAS: ${prioritiseCasTargets}`);
 		const prioritiseRaidTargets = !IS_OIL_DOMINANT;
 		const prioritiseIndustrialTargets = IS_OIL_DOMINANT;
 		const CLOSING_ANTI_AIR_MISSIONS = prioritiseIndustrialTargets && AIR_UNIT_DOMINANCE;
@@ -421,7 +422,12 @@ class CommandCenter {
 		const NO_FLY_ZONES = this.#extractAdaThreatMap(state, threatThreshold);		
 
 		// Set missionType
-		casTargets.forEach(t => t.missionType = MISSION_TYPE.CAS_STRIKE);
+		casTargets.forEach(t => {
+			t.missionType = MISSION_TYPE.CAS_STRIKE;
+			if (prioritiseCasTargets) {
+				t.priority = MISSION_PRIORITY.URGENT;
+			}
+		});
 		airRaidTargets.forEach(t => t.missionType = MISSION_TYPE.AIR_RAID);
 		industrialTargets.forEach(t => t.missionType = MISSION_TYPE.DAS_STRIKE);
 		adaTargets.forEach(t => t.missionType = MISSION_TYPE.DAS_STRIKE);
@@ -433,7 +439,7 @@ class CommandCenter {
 				targetCandidates = [...industrialTargets, ...airRaidTargets, ...casTargets, ...adaTargets, ];			
 			}
 		} else if (prioritiseCasTargets) {
-			targetCandidates = [...casTargets, ...airRaidTargets];
+			targetCandidates = [...casTargets];
 		} else if (prioritiseRaidTargets) {
 			targetCandidates = [...airRaidTargets, ...casTargets];
 		} else {
@@ -456,6 +462,12 @@ class CommandCenter {
 			
 			const currObj = getObject(c.target.type, c.target.player, c.target.id);
 			if (!defined(currObj) || !defined(groupPosition)) {
+				continue;
+			}
+
+			if (prioritiseCasTargets && [MISSION_TYPE.DAS_STRIKE, MISSION_TYPE.AIR_RAID].includes(c.missionType)) {
+				// Make space for CAS missions
+				c.missionStatus = MISSION_STATUS.ABORT;
 				continue;
 			}
 
