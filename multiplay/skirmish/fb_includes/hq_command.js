@@ -438,7 +438,7 @@ class CommandCenter {
 			targetCandidates = [...airRaidTargets, ...casTargets];
 		} else {
 			// assuming industrial targets are prioritised
-			targetCandidates = [...airRaidTargets, ...casTargets];		// same as raid
+			targetCandidates = [...casTargets, ...airRaidTargets];		// same as CAS
 		}
 
 		// Terminate current missions which are TWO PRIORITY LEVELS below e.g.
@@ -448,7 +448,7 @@ class CommandCenter {
 										filter(m => OFFENSIVE_MISSION_TYPES.includes(m.missionType));
 
 		let activeTargetIDs = [];
-		const CAS_RADIUS = 15;
+		const CAS_RADIUS = 20;
 
 		for (let i=0; i<activeMissions.length; i++) {
 			let c = activeMissions[i];
