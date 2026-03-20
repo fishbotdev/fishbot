@@ -346,64 +346,60 @@ class armyIntelligence {
 
 	}
 
-	getDefencesNearDerricks(state) {
+	getTargetsNearDerricks(state) {
 
-		// Note: trying a new pattern; extract all relevant parameters from state at the start
 		const grid = state.grid.grid;
+		const cellSize = state.grid.cellSize;
 		const gridEnumRange = (...args) => state.grid.enumRange(...args);
-		const numXCells = state.grid.numXCells;
-		const numYCells = state.grid.numYCells;
 
-		const SEARCH_RADIUS = 8;
-		let lowPriorityTargets = [], medPriorityTargets = [], highPriorityTargets = [];
+		const SEARCH_RADIUS = cellSize;
+		let targetsNearDerricks = [];
 
-		// Here we use the grid definition of derricks; it includes the pre-computed spatial clustering
-		// This spatial clustering allows us to skip over multiple derricks
-		for (let gx=0; gx<numXCells; gx++) {
-			for (let gy=0; gy<numYCells; gy++) {
-
-				const nearbyDerricks = grid[gx][gy]['derricks'];
-				
-				for (let i=0; i<nearbyDerricks.length; i++) {
-					const d = nearbyDerricks[i];
-					const t = gridEnumRange(d.x, d.y, SEARCH_RADIUS);
-					if (t['structs'].length > 0) {
-						// debug(`t['structs'].length ${t['structs'].length}`);
-					}
-					
-					if (t['structs'].length - nearbyDerricks.length >= 5) {
-						// debug(`		skipped sector with derrick (near ${d.x} ${d.y})`);
-						break;		// intent: handle the case of old "dangerous sectors"
-					}
-
-					let defences = [], trucks = [];
-
-					t['structs'].forEach(target => {
-						if (target.flags & OBJ_FLAGS.DEFENSIVE_STRUCTURE) {
-							// debug(`		added ${target.name} (${target.id}) near ${d.x} ${d.y}`);
-							defences.push(target);
-						}
-					});
-
-					t['droids'].forEach(target => {
-						if (target.flags & OBJ_FLAGS.CONSTRUCTOR) {
-							trucks.push(target);
-						}
-					})
-
-					if (nearbyDerricks.length >= 4) {
-						highPriorityTargets.push(...defences, ...trucks);
-						break;			// intent: handle the case of multiple derricks next to each other
-					} else if (nearbyDerricks.length >= defences.length) {
-						medPriorityTargets.push(...trucks, ...defences);
-					} else {
-						lowPriorityTargets.push(...trucks, ...defences);
-					}
+		let seenGridCoord = [];
+		for (let i=0; i<state.poi.derricks.length; i++) {
+			const d = state.poi.derricks[i];
+			
+			let seen = false;
+			for (let j=0; j<seenGridCoord.length; j++) {
+				if (seenGridCoord[j].gx === d.gx && seenGridCoord[j].gy === d.gy) {
+					seen = true;
+					break;
 				}
 			}
+			if (seen) {
+				continue;
+			}
+
+			const t = gridEnumRange(d.x, d.y, SEARCH_RADIUS);
+
+			let defences = [], trucks = [], derricks = [];
+
+			t['structs'].forEach(target => {
+				if (target.flags & OBJ_FLAGS.DEFENSIVE_STRUCTURE) {
+					if (target.flags & OBJ_FLAGS.INDIRECT_FIRE) {
+						defences.unshift(target);
+					} else {
+						defences.push(target);
+					}
+				}
+				if (target.flags & OBJ_FLAGS.RESOURCE_EXTRACTOR) {
+					derricks.push(target);
+				}
+			});
+
+			t['droids'].forEach(target => {
+				if (target.flags & OBJ_FLAGS.CONSTRUCTOR) {
+					trucks.push(target);
+				}
+			});
+
+			targetsNearDerricks.push(...trucks, ...defences, ...derricks);
+
+			seenGridCoord.push({'gx': d.gx, 'gy': d.gy});
 		}
 
-		return [...highPriorityTargets, ...medPriorityTargets, ...lowPriorityTargets];
+		return targetsNearDerricks;
+
 	}
 
 	getBaseTargets(state) {
@@ -436,11 +432,11 @@ class armyIntelligence {
 					continue;
 				}
 				if (t['structs'][j].flags & OBJ_FLAGS.PRODUCTION) {
-					result.productionTargets.push(t['structs'][j]);
+					result.productionTargets.unshift(t['structs'][j]);
 					continue;
 				}
 				if (t['structs'][j].flags & OBJ_FLAGS.REPAIR) {
-					result.productionTargets.unshift(t['structs'][j]);
+					result.productionTargets.push(t['structs'][j]);
 					continue;
 				}
 			}

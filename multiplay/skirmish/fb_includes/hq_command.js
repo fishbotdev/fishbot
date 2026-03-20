@@ -399,7 +399,7 @@ class CommandCenter {
 		const IS_OIL_DOMINANT = state.oilDominance;
 		const NUM_AIRCRAFT = state.playerInfo[me].numAirUnits;		// TODO: formalise if this is an expected access pattern
 		const AIR_UNIT_DOMINANCE = NUM_AIRCRAFT >= 10;
-		const AIR_UNIT_SHORTAGE = NUM_AIRCRAFT <= 6;
+		const AIR_UNIT_SHORTAGE = NUM_AIRCRAFT <= 8;
 
 		let targetCandidates = [];
 
@@ -408,7 +408,7 @@ class CommandCenter {
 		}
 
 		// TEMPORARY IMPLEMENTATION
-		const prioritiseCasTargets = (nearbyTargetCount >= 2 && !IS_OIL_DOMINANT) || (IS_OIL_DOMINANT && casTargets.length >= 4);
+		const prioritiseCasTargets = (nearbyTargetCount >= 1 && !IS_OIL_DOMINANT) || (IS_OIL_DOMINANT && casTargets.length >= 3);
 		const prioritiseRaidTargets = !IS_OIL_DOMINANT;
 		const prioritiseIndustrialTargets = IS_OIL_DOMINANT;
 		const CLOSING_ANTI_AIR_MISSIONS = prioritiseIndustrialTargets && AIR_UNIT_DOMINANCE;
@@ -453,17 +453,19 @@ class CommandCenter {
 			t.missionType = MISSION_TYPE.DAS_STRIKE;
 		});
 
-		if (prioritiseCasTargets) {
+		if(prioritiseIndustrialTargets) {
+			if (CLOSING_ANTI_AIR_MISSIONS) {
+				targetCandidates = [...adaTargets, ...industrialTargets, ...casTargets, ...airRaidTargets];
+			} else {
+				targetCandidates = [...industrialTargets, ...casTargets, ...adaTargets, ...airRaidTargets];			
+			}
+		} else if (prioritiseCasTargets) {
 			targetCandidates = [...casTargets, ...airRaidTargets];
 		} else if (prioritiseRaidTargets) {
 			targetCandidates = [...airRaidTargets, ...casTargets];
 		} else {
 			// assuming industrial targets are prioritised
-			if (CLOSING_ANTI_AIR_MISSIONS) {
-				targetCandidates = [...adaTargets, ...industrialTargets, ...casTargets, ...airRaidTargets];
-			} else {
-				targetCandidates = [...industrialTargets, ...casTargets, ...airRaidTargets, ...adaTargets];			
-			}
+			targetCandidates = [...casTargets, ...airRaidTargets];		// same as CAS
 		}
 
 		// Terminate current missions which are TWO PRIORITY LEVELS below e.g.
@@ -678,7 +680,7 @@ class CommandCenter {
 
 			case 'intel_getAviationTargets':
 
-				const raidTargets = intelligence.getDefencesNearDerricks(state);
+				const raidTargets = intelligence.getTargetsNearDerricks(state);
 				const baseTargets = intelligence.getBaseTargets(state);
 				hq.toc.setAviationTargets(state, raidTargets, baseTargets['productionTargets'], baseTargets['adaTargets']);
 
