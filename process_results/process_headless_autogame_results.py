@@ -224,7 +224,7 @@ def show_hard_cobra_results():
     # test_1 = getcwd() + rf"\process_results/v3/" + "6f04840,hard" + ".txt"              # v3 dev: 4.6.2, 
     # test_1 = getcwd() + rf"\process_results/v3/" + "5c6703a,hard" + ".txt"              # v3 dev: 4.6.2, 
     # test_1 = getcwd() + rf"\process_results/v3/" + "68275e8,hard" + ".txt"              # v3 dev: 4.6.2, [40/50 wins] optimised oil cap, optimised cyborgs and research
-    test_1 = getcwd() + rf"\process_results/v3/" + "29ceeb0,hard,463" + ".txt"              # v3 dev: 4.6.3, [63/86 wins] long term test
+    # test_1 = getcwd() + rf"\process_results/v3/" + "29ceeb0,hard,463" + ".txt"              # v3 dev: 4.6.3, [63/86 wins] long term test
     # test_1 = getcwd() + rf"\process_results/v4/" + "ca33b28,hard,cobra,100g" + ".txt"              # v4 dev: 4.6.3, [55 / 100 wins] regression after perf-optimisation
     # test_1 = getcwd() + rf"\process_results/v4/" + "e18c4c4,hard,cobra,50g" + ".txt"              # v4 dev: 4.6.3, [40 / 50 wins] after simultaneous-VTOL & CAS improvements; regression fixed
     # test_1 = getcwd() + rf"\process_results/v4/" + "83ebcd1,hard,cobra,50g" + ".txt"              # v4 dev: 4.6.3, [34 / 50 wins] after first intel optimisation
@@ -238,9 +238,12 @@ def show_hard_cobra_results():
     # test_2 = getcwd() + rf"\process_results/v4/" + "33200f9,hard,cobra,100g" + ".txt"              # v4 dev: 4.6.3 [19% wr]
     # test_2 = getcwd() + rf"\process_results/v4/" + "ce09727,hard,cobra,50g" + ".txt"              # v4 dev: 4.6.3 [52 % wr]
     # test_2 = getcwd() + rf"\process_results/v4/" + "6730392,hard,cobra,100g" + ".txt"              # v4 dev: 4.6.3 [65 % wr]
-    test_2 = getcwd() + rf"\process_results/v4/" + "a686079,hard,cobra,100g" + ".txt"              # v4 dev: 4.6.3 [65 % wr, same as before]
+    # test_1 = getcwd() + rf"\process_results/v4/" + "a686079,hard,cobra,100g" + ".txt"              # v4 dev: 4.6.3 [65 % wr, same as before]
+    # test_1 = getcwd() + rf"\process_results/v4/" + "f6b053f,hard,cobra,100g" + ".txt"              # v4 dev: 4.6.3 [59 % wr] porting oil cap over to the new system
+    test_1 = getcwd() + rf"\process_results/v4/" + "0fafd15,hard,cobra,100g" + ".txt"              # v4 dev: 4.6.3 [45 % wr] removed construct mission cancellation
+    test_2 = getcwd() + rf"\process_results/v4/" + "edb40f7,hard,cobra,100g" + ".txt"              # v4 dev: 4.6.3 [59 % wr] 
 
-    commit1 = test_1.split(rf"v3/")[1].split(",")[0]
+    commit1 = test_1.split(rf"v4/")[1].split(",")[0]
     commit2 = test_2.split(rf"v4/")[1].split(",")[0]
 
     show_stats(*get_stats(test_1), title=f"{commit1} (before)", figNum=2)                             
@@ -263,8 +266,8 @@ def show_insane_diff_results():
     show_stats(*get_stats(test_2), title=f"{commit2} (newer)", legend=[commit1, commit2], figNum=3)    
 
 
-show_medium_cobra_results()
-# show_hard_cobra_results()
+# show_medium_cobra_results()
+show_hard_cobra_results()
 # show_insane_diff_results()
 
 import matplotlib.pyplot as plt
