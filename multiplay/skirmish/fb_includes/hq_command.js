@@ -771,121 +771,8 @@ class CommandCenter {
 		return approvedConstructionTasks;
 	}
 
-	prioritiseOilCapTasks(state) {
-		/*
-		Algorithm:
-		Use the grid system to:
-		- Find cells with unclaimed derricks											-- uses state.fields.unclaimedDerricksInCell[gx][gy]
-		- Remove cells with high threat from enemy struct concentrations 				-- uses state.grid.grid[gx][gy].targetStructures 
-		- Remove cells with defensive structures										-- uses state.fields.enemyStaticDefenceThreat
-		- Remove cells with enemy offensive units										-- uses state.fields.enemyUnitThreat
-		- Remove cells with all derricks already being claimed in active missions		-- uses this.toc.getActiveConstructionMissions()
-		
-		-> if all conditions satisfied, push derrick ID to be used to filter state.poi.derricks
-		
-		Iterate through the ordered list
-		1. Skip if id not found in grid entries
-		2. >= 4 derricks which are close to one another (multiple in one grid); move to front of list
-			2a. create new CONSTRUCT_ALL_DERRICKS_IN_SECTOR
-		3. Else, continue (the ordered list already orders the derricks in order of increasing distance from base)
-			3a. create new CONSTRUCT_OIL_DERRICK for single, CONSTRUCT_ALL_DERRICKS_IN_SECTOR for multiple
-		*/
-		const grid = state.grid.grid;
-		const numXCells = state.grid.numXCells;
-		const numYCells = state.grid.numYCells;
 
-		const unclaimedDerricksInCell = state.fields.unclaimedDerricksInCell;
-		const enemyStaticDefenceThreat = state.fields.enemyStaticDefenceThreat;
-		const enemyUnitThreat = state.fields.enemyUnitThreat;
 
-		let existingQueuedDerrickIDs = [];
-		const TYPES_OF_DERRICK_CAPTURE_MISSIONS = [MISSION_TYPE.CONSTRUCT_ALL_DERRICKS_IN_SECTOR, MISSION_TYPE.CONSTRUCT_OIL_DERRICK];
-
-		this.toc.getActiveConstructionMissions(state).forEach(missionData => {
-			if (TYPES_OF_DERRICK_CAPTURE_MISSIONS.includes(missionData.missionType)) {
-				existingQueuedDerrickIDs.push(missionData.sectorID);			// TODO: to be changed for derrickID once old sector system is migrated	
-			}
-		});
-
-		const DEBUG_ON = false;
-		let debugGrid = create2DGrid(numXCells, numYCells, (...args) => {return "_";});
-		let valid = [];
-
-		// Iterate through the grid, find & remember valid cells
-		for (let gx=0; gx<numXCells; gx++) {
-			for (let gy=0; gy<numYCells; gy++) {
-
-				// Filter out invalid / bad entries
-				if (unclaimedDerricksInCell[gx][gy] === 0) continue;
-				if (enemyStaticDefenceThreat[gx][gy] > 0) continue;			// Simplistic; static defence threat should be filtered before use
-				if (enemyUnitThreat[gx][gy] > 0) continue;
-
-				const derricksInCell = grid[gx][gy].derricks;
-				for (let i=0; i<derricksInCell.length; i++) {
-					const d = derricksInCell[i];
-					if (existingQueuedDerrickIDs.indexOf(d.id) !== -1) continue; 	// === found an existing mission 
-
-					if (derricksInCell.length >= 4) {
-						const br = engineering.translateIntoBuildRequest({
-							missionType: MISSION_TYPE.CONSTRUCT_ALL_DERRICKS_IN_SECTOR, 
-							structureData: STRUCTURES["Oil Derrick"],
-							payload: grid[gx][gy]		// needs to have the '.derricks' property to work with the existing system
-						});
-						valid.push([d.id, br]);
-						if (DEBUG_ON) debugGrid[gx][gy] = "X";
-						break;
-					} else {
-						const br = engineering.translateIntoBuildRequest({
-							missionType: MISSION_TYPE.CONSTRUCT_OIL_DERRICK, 
-							structureData: STRUCTURES["Oil Derrick"],
-							payload: d
-						});
-						valid.push([d.id, br]);
-						if (DEBUG_ON) debugGrid[gx][gy] = "X";
-					}
-				}
-			}
-		}
-
-		if (DEBUG_ON) {
-			debug(`prioritiseOilCapTasks() @ ${gameTime} ms`);
-
-			for (let gy=0; gy<numYCells; gy++) {
-				let row = "";
-
-				for (let gx=0; gx<numXCells; gx++) {					
-					row += `${debugGrid[gx][gy]} `;
-				}
-				debug(row);
-			}
-		}
-
-		let result = [];
-		if (valid.length === 0) {
-			return result;
-		}
-		
-		// Order the tasks in order of decreasing distance from base
-		let count = 0;
-		state.poi.derricks.forEach(d => {
-			for (let i=0; i<valid.length; i++) {
-				if (d.id === valid[i][0]) {
-					result.push(valid[i][1]);
-					count++;
-					return;
-				}
-			}
-		});
-
-		if (count !== valid.length) {
-			debug(`WARNING: prioritiseOilCapTasks(): count !== valid.length!`);
-		} else {
-			if (DEBUG_ON) result.forEach(br => debug (`\t${br.payload.id}`));
-		}
-
-		return result;
-	}
-	
 	abortDangerousConstructionTasks2(state) {
 		const cellSize = state.grid.cellSize;
 
@@ -933,15 +820,27 @@ class CommandCenter {
 	}
 
 	runConstructionTasks(state) {		
-		const sectorOilCaptureBuildTasks = this.prioritiseOilCapTasks(state);	
+		const activeConstructionMissions = this.toc.getActiveConstructionMissions(state);
+
+		// g4 generates options for construction tasks
+		const sectorOilCaptureBuildTasks = engineering.generateOilCaptureOptions(state, activeConstructionMissions);	
 
 		const baseBuildTasks = engineering.requestBaseConstruction(state);
-		const sectorDefenceBuildTasks = engineering.requestSectorDefenceConstruction(state);	
 
+		let sectorDefenceBuildTasks;
+		if (true) {
+			sectorDefenceBuildTasks = engineering.requestSectorDefenceConstruction(state);	
+		} else {
+			sectorDefenceBuildTasks = engineering.generateDefenceConstructionOptions(state, activeConstructionMissions);
+		}
+
+		// Command approves & delegates assignment 
 		const approvedTasks = this.prioritiseConstructionTasks(sectorOilCaptureBuildTasks, baseBuildTasks, sectorDefenceBuildTasks, undefined, state);
 		this.toc.assignConstructionTasks({approvedTasks: approvedTasks, state: state});
-	
+
+		// Command also re-evaluates
 		this.abortDangerousConstructionTasks2(state);
+
 	}
 
 	runLogistics(state) {
