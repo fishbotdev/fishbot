@@ -887,6 +887,8 @@ class CommandCenter {
 	}
 	
 	abortDangerousConstructionTasks2(state) {
+		const cellSize = state.grid.cellSize;
+
 		const enemyStaticDefenceThreat = state.fields.enemyStaticDefenceThreat;
 		const enemyUnitThreat = state.fields.enemyUnitThreat;
 
@@ -902,13 +904,31 @@ class CommandCenter {
 		// New mission planning system has implemented .gx, .gy grid references for all missions
 		// This allows the following algorithm:
 		// 	1. Check threat @ grid ref
-		//	2. Cancel mission
+		//	2. Check truck distances to grid ref 
+		//	3. Cancel mission
 		activeRemoteMissions.forEach(md => {
 			// Check static defence & unit threat at grid ref
 			if (enemyStaticDefenceThreat[md.gx][md.gy] === 0 && enemyUnitThreat[md.gx][md.gy] === 0) {
 				return;
 			}
-			md.missionStatus = MISSION_STATUS.ABORT;
+			
+			// Check truck locations relative to grid ref
+			const assignedTrucks = state.g.enumGroup(md.id);
+			const moreThanOneCellAway = assignedTrucks.every(truck => {
+				const tgx = Math.floor(truck.x / cellSize);
+				const tgy = Math.floor(truck.y / cellSize);
+
+				if (distSq(tgx, md.gx, tgy, md.gy) >= 2) {
+					return true;
+				} else {
+					return false;
+				}
+			});
+
+			if (moreThanOneCellAway) {
+				// debug(`aborted (${md.id}) @ (~ tileco ${md.gx * cellSize} ${md.gy * cellSize}); high threat`);
+				md.missionStatus = MISSION_STATUS.ABORT;
+			}
 		});
 	}
 
