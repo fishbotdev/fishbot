@@ -420,44 +420,17 @@ class CommandCenter {
 		}
 		const NO_FLY_ZONES = this.#extractAdaThreatMap(state, threatThreshold);		
 
-		// Set priority of new missions (needs rework, don't know all the edge cases)
-		let highestNewTargetPriority = MISSION_PRIORITY.LOW;
-		casTargets.forEach(t => {
-			if (prioritiseCasTargets && casTargets.length > 0) {
-				highestNewTargetPriority = MISSION_PRIORITY.URGENT;
-				t.priority = highestNewTargetPriority;
-			}
-			t.missionType = MISSION_TYPE.CAS_STRIKE;
-		});
-
-		airRaidTargets.forEach(t => {
-			if (prioritiseRaidTargets && airRaidTargets.length > 0) {
-				highestNewTargetPriority = MISSION_PRIORITY.HIGH;
-				t.priority = highestNewTargetPriority;
-			}
-			t.missionType = MISSION_TYPE.AIR_RAID;
-		});
-		
-		industrialTargets.forEach(t => {
-			if (prioritiseIndustrialTargets && industrialTargets.length > 0) {
-				highestNewTargetPriority = MISSION_PRIORITY.MEDIUM;
-				t.priority = highestNewTargetPriority;
-			}
-			t.missionType = MISSION_TYPE.DAS_STRIKE;
-		});
-		adaTargets.forEach(t => {
-			if (prioritiseIndustrialTargets && adaTargets.length > 0) {
-				highestNewTargetPriority = MISSION_PRIORITY.VERY_HIGH;
-				t.priority = highestNewTargetPriority;
-			}
-			t.missionType = MISSION_TYPE.DAS_STRIKE;
-		});
+		// Set missionType
+		casTargets.forEach(t => t.missionType = MISSION_TYPE.CAS_STRIKE);
+		airRaidTargets.forEach(t => t.missionType = MISSION_TYPE.AIR_RAID);
+		industrialTargets.forEach(t => t.missionType = MISSION_TYPE.DAS_STRIKE);
+		adaTargets.forEach(t => t.missionType = MISSION_TYPE.DAS_STRIKE);
 
 		if(prioritiseIndustrialTargets) {
 			if (CLOSING_ANTI_AIR_MISSIONS) {
 				targetCandidates = [...adaTargets, ...industrialTargets, ...casTargets, ...airRaidTargets];
 			} else {
-				targetCandidates = [...industrialTargets, ...casTargets, ...adaTargets, ...airRaidTargets];			
+				targetCandidates = [...industrialTargets, ...airRaidTargets, ...casTargets, ...adaTargets, ];			
 			}
 		} else if (prioritiseCasTargets) {
 			targetCandidates = [...casTargets, ...airRaidTargets];
@@ -465,7 +438,7 @@ class CommandCenter {
 			targetCandidates = [...airRaidTargets, ...casTargets];
 		} else {
 			// assuming industrial targets are prioritised
-			targetCandidates = [...casTargets, ...airRaidTargets];		// same as CAS
+			targetCandidates = [...airRaidTargets, ...casTargets];		// same as raid
 		}
 
 		// Terminate current missions which are TWO PRIORITY LEVELS below e.g.
@@ -480,12 +453,6 @@ class CommandCenter {
 		for (let i=0; i<activeMissions.length; i++) {
 			let c = activeMissions[i];
 			activeTargetIDs.push(c.id);
-
-			if (c.priority <= highestNewTargetPriority - 2) {
-				// debug(`aborted ${c.missionType}: ${c.target.name} @ ${gameTime}, higher priorities`);
-				c.missionStatus = MISSION_STATUS.ABORT;
-				continue;
-			}
 			
 			const currObj = getObject(c.target.type, c.target.player, c.target.id);
 			if (!defined(currObj) || !defined(groupPosition)) {
@@ -521,7 +488,7 @@ class CommandCenter {
 		
 		// Remove already active missions (inefficient, loops through the list again)
 		// Also handles stale inputs, to be integrated with another part of the code later
-		let newAviationTargets = [], existingAviationTargets = [], unsortedTargets = [];
+		let newAviationTargets = [], existingAviationTargets = [];
 
 		for (let i=0; i<targetCandidates.length; i++) {
 			const c = getObject(targetCandidates[i].type, targetCandidates[i].player, targetCandidates[i].id);
@@ -547,8 +514,6 @@ class CommandCenter {
 				}
 			}
 
-			unsortedTargets.push(targetCandidates[i]);
-
 			if (!activeTargetIDs.includes(targetCandidates[i].id)) {
 				newAviationTargets.push(targetCandidates[i]);
 			} else {
@@ -557,22 +522,19 @@ class CommandCenter {
 		}
 
 		let prioritisedTargets = {
-			'aviationTargets': undefined,
+			'aviationTargets': [...newAviationTargets, ...existingAviationTargets],
 			'minAircraft': 0
 		};
 
 		if (prioritiseIndustrialTargets) {		
 			if (CLOSING_ANTI_AIR_MISSIONS) {
 				// want simultaneous strikes on target
-				prioritisedTargets['aviationTargets'] = [...newAviationTargets, ...existingAviationTargets];	
 				prioritisedTargets['minAircraft'] = 3;			
 			} else {
-				// regular industrial strikes; priority is sequential destruction
-				prioritisedTargets['aviationTargets'] = unsortedTargets;
+				// regular industrial strikes
 				prioritisedTargets['minAircraft'] = 2;
 			}
 		} else {
-			prioritisedTargets['aviationTargets'] = [...newAviationTargets, ...existingAviationTargets];
 			if (AIR_UNIT_SHORTAGE) {
 				prioritisedTargets['minAircraft'] = 1;
 			} else {
@@ -946,7 +908,7 @@ class CommandCenter {
 			if (enemyStaticDefenceThreat[md.gx][md.gy] === 0 && enemyUnitThreat[md.gx][md.gy] === 0) {
 				return;
 			}
-				md.missionStatus = MISSION_STATUS.ABORT;
+			md.missionStatus = MISSION_STATUS.ABORT;
 		});
 	}
 

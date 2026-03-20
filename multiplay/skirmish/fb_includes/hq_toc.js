@@ -557,7 +557,7 @@ class TacticalOperationsCenter {
 			let row = "";
 
 			for (let gx=0; gx<numXCells; gx++) {					
-				row += `${heatmap[gx][gy]} `;
+				row += `${Math.round(heatmap[gx][gy])} `;
 			}
 			debug(row);
 		}
@@ -570,9 +570,9 @@ class TacticalOperationsCenter {
 		let filteredGrid = create2DGrid(numXCells, numYCells, emptyCell);
 
 		const KERNEL = [
-			[0.25, 0.5, 0.25],
-			[0.5,  1.0, 0.5 ],
-			[0.25, 0.5, 0.25]
+			[0.25, 0.25, 0.25],
+			[0.25, 1.0,  0.25],
+			[0.25, 0.25, 0.25]
 		];
 
 		const XDEV = 1;
@@ -593,9 +593,8 @@ class TacticalOperationsCenter {
 						if (gy + dy < 0 || gy + dy >= numYCells) {
 							continue;
 						}
-						// Influence is rounded to the nearest integer to make easier.
-						const influence = Math.round(heatmap[gx][gy] * KERNEL[dy + YDEV][dx + XDEV]);		
-						filteredGrid[gx+dx][gy+dy] = Math.max(influence, heatmap[gx+dx][gy+dy]);
+						const influence = heatmap[gx][gy] * KERNEL[dy + YDEV][dx + XDEV];		
+						filteredGrid[gx+dx][gy+dy] += influence;
 					}
 				}
 			}
