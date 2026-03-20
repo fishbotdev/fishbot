@@ -58,7 +58,9 @@ class fbGrid {
 
     createNewFbGridCell(gx, gy) {
         return {
-            'id': `${gx}_${gy}`,        
+            'id': `${gx}_${gy}`,    
+            'gx': gx,
+            'gy': gy,    
 
             'targetUnits': [],
             'targetStructures': [],

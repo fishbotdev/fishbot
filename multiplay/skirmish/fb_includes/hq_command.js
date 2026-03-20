@@ -922,11 +922,57 @@ class CommandCenter {
 		return result;
 	}
 	
+	abortDangerousConstructionTasks2(state) {
+		const cellSize = state.grid.cellSize;
+
+		const enemyStaticDefenceThreat = state.fields.enemyStaticDefenceThreat;
+		const enemyUnitThreat = state.fields.enemyUnitThreat;
+
+		const REMOTE_MISSION_TYPES = [
+			MISSION_TYPE.CONSTRUCT_ALL_DERRICKS_IN_SECTOR, 
+			MISSION_TYPE.CONSTRUCT_OIL_DERRICK,
+			MISSION_TYPE.CONSTRUCT_NEARBY_DEFENCE,
+		];
+		let activeRemoteMissions = this.toc.getActiveConstructionMissions(state).filter(
+			md => REMOTE_MISSION_TYPES.includes(md.missionType)
+		);
+
+		// New mission planning system has implemented .gx, .gy grid references for all missions
+		// This allows the following algorithm:
+		// 	1. Check threat @ grid ref
+		//	2. Check truck distances to grid ref 
+		//	3. Cancel mission
+		activeRemoteMissions.forEach(md => {
+			// Check static defence & unit threat at grid ref
+			if (enemyStaticDefenceThreat[md.gx][md.gy] === 0 && enemyUnitThreat[md.gx][md.gy] === 0) {
+				return;
+			}
+			
+			// Check truck locations relative to grid ref
+			const assignedTrucks = state.g.enumGroup(md.id);
+			const moreThanOneCellAway = assignedTrucks.every(truck => {
+				const tgx = Math.floor(truck.x / cellSize);
+				const tgy = Math.floor(truck.y / cellSize);
+
+				if (distSq(tgx, md.gx, tgy, md.gy) > 2) {
+					return true;
+				} else {
+					return false;
+				}
+			});
+
+			if (moreThanOneCellAway) {
+				debug(`aborted (${md.id}) @ (~ tileco ${md.gx * cellSize} ${md.gy * cellSize}); high threat`);
+				md.missionStatus = MISSION_STATUS.ABORT;
+			}
+		});
+	}
+
 	abortDangerousConstructionTasks(state) {
 		// Cancel tasks where the area is now dangerous but the units are far away (> 10 tiles away).
-		
-		const activeMissions = this.toc.getActiveConstructionMissions(state);
 
+		const activeMissions = this.toc.getActiveConstructionMissions(state);
+		
 		let dangerousDerricks = [];
 
 		for (let i=0; i<state.sectors.length; i++) {
@@ -974,7 +1020,12 @@ class CommandCenter {
 		const approvedTasks = this.prioritiseConstructionTasks(sectorOilCaptureBuildTasks, baseBuildTasks, sectorDefenceBuildTasks, undefined, state);
 		this.toc.assignConstructionTasks({approvedTasks: approvedTasks, state: state});
 	
-		this.abortDangerousConstructionTasks(state);
+		if (false) {
+			this.abortDangerousConstructionTasks(state);
+		} else {
+			this.abortDangerousConstructionTasks2(state);
+		}
+		
 	}
 
 	runLogistics(state) {

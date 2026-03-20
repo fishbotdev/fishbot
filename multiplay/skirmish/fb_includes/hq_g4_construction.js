@@ -374,6 +374,24 @@ class armyEngineering {
 		return buildRequest;
 	}
 
+	/**
+	 * Creates standard mission orders;
+	 * @returns {Object | void} `missionData` with the following parameters: 
+	 * 		- `id`				: Unique ID to designate this particular mission (set here)
+			- `missionType`		: Integer to denote mission type (determined in OPS)
+			- `missionStatus`	: Integer to denote mission status (this function sets it to FAILED_CREATION)
+			- `priority`		: Integer to denote priority (determined in OPS)
+			- `taskForceID`		: Unique ID to designate all units in the group (set here)
+			- `orders`			: how to carry out the mission (__tac level functions)
+			- `ceaseOrders` 	: how to finish the mission (__tac level functions)
+			- `timeStarted`		: gameTime when the mission was executed by the mission manager
+			- `timeCompleted`	: gameTime when ceaseOrders was called & processed (filled by ceaseOrders())
+
+			The following parameters are used for mission cancellation / planning
+			- `sectorID`		: parameter to denote position (v0.3.0 sector system)
+			- `gx`				: grid x coordinate (v0.4.0 sector system)
+			- `gy`				: grid y coordinate (v0.4.0 sector system)
+	 */
 	#createMissionOrders() {
 		let missionDataTemplate = {
 			'id': undefined, 
@@ -386,7 +404,10 @@ class armyEngineering {
 			'timeStarted': -2,
 			'timeCompleted': -1,
 
-			'sectorID': undefined,	// used by getActiveConstructionMissions to find which sectors have oil being captured. To be deleted once old sector system is fully migrated
+			// The following 3 parameters are used for mission cancellation (they indicate something about position)
+			'sectorID': undefined,	// v0.3.0 sector system	
+			'gx': -1,				// v0.4.0 grid system
+			'gy': -1,				// v0.4.0 grid system
 		};
 
 		return missionDataTemplate;
@@ -418,17 +439,6 @@ class armyEngineering {
 		// it returns either:
 		// 	- missionData object (according to missionDataTemplate), if mission successfully created, OR
 		//	- undefined, if mission was not able to be created	
-			
-		// Make a shallow copy (as long as the template doesn't change, this is fine)
-		// 	- id:				: Unique ID to designate this particular mission (set here)
-		//	- missionType		: Integer to denote mission type (determined in OPS)
-		//	- missionStatus		: Integer to denote mission status (this function sets it to NOT_STARTED)
-		// 	- priority			: Integer to denote priority (determined in OPS)
-		// 	- taskForceID		: Unique ID to designate all units in the group (set here)
-		// 	- orders			: how to carry out the mission (tactics.js)
-		//	- ceaseOrders 		: how to finish the mission (tactics.js)
-		//	- timeCompleted		: gameTime when ceaseOrders was called & processed
-
 		let md = this.#createMissionOrders();
 
 		// Create mission details		
@@ -447,6 +457,8 @@ class armyEngineering {
 		// it returns either:
 		// 	- missionData object (according to missionDataTemplate), if mission successfully created, OR
 		//	- undefined, if mission was not able to be created	
+
+		const cellSize = state.grid.cellSize;
 		
 		let engineeringReserve = state.g.enumGroup(ENGINEERING.ENGINEERING_RESERVE);
 		if (engineeringReserve.length === 0) {			
@@ -477,6 +489,8 @@ class armyEngineering {
 		const id = getCurrGameTime() + "_CONSTRUCT_BASE_STRUCTURE_" + tickUID;
 		md.id = id;
 		md.taskForceID = id;
+		md.gx = Math.floor(loc.x / cellSize);
+		md.gy = Math.floor(loc.y / cellSize);
 		
 		taskForceUnits.forEach((droid) => {
 			state.g.addDroidToGroup({groupID: md.taskForceID, droidID: droid.id});
@@ -490,11 +504,14 @@ class armyEngineering {
 		return md;
 	}
 
+	/**
+	 * Creates task to build a single derrick.
+	 * @param {Object} buildTask build information (payload = `derrick` object: requires the `.x`, `.y` properties)
+	 * @param {number} tickUID used to differentiate missions created in the same FishBot tick
+	 * @returns `missionData` object, if mission successfully created, else `undefined`
+	 */
 	createBuildDerrickTask({buildTask, tickUID}) {		
-		// it returns either:
-		// 	- missionData object (according to missionDataTemplate), if mission successfully created, OR
-		//	- undefined, if mission was not able to be created	
-		
+		const cellSize = state.grid.cellSize;
 		const derrick = buildTask.payload;
 
 		let engineeringReserve = state.g.enumGroup(ENGINEERING.ENGINEERING_RESERVE);
@@ -522,6 +539,8 @@ class armyEngineering {
 		md.taskForceID = id;
 
 		md.sectorID = buildTask.payload.id;
+		md.gx = Math.floor(derrick.x / cellSize);
+		md.gy = Math.floor(derrick.y / cellSize);
 		
 		taskForceUnits.forEach((droid) => {
 			state.g.addDroidToGroup({groupID: md.taskForceID, droidID: droid.id});
@@ -535,11 +554,14 @@ class armyEngineering {
 		return md;
 	}
 
-	createBuildAllDerricksInSectorTask({buildTask, tickUID}) {		
-		// it returns either:
-		// 	- missionData object (according to missionDataTemplate), if mission successfully created, OR
-		//	- undefined, if mission was not able to be created	
-		
+	/**
+	 * Creates task to build all derricks in a grid cell.
+	 * @param {Object} buildTask build information (payload = `gridCell` object: requires the `.derricks` property)
+	 * @param {number} tickUID used to differentiate missions created in the same FishBot tick
+	 * @returns `missionData` object, if mission successfully created, else `undefined`
+	 */
+	createBuildAllDerricksInSectorTask({buildTask, tickUID}) {				
+		const sector = buildTask.payload;
 		const sectorDerricks = buildTask.payload.derricks;
 
 		let engineeringReserve = state.g.enumGroup(ENGINEERING.ENGINEERING_RESERVE);
@@ -551,7 +573,7 @@ class armyEngineering {
 		let MAX_TRUCKS = 1;
 		
 		// Select closest trucks to sector
-		engineeringReserve.sort((first, second) => distance(first, buildTask) - distance(second, buildTask));		// buildTask = state.sector -> has x,y
+		engineeringReserve.sort((first, second) => distance(first, buildTask) - distance(second, buildTask));		
 		const taskForceUnits = engineeringReserve.slice(0, MAX_TRUCKS);
 
 		if (!isStructureAvailable(buildTask.structureID, me)) {
@@ -566,7 +588,9 @@ class armyEngineering {
 		md.id = id;
 		md.taskForceID = id;
 
-		md.sectorID = buildTask.payload.id;
+		md.sectorID = sector.id;
+		md.gx = sector.gx;
+		md.gy = sector.gy;
 		
 		taskForceUnits.forEach((droid) => {
 			state.g.addDroidToGroup({groupID: md.taskForceID, droidID: droid.id});
@@ -580,12 +604,15 @@ class armyEngineering {
 		return md;
 	}
 
+	/**
+	 * Creates task to build *one* additional module extension on an upgradeable structure.
+	 * @param {Object} buildTask build information (no payload)
+	 * @param {number} tickUID used to differentiate missions created in the same FishBot tick
+	 * @returns `missionData` object, if mission successfully created, else `undefined`
+	 */
 	createBuildSingleModuleTask({buildTask, tickUID}) {
-		// it returns either:
-		// 	- missionData object (according to missionDataTemplate), if mission successfully created, OR
-		//	- undefined, if mission was not able to be created	
 
-		// This function builds *one* additional module extension on *every* structure than can be upgraded.
+		const cellSize = state.grid.cellSize;
 
 		let engineeringReserve = state.g.enumGroup(ENGINEERING.ENGINEERING_RESERVE);
 		if (engineeringReserve.length === 0) {
@@ -642,6 +669,9 @@ class armyEngineering {
 		const id = getCurrGameTime() + "_CONSTRUCT_SINGLE_MODULE_" + tickUID;
 		md.id = id;
 		md.taskForceID = id;
+
+		md.gx = Math.floor(x / cellSize);
+		md.gy = Math.floor(y / cellSize);
 		
 		taskForceUnits.forEach((droid) => {
 			state.g.addDroidToGroup({groupID: md.taskForceID, droidID: droid.id});
@@ -655,10 +685,14 @@ class armyEngineering {
 		return md;
 	}
 
+	/**
+	 * Creates task to build one defensive structure near a specified location.
+	 * @param {Object} buildTask build information (payload = `derrick` object: requires the `.x`, `.y` properties)
+	 * @param {number} tickUID used to differentiate missions created in the same FishBot tick
+	 * @returns `missionData` object, if mission successfully created, else `undefined`
+	 */
 	createBuildNearbyDefenceTask({buildTask, tickUID}) {
-		// it returns either:
-		// 	- missionData object (according to missionDataTemplate), if mission successfully created, OR
-		//	- undefined, if mission was not able to be created	
+		const cellSize = state.grid.cellSize;
 
 		const MINIMUM_TRUCKS = 2;
 		
@@ -692,6 +726,8 @@ class armyEngineering {
 		md.taskForceID = id;
 
 		md.sectorID = currDerrick.id;			// TODO: CHECK IF "SECTORID" is the correct abstraction even though this is derrick ID (position ID?)
+		md.gx = Math.floor(preferredLoc.x / cellSize);
+		md.gy = Math.floor(preferredLoc.y / cellSize);
 		
 		taskForceUnits.forEach((droid) => {
 			state.g.addDroidToGroup({groupID: md.taskForceID, droidID: droid.id});
