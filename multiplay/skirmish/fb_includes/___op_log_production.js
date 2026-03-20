@@ -84,7 +84,7 @@ class armyQuartermaster {
             // Only make direct assault tanks; overwrite weights
             weights = {
                 'Heavy Cav': 10,
-                'Light Cav': 2,
+                'Light Cav': 3,
                 'Fire Support': 2,
                 'Air Defence': 2,
                 'Sensor': 1
@@ -194,9 +194,6 @@ class armyQuartermaster {
         if (truckInProduction) {
             return;
         }
-
-        // 100% chance to produce cyborg if less than 5 (temporary)
-        // 25% chance for vtol, 75% for tank
 
         const MIN_CYBORGS = 8;
         if (enumDroid(me, DROID_CYBORG).length < MIN_CYBORGS) {
