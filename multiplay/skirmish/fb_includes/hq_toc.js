@@ -557,7 +557,12 @@ class TacticalOperationsCenter {
 			let row = "";
 
 			for (let gx=0; gx<numXCells; gx++) {					
-				row += `${Math.round(heatmap[gx][gy])} `;
+				const val = Math.round(heatmap[gx][gy]);
+				if (val < 0 || val >= 10) {
+					row += `${val} `;
+				} else {
+					row += ` ${val} `;
+				}				
 			}
 			debug(row);
 		}
@@ -603,6 +608,7 @@ class TacticalOperationsCenter {
 		return filteredGrid;
 	}
 
+	
 	updateSpatialFields(state, newGrid) {
 		const numXCells = state.grid.numXCells;
 		const numYCells = state.grid.numYCells;
@@ -614,6 +620,18 @@ class TacticalOperationsCenter {
 				state.fields['enemyUnitThreat'][gx][gy] = newGrid[gx][gy]['enemyDirectFireUnitCount'];				
 				state.fields['enemyStaticDefenceThreat'][gx][gy] = newGrid[gx][gy]['fixedDefenceCount'];
 				state.fields['unclaimedDerricksInCell'][gx][gy] = grid[gx][gy]['derricks'].length - newGrid[gx][gy]['claimedDerricks'].length;
+
+				let numFriendlyDerricks = 0, numEnemyDerricks = 0;
+				newGrid[gx][gy]['claimedDerricks'].forEach(d => {
+					if (isEnemy(d.playerID)) {
+						numEnemyDerricks++;
+					} else {
+						numFriendlyDerricks++;
+					}
+				});
+
+				const ts = newGrid[gx][gy]['targetStructures'].length - numEnemyDerricks - newGrid[gx][gy]['adaCount'];
+				state.fields['controlStability'][gx][gy] = newGrid[gx][gy]['friendlyStructures'].length - (ts);				// todo remove friendly derricks once safe regions are set
 			}	
 		}	
 
@@ -623,6 +641,8 @@ class TacticalOperationsCenter {
 		if (false) this.#debugPrintSpatialField(state.fields['enemyStaticDefenceThreat'], 'enemyStaticDefenceThreat');
 		if (false) this.#debugPrintSpatialField(state.fields['enemyUnitThreat'], 'enemyUnitThreat');
 		if (false) this.#debugPrintSpatialField(state.fields['unclaimedDerricksInCell'], 'unclaimedDerricksInCell');
+		state.fields['controlStability'] = this.#filterField(state, state.fields['controlStability']);
+		if (false) this.#debugPrintSpatialField(state.fields['controlStability'], 'controlStability');
 	}
 
 	/**

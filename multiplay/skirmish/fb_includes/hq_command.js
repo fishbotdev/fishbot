@@ -840,10 +840,10 @@ class CommandCenter {
 		const baseBuildTasks = engineering.requestBaseConstruction(state);
 
 		let sectorDefenceBuildTasks;
-		if (true) {
+		if (false) {
 			sectorDefenceBuildTasks = engineering.requestSectorDefenceConstruction(state);	
 		} else {
-			sectorDefenceBuildTasks = engineering.generateDefenceConstructionOptions(state, activeConstructionMissions);
+			sectorDefenceBuildTasks = engineering.generateOilDefenceConstructionOptions(state, activeConstructionMissions);
 		}
 
 		// Command approves & delegates assignment 

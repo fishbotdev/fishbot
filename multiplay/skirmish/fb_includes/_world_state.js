@@ -288,6 +288,7 @@ class worldState {
             'distanceFromMyBase': createEmptyGrid(),
             'totalDerricksInCell': createEmptyGrid(),
             'unclaimedDerricksInCell': createEmptyGrid(),
+            'controlStability': createEmptyGrid(),
         };
 
         // Player statistics

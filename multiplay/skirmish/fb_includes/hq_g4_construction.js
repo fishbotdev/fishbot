@@ -169,8 +169,127 @@ class armyEngineering {
 		return result;
 	}
 
-	generateDefenceConstructionOptions(state, activeConstructionMissions) {
-		
+	generateOilDefenceConstructionOptions(state, activeConstructionMissions) {
+		/*
+		Algorithm:
+		- For each derrick in state.poi.derricks
+			. If grid cell previously processed, continue
+			. Check static defence threat grid (continue if high threat), check unit defence threat grid (after five mins)
+			. Check grid ref for friendly defences in sector (continue if done)
+			. Check active missions (continue if already active)
+			. Check grid ref for other derricks in sector ( -- influences how many defences)
+			. Check owner ( -- influences offensive vs friendly oil; if other types of defences are needed) or if tileIsBurning 
+			. Build one defence per undefended location also 
+			. Handle special case of clustered derricks with unreachable enemy derricks (build hardpoint)
+		*/
+
+		const grid = state.grid.grid;
+
+		let activeMissionIDs = []; 
+		activeConstructionMissions.forEach(md => {
+			if (md.missionType === MISSION_TYPE.CONSTRUCT_NEARBY_DEFENCE) {
+				activeMissionIDs.push(md['sectorID']);
+			}
+		});
+
+		const FIVE_MINS = 300000;
+		const makePrimaryDefence = (derrickObj) => this.translateIntoBuildRequest({
+			missionType: MISSION_TYPE.CONSTRUCT_NEARBY_DEFENCE, 
+			structureData: STRUCTURES["Rotary MG Bunker"],
+			payload: derrickObj
+		});
+		const makeSecondaryDefence = (derrickObj) => this.translateIntoBuildRequest({
+			missionType: MISSION_TYPE.CONSTRUCT_NEARBY_DEFENCE, 
+			structureData: STRUCTURES["Assault Gun Hardpoint"],
+			payload: derrickObj
+		});
+		const isOwnedByEnemy = (ownerID) => {
+			if (defined(ownerID)) {
+				if (isEnemy(ownerID)) {
+					return true;
+				}
+			}
+			return false;
+		};
+
+		let result = {
+			'friendlyOil': [],
+			'offensiveOil': [],
+			'highPrioOil': [],
+		};
+
+		let seenCoords = [];
+		for (let i=0; i<state.poi.derricks.length; i++) {
+			const d = state.poi.derricks[i];
+
+			const previouslySeen = seenCoords.some(gc => (gc.gx === d.gx && gc.gy === d.gy));
+			seenCoords.push({'gx': d.gx, 'gy': d.gy});
+			if (previouslySeen) continue;
+
+			seenCoords.push({'gx': d.gx, 'gy': d.gy});
+
+			if (getCurrGameTime() > FIVE_MINS && state.fields.enemyUnitThreat[d.gx][d.gy] > 0) continue;
+
+			if (activeMissionIDs.includes(d.id)) continue;
+
+			const control = state.fields.controlStability[d.gx][d.gy]; 
+			if (control < 0) {
+				// debug(`skipped derrick ${d.x}, ${d.y} (${d.gx}, ${d.gy}); too low control`);
+				continue;
+			}
+			if (control >= 3) {
+				// debug(`skipped derrick ${d.x}, ${d.y} (${d.gx}, ${d.gy}); control too high`);
+				continue;
+			}
+
+			const friendlyStructuresInCell = grid[d.gx][d.gy].friendlyStructures;
+
+			const derricksInCell = grid[d.gx][d.gy].derricks;
+
+			const isHighPriority = derricksInCell.length >= 4;
+			const cellHasResidualEnemyDerricks = derricksInCell.some(d => isOwnedByEnemy(d.owner));
+			const secondaryDefenceNeeded = isHighPriority && cellHasResidualEnemyDerricks;
+
+			const friendlyDefenceCount = friendlyStructuresInCell.filter(s => 
+				(s.flags & OBJ_FLAGS.DEFENSIVE_STRUCTURE && !(s.flags & OBJ_FLAGS.ADA))
+			).length;
+
+			if (friendlyDefenceCount > 0 && !secondaryDefenceNeeded) continue;
+			
+			if (isHighPriority) {
+				result['highPrioOil'].push(makePrimaryDefence(d));
+			} else {
+				if (cellHasResidualEnemyDerricks) {
+					result['offensiveOil'].push(makePrimaryDefence(d));
+				} else {
+					result['friendlyOil'].push(makePrimaryDefence(d));
+				}
+			}
+
+			// Special case of unreachable enemy derricks
+			if (secondaryDefenceNeeded) {
+				result['offensiveOil'].push(makeSecondaryDefence(d));
+			}
+		}
+
+		// note: state.poi.derricks is arranged in ascending order of distance from base
+		// .reverse() is a hack to prioritise the furthest derricks first
+		const highPrio = result['highPrioOil'].reverse();		
+		const normalPrio = [...result['offensiveOil'], ...result['friendlyOil'].reverse()];
+
+		if (false) {
+			debug(`generateOilDefenceConstructionOptions() @${gameTime}`);
+			debug(`	highPrio: ${highPrio}`);
+			debug(`	normalPrio: ${normalPrio}`);
+		}
+
+		if (highPrio.length > 0) {
+			return highPrio;
+		} else {
+			return normalPrio;
+		}
+
+		return result;
 	}
 
 	requestBaseConstruction(state) {
