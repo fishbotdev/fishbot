@@ -46,17 +46,19 @@ const FB_INCLUDES = FISHBOT_PATH + "fb_includes/";
 //   - Places a beacon for Player 0 at the location of the current land target.
 var DEBUG_MODE_ON = true;
 
-// 
+
 /*
 	Fun stats:
 	
-	In git bash, cd to the code directory and 
-	(1) "git ls-files "*.js" | xargs wc -l", OR: 
-	(2) Can also do "git ls-files "*.js" | xargs cat | grep -v '^\s*$' | grep -v '^\s*#' | wc -l" 	which apparently counts without comments
+	To count lines of code without comments, in git bash, cd to the code directory and:
 
-	- 29 Nov 2025 (43e22ee): (1) 4170 line JS, 490 lines python (first command) OR (2) 3512 .js, 296 .py (second command)
-	- 18 Jan 2026 (eae414d): (1) 5618 line JS, 717 lines python (first command) OR (2) 4567 .js, 448 .py (second command)
-	- 15 Feb 2026 (296a137): (2) 4281 .js, 202 .py (second command)	-- v3 release
+	git ls-files "*.js" | xargs cat | grep -v '^\s*$' | grep -v '^\s*#' | wc -l 	
+
+	Results:
+	- 29 Nov 2025 (43e22ee): 3512 .js
+	- 18 Jan 2026 (eae414d): 4567 .js
+	- 15 Feb 2026 (821b835): 4536 .js -- v0.3.0 public release
+	- 21 Mar 2026 (7e1949c): 5163 .js -- after migrating sector system -> grid system
 */
 
 
