@@ -43,10 +43,10 @@ class CommandCenter {
 			'combat_runC2': 60,
 			'global_missionManager': 60,
 			'runLogistics': 60,
-			'intel_getNearbyGroundTargets': 30,
-			'intel_getMapIntelligence': 15,
+			'intel_getNearbyGroundTargets': 60,
+			'intel_getMapIntelligence': 20,
 			'intel_checkCampaignStatus': 15,
-			'intel_getAviationTargets': 6,
+			'intel_getAviationTargets': 15,
 			'intel_checkOilDominance': 2,
 		};
 
