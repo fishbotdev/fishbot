@@ -99,6 +99,7 @@ class armyEngineering {
 				for (let i=0; i<derricksInCell.length; i++) {
 					const d = derricksInCell[i];
 					if (existingQueuedDerrickIDs.indexOf(d.id) !== -1) continue; 	// === found an existing mission 
+					// if (tileIsBurning(d.x, d.y)) continue;		// seems to be worse
 
 					if (derricksInCell.length >= 4) {
 						const br = engineering.translateIntoBuildRequest({
@@ -234,24 +235,23 @@ class armyEngineering {
 				continue;
 			}
 
-			const friendlyStructuresInCell = grid[d.gx][d.gy].friendlyStructures;
-
 			const derricksInCell = grid[d.gx][d.gy].derricks;
-
-			const isHighPriority = derricksInCell.length >= 4;
-			const cellHasResidualEnemyDerricks = derricksInCell.some(d => isOwnedByEnemy(d.owner));
-			const secondaryDefenceNeeded = isHighPriority && cellHasResidualEnemyDerricks;
-
+			const friendlyStructuresInCell = grid[d.gx][d.gy].friendlyStructures;
 			const friendlyDefenceCount = friendlyStructuresInCell.filter(s => 
 				(s.flags & OBJ_FLAGS.DEFENSIVE_STRUCTURE && !(s.flags & OBJ_FLAGS.ADA))
 			).length;
+			const burningResource = tileIsBurning(d.x, d.y);
+			
+			const isHighPriority = derricksInCell.length >= 4;
+			const cellHasResidualEnemyDerricks = derricksInCell.some(d => isOwnedByEnemy(d.playerID));
+			const secondaryDefenceNeeded = isHighPriority && cellHasResidualEnemyDerricks;
 
 			if (friendlyDefenceCount > 0 && !secondaryDefenceNeeded) continue;
 			
 			if (isHighPriority) {
 				result['highPrioOil'].push(makePrimaryDefence(d));
 			} else {
-				if (cellHasResidualEnemyDerricks) {
+				if (cellHasResidualEnemyDerricks || burningResource) {
 					result['offensiveOil'].push(makePrimaryDefence(d));
 				} else {
 					result['friendlyOil'].push(makePrimaryDefence(d));
