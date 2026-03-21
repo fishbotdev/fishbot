@@ -86,14 +86,6 @@ const MISSION_PRIORITY = {
 Object.freeze(MISSION_PRIORITY);
 
 
-const FEATURE_TYPE = {
-	SECTOR: 0,
-	BASE: 1,
-	DERRICK: 2
-}
-Object.freeze(FEATURE_TYPE);
-
-
 const OBJ_FLAGS = {
 
     // unit classes
@@ -142,7 +134,7 @@ const MISSION_TYPE = {
 	RAID: 2003,
 
 	// ARMY INTELLIGENCE
-	SECTOR_RECON_ENGINE: 3000,
+
 
 	// ARMY ENGINEERING
 	HELP_CONSTRUCT: 4000,
@@ -181,37 +173,10 @@ Object.freeze(CONSTRUCTION_MISSION_TYPES);
 Object.freeze(AVIATION_MISSION_TYPES);
 
 
-const REGION_OWNER = {
-	FRIENDLY: 0,
-	NEUTRAL: 1,
-	CONTESTED: 2,
-	ENEMY: 3,
-}
-Object.freeze(REGION_OWNER);
-
-
-const REGION_THREAT_LEVEL = {
-	LOW: 1,
-	MEDIUM: 2,
-	HIGH: 3
-};
-Object.freeze(REGION_THREAT_LEVEL);
-
-
-const REGION_STABILITY = {
-	LOW: 1,
-	MEDIUM: 2,
-	HIGH: 3
-};
-Object.freeze(REGION_STABILITY);
-
-
 /*
 	TACTICAL PARAMETERS 
     - used for all .js files prefixed with __tac_
 */
-
-
 const WZ2100_v461_DROID_RANGE_SCALING_FACTOR = 1 / 128;
 
 /*
@@ -250,6 +215,3 @@ const ENGINEERING = {
     ENGINEERING_RESERVE: 5000,
 }
 Object.freeze(ENGINEERING);
-
-
-const TOO_MUCH_POWER = 300;

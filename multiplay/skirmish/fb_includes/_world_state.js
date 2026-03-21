@@ -269,9 +269,6 @@ class worldState {
     // State: this class stores the game state from FishBot's perspective.
     // All functions in FishBot use this class as the current ground truth.
     constructor() {
-        // Sector system (v3)
-        this.sectors = [];
-        this.highRiskSectors = [];
 
         // Grid system (new)
         this.grid = new fbGrid();
@@ -383,65 +380,6 @@ class worldState {
 
 class worldStateBuilder {
 
-    #_createDerrickFromTemplate({location}) {
-        // Helper: derrickTemplate factory
-        let derrickTemplate = {
-            'id': `DERRICK_${location.x}_${location.y}`,
-            'featureType': FEATURE_TYPE.DERRICK, 
-            'x': location.x,
-            'y': location.y,
-            'isClaimed': false,
-            'playerID': undefined,
-
-            'friendlyDefenceCount': undefined,
-            'enemyDefenceCount': undefined,
-            'owner': undefined,
-            'controlStability': undefined, 
-            'threatLevel': undefined,		
-        }
-        
-        return derrickTemplate;
-    }
-
-    #_createBaseFromTemplate({playerID, location}) {
-        // Helper: baseTemplate factory
-        let baseTemplate = {
-            'id': `BASE_${location.x}_${location.y}`,
-            'featureType': FEATURE_TYPE.BASE,
-            'x': location.x,
-            'y': location.y,
-            'playerID': playerID,
-            'isEnemy': isEnemy(playerID),
-            'nearbyBaseStructures': undefined,
-        }
-        return baseTemplate;
-    }
-
-    #_createSectorFromTemplate({x, y, base=undefined, derrickList=[]}) {
-        // Helper: sectorTemplate factory
-        let sectorTemplate = {
-            'id': `SECTOR_${x}_${y}`,
-            'featureType': FEATURE_TYPE.SECTOR,
-            'x': x,
-            'y': y,
-
-            // Sector info
-            'base': base,
-            'derricks': [],
-            'adjacentSectors': [],
-            
-            'priority': MISSION_PRIORITY.LOW,
-            'friendlyDefenceCount': undefined,
-            'enemyDefenceCount': undefined,
-            'owner': REGION_OWNER.NEUTRAL,
-            'controlStability': REGION_STABILITY.HIGH, 
-            'threatLevel': REGION_THREAT_LEVEL.LOW,		
-        }
-
-        sectorTemplate.derricks.push(...derrickList);
-        return sectorTemplate;
-    }
-
     #createFbGroupingSystem() {
         // Generates initial values in FishBot v3 grouping system
         let g = new fbGroup();
@@ -457,86 +395,6 @@ class worldStateBuilder {
         }
 
         return g;
-    }
-
-    #initialiseSectors(state) {
-        // Application service: generate initial sector info
-        let playerStartLocations = startPositions.concat();	
-        for (let i=0; i<playerStartLocations.length; ++i) {
-
-            // Assumes enemy bases are not on top of each other
-            const baseLoc = playerStartLocations[i];
-            let base = this.#_createBaseFromTemplate({
-                playerID: i, 
-                location: baseLoc
-            });
-            let t = this.#_createSectorFromTemplate({
-                x: baseLoc.x, 
-                y: baseLoc.y, 
-                base: base, 
-                derrickList: []
-            });
-            state.sectors.push(t);
-        }
-
-        let derrickLocations = derrickPositions.concat();
-
-        const PROXIMITY_TILES = 14;
-
-        for (let i=0; i<derrickLocations.length; i++) {
-            const derrickLoc = derrickLocations[i];
-
-            let combined = false;
-            for (let j=0; j<state.sectors.length; j++) {
-                const currSector = state.sectors[j];
-                if (distance(derrickLoc, currSector) < PROXIMITY_TILES) {
-                    // Don't create a new sector, use existing
-                    state.sectors[j].derricks.push(this.#_createDerrickFromTemplate({location: derrickLoc}));
-                    // debug(`Added ${derrickLoc.x}, ${derrickLoc.y} -> ${state.sectors[j].id}`);
-                    combined = true;
-                    break;
-                }
-            }
-            if (combined) {
-                continue;
-            }
-            
-            // Else, create a new sector
-            let t = this.#_createSectorFromTemplate({
-                x: derrickLoc.x, 
-                y: derrickLoc.y, 
-                base: undefined, 
-                derrickList: [this.#_createDerrickFromTemplate({location: derrickLoc})]
-            });
-            state.sectors.push(t);
-        }
-
-        // Sort sectors to go from closest to furthest from base
-        state.sectors.sort((one, two) => distance(one, baseLocation) - distance(two, baseLocation));
-        
-        for (let i=0; i<state.sectors.length; i++) {
-            // Set adjacent sectors
-            let currSector = state.sectors[i];
-            const otherRangedSectors = state.sectors.filter(nextSector => currSector.id !== nextSector.id).sort((one, two) => distance(one, currSector) - distance(two, currSector));
-            state.sectors[i].adjacentSectors = otherRangedSectors.slice(0, 3);
-
-            // Organise derricks in terms of distance from base
-            currSector.derricks.sort((a, b) => 
-                distSq(a.x, baseLocation.x, a.y, baseLocation.y) - distSq(b.x, baseLocation.x, b.y, baseLocation.y));
-
-        }
-
-        if (false) {
-            state.sectors.forEach(s => {
-                debug(`${s.id}, ${s.x}, ${s.y}`);
-                // hackMarkTiles(s.x, s.y);
-                if (defined(s.base)) {
-                    debug(` - ${s.base.id}, ${s.base.x}, ${s.base.y} with derricks:`);
-                }
-                s.adjacentSectors.forEach(s => debug(`  - adj: sector ${s.id}`));
-                s.derricks.forEach(d => debug(`     - ${d.id}, ${d.x}, ${d.y}`));
-            })
-        }
     }
 
     #createNewDerrick(x, y, gx, gy) {
@@ -627,10 +485,6 @@ class worldStateBuilder {
         // Application service: Initialises 'worldState' to defaults
         state.g = this.#createFbGroupingSystem();
 
-        // old sector system
-        this.#initialiseSectors(state);        
-
-        // new sector system
         state.poi.derricks = this.#initialiseDerrickLocs(state);    // this function also modifies each grid cell
         state.poi.bases = this.#initialiseBaseLocs(state);          // this function also modifies each grid cell
 

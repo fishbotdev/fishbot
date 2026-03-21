@@ -44,8 +44,6 @@ class CommandCenter {
 			'global_missionManager': 60,
 			'runLogistics': 60,
 			'intel_getNearbyGroundTargets': 30,
-			'intel_updateSectorInfo': 30,
-			'intel_updateCOP': 30,	
 			'intel_getMapIntelligence': 15,
 			'intel_checkCampaignStatus': 15,
 			'intel_getAviationTargets': 6,
@@ -57,46 +55,6 @@ class CommandCenter {
 	}
 
 	/////////////////////////////////////////////////// STATE INITIALISATION ///////////////////////////////////////////////////
-
-	setDefaultSectorParameters(state) {
-		// TODO: mutates the state. move to hq_toc
-
-		// Service: run once - establishes default sector info based on real sector data
-
-		// Simple heuristic rule to set initial threat level
-		const RING_RADIUS = Math.floor(Math.min(mapWidth/3, mapHeight/3)); 	// this maps to the 3 different levels of threat & stability
-
-		for (let i=0; i<state.sectors.length; i++) {
-
-			const distanceToSector = distance(baseLocation, state.sectors[i]);	
-			
-			let threatLevel, controlStability;
-
-			if (distanceToSector < RING_RADIUS) {
-				// First ring
-				threatLevel = REGION_THREAT_LEVEL.LOW;
-				controlStability = REGION_STABILITY.HIGH;
-			} else if (RING_RADIUS < distanceToSector && distanceToSector < 2*RING_RADIUS) {
-				// Second ring
-				threatLevel = REGION_THREAT_LEVEL.MEDIUM;
-				controlStability = REGION_STABILITY.MEDIUM;
-			} else {
-				// Third ring
-				threatLevel = REGION_THREAT_LEVEL.HIGH;
-				controlStability = REGION_STABILITY.LOW;			
-			}
-			
-			state.sectors[i].threatLevel = threatLevel;
-			state.sectors[i].controlStability = controlStability;
-		}
-
-		if (false) {
-			(`establishSituation(): sector info`)
-			state.sectors.forEach(s => {
-				debug(`	threat: ${s.id}, ${s.threatLevel}, ${s.controlStability}`);
-			});
-		}
-	}
 
 	setDefaultMissions(state) {
 		// TODO: mutates the state. move to hq_toc
@@ -607,28 +565,15 @@ class CommandCenter {
 	/**
 	 * 	For performance reasons, this function was changed from linear to distributed.
 	 * 	The intent is:
-	 * 	1. Intelligence mission is scheduled
-	 * 	2. Intelligence mission is executed by the global mission manager / internally
-	 * 	3. Observations are compiled into the global 'state'
+	 * 	1. Intelligence mission/task is scheduled
+	 * 	2. Mission is either immediately run or scheduled to run by the global mission manager
+	 * 	3. Observations are compiled into the global 'state' by the `toc`
 	 */
 	runIntelligence(state, taskID) {
 		
 		// Note: For performance reasons, anything which can be executed immediately should not use the mission management system.
 
 		switch(taskID) {
-			case 'intel_updateSectorInfo':
-
-				let sectorUpdateTasks = [];
-				state.sectors.forEach(s => sectorUpdateTasks.push(intelligence.createIntelRequest({missionType: MISSION_TYPE.SECTOR_RECON_ENGINE, payload: s})));
-				this.toc.assignIntelMissions({intelTasks: sectorUpdateTasks, state: state});	// hq/toc: this translates orders (previous step) into missions	
-				break;
-
-			case 'intel_updateCOP':
-
-				const observations = this.toc.getCompletedIntelMissionReports();				// hq/toc: gets completed data (intelligence reports)
-				this.toc.compileSectorIntelIntoCOP(observations, state);						// hq/toc: processes intelligence reports & updates state ("Common Operational Picture")
-				this.toc.updateHighRiskSectors(state);											// hq/toc: separated state update function
-				break;
 
 			case 'intel_checkOilDominance':
 				const isOilDominant = checkOilDominance(state, this.OIL_DOMINANCE_PERCENTAGE);
@@ -706,17 +651,11 @@ class CommandCenter {
 				activeOilCapTasks.push(missionData.sectorID);	
 			}
 		});
-		if (false) {
-			debug(`issueConstructionTasking(): activeOilCapSectors: `);
-			activeOilCapTasks.forEach(s => debug(`	sector id ${s}`));
-		}
 
-		// let approvedSectorOilCapTasks = requestedSectorOilCapTasks.filter(task => !activeOilCapSectors.includes(task.payload.id));
 		let approvedSectorOilCapTasks = [];
 		for (let i=0; i<requestedSectorOilCapTasks.length; i++) {
 			const curr = requestedSectorOilCapTasks[i];
 			if (activeOilCapTasks.includes(curr.payload.id)) {
-				// payload = sector for requestedSectorOilCapTasks
 				if (false) debug(`	- skipping Sector ${curr.payload.id}`);
 				continue;
 			} else {
@@ -774,16 +713,9 @@ class CommandCenter {
 		if (approvedSectorDefenceTasks.length > 0) {
 			return approvedConstructionTasks;
 		}
-
-
-		/////// FORWARD STRUCTURE CONSTRUCTION ///////
-		// sectorIndirectFireBuildTasks.forEach(l => debug(`requesting building mortar / sensor around ${l.payload.x}, ${l.payload.y}`));
-		// approvedConstructionTasks.push(...sectorIndirectFireBuildTasks.slice(0, 2));
 		
 		return approvedConstructionTasks;
 	}
-
-
 
 	abortDangerousConstructionTasks2(state) {
 		const cellSize = state.grid.cellSize;
@@ -836,15 +768,8 @@ class CommandCenter {
 
 		// g4 generates options for construction tasks
 		const sectorOilCaptureBuildTasks = engineering.generateOilCaptureOptions(state, activeConstructionMissions);	
-
+		const sectorDefenceBuildTasks = engineering.generateOilDefenceConstructionOptions(state, activeConstructionMissions);
 		const baseBuildTasks = engineering.requestBaseConstruction(state);
-
-		let sectorDefenceBuildTasks;
-		if (false) {
-			sectorDefenceBuildTasks = engineering.requestSectorDefenceConstruction(state);	
-		} else {
-			sectorDefenceBuildTasks = engineering.generateOilDefenceConstructionOptions(state, activeConstructionMissions);
-		}
 
 		// Command approves & delegates assignment 
 		const approvedTasks = this.prioritiseConstructionTasks(sectorOilCaptureBuildTasks, baseBuildTasks, sectorDefenceBuildTasks, undefined, state);

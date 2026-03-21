@@ -210,6 +210,7 @@ class armyQuartermaster {
         }
 
         // if having too much energy, don't care about what we produce
+        const TOO_MUCH_POWER = 300;
         if (myPower() > TOO_MUCH_POWER) {
             this.#checkTankProduction();
             this.#checkVtolProduction();

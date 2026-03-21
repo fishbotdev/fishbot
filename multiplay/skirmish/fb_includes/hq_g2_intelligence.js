@@ -20,6 +20,9 @@ class armyIntelligence {
 
 	}
 
+	/*
+		MISSION CREATION
+	*/
 	createIntelRequest({missionType, payload, priority=MISSION_PRIORITY.LOW}) {
 		return {
 			'missionType': missionType,
@@ -28,9 +31,6 @@ class armyIntelligence {
 		};
 	}
 
-	/*
-		MISSION CREATION
-	*/
 	#createMissionOrders() {
 		let missionDataTemplate = {
 			'id': undefined, 
@@ -54,29 +54,9 @@ class armyIntelligence {
 		return callback(...args);	//...args is important otherwise all remaining args will be interpreted as a single array of parameters
 	}
 
-	#finaliseEngineCall(md) {
+	#finaliseIntelMission(md) {
 		// Mission completed
 		md.timeCompleted = getCurrGameTime();
-	}
-
-	createSectorReconEngineMission({sectorInfo, missionType, tickUID}) {
-		// it returns either:
-		// 	- missionData object (according to missionDataTemplate), if mission successfully created, OR
-		//	- undefined, if mission was not able to be created
-		
-		let md = this.#createMissionOrders();
-
-		// Create mission details
-		const id = gameTime + "_SECTOR_RECON_ENGINE_" + tickUID;
-		md.id = id;
-
-		md.sectorID = sectorInfo.id;
-
-		// Assign orders for conducting & ceasing operations			
-		md.orders = () => this.#mcb(getSectorIntelFromGameEngine, sectorInfo, missionType);		
-		md.ceaseOrders = () => this.#mcb(this.#finaliseEngineCall, md);
-
-		return md;
 	}
 
 	/*

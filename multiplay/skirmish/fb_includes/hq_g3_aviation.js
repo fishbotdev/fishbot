@@ -31,8 +31,7 @@ class armyAviation {
 			'ceaseOrders': undefined,
 			'timeStarted': -2,
 			'timeCompleted': -1,
-
-			'sectorID': undefined,
+			
 			'target': undefined,
 		};
 

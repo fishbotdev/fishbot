@@ -46,6 +46,5 @@ const research = new armyResearchAndDevelopment();
 // Commander: Makes all decisions
 const hq = new CommandCenter();
 
-hq.setDefaultSectorParameters(state);		
 hq.setDefaultMissions(state);			
 hq.setSchedulerParameters(state);
