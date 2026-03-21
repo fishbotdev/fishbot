@@ -19,14 +19,6 @@ class armyEngineering {
 	constructor() {
 
 	}
-	
-	getTruckAvailability() {
-		const truckAvailability = {
-			numAvailable: state.g.enumGroup(ENGINEERING.ENGINEERING_RESERVE).length,
-			numTotal: enumDroid(me, DROID_CONSTRUCT).length
-		}
-		return truckAvailability;
-	}
 
 	#getNumFinishedModules({structureID}) {
 		// Assumes that 
@@ -100,7 +92,7 @@ class armyEngineering {
 
 				// Filter out invalid / bad entries
 				if (unclaimedDerricksInCell[gx][gy] === 0) continue;
-				if (enemyStaticDefenceThreat[gx][gy] > 0) continue;			// Simplistic; static defence threat should be filtered before use
+				if (enemyStaticDefenceThreat[gx][gy] > 0) continue;			
 				if (enemyUnitThreat[gx][gy] > 0) continue;
 
 				const derricksInCell = grid[gx][gy].derricks;

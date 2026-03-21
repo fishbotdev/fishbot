@@ -626,86 +626,69 @@ class CommandCenter {
 	/**
 	 * Approves requested tasks based on game state & generates approved buildTasks for TOC execution 
 	 */
-	prioritiseConstructionTasks(requestedSectorOilCapTasks, requestedBaseBuildTasks, requestedSectorDefenceBuildTasks, sectorIndirectFireBuildTasks, state) {
+	prioritiseConstructionTasks(requestedOilCapTasks, requestedBaseBuildTasks, requestedSectorDefenceTasks, sectorIndirectFireBuildTasks, state) {
 
-		const truckData = engineering.getTruckAvailability();
-		// No tasks if no trucks available
-		if (truckData.numAvailable === 0 || truckData.numTotal === 0) {
-			// numTotal will eventually be used to trigger production
-			return [];
+		let approvedConstructionTasks = [];
+
+		const trucksUnavailable = state.g.enumGroup(ENGINEERING.ENGINEERING_RESERVE).length === 0;
+		if (trucksUnavailable) {
+			return approvedConstructionTasks;
 		}
 
-		const activeConstructionMissions = this.toc.getActiveConstructionMissions(state);
-
-		/////// OIL CAPTURE ///////
-
-		// Oil capture -> filter out sectors already in progress
-		let activeOilCapTasks = [];
-		const TYPES_OF_DERRICK_CAPTURE_MISSIONS = [
+		const OIL_CAPTURE_MISSION_TYPES = [
 			MISSION_TYPE.CONSTRUCT_ALL_DERRICKS_IN_SECTOR, 
 			MISSION_TYPE.CONSTRUCT_OIL_DERRICK
 		];
+		const BASE_BUILD_MISSION_TYPES = [
+			MISSION_TYPE.CONSTRUCT_BASE_STRUCTURE, 
+			MISSION_TYPE.CONSTRUCT_SINGLE_MODULE
+		];
 
-		activeConstructionMissions.forEach(missionData => {
-			if (TYPES_OF_DERRICK_CAPTURE_MISSIONS.includes(missionData.missionType)) {
-				activeOilCapTasks.push(missionData.sectorID);	
-			}
-		});
-
-		let approvedSectorOilCapTasks = [];
-		for (let i=0; i<requestedSectorOilCapTasks.length; i++) {
-			const curr = requestedSectorOilCapTasks[i];
-			if (activeOilCapTasks.includes(curr.payload.id)) {
-				if (false) debug(`	- skipping Sector ${curr.payload.id}`);
-				continue;
-			} else {
-				approvedSectorOilCapTasks.push(curr);
-			}		
-		}
-
-		/////// BASE BUILD ///////
-		const BASE_BUILD_MISSION_TYPES = [MISSION_TYPE.CONSTRUCT_BASE_STRUCTURE, MISSION_TYPE.CONSTRUCT_SINGLE_MODULE];
-		let activeBaseBuildTasks = [];
-		activeConstructionMissions.forEach(missionData => {
-			if (BASE_BUILD_MISSION_TYPES.includes(missionData.missionType)) {
+		let activeOilCapTaskIDs = [];
+		let activeBaseBuildTasks = []; 
+		let activeDefenceBuildTaskIDs = [];
+		
+		this.toc.getActiveConstructionMissions(state).forEach(missionData => {
+			if (OIL_CAPTURE_MISSION_TYPES.includes(missionData.missionType)) {
+				activeOilCapTaskIDs.push(missionData.sectorID);	
+			} else if (BASE_BUILD_MISSION_TYPES.includes(missionData.missionType)) {
 				activeBaseBuildTasks.push(missionData);	
+			} else if (missionData.missionType === MISSION_TYPE.CONSTRUCT_NEARBY_DEFENCE) {
+				activeDefenceBuildTaskIDs.push(missionData.sectorID);	
 			}
 		});
 
-		/////// GENERATE BASE BUILD + OIL CAPTURE TASKS ///////
-		let approvedConstructionTasks = [];
-
+		// BASE BUILD
 		if (activeBaseBuildTasks.length === 0) {
 			approvedConstructionTasks.push(...requestedBaseBuildTasks.slice(0, 1));
 		}
 
-		approvedConstructionTasks.push(...approvedSectorOilCapTasks);
-
-		/////// DERRICK DEFENCE CONSTRUCTION ///////
-		let activeFortificationSectors = [];
-		activeConstructionMissions.forEach(missionData => {
-			if (missionData.missionType === MISSION_TYPE.CONSTRUCT_NEARBY_DEFENCE) {
-				activeFortificationSectors.push(missionData.sectorID);	
-			}
+		// OIL CAP
+		requestedOilCapTasks.forEach(task => {
+			if (activeOilCapTaskIDs.some(sectorID => sectorID === task.payload.id)) return;		// todo: consider standardising 'sectorID', 'id' etc. to 'metadata' or 'payload'
+			approvedConstructionTasks.push(task);
 		});
 
-		let approvedSectorDefenceTasks = [];
-		for (let i=0; i<requestedSectorDefenceBuildTasks.length; i++) {
-			const currTask = requestedSectorDefenceBuildTasks[i];
-			const currSector = currTask.payload;
-			if (activeFortificationSectors.includes(currSector.id)) {
-				// debug(`	issueConstructiontasking: skipped sector ${currSector.id}`);
-				continue;
+		// DERRICK DEFENCES
+		const MAX_CONCURRENT_FORTIFICATION_TASKS = 1;
+		const deficit = MAX_CONCURRENT_FORTIFICATION_TASKS - activeDefenceBuildTaskIDs.length;
+
+		let counter = 0;
+		
+		if (deficit > 0) {
+			for (let i=0; i<requestedSectorDefenceTasks.length; i++) {
+				if (counter >= deficit) 
+					break;
+				// Skip already active tasks
+				const task = requestedSectorDefenceTasks[i];
+				if (activeDefenceBuildTaskIDs.some(sectorID => sectorID === task.payload.id)) 
+					continue;
+				// Else push
+				approvedConstructionTasks.push(task);
+				counter++;
 			}
-			approvedSectorDefenceTasks.push(currTask);
 		}
 
-		const MAX_CONCURRENT_FORTIFICATION_TASKS = 1;
-		// debug(`activeFortificationSectors.length ${activeFortificationSectors.length}, approvedSectorDefenceTasks.length ${approvedSectorDefenceTasks.length}`);
-		if (activeFortificationSectors.length < MAX_CONCURRENT_FORTIFICATION_TASKS) {
-			approvedConstructionTasks.push(...approvedSectorDefenceTasks.slice(0, MAX_CONCURRENT_FORTIFICATION_TASKS - activeFortificationSectors.length));
-		}
-		
 		return approvedConstructionTasks;
 	}
 
