@@ -162,6 +162,12 @@ class armyEngineering {
 		return result;
 	}
 
+	/**
+	 * 
+	 * @param {worldState} state 
+	 * @param {*} activeConstructionMissions 
+	 * @returns 
+	 */
 	generateOilDefenceConstructionOptions(state, activeConstructionMissions) {
 		/*
 		Algorithm:
@@ -177,6 +183,10 @@ class armyEngineering {
 		*/
 
 		const grid = state.grid.grid;
+		const derricks = state.poi.derricks;
+		const controlStability = state.fields.controlStability;
+		const enemyStaticDefenceThreat = state.fields.enemyStaticDefenceThreat;
+		const enemyUnitThreat = state.fields.enemyUnitThreat;
 
 		let activeMissionIDs = []; 
 		activeConstructionMissions.forEach(md => {
@@ -212,34 +222,30 @@ class armyEngineering {
 		};
 
 		let seenCoords = [];
-		for (let i=0; i<state.poi.derricks.length; i++) {
-			const d = state.poi.derricks[i];
+		for (let i=0; i<derricks.length; i++) {
+			const d = derricks[i];
 
 			const previouslySeen = seenCoords.some(gc => (gc.gx === d.gx && gc.gy === d.gy));
 			seenCoords.push({'gx': d.gx, 'gy': d.gy});
 			if (previouslySeen) continue;
 
-			seenCoords.push({'gx': d.gx, 'gy': d.gy});
-
-			if (getCurrGameTime() > FIVE_MINS && state.fields.enemyUnitThreat[d.gx][d.gy] > 0) continue;
+			if (enemyUnitThreat[d.gx][d.gy] > 0 || enemyStaticDefenceThreat[d.gx][d.gy] > 0) continue;
 
 			if (activeMissionIDs.includes(d.id)) continue;
 
-			const control = state.fields.controlStability[d.gx][d.gy]; 
-			if (control < 0) {
+			if (controlStability[d.gx][d.gy] < 0) {
 				// debug(`skipped derrick ${d.x}, ${d.y} (${d.gx}, ${d.gy}); too low control`);
 				continue;
 			}
-			if (control >= 3) {
+			if (controlStability[d.gx][d.gy] >= 3) {
 				// debug(`skipped derrick ${d.x}, ${d.y} (${d.gx}, ${d.gy}); control too high`);
 				continue;
 			}
 
 			const derricksInCell = grid[d.gx][d.gy].derricks;
-			const friendlyStructuresInCell = grid[d.gx][d.gy].friendlyStructures;
-			const friendlyDefenceCount = friendlyStructuresInCell.filter(s => 
-				(s.flags & OBJ_FLAGS.DEFENSIVE_STRUCTURE && !(s.flags & OBJ_FLAGS.ADA))
-			).length;
+
+			const s = state.grid.enumRange(d.x, d.y, 10);
+			const friendlyDefenceCount = s['friendlyStructures'].filter(t=> (t.flags & OBJ_FLAGS.DEFENSIVE_STRUCTURE) && !(t.flags & OBJ_FLAGS.ADA)).length;
 			const burningResource = tileIsBurning(d.x, d.y);
 			
 			const isHighPriority = derricksInCell.length >= 4;
@@ -248,19 +254,18 @@ class armyEngineering {
 
 			if (friendlyDefenceCount > 0 && !secondaryDefenceNeeded) continue;
 			
-			if (isHighPriority) {
+			if (isHighPriority && !secondaryDefenceNeeded) {
 				result['highPrioOil'].push(makePrimaryDefence(d));
+				continue;
 			} else {
-				if (cellHasResidualEnemyDerricks || burningResource) {
+				if ((cellHasResidualEnemyDerricks && !isHighPriority) || burningResource) {
 					result['offensiveOil'].push(makePrimaryDefence(d));
+				} else if (secondaryDefenceNeeded) { 
+					// Special case of unreachable enemy derricks
+					result['offensiveOil'].push(makeSecondaryDefence(d));
 				} else {
 					result['friendlyOil'].push(makePrimaryDefence(d));
 				}
-			}
-
-			// Special case of unreachable enemy derricks
-			if (secondaryDefenceNeeded) {
-				result['offensiveOil'].push(makeSecondaryDefence(d));
 			}
 		}
 
@@ -275,13 +280,7 @@ class armyEngineering {
 			debug(`	normalPrio: ${normalPrio}`);
 		}
 
-		if (highPrio.length > 0) {
-			return highPrio;
-		} else {
-			return normalPrio;
-		}
-
-		return result;
+		return [...highPrio, ...normalPrio];
 	}
 
 	requestBaseConstruction(state) {

@@ -106,12 +106,17 @@ class TacticalOperationsCenter {
 		state.activeMissions = currActiveMissions;
 	}
 
+
+	/**
+	 * Note: This function shouldn't make decisions. It is the responsibility of higher command to determine which missions are worth doing.
+	 * @param {worldState} state 
+	 * @param {*} aviationTargets 
+	 * @param {*} minAircraft 
+	 */
 	assignAviationMissions(state, aviationTargets, minAircraft) {
 
 		for (let i=0; i<aviationTargets.length; i++) {
-			// Note: This function shouldn't make decisions
-			// It is the responsibility of higher command to determine which missions are worth doing
-			
+
 			const newMissionRequest = aviationTargets[i];
 			const NUM_UNITS = minAircraft;
 
@@ -127,12 +132,9 @@ class TacticalOperationsCenter {
 		}
 	}
 
-	assignIntelMissions({intelTasks, state}) {
+	assignIntelMissions(state, intelTasks) {
 
-		// debug(`assignReconMissions(): reconTasks.length = ${reconTasks.length}`);
 		for (let i=0; i<intelTasks.length; i++) {
-
-			// This function just executes, it doesn't reason (e.g. it doesn't stop a new mission from being scheduled if there's already an active one)
 
 			const missionType = intelTasks[i].missionType;
 			const payload = intelTasks[i].payload;
@@ -148,30 +150,25 @@ class TacticalOperationsCenter {
 		}
 	}
 
-	assignConstructionTasks({approvedTasks, state}) {
-		// Application service: 
-		let buildTasks = approvedTasks;
+	#printConstructionDebugOutput(task, missionID) {
+		let sectorID = '', structureID = '';
+		if (defined(task.payload)) {
+			sectorID = `@ ${task.payload.id}`;
+			structureID = `-- ${task.structureID}`
+		}
+		debug(`Scheduled BUILD (${task.missionType}) for: ${missionID} ${sectorID} ${structureID} ${sectorID}`);
+	};
 
-		// debug(`assignConstructionTasks(): buildTasks.length = ${buildTasks.length}`);
+	assignConstructionTasks(state, buildTasks) {
+		const PRIORITY = MISSION_PRIORITY.HIGH;
 
-		for (let i=0; i<buildTasks.length; i++) {
-			const buildTask = buildTasks[i];
-		
-			// Priority is hardcoded for now
-			const missionData = this.createNewMission({missionType: buildTask.missionType, priority: MISSION_PRIORITY.HIGH}, buildTask, i);		
-				
+		buildTasks.forEach((task, i) => {	
+			const missionData = this.createNewMission({missionType: task.missionType, priority: PRIORITY}, task, i);		
 			if (defined(missionData)) {
 				state.activeMissions.push(missionData);
-
-				if (false) {
-					let sectorID = undefined;
-					if (defined(buildTask.payload)) {
-						sectorID = buildTask.payload.id;
-					}
-					debug(`Scheduled BUILD (${buildTask.missionType}) for: ${missionData.id}, in Sect ${sectorID}`);
-				}
+				// this.#printConstructionDebugOutput(task, missionData.id);
 			} 
-		}
+		});
 	}
 
 	createNewMission({missionType, priority=MISSION_PRIORITY.LOW}, ...args) {

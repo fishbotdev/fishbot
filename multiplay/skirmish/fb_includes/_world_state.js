@@ -73,98 +73,6 @@ class fbGrid {
         }
     }
 
-    enumBoundingBox(x, y, radius) {
-        let results = {
-            'droids': [],
-            'structs': [],
-            'closestDroid': undefined,
-            'closestStruct': undefined
-        };
-
-        if (!defined(this.grid)) {
-            debug(`WARNING: state/spatialQueryBox() could not read from undefined grid.`);
-            return results;
-        }
-
-        // Initialise closest droid / struct calculation
-        let closestDroidDistSq = 0, closestStructDistSq = 0;
-        let closestDroid = undefined, closestStruct = undefined;
-
-        const cx = Math.floor(x / this.cellSize);
-        const cy = Math.floor(y / this.cellSize);
-        const gr = Math.ceil(radius / this.cellSize);
-
-        for (let dx = -gr; dx <= gr; dx++) {
-            for (let dy = -gr; dy <= gr; dy++) {
-
-                // Compute deviations & test validity
-                const gx = cx + dx;
-                if (gx < 0 || gx >= this.numXCells) {
-                    continue;
-                }
-                
-                const gy = cy + dy;
-                if (gy < 0 || gy >= this.numYCells) {       // >= because of 0 indexing: [0, 1, ..., numYCells - 1]
-                    continue;
-                }
-
-                // Get corresponding grid entry
-                // debug(`gx ${gx}, gy ${gy}, this.grid[gx][gy] ${this.grid[gx][gy]}, t ${this.grid[gx][gy]['targetUnits']}`);
-                this.grid[gx][gy]['targetUnits'].forEach(t => {
-                    const obj = getObject(t.type, t.player, t.id);
-                    if (!defined(obj)) {
-                        return;
-                    }
-                    const d = distSq(x, obj.x, y, obj.y);
-
-                    // distSq check is removed here
-
-                    results['droids'].push(t);
-                    
-                    if (!(t.flags & OBJ_FLAGS.AVIATION)) {
-                        if (!defined(closestDroid)) {
-                            closestDroid = obj;
-                            closestDroidDistSq = d;
-                            return;
-                        }
-
-                        if (d < closestDroidDistSq) {
-                            closestDroid = obj;
-                            closestDroidDistSq = d;
-                        }
-                    }
-                });
-                results['closestDroid'] = closestDroid;
-                
-                this.grid[gx][gy]['targetStructures'].forEach(t => {
-                    const obj = getObject(t.type, t.player, t.id);
-                    if (!defined(obj)) {
-                        return;
-                    }
-                    const d = distSq(x, obj.x, y, obj.y);
-
-                    // distSq check is removed here
-
-                    results['structs'].push(t);
-
-                    if (!defined(closestStruct)) {
-                        closestStruct = obj;
-                        closestStructDistSq = d;
-                        return;
-                    }
-
-                    if (d < closestStructDistSq) {
-                        closestStruct = obj;
-                        closestStructDistSq = d;
-                    }
-                });
-                results['closestStruct'] = closestStruct;                
-            }
-        }
-
-        return results;
-    }
-
     /**
      * Custom enumRange for FishBot; this uses FishBot's grid system. 
      * The intent is to optimise for speed.
@@ -175,14 +83,17 @@ class fbGrid {
      */
     enumRange(x, y, radius) {
         let results = {
-            'droids': [],
-            'structs': [],
-            'closestDroid': undefined,
-            'closestStruct': undefined
+            'targetUnits': [],
+            'targetStructures': [],
+            'closestTargetUnit': undefined,
+            'closestTargetStructure': undefined,
+
+            // 'friendlyUnits': [],
+            'friendlyStructures': [],
         };
 
         if (!defined(this.grid)) {
-            debug(`WARNING: state/spatialQueryBox() could not read from undefined grid.`);
+            debug(`WARNING: grid.enumRange() could not read from undefined grid.`);
             return results;
         }
 
@@ -218,7 +129,7 @@ class fbGrid {
                     if (d > radius ** 2) {
                         return;
                     }
-                    results['droids'].push(t);
+                    results['targetUnits'].push(t);
                     
                     if (!(t.flags & OBJ_FLAGS.AVIATION)) {
                         if (!defined(closestDroid)) {
@@ -233,7 +144,7 @@ class fbGrid {
                         }
                     }
                 });
-                results['closestDroid'] = closestDroid;
+                results['closestTargetUnit'] = closestDroid;
                 
                 this.grid[gx][gy]['targetStructures'].forEach(t => {
                     const obj = getObject(t.type, t.player, t.id);
@@ -244,7 +155,7 @@ class fbGrid {
                     if (d > radius ** 2) {
                         return;
                     }
-                    results['structs'].push(t);
+                    results['targetStructures'].push(t);
 
                     if (!defined(closestStruct)) {
                         closestStruct = obj;
@@ -257,13 +168,26 @@ class fbGrid {
                         closestStructDistSq = d;
                     }
                 });
-                results['closestStruct'] = closestStruct;                
-            }
+                results['closestTargetStructure'] = closestStruct;     
+                
+                this.grid[gx][gy]['friendlyStructures'].forEach(t => {
+                    const obj = getObject(t.type, t.player, t.id);
+                    if (!defined(obj)) {
+                        return;
+                    }
+                    const d = distSq(x, obj.x, y, obj.y);
+                    if (d > radius ** 2) {
+                        return;
+                    }
+                    results['friendlyStructures'].push(t);
+                });
+            }                
         }
 
         return results;
     }
 }
+
 
 class worldState {
     // State: this class stores the game state from FishBot's perspective.

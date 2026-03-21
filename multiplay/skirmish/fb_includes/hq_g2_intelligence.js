@@ -326,11 +326,15 @@ class armyIntelligence {
 
 	}
 
+	/**
+	 * 
+	 * @param {worldState} state 
+	 * @returns 
+	 */
 	getTargetsNearDerricks(state) {
 
 		const grid = state.grid.grid;
 		const cellSize = state.grid.cellSize;
-		const gridEnumRange = (...args) => state.grid.enumRange(...args);
 
 		const SEARCH_RADIUS = cellSize;
 		let targetsNearDerricks = [];
@@ -350,11 +354,11 @@ class armyIntelligence {
 				continue;
 			}
 
-			const t = gridEnumRange(d.x, d.y, SEARCH_RADIUS);
+			const t = state.grid.enumRange(d.x, d.y, SEARCH_RADIUS);
 
 			let defences = [], trucks = [], derricks = [];
 
-			t['structs'].forEach(target => {
+			t['targetStructures'].forEach(target => {
 				if (target.flags & OBJ_FLAGS.DEFENSIVE_STRUCTURE) {
 					if (target.flags & OBJ_FLAGS.INDIRECT_FIRE) {
 						defences.unshift(target);
@@ -367,7 +371,7 @@ class armyIntelligence {
 				}
 			});
 
-			t['droids'].forEach(target => {
+			t['targetUnits'].forEach(target => {
 				if (target.flags & OBJ_FLAGS.CONSTRUCTOR) {
 					trucks.push(target);
 				}
@@ -382,9 +386,13 @@ class armyIntelligence {
 
 	}
 
+	/**
+	 * 
+	 * @param {worldState} state 
+	 * @returns 
+	 */
 	getBaseTargets(state) {
 		// Note: trying a new pattern; extract all relevant parameters from state at the start
-		const gridEnumBoundingBox = (...args) => state.grid.enumBoundingBox(...args);
 		const bases = state.poi.bases;
 		const enemyPlayerIDs = state.enumLivingPlayers().filter(isEnemy); 
 
@@ -403,30 +411,29 @@ class armyIntelligence {
 				continue;
 			}
 
-			// this is a version of grid.enumRange where positional accuracy is not critical
-			const t = gridEnumBoundingBox(bases[i].x, bases[i].y, SEARCH_RADIUS);		
+			const t = state.grid.enumRange(bases[i].x, bases[i].y, SEARCH_RADIUS);		
 
-			for (let j=0; j<t['structs'].length; j++) {
-				if (t['structs'][j].flags & OBJ_FLAGS.ADA) {
-					result.adaTargets.push(t['structs'][j]);
+			for (let j=0; j<t['targetStructures'].length; j++) {
+				if (t['targetStructures'][j].flags & OBJ_FLAGS.ADA) {
+					result.adaTargets.push(t['targetStructures'][j]);
 					continue;
 				}
-				if (t['structs'][j].flags & OBJ_FLAGS.PRODUCTION) {
-					result.productionTargets.unshift(t['structs'][j]);
+				if (t['targetStructures'][j].flags & OBJ_FLAGS.PRODUCTION) {
+					result.productionTargets.unshift(t['targetStructures'][j]);
 					continue;
 				}
-				if (t['structs'][j].flags & OBJ_FLAGS.REPAIR) {
-					result.productionTargets.push(t['structs'][j]);
+				if (t['targetStructures'][j].flags & OBJ_FLAGS.REPAIR) {
+					result.productionTargets.push(t['targetStructures'][j]);
 					continue;
 				}
 			}
 
-			for (let j=0; j<t['droids'].length; j++) {
-				if (t['droids'][j].flags & OBJ_FLAGS.ADA) {
-					result.adaTargets.push(t['droids'][j]);
+			for (let j=0; j<t['targetUnits'].length; j++) {
+				if (t['targetUnits'][j].flags & OBJ_FLAGS.ADA) {
+					result.adaTargets.push(t['targetUnits'][j]);
 				}
-				if (t['droids'][j].flags & OBJ_FLAGS.CONSTRUCTOR) {
-					result.productionTargets.push(t['droids'][j]);
+				if (t['targetUnits'][j].flags & OBJ_FLAGS.CONSTRUCTOR) {
+					result.productionTargets.push(t['targetUnits'][j]);
 				}
 
 			}
@@ -442,10 +449,15 @@ class armyIntelligence {
 	 *		- classifying each object into different, useful categories
 	 *		- compressing each gameObject for efficient storage & use
 	 * with O(N) algorithmic complexity. 
+	 * 
+	 * @param {worldState} state
+	 * @param {BaseObject} loc
+	 * @param {number} searchRadius
+	 * @param {number} immediateRadius
+	 * @returns {Object}
 	 */
-	proposeTargetsInRadius2({state, loc, searchRadius=20, immediateRadius=10}) {
+	proposeTargetsInRadius2(state, loc, searchRadius=20, immediateRadius=10) {
 
-		const grid = state.grid;
 		const allTargets = state.allTargets;
 
 		let proposedTargets = {
@@ -468,9 +480,9 @@ class armyIntelligence {
 			return proposedTargets;
 		}
 
-		const t = grid.enumRange(loc.x, loc.y, searchRadius); 
+		const t = state.grid.enumRange(loc.x, loc.y, searchRadius); 
 
-		let targetList = [...t['droids'], ...t['structs']];
+		let targetList = [...t['targetUnits'], ...t['targetStructures']];
 		// debug(`t ${targetList.length} (d ${t['droids'].length}, s ${t['structs'].length}), allT ${allTargets.length}`);
 
 		if (targetList.length === 0) {

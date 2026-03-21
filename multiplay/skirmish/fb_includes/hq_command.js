@@ -587,7 +587,7 @@ class CommandCenter {
 				this.toc.setForceLocation(state, mainForceLocation);
 
 				if (defined(state.forceLocation)) {
-					const nearbyGroundTargets = intelligence.proposeTargetsInRadius2({state: state, loc: state.forceLocation, searchRadius: 25, immediateRadius: 10});		
+					const nearbyGroundTargets = intelligence.proposeTargetsInRadius2(state, state.forceLocation, 25, 10);		
 					hq.toc.setNearbyGroundTargets(state, nearbyGroundTargets);
 				}
 				break;
@@ -692,7 +692,7 @@ class CommandCenter {
 		return approvedConstructionTasks;
 	}
 
-	abortDangerousConstructionTasks2(state) {
+	abortDangerousConstructionTasks(state) {
 		const cellSize = state.grid.cellSize;
 
 		const enemyStaticDefenceThreat = state.fields.enemyStaticDefenceThreat;
@@ -748,10 +748,10 @@ class CommandCenter {
 
 		// Command approves & delegates assignment 
 		const approvedTasks = this.prioritiseConstructionTasks(sectorOilCaptureBuildTasks, baseBuildTasks, sectorDefenceBuildTasks, undefined, state);
-		this.toc.assignConstructionTasks({approvedTasks: approvedTasks, state: state});
+		this.toc.assignConstructionTasks(state, approvedTasks);
 
 		// Command also re-evaluates
-		this.abortDangerousConstructionTasks2(state);
+		this.abortDangerousConstructionTasks(state);
 
 	}
 
