@@ -724,7 +724,7 @@ class CommandCenter {
 				const tgx = Math.floor(truck.x / cellSize);
 				const tgy = Math.floor(truck.y / cellSize);
 
-				if (distSq(tgx, md.gx, tgy, md.gy) >= 2) {
+				if (distSq(tgx, md.gx, tgy, md.gy) >= 1) {
 					return true;
 				} else {
 					return false;
