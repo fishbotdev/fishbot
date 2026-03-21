@@ -677,13 +677,9 @@ class CommandCenter {
 
 		if (activeBaseBuildTasks.length === 0) {
 			approvedConstructionTasks.push(...requestedBaseBuildTasks.slice(0, 1));
-			return approvedConstructionTasks;
 		}
 
 		approvedConstructionTasks.push(...approvedSectorOilCapTasks);
-		if (approvedSectorOilCapTasks.length >= 2) {
-			return approvedConstructionTasks;
-		}
 
 		/////// DERRICK DEFENCE CONSTRUCTION ///////
 		let activeFortificationSectors = [];
@@ -708,10 +704,6 @@ class CommandCenter {
 		// debug(`activeFortificationSectors.length ${activeFortificationSectors.length}, approvedSectorDefenceTasks.length ${approvedSectorDefenceTasks.length}`);
 		if (activeFortificationSectors.length < MAX_CONCURRENT_FORTIFICATION_TASKS) {
 			approvedConstructionTasks.push(...approvedSectorDefenceTasks.slice(0, MAX_CONCURRENT_FORTIFICATION_TASKS - activeFortificationSectors.length));
-		}
-		
-		if (approvedSectorDefenceTasks.length > 0) {
-			return approvedConstructionTasks;
 		}
 		
 		return approvedConstructionTasks;
