@@ -258,10 +258,8 @@ class armyEngineering {
 
 			if (controlStability[d.gx][d.gy] >= 3 || friendlyDefenceCount > 0) {
 				if (specialContestedDerrick) {
-					// debug(`added special ${d.x} ${d.y}`);
-					normalPrioOil.push(makeSecondaryDefence(d));
+					normalPrioOil.unshift(makeSecondaryDefence(d));
 				}
-				// debug(`skipped derrick ${d.x}, ${d.y} (${d.gx}, ${d.gy}); control too high`);
 				continue;
 			}
 
