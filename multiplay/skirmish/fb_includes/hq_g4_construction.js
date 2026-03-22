@@ -105,7 +105,7 @@ class armyEngineering {
 				for (let i=0; i<derricksInCell.length; i++) {
 					const d = derricksInCell[i];
 					if (existingQueuedDerrickIDs.indexOf(d.id) !== -1) continue; 	// === found an existing mission 
-					// if (tileIsBurning(d.x, d.y)) continue;		// seems to be worse
+					if (tileIsBurning(d.x, d.y)) continue;		
 
 					if (derricksInCell.length >= 4) {
 						const br = engineering.translateIntoBuildRequest({
