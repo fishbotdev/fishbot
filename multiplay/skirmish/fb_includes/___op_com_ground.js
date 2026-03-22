@@ -22,34 +22,49 @@ class armyGroundForceCommand {
 		
 	}
 
-	completedForceBuildup() {
-		let allTanksCount = enumDroid(me, DROID_WEAPON).filter((droid) => droid.isVTOL !== true).length;		// todo: replace with other
-		const fireSupportCount = state.g.enumGroup(DIVISION.FIRE_SUPPORT_RESERVE).length;
-		const directAssaultTanksCount = allTanksCount - fireSupportCount;
+	/**
+	 * 
+	 * @param {worldState} state 
+	 * @returns {Object}
+	 */
+	getGroundForceStatus(state) {
+		const playerInfo = state.playerInfo;
 
-		if (directAssaultTanksCount >= 4 && fireSupportCount >= 1)
-			return true;
-		else
-			return false;
+		let result = {
+			'completedInitialBuildup': false,
+			'completedFinalBuildup': false,
+		};
+
+		if (playerInfo.length === 0) {
+			return result;
+		}
+
+		for (let i=0; i<playerInfo.length; i++) {
+			if (playerInfo[i]['playerID'] !== me) {
+				continue;
+			}
+			
+			if (playerInfo[i]['numArmourUnits'] >= 5) {
+				result.completedInitialBuildup = true;
+			}
+			if (playerInfo[i]['numIndirectUnits'] >=3 && playerInfo[i]['numArmourUnits'] >= 7) {
+				result.completedFinalBuildup = true;
+			}
+			return result;
+		}
+
+		debug(`WARNING: getGroundForceStatus(): completed the loop but did not find the player id in state.playerInfo`);
+		return result;		
 	}
 
-	completedStagingForAttack() {
-		let allTanksCount = enumDroid(me, DROID_WEAPON).filter((droid) => droid.isVTOL !== true).length;		// todo: replace with other
-		const fireSupportCount = state.g.enumGroup(DIVISION.FIRE_SUPPORT_RESERVE).length;
-
-		if (allTanksCount >= 10 && fireSupportCount >= 3)		
-			return true;
-		else
-			return false;
-	}
-
+	/**
+	 * Goal: to find the 'median' droid's (x,y) coordinates
+	 * 1. Get x,y of all owned droids
+	 * 2. Iterate through (x,y) coordinate list, get the median, return as 'x' and 'y'
+	 * @param {*} unused 
+	 * @returns 
+	 */
 	getForceMedianLocation(unused) {
-		/*
-			Goal: to find the 'median' droid's (x,y) coordinates
-			1. Get x,y of all owned droids
-			2. Iterate through (x,y) coordinate list, get the median, return as 'x' and 'y'
-		*/
-
 		let generalReserve = state.g.enumGroup(DIVISION.GENERAL_RESERVE);
 		let fireSupportReserve = state.g.enumGroup(DIVISION.FIRE_SUPPORT_RESERVE);
 		let infantryReserve = state.g.enumGroup(DIVISION.INFANTRY_RESERVE);

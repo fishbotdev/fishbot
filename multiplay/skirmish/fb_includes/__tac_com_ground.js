@@ -95,11 +95,20 @@ function findClosestDroidToTarget(unitGroup, currGroundTarget) {
 }
 
 
+function retreatToBase(generalReserve, infantryReserve, fireSupportReserve, airDefenceArtilleryReserve, sensorUnits) {
+	generalReserve.forEach(d => orderDroid(d, DORDER_RTB));
+	infantryReserve.forEach(d => orderDroid(d, DORDER_RTB));
+	fireSupportReserve.forEach(d => orderDroid(d, DORDER_RTB));
+	airDefenceArtilleryReserve.forEach(d => orderDroid(d, DORDER_RTB));
+	sensorUnits.forEach(d => orderDroid(d, DORDER_RTB));
+}
+
 /*
     TAC SOP: ATTACKS A TARGET; REINFORCEMENTS ARRIVE AT CLOSEST DROID TO TARGET
 */
 
 function groundForceAttack({state, directFireTarget, fireSupportTarget, adaTarget}) {
+	const SHOW_TARGETS = false;
 
 	let generalReserve = state.g.enumGroup(DIVISION.GENERAL_RESERVE);
 	let infantryReserve = state.g.enumGroup(DIVISION.INFANTRY_RESERVE);
@@ -107,11 +116,15 @@ function groundForceAttack({state, directFireTarget, fireSupportTarget, adaTarge
 	let airDefenceArtilleryReserve = state.g.enumGroup(DIVISION.AIR_DEFENCE_RESERVE);
 	const sensorUnits = enumDroid(me, DROID_SENSOR);		// these have not been added to the grouping system yet!
 
+	const rtb = () => retreatToBase(generalReserve, infantryReserve, fireSupportReserve, airDefenceArtilleryReserve, sensorUnits);
+
 	if (generalReserve.length === 0) {
+		rtb();		
 		return;
 	}
 
 	if (!defined(directFireTarget)) {
+		rtb();	
 		return;
 	}
 
@@ -119,11 +132,7 @@ function groundForceAttack({state, directFireTarget, fireSupportTarget, adaTarge
 	const closestDroidToTarget = findClosestDroidToTarget(generalReserve, currDirectFireTarget);
 
 	if (!defined(closestDroidToTarget) || !defined(currDirectFireTarget)) {
-		generalReserve.forEach(d => orderDroid(d, DORDER_RTB));
-		infantryReserve.forEach(d => orderDroid(d, DORDER_RTB));
-		fireSupportReserve.forEach(d => orderDroid(d, DORDER_RTB));
-		airDefenceArtilleryReserve.forEach(d => orderDroid(d, DORDER_RTB));
-		sensorUnits.forEach(d => orderDroid(d, DORDER_RTB));
+		rtb();		
 		return;
 	}
 
@@ -184,7 +193,6 @@ function groundForceAttack({state, directFireTarget, fireSupportTarget, adaTarge
 		if (defined(currAdaTarget)) {
 			attackTarget(droid, currAdaTarget);		
 		} else {
-			// Move to the closest droid
 			if (_distSqToClosestDroid(droid) > 5 ** 2) {
 				orderDroidLoc(droid, DORDER_MOVE, closestDroidToTarget.x, closestDroidToTarget.y);
 			} else {
@@ -206,15 +214,15 @@ function groundForceAttack({state, directFireTarget, fireSupportTarget, adaTarge
 			// Fire support units should fall back if they find themselves on the front line
 			orderDroidLoc(droid, DORDER_MOVE, baseLocation.x, baseLocation.y);
 		} else {
-			if (defined(currFireSupportTarget)) {
-				attackTarget(droid, currFireSupportTarget);
+			if (_distSqToClosestDroid(droid) > 8 ** 2 || !defined(currFireSupportTarget)) {
+				orderDroidLoc(droid, DORDER_MOVE, closestDroidToTarget.x, closestDroidToTarget.y);
 			} else {
-				orderDroidLoc(droid, DORDER_MOVE, baseLocation.x, baseLocation.y);				
-			}
+				attackTarget(droid, currFireSupportTarget);
+			}			
 		}
 	});
 
-	if (DEBUG_MODE_ON) {
+	if (SHOW_TARGETS) {
 		hackMarkTiles();
 		if (defined(currDirectFireTarget)) {
 			addBeacon(currDirectFireTarget.x, currDirectFireTarget.y, 0);

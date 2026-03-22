@@ -75,7 +75,7 @@ def get_stats(file_path: str):
         if s["Loss"]:
             loss_counter += 1
 
-    print(f"FishBot lost {loss_counter} of {len(fishbot_stats)} games.")
+    print(f"FishBot won {len(fishbot_stats) - loss_counter} of {len(fishbot_stats)} games.")
 
     return [game_times_mins, fishbot_stats, opp_stats]
 
@@ -186,12 +186,16 @@ def show_medium_cobra_results():
     # test_1 = getcwd() + rf"\process_results/v3/" + "f8094ef,medium" + ".txt"              # v3 dev: high prio oil cap optim [95 / 100 wins]
     # test_1 = getcwd() + rf"\process_results/v3/" + "68275e8,medium,463" + ".txt"            # v3 dev: [100 / 100 wins]
     # test_1 = getcwd() + rf"\process_results/v3/" + "29ceeb0,med,463" + ".txt"               # v3 dev: [143 / 150 wins]
-    # test_1 = getcwd() + rf"\process_results/v4/" + "a2e13b4,med,cobra_v3_release" + ".txt"    # v3 release: retesting [98 / 100 wins]
+    test_1 = getcwd() + rf"\process_results/v4/" + "a2e13b4,med,cobra_v3_release" + ".txt"    # v3 release: retesting [98 / 100 wins]
     # test_1 = getcwd() + rf"\process_results/v4/" + "1e3edc5,med,cobra" + ".txt"               # v4 dev: before perf optimisations [96 / 100 won]
     # test_1 = getcwd() + rf"\process_results/v4/" + "0c6d165,med,cobra,100g" + ".txt"               # perf: removed getAllBaseTargets [95 / 100 won]
     # test_1 = getcwd() + rf"\process_results/v4/" + "2167472,med,cobra,50g" + ".txt"               # perf: before merging performance-improvements [49 / 49 won]
-    test_1 = getcwd() + rf"\process_results/v4/" + "f9d0fd4,med,cobra,50g" + ".txt"               # perf: after merging perf-optim2 [49 / 50 won], higher K/D
-    test_2 = getcwd() + rf"\process_results/v4/" + "45635e6,med,cobra,100g" + ".txt"               # perf: after migrating into fixed time hashing [96 / 100 won]
+    # test_1 = getcwd() + rf"\process_results/v4/" + "f9d0fd4,med,cobra,50g" + ".txt"               # perf: after merging perf-optim2 [49 / 50 won], higher K/D
+    # test_1 = getcwd() + rf"\process_results/v4/" + "45635e6,med,cobra,100g" + ".txt"               # perf: after migrating into fixed time hashing [96 / 100 won]
+    # test_1 = getcwd() + rf"\process_results/v4/" + "7ee8c56,med,cobra,100g" + ".txt"               # perf: migrating to new grid system [91 / 100 won (regression)]
+    # test_1 = getcwd() + rf"\process_results/v4/" + "df4a549,med,cobra,100g" + ".txt"               # perf: migrating to new grid system [97 / 100 won; regression fixed]
+    # test_1 = getcwd() + rf"\process_results/v4/" + "a686079,med,cobra,100g" + ".txt"               # 99 / 100 won, after vtol optimisations
+    test_2 = getcwd() + rf"\process_results/v4/" + "db393ea,med,cobra,150g" + ".txt"               # 149 / 150 won
     
     commit1 = test_1.split(rf"v4/")[1].split(",")[0]
     commit2 = test_2.split(rf"v4/")[1].split(",")[0]
@@ -228,8 +232,22 @@ def show_hard_cobra_results():
     # test_1 = getcwd() + rf"\process_results/v4/" + "fd4692d,hard,cobra,50g" + ".txt"              # v4 dev: 4.6.3, [36 / 50 wins] first new scheduler implementation
     # test_1 = getcwd() + rf"\process_results/v4/" + "603cca0,hard,cobra,50g" + ".txt"              # v4 dev: 4.6.3, [34 / 50 wins] after full migration of existing functions to the new scheduler
     # test_1 = getcwd() + rf"\process_results/v4/" + "fbf5655,hard,cobra,50g" + ".txt"              # v4 dev: 4.6.3, [35 / 50 wins] reduced COP integration from 1Hz to 1/2Hz
-    test_1 = getcwd() + rf"\process_results/v4/" + "e0f8c66,hard,cobra,100g" + ".txt"              # v4 dev: 4.6.3, [57 / 99 = 56% wr]; thinking about releasing v3.1.0 with performance improvements
-    test_2 = getcwd() + rf"\process_results/v4/" + "29bb952,hard,cobra,100g" + ".txt"              # v4 dev: 4.6.3, [64 / 100 = 64% wr]; small AI behaviour improvements
+    # test_1 = getcwd() + rf"\process_results/v4/" + "e0f8c66,hard,cobra,100g" + ".txt"              # v4 dev: 4.6.3, [57 / 99 = 56% wr]; thinking about releasing v3.1.0 with performance improvements
+    # test_1 = getcwd() + rf"\process_results/v4/" + "29bb952,hard,cobra,100g" + ".txt"              # v4 dev: 4.6.3, [64 / 100 = 64% wr]; small AI behaviour improvements
+    # test_1 = getcwd() + rf"\process_results/v4/" + "4fb16f4,hard,cobra,100g" + ".txt"              # v4 dev: 4.6.3, [53 / 100 = 53% wr]; partial migration to new grid system
+    # test_2 = getcwd() + rf"\process_results/v4/" + "91da685,hard,cobra" + ".txt"              # v4 dev: 4.6.3 [36% wr]
+    # test_2 = getcwd() + rf"\process_results/v4/" + "33200f9,hard,cobra,100g" + ".txt"              # v4 dev: 4.6.3 [19% wr]
+    # test_2 = getcwd() + rf"\process_results/v4/" + "ce09727,hard,cobra,50g" + ".txt"              # v4 dev: 4.6.3 [52 % wr]
+    # test_2 = getcwd() + rf"\process_results/v4/" + "6730392,hard,cobra,100g" + ".txt"              # v4 dev: 4.6.3 [65 % wr]
+    # test_1 = getcwd() + rf"\process_results/v4/" + "a686079,hard,cobra,100g" + ".txt"              # v4 dev: 4.6.3 [65 % wr, same as before]
+    # test_1 = getcwd() + rf"\process_results/v4/" + "f6b053f,hard,cobra,100g" + ".txt"              # v4 dev: 4.6.3 [59 % wr] porting oil cap over to the new system
+    # test_1 = getcwd() + rf"\process_results/v4/" + "0fafd15,hard,cobra,100g" + ".txt"              # v4 dev: 4.6.3 [45 % wr] removed construct mission cancellation
+    # test_1 = getcwd() + rf"\process_results/v4/" + "edb40f7,hard,cobra,100g" + ".txt"              # v4 dev: 4.6.3 [59 % wr] 
+    # test_1 = getcwd() + rf"\process_results/v4/" + "6966b26,hard,cobra,50g" + ".txt"              # v4 dev: 4.6.3 [60 % wr; baseline for cannon test]
+    # test_1 = getcwd() + rf"\process_results/v4/" + "f50adb5,hard,cobra,50g" + ".txt"              # v4 dev: 4.6.3 [78 % wr; cannon test]
+    # test_1 = getcwd() + rf"\process_results/v4/" + "db393ea,hard,cobra,50g" + ".txt"              # v4 dev: 4.6.3 [74 % wr; cannon test + cas changes]
+    test_1 = getcwd() + rf"\process_results/v4/" + "db7403d,hard,cobra,100g" + ".txt"              # v4 dev: 4.6.3 [57 % wr; migrated sector defence to grid system]
+    test_2 = getcwd() + rf"\process_results/v4/" + "770de51,hard,cobra,100g" + ".txt"              # v4 dev: 4.6.3 [28/47 = 59.5 % wr]
 
     commit1 = test_1.split(rf"v4/")[1].split(",")[0]
     commit2 = test_2.split(rf"v4/")[1].split(",")[0]
@@ -243,8 +261,9 @@ def show_insane_diff_results():
     
     # test_1 = getcwd() + rf"\process_results/v4/" + "5c757ab,hardins,1v2" + ".txt"           # v4 dev: v3 skrush 1x hard, 1x insane nexus        [39 / 50 wins]
     # test_1 = getcwd() + rf"\process_results/v4/" + "1df2117,hardins,1v2" + ".txt"           # v4 dev: v3 skrush 1x hard, 1x insane nexus, after perf optimisations [42 / 50 wins]
-    test_1 = getcwd() + rf"\process_results/v4/" + "c7d8eb7,hardins,1v2,targoptim" + ".txt"           # v4 dev: v3 skrush 1x hard, 1x ins nexus, targeting optimisations - cancelVtol [33 / 50 wins]
-    test_2 = getcwd() + rf"\process_results/v4/" + "4aee90e,hardins,1v2,vtolfix" + ".txt"           # v4 dev: v3 skrush 1x hard, 1x ins nexus, fixed vtol usage [38 / 50 wins]
+    # test_1 = getcwd() + rf"\process_results/v4/" + "c7d8eb7,hardins,1v2,targoptim" + ".txt"           # v4 dev: v3 skrush 1x hard, 1x ins nexus, targeting optimisations - cancelVtol [33 / 50 wins]
+    test_1 = getcwd() + rf"\process_results/v4/" + "4aee90e,hardins,1v2,vtolfix" + ".txt"           # v4 dev: v3 skrush 1x hard, 1x ins nexus, fixed vtol usage [38 / 50 wins]
+    test_2 = getcwd() + rf"\process_results/v4/" + "e8c65ad,hardins,1v2" + ".txt"           # v4 dev: mid-grid system migration [66% wr]
     
     commit1 = test_1.split(rf"v4/")[1].split(",")[0]
     commit2 = test_2.split(rf"v4/")[1].split(",")[0]

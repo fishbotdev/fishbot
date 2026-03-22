@@ -263,8 +263,8 @@ function produceHeavyCavalry(factory) {
 			{ res: "R-Wpn-Cannon2Mk1", stat: "Cannon2A-TMk1", name: 'Medium Cannon', }, // mc
 			{ res: "R-Wpn-Cannon4AMk1", stat: "Cannon4AUTOMk1", name: 'Hyper-Velocity Cannon', }, // hpv
 			{ res: "R-Wpn-Cannon5", stat: "Cannon5VulcanMk1", name: 'Assault Cannon', }, // ac
+			{ res: "R-Wpn-Cannon3Mk1", stat: "Cannon375mmMk1", name: 'Heavy Cannon', }, // hc
 			{ res: "R-Wpn-Cannon6TwinAslt", stat: "Cannon6TwinAslt", name: 'Twin Assault Cannon', }, // tac
-			// { res: "R-Wpn-Cannon3Mk1", stat: "Cannon375mmMk1", name: 'Heavy Cannon', }, // hc
 			// { res: "R-Wpn-RailGun01", stat: "RailGun1Mk1", name: 'Needle Gun', }, // needle
 			{ res: "R-Wpn-RailGun02", stat: "RailGun2Mk1", name: 'Rail Gun', }, // rail
 			{ res: "R-Wpn-RailGun03", stat: "RailGun3Mk1", name: 'Gauss Cannon', }, // gauss

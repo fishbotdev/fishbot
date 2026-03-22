@@ -17,12 +17,15 @@
 
 /*
 	Math functions 
+
+	These functions should only use the standard inbuilt JS libraries.
 */
 
-function arrayMean(arr) {
-  return arr.reduce((s, v) => s + v, 0) / arr.length;
-}
-
+/**
+ * Calculates the median value of a numeric input array.
+ * @param {number[]} arr input array (numeric)
+ * @returns {number} array median
+ */
 function arrayMedian(arr) {
   const sorted = [...arr].sort((a, b) => a - b);
   const mid = Math.floor(sorted.length / 2);
@@ -31,26 +34,33 @@ function arrayMedian(arr) {
     : (sorted[mid - 1] + sorted[mid]) / 2;
 }
 
-function arrayIQR(arr) {
-	// Interquartile Range (IQR)
-	const sorted = [...arr].sort((a, b) => a - b);		// make shallow copy & arrange in ascending order
-	const q1 = sorted[Math.floor(sorted.length * 0.25)];
-	const q3 = sorted[Math.floor(sorted.length * 0.75)];
-	const iqr = q3 - q1;
-	return iqr;
+/**
+ * Generates an array of integers of length `stopNum`, starting with `0` and ending at integer `stopNum - 1`.
+ * e.g. `generateRange(5)` produces `[0, 1, 2, 3, 4]`. 
+ * @param {number} stopNum length of the array
+ * @returns {number[]} array of integers starting with `0` and ending at `stopNum - 1`.
+ */ 
+function generateRange(stopNum) {
+	let numbers = [];
+	for (let i=0; i < stopNum; i++) {
+		numbers.push(i);
+	}
+	return numbers;
 }
 
-function arrayRange(arr) {
-	const range = Math.max(...arr) - Math.min(...arr);
-	return range;
-}
-
-// Get distance between two points
-// acceptable arguments:
-//		distance(obj, obj)
-//		distance(x,y, obj)
-//		distance(obj,x,y)
-function distance (obj1, obj2, obj3, obj4) {
+/**
+ * Get Euclidean distance between two points (copied from NullBot). Acceptable uses include:
+	- distance(obj, obj)
+	- distance(x,y, obj)
+	- distance(obj,x,y)
+	- distance(x1,y1,x2,y2)
+ * @param {BaseObject | number} obj1 
+ * @param {BaseObject | number} obj2 
+ * @param {BaseObject | number} [obj3] optional obj3
+ * @param {BaseObject | number} [obj4] optional obj4
+ * @returns {number} Euclidean distance
+ */
+function distance(obj1, obj2, obj3, obj4) {
 	let x1, x2, y1, y2;
 	if (defined(obj1.x)) {
 		x1 = obj1.x;
@@ -78,12 +88,31 @@ function distance (obj1, obj2, obj3, obj4) {
 }
 
 /** 
- * ## distSq(x1, x2, y1, y2)
- * More computationally efficient than distance() - use this where order matters, but magnitude does not. */
+ * More computationally efficient than `distance()` - use this where order matters, but magnitude does not. 
+ * @param {number} x1 
+ * @param {number} x2 
+ * @param {number} y1 
+ * @param {number} y2 
+ * @returns {number}
+ */
 function distSq(x1, x2, y1, y2) {
 	return (x1-x2)**2 + (y1-y2)**2;
 }
 
+/**
+ * Converts a number `n` to its binary string representation (to 20 bits).
+ * @param {number} n integer
+ * @returns {string} binary string representation (to 20 bits) e.g. `"00001000010000100001"`
+ */
+function toBinary20(n) {
+	return n.toString(2).padStart(20, '0');
+}
+
+/**
+ * Returns `true` if `variable` is either `null` or `undefined`, otherwise, returns `false`.
+ * @param {any} variable 
+ * @returns {boolean} 
+ */
 function defined(variable) { 
 	if (typeof variable !== "undefined") {
 		if (variable !== null) {
@@ -93,9 +122,133 @@ function defined(variable) {
 	return false;
 }
 
+/**
+ * This function implements a 2D-array.
+ * 
+ * This implementation is used to store the grid cells representation of the map because:
+ *  - ease of use when searching nearby sectors (indices are already numeric)
+ *  - numeric indices are more efficient than constructing a string to index a grid entry
+ * @param {number} numXCells
+ * @param {number} numYCells
+ * @param {function} cellFactory 
+ * @returns {Array[]} 2D array (integer indexed)
+ */
+function create2DGrid(numXCells, numYCells, cellFactory) {
+
+	let grid = new Array(numXCells);
+
+	for (let x=0; x<numXCells; x++) {
+		grid[x] = new Array(numYCells);
+
+		for (let y=0; y<numYCells; y++) {
+			grid[x][y] = cellFactory(x, y);
+		}
+	}
+
+	return grid;
+}
+
+/**
+ * An objective function is evaluated on each grid coordinate (in BFS order); the result is appended to an equi-dimensional grid.
+ * e.g. BFS is conducted on a 2D grid of 12 x 12; result is returned in a new 2D grid of 12 x 12.
+ * @param {fbGrid} grid grid to iterate over to produce a result
+ * @param {number} bgx starting grid-x coordinate
+ * @param {number} bgy starting grid-y coordinate
+ * @param {Function} objectiveFunc The function to be evaluated for each grid cell.
+ * @returns {Object} the result of the objective function evaluated on each grid coordinate (returned as an equi-dimensioned grid)
+ */
+function breadthFirstSearch(grid, bgx, bgy, objectiveFunc) {
+	const numXCells = grid.numXCells;
+	const numYCells = grid.numYCells;
+	
+	const checkXInBounds = (gx) => {return (gx >= 0 && gx < numXCells)};
+	const checkYInBounds = (gy) => {return (gy >= 0 && gy < numYCells)};
+	
+	// Initialise BFS parameters
+	let iters = 0;		
+	const MAX_ITERS = numXCells * numYCells; 	// failsafe
+	
+	let queue = [[bgx, bgy]];		// y = rows, x = cols => [row, col]
+	let queuedUp = [[bgx, bgy]];
+
+	const objFunc = (grid, gx, gy) => {return objectiveFunc(grid, gx, gy);};
+	const createEmptyCell = (...args) => {return undefined;};
+	let gridResult = create2DGrid(numXCells, numYCells, createEmptyCell);
+	let orderedResult = [];
+
+	const DEBUG_ON = false;
+
+	while (queue.length > 0 && iters < MAX_ITERS) {
+		if (DEBUG_ON) debug(`queue: ${queue}`);
+
+		// Dequeue the next cell
+		const next = queue.shift();
+
+		if (DEBUG_ON) debug(`dequeued next cell: ${queue}`);
+
+		// Process & push to result
+		const gx = next[0], gy = next[1];
+		const result = objFunc(grid, gx, gy)
+		orderedResult.push(result);
+		gridResult[gx][gy] = {'idx': iters, 'result': result};
+
+		if (DEBUG_ON) {
+			debug(`gx gy: ${gx} ${gy}`);
+			debug(`result: ${orderedResult}`);
+		} 
+
+		// For each of the 4 adjacent cells, check the coordinates in bounds
+		const up = [gx, gy + 1];
+		const down = [gx, gy - 1];
+		const left = [gx - 1, gy];
+		const right = [gx + 1, gy];
+
+		if (DEBUG_ON) debug(`up ${up} down  ${down} left ${left} right ${right}`); 
+
+		let valid = [];
+		[up, down, left, right].forEach(coord => {
+			if (checkXInBounds(coord[0]) && checkYInBounds(coord[1])) {
+				valid.push(coord);
+			}
+		});
+
+		if (DEBUG_ON) valid.forEach(v => debug(`\tvalid: ${v}`)); 
+
+		// Add unvisited values to the queue
+		valid.forEach(v => {
+			// Check if it has been visited before
+			for (let i=queuedUp.length - 1; i>= 0; i--) {
+				if (v[0] === queuedUp[i][0] && v[1] === queuedUp[i][1]) {
+					return;		// get out of this loop, onto the next valid value
+				}
+			}
+			// Add unvisited cell to the queue
+			queue.push(v);
+			// Remember newly queued values
+			queuedUp.push(v);
+		});			
+
+		if (DEBUG_ON) {
+			queuedUp.forEach(v => debug(`new queued: ${v}`)); 
+			queue.forEach(q => debug(`\tnew queue: ${q}`)); 
+		}
+
+		iters++;
+	}
+
+	if (false) {
+		debug(`requestOilCapture2 (BFS)`);
+		orderedResult.forEach(coord => debug(`\t${coord[0]} ${coord[1]}`));
+	}
+
+	return {'ordered': orderedResult, 'grid': gridResult};
+}
+
 
 /*
-	structure enumeration helpers
+	WZ2100 helper functions (uses the WZ2100 JS API).
+
+	Try to reduce the number of functions in this section.
 */
 
 function getIdleStructuresOfType({structureID, playerID=me}) {
@@ -116,38 +269,16 @@ function isAntiAirDefense(obj) {
 	return false;					
 }
 
-// GAME STATE
 function getCurrGameTime() {
+	// This function exists in the case I want to change the time units
 	const currGameTime = gameTime;
 	return currGameTime;
-}
-
-/**
- * Generates an array of numbers starting from 0 and ending at integer stopNum (not including stopNum) 
- */ 
-function generateRange(stopNum) {
-	const numbers = [];
-	for (let i=0; i < stopNum; i++) {
-		numbers.push(i);
-	}
-	return numbers;
-}
-
-function isT0Start() {
-	return !isStructureAvailable("A0ComDroidControl", me);
 }
 
 function myPower() {
 	return playerPower(me) - queuedPower(me);
 }
 
-function hoverAvailable() {
-	return HOVER_PROPULSIONS.some((hoverPropulsion) => componentAvailable(hoverPropulsion.id));
-}
-
-/*
-	OTHER PLAYER INFORMATION
-*/
 function isEnemy(playerID) {
 	if (!defined(playerID)) {
 		debug("isEnemy(): playerID is undefined. Check the calling function.");
@@ -155,69 +286,12 @@ function isEnemy(playerID) {
 	return !allianceExistsBetween(me, playerID);
 }
 
-function enumLivingPlayers() {
-
-	let FACTORY_ID = [STRUCTURES["Factory"].id, STRUCTURES["Cyborg Factory"].id, STRUCTURES["VTOL Factory"].id];
-
-	let livingPlayerIDs = [];
-
-	for (let playerID=0; playerID<maxPlayers; playerID++) {
-
-		let factoryExists = false;
-		FACTORY_ID.forEach(factoryID => {
-			if (countStruct(factoryID, playerID) > 0) {
-				factoryExists = true;
-				return;
-			}
-		});
-
-		if (factoryExists) {
-			livingPlayerIDs.push(playerID);
-			continue;
-		}
-
-		if (countDroid(DROID_ANY, playerID) > 0) {
-			livingPlayerIDs.push(playerID);
-			continue;
-		}
-	}
-
-	if (false) {
-		debug(`livingPlayerIDs:`);
-		livingPlayerIDs.forEach(p => debug(`	${p}`));
-	}
-
-	return livingPlayerIDs;
-}
-
-function gameHasEnded() {
-	const myDroids = enumDroid();
-
-	if (myDroids.length === 0) {
-		const myStructures = enumStruct();
-		if (myStructures.length === 0) {
-			return true;
-		}
-
-		const FACTORY_TYPES = [FACTORY, VTOL_FACTORY, CYBORG_FACTORY];
-		if (myStructures.filter(s => FACTORY_TYPES.includes(s.stattype)).length === 0) {
-			return true;
-		}
-	}
-
-	if (enumLivingPlayers().filter(isEnemy).length === 0) {
-		return true;
-	}
-	
-	return false;
-}
-
-/*
+/**
 	fbGroup: FISHBOT v3 CUSTOM GROUPING SYSTEM
 
 	Fishbot custom implementation of groups
 	Fishbot requires highly-temporary, one-to-many labelling to support its ability to maneuver troops.
-	As of Warzone 2100 v4.6.1, neither the built-in groups, nor labels, are suitable for temporary, one-to-many labelling.
+	As of Warzone 2100 v4.6.1, neither the built-in groups, nor labels, are suitable for transient, one-to-many labelling.
 */
 
 class fbGroup {

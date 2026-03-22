@@ -20,6 +20,9 @@ class armyIntelligence {
 
 	}
 
+	/*
+		MISSION CREATION
+	*/
 	createIntelRequest({missionType, payload, priority=MISSION_PRIORITY.LOW}) {
 		return {
 			'missionType': missionType,
@@ -28,9 +31,6 @@ class armyIntelligence {
 		};
 	}
 
-	/*
-		MISSION CREATION
-	*/
 	#createMissionOrders() {
 		let missionDataTemplate = {
 			'id': undefined, 
@@ -54,58 +54,114 @@ class armyIntelligence {
 		return callback(...args);	//...args is important otherwise all remaining args will be interpreted as a single array of parameters
 	}
 
-	#finaliseEngineCall(md) {
+	#finaliseIntelMission(md) {
 		// Mission completed
 		md.timeCompleted = getCurrGameTime();
-	}
-
-	createSectorReconEngineMission({sectorInfo, missionType, tickUID}) {
-		// it returns either:
-		// 	- missionData object (according to missionDataTemplate), if mission successfully created, OR
-		//	- undefined, if mission was not able to be created
-		
-		let md = this.#createMissionOrders();
-
-		// Create mission details
-		const id = gameTime + "_SECTOR_RECON_ENGINE_" + tickUID;
-		md.id = id;
-
-		md.sectorID = sectorInfo.id;
-
-		// Assign orders for conducting & ceasing operations			
-		md.orders = () => this.#mcb(getSectorIntelFromGameEngine, sectorInfo, missionType);		
-		md.ceaseOrders = () => this.#mcb(this.#finaliseEngineCall, md);
-
-		return md;
-	}
-
-	createCheckOilDominanceMission({payload: oilDominanceThreshold, missionType, tickUID}) {
-		// it returns either:
-		// 	- missionData object (according to missionDataTemplate), if mission successfully created, OR
-		//	- undefined, if mission was not able to be created
-		
-		let md = this.#createMissionOrders();
-
-		// Create mission details
-		const id = gameTime + "_OIL_DOMINANCE_CHECK_" + tickUID;
-		md.id = id;
-
-		md.sectorID = undefined;
-
-		// Assign orders for conducting & ceasing operations			
-		md.orders = () => this.#mcb(checkOilDominance, state, oilDominanceThreshold, missionType);		
-		md.ceaseOrders = () => this.#mcb(this.#finaliseEngineCall, md);
-
-		return md;
 	}
 
 	/*
 		REAL-TIME TARGETING
 	*/
 	
-	#createNewTarget(targetObject) {
+	#classifyObject(obj) {
+
+		let flags = 0;
+
+		// Object-type agnostic capability
+		if (isAntiAirDefense(obj)) {
+			flags |= OBJ_FLAGS.ADA;
+		}
+
+		if (obj.hasIndirect === true) {
+			flags |= OBJ_FLAGS.INDIRECT_FIRE;
+		}
+
+		if (obj.type === DROID) {
+
+			switch (obj.propulsion) {
+				case PROPULSIONS["Cyborg Propulsion"].id: 
+					flags |= OBJ_FLAGS.CYBORG_PROPULSION;
+					break;
+				case PROPULSIONS["Wheels"].id:
+					flags |= OBJ_FLAGS.WHEELED_PROPULSION;
+					break;
+				case PROPULSIONS["Half-tracks"].id:
+					flags |= OBJ_FLAGS.HALF_TRACKED_PROPULSION;
+					break;
+				case PROPULSIONS["Tracks"].id:
+					flags |= OBJ_FLAGS.TRACKED_PROPULSION;
+					break;
+				case PROPULSIONS["Hover"].id:
+					flags |= OBJ_FLAGS.HOVER_PROPULSION;
+					break;
+				case PROPULSIONS["VTOL"].id:
+					flags |= OBJ_FLAGS.VTOL_PROPULSION;
+					break;
+
+				default:
+					flags |= OBJ_FLAGS.TRACKED_PROPULSION;
+					debug(`WARNING	intelligence/#classifyObject(): obj.propulsion was not understood: ${obj.propulsion}`);
+			}
+
+			// Droid-specific capability
+			if (obj.droidType === DROID_CONSTRUCT) {
+				flags |= OBJ_FLAGS.CONSTRUCTOR;
+				return flags;
+			}
+			
+			if (obj.droidType === DROID_REPAIR) {
+				flags |= OBJ_FLAGS.REPAIR;
+				return flags;
+			}
+
+			const ARMOUR_MASK = OBJ_FLAGS.HALF_TRACKED_PROPULSION | OBJ_FLAGS.TRACKED_PROPULSION | OBJ_FLAGS.WHEELED_PROPULSION | OBJ_FLAGS.HOVER_PROPULSION;
+			if (obj.droidType === DROID_WEAPON || obj.droidType === DROID_CYBORG) {
+				if (flags & ARMOUR_MASK) {
+					flags |= OBJ_FLAGS.ARMOUR;
+				} else if (flags & OBJ_FLAGS.VTOL_PROPULSION) {
+					flags |= OBJ_FLAGS.AVIATION;
+				}
+			}
+
+			if (obj.droidType === DROID_CYBORG) {
+				flags |= OBJ_FLAGS.INFANTRY;
+			}
+
+			return flags;
+		}
+
+		if (obj.type === STRUCTURE) {
+			if (obj.status === BUILT) {
+				flags |= OBJ_FLAGS.IS_BUILT;
+			}
+
+			if (obj.stattype === DEFENSE) {
+				flags |= OBJ_FLAGS.DEFENSIVE_STRUCTURE;
+				return flags;
+			}
+
+			const INDUSTRIAL_TARGETS = [FACTORY, CYBORG_FACTORY, VTOL_FACTORY];	
+			if (INDUSTRIAL_TARGETS.includes(obj.stattype)) {
+				flags |= OBJ_FLAGS.PRODUCTION;
+				return flags;					
+			}
+
+			if (obj.stattype === RESOURCE_EXTRACTOR) {
+				flags |= OBJ_FLAGS.RESOURCE_EXTRACTOR;
+				return flags;
+			}
+
+			if (obj.stattype === REPAIR_FACILITY) {
+				flags |= OBJ_FLAGS.REPAIR;
+				return flags;
+			}
+		}
 		
-		let temp =  {
+		return flags;
+	}
+
+	#createNewTarget(targetObject, flags=0, gx=0, gy=0) {
+		return {
 			'name': targetObject.name,
 
 			// These 3 parameters allow 'getObject' to be used at a later point to retrieve up-to-date object information
@@ -113,98 +169,282 @@ class armyIntelligence {
 			'player': targetObject.player,
 			'id': targetObject.id,
 
+			'flags': flags,
+			'gx': gx,
+			'gy': gy,
+
+			// This is used by the mission management system to store the priority at the time of assignment
 			'priority': MISSION_PRIORITY.LOW,
 		};
-
-		return temp;
 	}
 
-	getAirRaidTargets(state) {
+	/**
+	`getAllObjects()`
 
-		const SEARCH_RADIUS = 7;
+	This function performs multiple functions:
+	1. Gets all droids & structures on the map (like taking a satellite image of the whole map)
+	2. Classifies all droids & structures, populating a new `playerInfo` and a new `grid` 
 
-		let lowPriorityTargets = [], medPriorityTargets = [], highPriorityTargets = [];
+	@param {worldState} state
+	@returns {Object}
+	 */
+	getAllObjects(state) {
+		const numXCells = state.grid.numXCells;		// cellSize is used for computing grid coords
+		const numYCells = state.grid.numYCells;
+		const cellSize = state.grid.cellSize;
+		const createExpandedFbGridCell = (gx, gy) => {
+			let cell = state.grid.createNewFbGridCell(gx, gy);
+			// Add custom parameters
+			cell['adaCount'] = 0;					// for adaThreat      
+			cell['fixedDefenceCount'] = 0; 			// for enemyStaticDefences
+			cell['claimedDerricks'] = [];			// for updating of derrick information
+			cell['enemyDirectFireUnitCount'] = 0;	// for direct fire unit threat
+			return cell;
+		};
+		let grid = create2DGrid(numXCells, numYCells, createExpandedFbGridCell);
 
-		for (let i=0; i<state.sectors.length; i++) {
-			const currSector = state.sectors[i];
-
-			if (state.highRiskSectors.includes(currSector)) {
-				continue;
+		// Reduced version of the version in worldStateBuilder
+		const createNewClaimedDerrick = (x, y, playerID) => {       
+			return {
+				'id': `DERRICK_${x}_${y}`,				
+				'playerID': playerID,
 			}
+		};
+		const createPlayerInfoEntry = (...args) => state.createPlayerInfoEntry(...args);
 
-			// For each derrick, find all nearby targets. Skip if derricks are assumed close together
-			let units = [], structures = [], defences = [];
-			let NUM_SEARCH_ITERATIONS = currSector.derricks.length;
-			if (NUM_SEARCH_ITERATIONS >= 4) {
-				NUM_SEARCH_ITERATIONS = 1;		// usually this means the derricks are close together (to be verified)
-			}
-			for (let j=0; j<NUM_SEARCH_ITERATIONS; j++) {
+		let objectsByPlayer = getDroidsAndStructsByPlayer();		// this information is fresh
 
-				const nearbyTargets = enumRange(currSector.derricks[j].x, currSector.derricks[j].y, SEARCH_RADIUS, ENEMIES, false);
+		let result = {
+			'playerInfo': [],
+			'allTargets': [],
+			'grid': grid
+		}
 
-				for (let k=0; k<nearbyTargets.length; k++) {
-					const t = nearbyTargets[k];
+		for (let i=0; i<objectsByPlayer.length; i++) {
+			const currPlayerEntry = objectsByPlayer[i];
 
-					// if (t.type === DROID && t.isVTOL !== true) {
-						// units.push(this.#createNewTarget({targetObject: t}));
-						// continue;
-					// } else 
-					if (t.type === STRUCTURE) {
-						if (t.stattype === DEFENSE && t.status === BUILT) {
-							defences.push(this.#createNewTarget(t));
-							continue;
-						}
+			let p = createPlayerInfoEntry(currPlayerEntry['playerID']);
 
-						// if (t.stattype !== RESOURCE_EXTRACTOR) {
-						// 	structures.push(this.#createNewTarget({targetObject: t}));
-						// 	continue;
-						// }
+			// Collate droid information
+			const IS_TARGET = !p['isFriendly'];
+
+			for (let j=0; j<currPlayerEntry['droids'].length; j++) {
+				const obj = currPlayerEntry['droids'][j];
+
+				const flags = this.#classifyObject(obj);
+				const gx = Math.floor(obj.x / cellSize), gy = Math.floor(obj.y / cellSize);		
+
+				// Update player information
+				p['numTotalUnits']++;
+
+				const ARMOUR_FORBIDDEN_FLAGS = (OBJ_FLAGS.ADA | OBJ_FLAGS.INDIRECT_FIRE);
+				const INDIRECT_FIRE_FORBIDDEN_FLAGS = (OBJ_FLAGS.AVIATION | OBJ_FLAGS.INFANTRY);
+
+				if (flags & OBJ_FLAGS.ARMOUR && !(flags & ARMOUR_FORBIDDEN_FLAGS)) {
+					p['numArmourUnits']++;
+				} 
+
+				if (flags & OBJ_FLAGS.INDIRECT_FIRE && !(flags & INDIRECT_FIRE_FORBIDDEN_FLAGS)) {
+					p['numIndirectUnits']++;
+				}
+
+				if (flags & OBJ_FLAGS.INFANTRY) {
+					p['numInfantryUnits']++;
+				}
+
+				if (flags & OBJ_FLAGS.AVIATION) {
+					p['numAirUnits']++;
+				}
+
+				if (flags & OBJ_FLAGS.ADA) {
+					p['numADA']++;
+				}
+				
+				// Update target list
+				const newObj = this.#createNewTarget(obj, flags, gx, gy);
+				if (IS_TARGET) {
+					result.allTargets.push(newObj);		
+					grid[gx][gy]['targetUnits'].push(newObj);
+
+					// Further classification (TODO: consider splitting into separate function)
+					if (flags & OBJ_FLAGS.ADA) {
+						grid[gx][gy]['adaCount']++;
 					}
+
+					const DIRECT_FIRE_UNITS = OBJ_FLAGS.ARMOUR | OBJ_FLAGS.INDIRECT_FIRE | OBJ_FLAGS.INFANTRY;
+					if (flags & DIRECT_FIRE_UNITS) {
+						grid[gx][gy]['enemyDirectFireUnitCount']++;
+					}
+
+				} else {
+					grid[gx][gy]['friendlyUnits'].push(newObj);
+				}
+			}	
+
+			// Collate structure information
+			for (let j=0; j<currPlayerEntry['structs'].length; j++) {
+				const obj = currPlayerEntry['structs'][j];
+				
+				const flags = this.#classifyObject(obj);
+				const gx = Math.floor(obj.x / cellSize), gy = Math.floor(obj.y / cellSize);		
+
+				// Update player information
+				p['numStructs'] += 1;
+
+				if (flags & OBJ_FLAGS.RESOURCE_EXTRACTOR) {
+					p['numDerricks']++;
+					grid[gx][gy]['claimedDerricks'].push(createNewClaimedDerrick(obj.x, obj.y, obj.player));	
+				}
+
+				if (flags & OBJ_FLAGS.PRODUCTION) {
+					p['numFactories']++;
+				}
+
+				// Update target list
+				const newObj = this.#createNewTarget(obj, flags, gx, gy);
+
+				if (IS_TARGET) {
+					result.allTargets.push(newObj);		
+					grid[gx][gy]['targetStructures'].push(newObj);
+					
+					// ADA defences
+					if (flags & OBJ_FLAGS.ADA) {
+						grid[gx][gy]['adaCount']++;
+					}
+
+					// Ground defences
+					const BUILT_DEFENCE = OBJ_FLAGS.DEFENSIVE_STRUCTURE | OBJ_FLAGS.IS_BUILT;
+					if ((flags & BUILT_DEFENCE) === BUILT_DEFENCE && !(flags & OBJ_FLAGS.ADA)) {
+						grid[gx][gy]['fixedDefenceCount']++;
+					}
+				} else {
+					grid[gx][gy]['friendlyStructures'].push(newObj);
 				}
 			}
 
-			if (currSector.derricks.length >= 4) {
-				highPriorityTargets.push(...defences);
-			} else if (defences.length <= currSector.derricks.length) {	
-				medPriorityTargets.push(...defences); 	// "low hanging fruit"
-			} else {
-				lowPriorityTargets.push(...defences);		
-			}
-			
+			result.playerInfo.push(p);
 		}
 
-		const airRaidTargetList = [...highPriorityTargets, ...medPriorityTargets, ...lowPriorityTargets];
+		return result;
 
-		return airRaidTargetList;
+	}
+
+	/**
+	 * 
+	 * @param {worldState} state 
+	 * @returns 
+	 */
+	getTargetsNearDerricks(state) {
+
+		const grid = state.grid.grid;
+		const cellSize = state.grid.cellSize;
+
+		const SEARCH_RADIUS = cellSize;
+		let targetsNearDerricks = [];
+
+		let seenGridCoord = [];
+		for (let i=0; i<state.poi.derricks.length; i++) {
+			const d = state.poi.derricks[i];
+			
+			let seen = false;
+			for (let j=0; j<seenGridCoord.length; j++) {
+				if (seenGridCoord[j].gx === d.gx && seenGridCoord[j].gy === d.gy) {
+					seen = true;
+					break;
+				}
+			}
+			if (seen) {
+				continue;
+			}
+
+			const t = state.grid.enumRange(d.x, d.y, SEARCH_RADIUS);
+
+			let defences = [], trucks = [], derricks = [];
+
+			t['targetStructures'].forEach(target => {
+				if (target.flags & OBJ_FLAGS.DEFENSIVE_STRUCTURE) {
+					if (target.flags & OBJ_FLAGS.INDIRECT_FIRE) {
+						defences.unshift(target);
+					} else {
+						defences.push(target);
+					}
+				}
+				if (target.flags & OBJ_FLAGS.RESOURCE_EXTRACTOR) {
+					derricks.push(target);
+				}
+			});
+
+			t['targetUnits'].forEach(target => {
+				if (target.flags & OBJ_FLAGS.CONSTRUCTOR) {
+					trucks.push(target);
+				}
+			});
+
+			targetsNearDerricks.push(...trucks, ...defences, ...derricks);
+
+			seenGridCoord.push({'gx': d.gx, 'gy': d.gy});
+		}
+
+		return targetsNearDerricks;
+
+	}
+
+	/**
+	 * 
+	 * @param {worldState} state 
+	 * @returns 
+	 */
+	getBaseTargets(state) {
+		// Note: trying a new pattern; extract all relevant parameters from state at the start
+		const bases = state.poi.bases;
+		const enemyPlayerIDs = state.enumLivingPlayers().filter(isEnemy); 
+
+		let result = {
+			'productionTargets': [],
+			'adaTargets': [],
+		}
+
+		if (enemyPlayerIDs.length === 0) {
+			return result;
+		}
+
+		const SEARCH_RADIUS = 30;
+		for (let i=0; i<bases.length; i++) {
+			if (!enemyPlayerIDs.includes(i)) {
+				continue;
+			}
+
+			const t = state.grid.enumRange(bases[i].x, bases[i].y, SEARCH_RADIUS);		
+
+			for (let j=0; j<t['targetStructures'].length; j++) {
+				if (t['targetStructures'][j].flags & OBJ_FLAGS.ADA) {
+					result.adaTargets.push(t['targetStructures'][j]);
+					continue;
+				}
+				if (t['targetStructures'][j].flags & OBJ_FLAGS.PRODUCTION) {
+					result.productionTargets.unshift(t['targetStructures'][j]);
+					continue;
+				}
+				if (t['targetStructures'][j].flags & OBJ_FLAGS.REPAIR) {
+					result.productionTargets.push(t['targetStructures'][j]);
+					continue;
+				}
+			}
+
+			for (let j=0; j<t['targetUnits'].length; j++) {
+				if (t['targetUnits'][j].flags & OBJ_FLAGS.ADA) {
+					result.adaTargets.push(t['targetUnits'][j]);
+				}
+				if (t['targetUnits'][j].flags & OBJ_FLAGS.CONSTRUCTOR) {
+					result.productionTargets.push(t['targetUnits'][j]);
+				}
+
+			}
+		}	
+
+		return result;
 	}
 	
-	#getNearestPlayerTargets({state, loc}) {
-		// Algorithm: Find the nearest alive enemy base closest to the current group location and head towards that.
-		// Reason: This saves running enumDroid() and enumStruct() over all alive enemy players.
-
-		const enemyPlayerIDs = enumLivingPlayers().filter(isEnemy); 
-		if (enemyPlayerIDs.length === 0) {
-			return [];
-		}
-
-		let nearestEnemyPlayer = enemyPlayerIDs[0];
-		let nearestBaseDistSq = distSq(loc.x, startPositions[nearestEnemyPlayer].x, loc.y, startPositions[nearestEnemyPlayer].y);
-
-		for (let i=1; i<enemyPlayerIDs.length; i++) {
-			const enemyBasePosition = startPositions[enemyPlayerIDs[i]];
-			const d = distSq(loc.x, enemyBasePosition.x, loc.y, enemyBasePosition.y);
-			if (d < nearestBaseDistSq) {
-				nearestBaseDistSq = d;
-				nearestEnemyPlayer = i;
-			}
-		}
-		
-		const enemyUnits = enumDroid(nearestEnemyPlayer);
-		const enemyStructures = enumStruct(nearestEnemyPlayer);		
-
-		return [...enemyUnits, ...enemyStructures];
-	}
-
 	/** 
 	 * This function performs these roles:
 	 *		- finding the closest droid
@@ -212,11 +452,17 @@ class armyIntelligence {
 	 *		- classifying each object into different, useful categories
 	 *		- compressing each gameObject for efficient storage & use
 	 * with O(N) algorithmic complexity. 
+	 * 
+	 * @param {worldState} state
+	 * @param {BaseObject} loc
+	 * @param {number} searchRadius
+	 * @param {number} immediateRadius
+	 * @returns {Object}
 	 */
-	proposeTargetsInRadius({state, loc, searchRadius=20, immediateRadius=10}) {
+	proposeTargetsInRadius2(state, loc, searchRadius=20, immediateRadius=10) {
 
-		const SHOW_TARGETS = false;
-		
+		const allTargets = state.allTargets;
+
 		let proposedTargets = {
 			'enemyArmor': [], 
 			'enemyInfantry': [], 
@@ -232,21 +478,22 @@ class armyIntelligence {
 			'targetsInImmediateRadius': 0
 		};		
 
-		const INDUSTRIAL_TARGETS = [FACTORY, CYBORG_FACTORY, VTOL_FACTORY];
-
-		let targetObjects = enumRange(loc.x, loc.y, searchRadius, ENEMIES, false);
-
-		if (targetObjects.length === 0) {
-			// debug(`used getNearestPlayerTargets() @ ${gameTime}`);
-			targetObjects = this.#getNearestPlayerTargets({state: state, loc: loc});
-		}
-
-		if (targetObjects.length === 0) {
+		if (!defined(loc)) {
+			debug(`WARNING:	proposeTargetsInRadius2(): 'loc' was undefined.`);
 			return proposedTargets;
 		}
 
-		if (SHOW_TARGETS) {
-			hackMarkTiles();			
+		const t = state.grid.enumRange(loc.x, loc.y, searchRadius); 
+
+		let targetList = [...t['targetUnits'], ...t['targetStructures']];
+		// debug(`t ${targetList.length} (d ${t['droids'].length}, s ${t['structs'].length}), allT ${allTargets.length}`);
+
+		if (targetList.length === 0) {
+			targetList = allTargets;			
+		}
+
+		if (targetList.length === 0) {
+			return proposedTargets;
 		}
 
 		let closestObject = undefined;
@@ -254,16 +501,16 @@ class armyIntelligence {
 
 		let enemyVtols = [];
 
-		for (let i=0; i<targetObjects.length; i++) {
-			const obj = targetObjects[i];
-			const t = this.#createNewTarget(obj);
-
-			if (SHOW_TARGETS) {
-				hackMarkTiles(obj.x, obj.y);
+		for (let i=0; i<targetList.length; i++) {
+			const t = targetList[i];
+			const obj = getObject(t.type, t.player, t.id);
+			if (!defined(obj)) {
+				// The target could come from a stale database e.g. allTargets
+				continue;
 			}
 
 			// Update closestDroid (excludes VTOLs)
-			if (obj.isVTOL !== true) {
+			if (!(t.flags & OBJ_FLAGS.AVIATION)) {
 
 				const distSquaredToLoc = distSq(obj.x, loc.x, obj.y, loc.y);
 
@@ -288,36 +535,35 @@ class armyIntelligence {
 			}
 
 			// Classify the object
-			if (isAntiAirDefense(obj)) {
+			if (t.flags & OBJ_FLAGS.ADA) {
 				proposedTargets["enemyADA"].push(t);
 				continue;
 			}
 
 			if (obj.type === DROID) {
-				if (obj.droidType === DROID_CONSTRUCT) {
+				if (t.flags & OBJ_FLAGS.CONSTRUCTOR) {
 					proposedTargets["enemyConstructor"].push(t);
 					continue;
 				} 
 
-				if (obj.propulsion === PROPULSIONS["Cyborg Propulsion"].id) {
-					// cyborg engineers were filtered out earlier
+				if (t.flags & OBJ_FLAGS.INFANTRY) {
 					proposedTargets["enemyInfantry"].push(t);		
 					continue;
 				}
 
-				if (obj.isVTOL === true) {
+				if (t.flags & OBJ_FLAGS.AVIATION) {
 					proposedTargets["enemyAviation"].push(t);
 					continue;
 				}
 
-				if (obj.hasIndirect === true) {
+				if (t.flags & OBJ_FLAGS.INDIRECT_FIRE) {
 					// cyborg indirect (e.g. grenadier) & VTOL indirect (e.g. bombs) were filtered out earlier
 					proposedTargets["enemyIndirectFire"].push(t);
 					continue;
 				}
 
 				// This leaves only direct fire land vehicles & other utility vehicles e.g. sensors / commanders
-				if (obj.droidType === DROID_WEAPON) {
+				if (t.flags & OBJ_FLAGS.ARMOUR) {
 					proposedTargets["enemyArmor"].push(t);
 					continue;		
 				}
@@ -327,17 +573,17 @@ class armyIntelligence {
 			}
 
 			if (obj.type === STRUCTURE) {
-				if (obj.hasIndirect === true) {
+				if (t.flags & OBJ_FLAGS.INDIRECT_FIRE) {
 					proposedTargets["enemyIndirectFire"].push(t);
 					continue;
 				}
 				
-				if (obj.stattype === DEFENSE) {
+				if (t.flags & OBJ_FLAGS.DEFENSIVE_STRUCTURE) {
 					proposedTargets["enemyDefenses"].push(t);
 					continue;
 				}
 
-				if (INDUSTRIAL_TARGETS.includes(obj.stattype)) {
+				if (t.flags & OBJ_FLAGS.PRODUCTION) {
 					proposedTargets["enemyIndustrial"].push(t);
 					continue;					
 				}
@@ -357,5 +603,5 @@ class armyIntelligence {
 		return proposedTargets;
 
 	}
-
+	
 }

@@ -18,26 +18,36 @@
 class TacticalOperationsCenter {
 	// This is the central location where all missions are planned, controlled & monitored.
 	constructor() {
-		
-		this.pendingIntelReports = [];
-	}
 
-	getCompletedIntelMissionReports() {
-		return this.pendingIntelReports;
 	}
 	
+	/**
+	 * 
+	 * @param {worldState} state 
+	 * @returns 
+	 */
 	getActiveConstructionMissions(state) {
 		const ACTIVE_MISSION_STATUSES = [MISSION_STATUS.IN_PROGRESS, MISSION_STATUS.NOT_STARTED];
 		return state.activeMissions.filter(missionData => CONSTRUCTION_MISSION_TYPES.includes(missionData.missionType) && 
 														 ACTIVE_MISSION_STATUSES.includes(missionData.missionStatus));
 	}
 
+	/**
+	 * 
+	 * @param {worldState} state 
+	 * @returns 
+	 */
 	getActiveAviationMissions(state) {
 		const ACTIVE_MISSION_STATUSES = [MISSION_STATUS.IN_PROGRESS, MISSION_STATUS.NOT_STARTED];
 		return state.activeMissions.filter(missionData => AVIATION_MISSION_TYPES.includes (missionData.missionType) &&
 										  ACTIVE_MISSION_STATUSES.includes(missionData.missionStatus));
 	}
 
+	/**
+	 * 
+	 * @param {worldState} state 
+	 * @returns 
+	 */
 	manageMissions(state) {
 		// This function manages the queue of missions; it is a state mutator
 
@@ -87,12 +97,6 @@ class TacticalOperationsCenter {
 				switch (retval.status) {
 					case MISSION_STATUS.SUCCEEDED:
 
-						// Handle other retval payload based on missionType
-						if ([MISSION_TYPE.SECTOR_RECON_ENGINE, MISSION_TYPE.CHECK_OIL_DOMINANCE].includes(md.missionType)) {
-							// send intel to pending intel
-							this.pendingIntelReports.push(retval.intelReport);
-						}
-
 						if (defined(md.ceaseOrders)) {
 							md.ceaseOrders();
 						}
@@ -117,21 +121,22 @@ class TacticalOperationsCenter {
 		state.activeMissions = currActiveMissions;
 	}
 
-	assignAviationMissions(state, newAviationTargets) {
 
-		for (let i=0; i<newAviationTargets.length; i++) {
-			// Determine mission type based on target properties
+	/**
+	 * Note: This function shouldn't make decisions. It is the responsibility of higher command to determine which missions are worth doing.
+	 * @param {worldState} state 
+	 * @param {Array} aviationTargets 
+	 * @param {number} minAircraft 
+	 * @returns {void}
+	 */
+	assignAviationMissions(state, aviationTargets, minAircraft) {
 
-			// Meaningful parameters are stored in aviationTargets[i]; this function shouldn't make decisions
-			// It is the responsibility of higher command to determine what missions are worth devoting more resources to i.e. the priority beforehand
+		for (let i=0; i<aviationTargets.length; i++) {
 
-			const newMissionRequest = newAviationTargets[i];
+			const newMissionRequest = aviationTargets[i];
+			const NUM_UNITS = minAircraft;
 
 			const missionType = newMissionRequest.missionType;
-			let NUM_UNITS = 2;
-			if (missionType === MISSION_TYPE.CAS_STRIKE) {
-				NUM_UNITS = 1;
-			}		
 			const priority = newMissionRequest.priority;
 
 			const missionData = this.createNewMission({missionType: missionType, priority: priority}, newMissionRequest, NUM_UNITS, i);
@@ -143,12 +148,15 @@ class TacticalOperationsCenter {
 		}
 	}
 
-	assignIntelMissions({intelTasks, state}) {
+	/**
+	 * 
+	 * @param {worldState} state 
+	 * @param {Array} intelTasks 
+	 * @returns {void}
+	 */
+	assignIntelMissions(state, intelTasks) {
 
-		// debug(`assignReconMissions(): reconTasks.length = ${reconTasks.length}`);
 		for (let i=0; i<intelTasks.length; i++) {
-
-			// This function just executes, it doesn't reason (e.g. it doesn't stop a new mission from being scheduled if there's already an active one)
 
 			const missionType = intelTasks[i].missionType;
 			const payload = intelTasks[i].payload;
@@ -164,30 +172,31 @@ class TacticalOperationsCenter {
 		}
 	}
 
-	assignConstructionTasks({approvedTasks, state}) {
-		// Application service: 
-		let buildTasks = approvedTasks;
+	#printConstructionDebugOutput(task, missionID) {
+		let sectorID = '', structureID = '';
+		if (defined(task.payload)) {
+			sectorID = `@ ${task.payload.id}`;
+			structureID = `-- ${task.structureID}`
+		}
+		debug(`Scheduled BUILD (${task.missionType}) for: ${missionID} ${sectorID} ${structureID} ${sectorID}`);
+	};
 
-		// debug(`assignConstructionTasks(): buildTasks.length = ${buildTasks.length}`);
+	/**
+	 * 
+	 * @param {worldState} state 
+	 * @param {Array} buildTasks 
+	 * @returns {void}
+	 */
+	assignConstructionTasks(state, buildTasks) {
+		const PRIORITY = MISSION_PRIORITY.HIGH;
 
-		for (let i=0; i<buildTasks.length; i++) {
-			const buildTask = buildTasks[i];
-		
-			// Priority is hardcoded for now
-			const missionData = this.createNewMission({missionType: buildTask.missionType, priority: MISSION_PRIORITY.HIGH}, buildTask, i);		
-				
+		buildTasks.forEach((task, i) => {	
+			const missionData = this.createNewMission({missionType: task.missionType, priority: PRIORITY}, task, i);		
 			if (defined(missionData)) {
 				state.activeMissions.push(missionData);
-
-				if (false) {
-					let sectorID = undefined;
-					if (defined(buildTask.payload)) {
-						sectorID = buildTask.payload.id;
-					}
-					debug(`Scheduled BUILD (${buildTask.missionType}) for: ${missionData.id}, in Sect ${sectorID}`);
-				}
+				// this.#printConstructionDebugOutput(task, missionData.id);
 			} 
-		}
+		});
 	}
 
 	createNewMission({missionType, priority=MISSION_PRIORITY.LOW}, ...args) {
@@ -233,12 +242,7 @@ class TacticalOperationsCenter {
 			/*
 				INTELLIGENCE MISSIONS
 			*/
-			case MISSION_TYPE.SECTOR_RECON_ENGINE:
-				md = intelligence.createSectorReconEngineMission({sectorInfo: args[0], missionType: missionType, tickUID: args[1]});		
-				break;
-			case MISSION_TYPE.CHECK_OIL_DOMINANCE:
-				md = intelligence.createCheckOilDominanceMission({payload: args[0], missionType: missionType, tickUID: args[1]});
-				break;
+
 
 			/*
 				CONSTRUCTION MISSIONS
@@ -279,279 +283,268 @@ class TacticalOperationsCenter {
 		}
 	}
 
-	compileSectorIntelIntoCOP(reports, state) {
-        // Application service: compiles & saves available sector intelligence reports returned from 
-        //  - getSectorIntelFromGameEngine()
-        // into the main game state.
+	#debugPrintSpatialField(heatmap, name) {
+		const numXCells = state.grid.numXCells;
+		const numYCells = state.grid.numYCells;
 
-		for (let i=0; i<reports.length; i++) {
-			const r = reports[i];
+		debug(`\nupdateSpatialFields(): ${name} @ ${gameTime}`);
+		for (let gy=0; gy<numYCells; gy++) {
+			let row = "";
 
-			// Process OIL_DOMINANCE_CHECK
-			if (r['missionType'] === MISSION_TYPE.CHECK_OIL_DOMINANCE) {
-				if (state.oilDominance !== r['report']) {
-					debug(`oil dominance changed to ${r['report']} @ ${gameTime} ms`);
-					state.oilDominance = r['report'];
-				};
-				continue;
-			}
-
-			// Else, assume it is SECTOR_RECON_ENGINE
-			let currSectorReport = r['report'];
-
-			// Find the sector
-            const relevantSectorList = state.sectors.filter(sector => sector.id === currSectorReport.id);
-            if (relevantSectorList.length !== 1) {
-                debug(`WARNING -- toc/compileIntelIntoCOP(): sector with ID ${currSectorReport.id} returned ${relevantSectorList.length} results, !== 1`);
-				continue;
-            }
-            let relevantSector = relevantSectorList[0];
-
-            // Update sector information: 
-
-			// TODO: update when there are base structures outside of the designated base area
-
-            //      Part 1: Update nearbyBaseStructures
-            if (defined(currSectorReport.base) && defined(relevantSector.base)) { 
-                relevantSector.base.nearbyBaseStructures = currSectorReport.base.nearbyBaseStructures; 
-
-				// Update alliance info in case alliances change mid-game
-				if (isEnemy(relevantSector.base.playerID)) {
-					relevantSector.base.isEnemy = true;
+			for (let gx=0; gx<numXCells; gx++) {					
+				const val = Math.round(heatmap[gx][gy]);
+				if (val < 0 || val >= 10) {
+					row += `${val} `;
 				} else {
-					relevantSector.base.isEnemy = false;
+					row += ` ${val} `;
+				}				
+			}
+			debug(row);
+		}
+	}
+
+	#filterField(numXCells, numYCells, heatmap) {
+		const emptyCell = (...args) => {return 0;};
+		let filteredGrid = create2DGrid(numXCells, numYCells, emptyCell);
+
+		const KERNEL = [
+			[0.25, 0.25, 0.25],
+			[0.25, 1.0,  0.25],
+			[0.25, 0.25, 0.25]
+		];
+
+		const XDEV = 1;
+		const YDEV = 1;
+
+		for (let gx=0; gx<numXCells; gx++) {
+			for (let gy=0; gy<numYCells; gy++) {
+				if (heatmap[gx][gy] === 0) {
+					continue;
 				}
-            }
 
-			let friendlyBaseBuiltInSector = false, enemyBaseBuiltInSector = false;
-			if (defined(relevantSector.base)) {
-				// Update enemy state
-				relevantSector.base.isEnemy = isEnemy(relevantSector.base.playerID);
+				for (let dx=-XDEV; dx <= XDEV; dx++) {
+					if (gx + dx < 0 || gx + dx >= numXCells) {
+						continue;
+					}
 
-				// Check if any base structures built nearby
-				if (relevantSector.base.nearbyBaseStructures > 0) {
-					if (relevantSector.base.isEnemy) { 
-						enemyBaseBuiltInSector = true;
-					} else {
-						friendlyBaseBuiltInSector = true;
+					for (let dy=-YDEV; dy <= YDEV; dy++) {
+						if (gy + dy < 0 || gy + dy >= numYCells) {
+							continue;
+						}
+						const influence = heatmap[gx][gy] * KERNEL[dy + YDEV][dx + XDEV];		
+						filteredGrid[gx+dx][gy+dy] += influence;
 					}
 				}
 			}
-
-            //      Part 2: Update derrick info
-            if ((currSectorReport.derricks.length > 0 && 
-                relevantSector.derricks.length === currSectorReport.derricks.length)) {
-                for (let j=0; j<relevantSector.derricks.length; j++) {
-
-                    // Important: assumes intel report was generated in the same order (intention is to avoid using ".find()" every cycle)
-                    let derrick = relevantSector.derricks[j];
-                    let derrickIntel = currSectorReport.derricks[j];
-
-                    if (derrick.id !== derrickIntel.id) {
-						debug(`toc/compileIntelIntoCOP(): derrickID does not match: ${derrick.id} !== ${derrickIntel.id}; nothing was written, continuing`);
-                        continue;
-					}
-
-					// Else, update parameters
-					derrick.isClaimed = derrickIntel.isClaimed;
-					derrick.playerID = derrickIntel.playerID;
-
-					derrick.friendlyDefenceCount = derrickIntel.friendlyDefenceCount;
-					derrick.enemyDefenceCount = derrickIntel.enemyDefenceCount;	
-
-					// Define owner, controlStability, threatLevel
-					if (!defined(derrick.playerID)) {
-						derrick.owner = REGION_OWNER.NEUTRAL;
-
-						if (tileIsBurning(derrick.x, derrick.y)) {
-							derrick.owner = REGION_OWNER.CONTESTED;
-						}
-					} else {
-						if (!isEnemy(derrick.playerID)) {
-							derrick.owner = REGION_OWNER.FRIENDLY;
-						} else {
-							if (derrick.enemyDefenceCount === 0) {
-								derrick.owner = REGION_OWNER.CONTESTED;
-							} else {
-								derrick.owner = REGION_OWNER.ENEMY;
-							}
-						}
-					}
-
-					if (derrick.enemyDefenceCount === 0 && derrick.friendlyDefenceCount > 0 || friendlyBaseBuiltInSector) {
-						derrick.threatLevel = REGION_THREAT_LEVEL.LOW;				
-						derrick.controlStability = REGION_STABILITY.HIGH;			
-					} else if (derrick.enemyDefenceCount > 0 && derrick.friendlyDefenceCount === 0 || enemyBaseBuiltInSector) {
-						derrick.threatLevel = REGION_THREAT_LEVEL.HIGH;
-						derrick.controlStability = REGION_STABILITY.HIGH;			
-					} else if (derrick.enemyDefenceCount === 0 && derrick.friendlyDefenceCount === 0) {
-						if (derrick.owner === REGION_OWNER.FRIENDLY) {
-							derrick.threatLevel = REGION_THREAT_LEVEL.LOW;	
-							derrick.controlStability = REGION_STABILITY.MEDIUM;	
-						} else {
-							derrick.threatLevel = REGION_THREAT_LEVEL.MEDIUM;	
-							derrick.controlStability = REGION_STABILITY.MEDIUM;	
-						}
-					} else {
-						derrick.threatLevel = REGION_THREAT_LEVEL.HIGH;
-						derrick.controlStability = REGION_STABILITY.LOW;				
-					}
-                }   
-            }
-
-            //      Part 3: Update overall sector info (use doctrinal rules)
-            relevantSector.friendlyDefenceCount = currSectorReport.friendlyDefenceCount;
-            relevantSector.enemyDefenceCount = currSectorReport.enemyDefenceCount;
-
-			// 		Part 4: Set region owner (TEMPORARY)
-			if (relevantSector.enemyDefenceCount === 0 && relevantSector.friendlyDefenceCount > 0 || friendlyBaseBuiltInSector) {
-				relevantSector.owner = REGION_OWNER.FRIENDLY;
-			} else if (relevantSector.enemyDefenceCount > 0 && relevantSector.friendlyDefenceCount === 0 || enemyBaseBuiltInSector) {
-				relevantSector.owner = REGION_OWNER.ENEMY;
-			} else if (relevantSector.enemyDefenceCount > 0 && relevantSector.friendlyDefenceCount > 0) {
-				relevantSector.owner = REGION_OWNER.CONTESTED;
-			} else {
-				// No defences nearby (either friendly or enemy)
-				let friendlyOwnedDerrickCount = 0, enemyOwnedDerrickCount = 0, unclaimedDerrickCount = 0;
-
-				// check how many derricks, and make decision based on that
-				for (let d=0; d<relevantSector.derricks.length; d++) {
-					if (relevantSector.derricks[d].owner === REGION_OWNER.FRIENDLY) {
-						friendlyOwnedDerrickCount++;
-					} else if (relevantSector.derricks[d].owner === REGION_OWNER.ENEMY) {
-						enemyOwnedDerrickCount++;
-					} else {
-						unclaimedDerrickCount++;
-					}
-				}
-
-				if (friendlyOwnedDerrickCount > enemyOwnedDerrickCount) {
-					relevantSector.owner = REGION_OWNER.FRIENDLY;
-				} else if (enemyOwnedDerrickCount > friendlyOwnedDerrickCount) {
-					relevantSector.owner = REGION_OWNER.CONTESTED;
-				} else if (enemyOwnedDerrickCount === 0 && friendlyOwnedDerrickCount === 0 && unclaimedDerrickCount > 0) {
-					relevantSector.owner = REGION_OWNER.NEUTRAL;
-				}
-			}
-
-			// 		Part 5: Set threat level & stability based on rules
-			if (relevantSector.enemyDefenceCount === 0 && relevantSector.friendlyDefenceCount > 0 || friendlyBaseBuiltInSector) {
-				relevantSector.threatLevel = REGION_THREAT_LEVEL.LOW;				
-				relevantSector.controlStability = REGION_STABILITY.HIGH;			
-			} else if (relevantSector.enemyDefenceCount > 0 && relevantSector.friendlyDefenceCount === 0 || enemyBaseBuiltInSector) {
-				relevantSector.threatLevel = REGION_THREAT_LEVEL.HIGH;
-				relevantSector.controlStability = REGION_STABILITY.HIGH;			
-			} else if (relevantSector.enemyDefenceCount === 0 && relevantSector.friendlyDefenceCount === 0) {
-				if (relevantSector.owner === REGION_OWNER.FRIENDLY) {
-					relevantSector.threatLevel = REGION_THREAT_LEVEL.LOW;	
-					relevantSector.controlStability = REGION_STABILITY.MEDIUM;	
-				} else {
-					relevantSector.threatLevel = REGION_THREAT_LEVEL.MEDIUM;	
-					relevantSector.controlStability = REGION_STABILITY.MEDIUM;	
-				}
-			} else {
-				relevantSector.threatLevel = REGION_THREAT_LEVEL.HIGH;
-				relevantSector.controlStability = REGION_STABILITY.LOW;				
-			}
-
 		}
 
-		// 		Part 6: Set threat level of all sectors + derricks next to living enemy bases
-		const livingPlayers = enumLivingPlayers();
+		return filteredGrid;
+	}
 
-		for (let i=0; i<state.sectors.length; i++) {
-			let currSector = state.sectors[i];
-			if (defined(currSector.base)) {
-				if (currSector.base.nearbyBaseStructures === 0) {
-					continue;
-				}
+	
+	updateSpatialFields(state, newGrid) {
+		const numXCells = state.grid.numXCells;
+		const numYCells = state.grid.numYCells;
+		const grid = state.grid.grid;
 
-				if (!livingPlayers.includes(currSector.base.playerID)) {
-					continue;
-				}
+		for (let gx=0; gx<numXCells; gx++) {
+			for (let gy=0; gy<numYCells; gy++) {
+				state.fields['adaThreat'][gx][gy] = newGrid[gx][gy]['adaCount'];
+				state.fields['enemyUnitThreat'][gx][gy] = newGrid[gx][gy]['enemyDirectFireUnitCount'];				
+				state.fields['enemyStaticDefenceThreat'][gx][gy] = newGrid[gx][gy]['fixedDefenceCount'];
+				state.fields['unclaimedDerricksInCell'][gx][gy] = grid[gx][gy]['derricks'].length - newGrid[gx][gy]['claimedDerricks'].length;
 
-				if (!currSector.base.isEnemy) {
-					// Set sectors near alive, friendly bases to HIGH STABILITY
-					for (let j=0; j<currSector.adjacentSectors.length; j++) {
-						if(currSector.adjacentSectors[j].derricks.every(d => d.owner === REGION_OWNER.FRIENDLY)) {
-
-							currSector.adjacentSectors[j].controlStability = REGION_STABILITY.HIGH;
-							currSector.adjacentSectors[j].derricks.forEach(d => {{
-								d.controlStability = REGION_STABILITY.HIGH;
-								d.threatLevel = REGION_THREAT_LEVEL.LOW;
-							}});
-
-							// if (true) debug(`	Set ${currSector.adjacentSectors[j].id} to STABILITY -> HIGH`);
-						}
+				let numFriendlyDerricks = 0, numEnemyDerricks = 0;
+				newGrid[gx][gy]['claimedDerricks'].forEach(d => {
+					if (isEnemy(d.playerID)) {
+						numEnemyDerricks++;
+					} else {
+						numFriendlyDerricks++;
 					}
-					
-					continue;
-				}
-
-				// Else, set sectors near alive, enemy bases to HIGH THREAT & STABILITY if they have enemy derricks on them
-				currSector.derricks.forEach(d => {
-					d.threatLevel = REGION_THREAT_LEVEL.HIGH;
-					d.controlStability = REGION_STABILITY.HIGH;
 				});
 
-				for (let j=0; j<currSector.adjacentSectors.length; j++) {
+				const ts = newGrid[gx][gy]['targetStructures'].length - numEnemyDerricks - newGrid[gx][gy]['adaCount'];
+				state.fields['controlStability'][gx][gy] = newGrid[gx][gy]['friendlyStructures'].length - (ts);				// todo remove friendly derricks once safe regions are set
+			}	
+		}	
 
-					const someDerricksCaptured = currSector.adjacentSectors[j].derricks.some(d => d.owner === REGION_OWNER.ENEMY || d.owner === REGION_OWNER.CONTESTED)
-					if (someDerricksCaptured) {
-						currSector.adjacentSectors[j].threatLevel = REGION_THREAT_LEVEL.HIGH;
-						currSector.adjacentSectors[j].controlStability = REGION_STABILITY.HIGH;
-						// if (true) debug(`	Set ${currSector.adjacentSectors[j].id} to THREAT -> HIGH`);
+		if (false) this.#debugPrintSpatialField(state.fields['adaThreat'], 'adaThreat - BEFORE FILTER');		
+		state.fields['adaThreat'] = this.#filterField(numXCells, numYCells, state.fields['adaThreat']);
+		if (false) this.#debugPrintSpatialField(state.fields['adaThreat'], 'adaThreat - AFTER FILTER');
+		if (false) this.#debugPrintSpatialField(state.fields['enemyStaticDefenceThreat'], 'enemyStaticDefenceThreat');
+		if (false) this.#debugPrintSpatialField(state.fields['enemyUnitThreat'], 'enemyUnitThreat');
+		if (false) this.#debugPrintSpatialField(state.fields['unclaimedDerricksInCell'], 'unclaimedDerricksInCell');
+		state.fields['controlStability'] = this.#filterField(numXCells, numYCells, state.fields['controlStability']);
+		if (false) this.#debugPrintSpatialField(state.fields['controlStability'], 'controlStability');
+	}
 
-						currSector.adjacentSectors[j].derricks.forEach(d => {{
-							if (d.owner === REGION_OWNER.ENEMY || d.owner === REGION_OWNER.CONTESTED) {
-								d.controlStability = REGION_STABILITY.HIGH;
-								d.threatLevel = REGION_THREAT_LEVEL.HIGH;
-							}
-						}});
-					};
-					// Else, they keep their normal threat level
-				}
+	/**
+	 * This function writes the result of blanket `enumDroid` and `enumStruct` calls to `state`.
+	 * @param {Object} state 
+	 * @param {any[][]} newGrid 
+	 * @param {Array} playerInfo 
+	 * @param {Array} allTargets 
+	 * @returns {void}
+	 */
+	setCoreIntelParameters(state, newGrid, playerInfo, allTargets) {
+		// Write updated units to grid (only overwriting "KEYS" defined below)
+		const numXCells = state.grid.numXCells;
+		const numYCells = state.grid.numYCells;
+
+		state.playerInfo = playerInfo;
+		state.allTargets = allTargets;
+
+		// Update grid 
+		// TODO: see if spatial fields should also be updated here for performance reasons
+		const CATEGORIES = ['friendlyUnits', 'targetUnits', 'friendlyStructures', 'targetStructures'];
+		for (let gx=0; gx<numXCells; gx++) {
+			for (let gy=0; gy<numYCells; gy++) {
+
+				CATEGORIES.forEach(category => {
+					state.grid.grid[gx][gy][category] = newGrid[gx][gy][category];
+				});
+
+				// Then update derrick information
+				const claimed = newGrid[gx][gy]['claimedDerricks'];
+				let derricksInCell = state.grid.grid[gx][gy]['derricks'];
+				derricksInCell.forEach(d => {
+					for (let i=0; i<claimed.length; i++) {
+						// if (true) debug(`derrick d${d.id}, claimed.length; ${claimed.length}`);
+						if (d.id !== claimed[i].id) {
+							continue;
+						}
+
+						d['isClaimed'] = true;
+						d['playerID'] = claimed[i]['playerID'];
+						return;
+					}
+					// Else unclaimed
+					d['isClaimed'] = false;
+					d['playerID'] = undefined;
+					return;			
+				});
 			}
 		}
-
-		// Print out sector info (debug only)
+		
 		if (false) {
-			for (let i=0; i<state.sectors.length; i++) {
-				let s = state.sectors[i];
+			debug(`\nGrid-form derrickInfo @ ${gameTime}`);
+			for (let gy=0; gy<numYCells; gy++) {
+				let row = "\t";
 
-				debug(`compileIntoCOP(): sector ${s.id}:`);
-				debug(`	friendlystruct: ${s.friendlyDefenceCount}, enemystruct: ${s.enemyDefenceCount}`);
-				if (defined(s.base)) {
-					debug(`		base: ${s.base.id}, nearby structs: ${s.base.nearbyBaseStructures}`);
+				for (let gx=0; gx<numXCells; gx++) {
+					let count = 0;
+
+					const derricksInCell = state.grid.grid[gx][gy]['derricks'];
+					derricksInCell.forEach(d => {
+						if (d.isClaimed) {
+							count++;
+						}
+					});
+					row += `${count} `;
 				}
-				s.derricks.forEach(d => debug(`		derr: ${d.id}, claimed: ${d.isClaimed}, playerID: ${d.playerID}, friendlyDefences: ${d.friendlyDefenceCount}, enemyDefences: ${d.enemyDefenceCount}, owner: ${d.owner}, threatLevel: ${d.threatLevel}, stability: ${d.threatLevel}`));
-				debug(`	sector threatLevel: ${s.threatLevel}, stability: ${s.controlStability}, owner: ${s.owner}`)
+				debug(row);
 			}
 		}
 
-		// Delete all pending intel reports
-		this.pendingIntelReports.length = 0;
-	}
+		if (false) {
+			// Test if grid['derricks'] & state.poi.derricks point to the same location in memory (yes)
+			debug(`List form - derrickInfo @ ${gameTime}`);
+			state.poi.derricks.forEach(d => debug(`	${d.id}\t\t${d.isClaimed ? `claimed by ${d.playerID}`: 'unclaimed'}`));
+		}
 
-	updateHighRiskSectors(state) {
-		const alivePlayers = enumLivingPlayers();
+		if (false) {
+			debug(`\n${gameTime} allTargets`);
+			state.allTargets.forEach(t => {
+				debug(`\t${t.name}  ${t.id}  (player ${t.player})	(flags ${toBinary20(t.flags)})`);
+			});
+		}
 
-		let enemyBaseSectors = [];
-		state.sectors.forEach(sector => {
-			if (defined(sector.base)) {
-				if (sector.base.isEnemy && alivePlayers.includes(sector.base.playerID)) {
-					enemyBaseSectors.push(sector);
+		if (false) {
+			const cellSize = state.grid.cellSize;
+			const numXCells = Math.ceil(mapWidth / cellSize);
+			const numYCells = Math.ceil(mapHeight / cellSize);
+
+			if (false) {
+				for (let gx=0; gx<numXCells; gx++) {
+					for (let gy=0; gy<numYCells; gy++) {
+
+						if (newGrid[gx][gy]['targetUnits'].length > 0 || newGrid[gx][gy]['targetStructures'].length > 0) {
+							debug(`\nObjects in grid: (${gx} ${gy}) @ ${gameTime}`);
+
+							newGrid[gx][gy]['targetUnits'].forEach(t => debug(`	${t.name} (${t.id}): player ${t.player}`));							
+							newGrid[gx][gy]['targetStructures'].forEach(t => debug(`	${t.name} (${t.id}): player ${t.player} `));
+						}
+					}
 				}
 			}
-		});
 
-		let adjSectors = [];
-		enemyBaseSectors.forEach(s => 
-			{adjSectors.push(...s.adjacentSectors.filter(sect => sect.threatLevel === REGION_THREAT_LEVEL.HIGH))}
-		);
-		adjSectors.push(...enemyBaseSectors);
+			for (let gx=0; gx<numXCells; gx++) {
+				for (let gy=0; gy<numYCells; gy++) {
+					if (state.grid.grid[gx][gy]['targetUnits'].length > 0 || state.grid.grid[gx][gy]['targetStructures'].length > 0) {
+						debug(`Objects in actual grid: (${gx} ${gy}) @ ${gameTime}`);
 
-		state.highRiskSectors = adjSectors;
+						state.grid.grid[gx][gy]['targetUnits'].forEach(t => debug(`	${t.name} (${t.id}): player ${t.player}`));							
+						state.grid.grid[gx][gy]['targetStructures'].forEach(t => debug(`	${t.name} (${t.id}): player ${t.player} `));
+						debug(`${state.grid.grid[gx][gy]['derricks']}`);
+					}
+				}
+			}
+		}
+
+		if (false) {
+			playerInfo.forEach(p => {
+				debug(`${p.playerID} (${p.isFriendly})\n\tDROID tot ${p.numTotalUnits}, inf ${p.numInfantryUnits}, arm ${p.numArmourUnits}, air ${p.numAirUnits}, indi ${p.numIndirectUnits}, ada ${p.numADA}\n\tSTRUCTURE tot ${p.numStructs}, derr ${p.numDerricks}`);
+			});
+			debug('');
+		}
 	}
 
+	/**
+	 * This function writes `oilDominance` to `state`.
+	 * @param {worldState} state
+	 * @param {boolean} isOilDominant
+	 * @returns {void}
+	 */
+	setOilDominanceStatus(state, isOilDominant) {
+
+		if (state.oilDominance === isOilDominant) {
+			return;
+		}
+
+		debug(`${gameTime}: oil dominance changed to ${isOilDominant}`);
+		state.oilDominance = isOilDominant;
+	}
+
+	/**
+	 * This function writes `forceLocation` to `state`.
+	 * @param {worldState} state
+	 * @param {Object} forceLocation
+	 * @returns {void}
+	 */
+	setForceLocation(state, forceLocation) {
+		state.forceLocation = forceLocation;
+	}
+
+	/**
+	 * This function writes `nearbyGroundTargets` to `state`.
+	 * @param {worldState} state
+	 * @param {Object} nearbyGroundTargets
+	 * @returns {void}
+	 */
+	setNearbyGroundTargets(state, nearbyGroundTargets) {
+		state.nearbyGroundTargets = nearbyGroundTargets;
+	}
+
+	/**
+	 * This function writes `aviationTargets` to `state`.
+	 * @param {worldState} state 
+	 * @param {Object} raidTargets 
+	 * @param {Object} productionTargets 
+	 * @param {Object} adaTargets 
+	 */
+	setAviationTargets(state, raidTargets, productionTargets, adaTargets) {
+		state.aviationTargets['raidTargets'] = raidTargets;
+		state.aviationTargets['productionTargets'] = productionTargets;
+		state.aviationTargets['adaTargets'] = adaTargets;
+	}
 }

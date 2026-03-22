@@ -23,36 +23,216 @@
  *      - There are multiple parts of the AI which either need to: 
  *          (1) look at the game state & make decisions     (but don't modify the game state)
  *          (2) change the game state
- *      - We want to avoid chaos (obscure modifications of the state, impossible debugging, duplication of logic, accidental rule violations)
+ *      - We want to avoid chaos (obscure modifications of the state, impossible debugging, duplication of logic)
  * 
  *  In the Domain Services architecture, we need a 
- *      1. Central database which stores the current game state ("state")    -- fulfilled by: worldState (this file)
+ *      1. Central database which stores the current game state ("state")    -- fulfilled by: this file _world_state.js
  *      2. State observer/reporter ("system")                                -- fulfilled by: operational level functions hq_gX
- *      3. State mutator ("service")                                         -- fulfilled by: hq_toc
- *      4. Decision maker (coordinator)                                      -- fulfilled by: hq_command
+ *      3. State mutator ("service")                                         -- fulfilled by: hq_toc (delegated by hq_command) 
+ *      4. Decision maker ("coordinator")                                    -- fulfilled by: hq_command
+ * 
+ *  Systems which access the state should 'extract' all of the relevant information from state 
+ *  at the start of the function where possible e.g.
+ *  
+ *  function getGridCoordsExample() {
+ *      const cellSize = state.grid.cellSize;
+ *      ...
+ *      const gx = Math.floor(obj.x / cellSize);
+ *      ...
+ *  }
+ * 
+ *  Services which mutate (modify) the state should be centralised in one location. 
+ *  In the current implementation (0.4.0+), state mutation is handled by `hq_toc.js` (delegated by `hq_command.js`).
+ *  If the core state management happens in one place, this makes it much easier to reason about, modify, and debug.
  */
+
+class fbGrid {
+    constructor() {
+        this.cellSize = 10;     // in game tiles
+        this.numXCells = Math.ceil(mapWidth / this.cellSize);
+        this.numYCells = Math.ceil(mapHeight / this.cellSize);
+
+        const createStandardGridCell = (gx, gy) => this.createNewFbGridCell(gx, gy);
+        this.grid = create2DGrid(this.numXCells, this.numYCells, createStandardGridCell);        
+    }
+
+    createNewFbGridCell(gx, gy) {
+        return {
+            'id': `${gx}_${gy}`,    
+            'gx': gx,
+            'gy': gy,    
+
+            'targetUnits': [],
+            'targetStructures': [],
+
+            'friendlyUnits': [],
+            'friendlyStructures': [],
+
+            'derricks': [],
+            'bases': []
+        }
+    }
+
+    /**
+     * Custom enumRange for FishBot; this uses FishBot's grid system. 
+     * The intent is to optimise for speed.
+     * @param {number} x central x-coord (game tiles)
+     * @param {number} y central y-coord (game tiles)
+     * @param {number} radius radial distance, inclusive (game tiles)
+     * @returns Object containing droids[], structs[], closestDroid: DroidObject and closestStruct: StructureObject
+     */
+    enumRange(x, y, radius) {
+        let results = {
+            'targetUnits': [],
+            'targetStructures': [],
+            'closestTargetUnit': undefined,
+            'closestTargetStructure': undefined,
+
+            // 'friendlyUnits': [],
+            'friendlyStructures': [],
+        };
+
+        if (!defined(this.grid)) {
+            debug(`WARNING: grid.enumRange() could not read from undefined grid.`);
+            return results;
+        }
+
+        // Initialise closest droid / struct calculation
+        let closestDroidDistSq = 0, closestStructDistSq = 0;
+        let closestDroid = undefined, closestStruct = undefined;
+
+        const cx = Math.floor(x / this.cellSize);
+        const cy = Math.floor(y / this.cellSize);
+        const gr = Math.ceil(radius / this.cellSize);
+
+        for (let dx = -gr; dx <= gr; dx++) {
+            for (let dy = -gr; dy <= gr; dy++) {
+
+                // Compute deviations & test validity
+                const gx = cx + dx;
+                if (gx < 0 || gx >= this.numXCells) {
+                    continue;
+                }
+                
+                const gy = cy + dy;
+                if (gy < 0 || gy >= this.numYCells) {       // >= because of 0 indexing: [0, 1, ..., numYCells - 1]
+                    continue;
+                }
+
+                // Get corresponding grid entry
+                this.grid[gx][gy]['targetUnits'].forEach(t => {
+                    const obj = getObject(t.type, t.player, t.id);
+                    if (!defined(obj)) {
+                        return;
+                    }
+                    const d = distSq(x, obj.x, y, obj.y);
+                    if (d > radius ** 2) {
+                        return;
+                    }
+                    results['targetUnits'].push(t);
+                    
+                    if (!(t.flags & OBJ_FLAGS.AVIATION)) {
+                        if (!defined(closestDroid)) {
+                            closestDroid = obj;
+                            closestDroidDistSq = d;
+                            return;
+                        }
+
+                        if (d < closestDroidDistSq) {
+                            closestDroid = obj;
+                            closestDroidDistSq = d;
+                        }
+                    }
+                });
+                results['closestTargetUnit'] = closestDroid;
+                
+                this.grid[gx][gy]['targetStructures'].forEach(t => {
+                    const obj = getObject(t.type, t.player, t.id);
+                    if (!defined(obj)) {
+                        return;
+                    }
+                    const d = distSq(x, obj.x, y, obj.y);
+                    if (d > radius ** 2) {
+                        return;
+                    }
+                    results['targetStructures'].push(t);
+
+                    if (!defined(closestStruct)) {
+                        closestStruct = obj;
+                        closestStructDistSq = d;
+                        return;
+                    }
+
+                    if (d < closestStructDistSq) {
+                        closestStruct = obj;
+                        closestStructDistSq = d;
+                    }
+                });
+                results['closestTargetStructure'] = closestStruct;     
+                
+                this.grid[gx][gy]['friendlyStructures'].forEach(t => {
+                    const obj = getObject(t.type, t.player, t.id);
+                    if (!defined(obj)) {
+                        return;
+                    }
+                    const d = distSq(x, obj.x, y, obj.y);
+                    if (d > radius ** 2) {
+                        return;
+                    }
+                    results['friendlyStructures'].push(t);
+                });
+            }                
+        }
+
+        return results;
+    }
+}
+
 
 class worldState {
     // State: this class stores the game state from FishBot's perspective.
     // All functions in FishBot use this class as the current ground truth.
     constructor() {
 
-        // Map knowledge
-        this.sectors = [];
-        this.highRiskSectors = [];
-        this.oilDominance = false;
+        // Grid system (new)
+        this.grid = new fbGrid();
+        this.poi = {
+            'derricks': [], 
+            'bases': []
+        };
+        const emptyCell = (...args) => {return 0;};
+        const createEmptyGrid = () => {return create2DGrid(this.grid.numXCells, this.grid.numYCells, emptyCell);};
+        this.fields = {
+            'adaThreat': createEmptyGrid(),
+            'enemyStaticDefenceThreat': createEmptyGrid(),
+            'enemyUnitThreat': createEmptyGrid(),
+            'distanceFromMyBase': createEmptyGrid(),
+            'totalDerricksInCell': createEmptyGrid(),
+            'unclaimedDerricksInCell': createEmptyGrid(),
+            'controlStability': createEmptyGrid(),
+        };
+
+        // Player statistics
+        this.playerInfo = [];
 
         // Combat targeting
+        this.allTargets = [];
         this.forceLocation = undefined;
         this.nearbyGroundTargets = undefined;
-        this.aviationTargets = undefined;   
+        this.aviationTargets = {
+            'raidTargets': [],
+            'casTargets': [],
+            'productionTargets': [],
+            'adaTargets': []
+        }; 
 
         // Mission management system
-        this.g = new fbGroup();
+        this.g = undefined;
         this.activeMissions = [];
 
         // Bot attributes
         this.botIsActive = true;
+        this.oilDominance = false;
 
         // Load balancing parameters
         this.currWorkerID = -1;
@@ -60,166 +240,210 @@ class worldState {
         this.INTERVALS_PER_MIN = Math.floor(60000 / this.TIME_BLOCK_MS);
 		this.WORKER_IDS = {};
     }
+
+    createPlayerInfoEntry(playerID) {
+        return {
+			'playerID': playerID,
+			'isFriendly': !isEnemy(playerID), 
+
+			'numTotalUnits': 0,
+			'numInfantryUnits': 0,
+			'numArmourUnits': 0,
+			'numAirUnits': 0,
+			'numIndirectUnits': 0,
+			'numADA': 0,
+
+			'numStructs': 0,
+            'numFactories': 0,
+			'numDerricks': 0,
+		};
+    }
+
+    /**
+     * Returns an array containing the playerIDs of alive players.
+     */
+    enumLivingPlayers() {   
+        let livingPlayerIDs = [];
+
+        this.playerInfo.forEach(p => {
+            if (p.numTotalUnits !== 0 || p.numFactories !== 0) {
+                livingPlayerIDs.push(p.playerID);
+            }
+        });
+
+        return livingPlayerIDs;
+    }
+
+    /**
+     * Returns `true` if the game has ended for this player, or for all enemy players.
+     * Otherwise, it will return `false`.
+     * @returns {boolean}
+     */
+    gameHasEnded() {
+        const playerIDs = this.enumLivingPlayers();
+
+        let foundEnemy = false, foundMyself = false;
+
+        playerIDs.forEach(pid => {
+            if (isEnemy(pid) && !foundEnemy) {
+                foundEnemy = true;
+            } else if (pid === me) {
+                foundMyself = true;
+            }
+        });
+
+        if (!foundEnemy || !foundMyself) {
+            return true;
+        } else {
+            return false;
+        }
+    }
+
 }
 
 
 class worldStateBuilder {
 
-    #_createDerrickFromTemplate({location}) {
-        // Helper: derrickTemplate factory
-        let derrickTemplate = {
-            'id': `DERRICK_${location.x}_${location.y}`,
-            'featureType': FEATURE_TYPE.DERRICK, 
-            'x': location.x,
-            'y': location.y,
-            'isClaimed': false,
-            'playerID': undefined,
+    #createFbGroupingSystem() {
+        // Generates initial values in FishBot v3 grouping system
+        let g = new fbGroup();
 
-            'friendlyDefenceCount': undefined,
-            'enemyDefenceCount': undefined,
-            'owner': undefined,
-            'controlStability': undefined, 
-            'threatLevel': undefined,		
+        g.createGroup(AIR_RESERVE);
+
+        for (const d in DIVISION) {
+            g.createGroup(DIVISION[d]);
         }
         
-        return derrickTemplate;
+        for (const e in ENGINEERING) {
+            g.createGroup(ENGINEERING[e]);
+        }
+
+        return g;
     }
 
-    #_createBaseFromTemplate({playerID, location}) {
-        // Helper: baseTemplate factory
+    /**
+     * 
+     * @param {number} x 
+     * @param {number} y 
+     * @param {number} gx 
+     * @param {number} gy 
+     * @returns 
+     */
+    #createNewDerrick(x, y, gx, gy) {
+        // Helper: derrickTemplate factory (new implementation to support new sector system)
+        return {
+            'id': `DERRICK_${x}_${y}`,
+            'x': x,
+            'y': y,
+            'gx': gx,
+            'gy': gy,
+            
+            'isClaimed': false,
+            'playerID': undefined,
+        }
+    }
+
+    /**
+     * This modifies `state.grid` with derrick locations.
+     * @param {worldState} state 
+     */
+    #initialiseDerrickLocs(state) {
+        const cellSize = state.grid.cellSize;
+
+        let d = [];
+
+        for (let i=0; i<derrickPositions.length; i++) {
+            const x = derrickPositions[i].x;
+            const y = derrickPositions[i].y;
+
+            const gx = Math.floor(x / cellSize);
+            const gy = Math.floor(y / cellSize);
+
+            const derrick = this.#createNewDerrick(x, y, gx, gy);
+            d.push(derrick);
+            state.grid.grid[gx][gy].derricks.push(derrick);
+            state.fields['totalDerricksInCell'][gx][gy]++;
+        }
+
+        // Order d in order of increasing order from base 
+        d.sort((a,b) => distSq(a.x, baseLocation.x, a.y, baseLocation.y) - distSq(b.x, baseLocation.x, b.y, baseLocation.y));
+
+        return d;
+    }
+
+    /**
+     * 
+     * @param {number} playerID 
+     * @param {number} x 
+     * @param {number} y 
+     * @param {number} gx 
+     * @param {number} gy 
+     * @returns 
+     */
+    #createNewBase(playerID, x, y, gx, gy) {
+        // Helper: baseTemplate factory (new implementation to support new sector system)
         let baseTemplate = {
-            'id': `BASE_${location.x}_${location.y}`,
-            'featureType': FEATURE_TYPE.BASE,
-            'x': location.x,
-            'y': location.y,
+            'id': `BASE_${playerID}_${x}_${y}`,    
+            'x': x,
+            'y': y,
+            'gx': gx,
+            'gy': gy,
+
             'playerID': playerID,
             'isEnemy': isEnemy(playerID),
-            'nearbyBaseStructures': undefined,
         }
         return baseTemplate;
     }
 
-    #_createSectorFromTemplate({x, y, base=undefined, derrickList=[]}) {
-        // Helper: sectorTemplate factory
-        let sectorTemplate = {
-            'id': `SECTOR_${x}_${y}`,
-            'featureType': FEATURE_TYPE.SECTOR,
-            'x': x,
-            'y': y,
+    /**
+     * 
+     * @param {worldState} state 
+     * @returns 
+     */
+    #initialiseBaseLocs(state) {
+        const cellSize = state.grid.cellSize;
 
-            // Sector info
-            'base': base,
-            'derricks': [],
-            'adjacentSectors': [],
-            
-            'priority': MISSION_PRIORITY.LOW,
-            'friendlyDefenceCount': undefined,
-            'enemyDefenceCount': undefined,
-            'owner': REGION_OWNER.NEUTRAL,
-            'controlStability': REGION_STABILITY.HIGH, 
-            'threatLevel': REGION_THREAT_LEVEL.LOW,		
+        let b = [];
+
+        for (let i=0; i<startPositions.length; i++) {
+            const x = startPositions[i].x;
+            const y = startPositions[i].y;
+
+            const gx = Math.floor(x / cellSize);
+            const gy = Math.floor(y / cellSize);
+
+            const base = this.#createNewBase(i, x, y, gx, gy);
+            b.push(base);
+            state.grid.grid[gx][gy].bases.push(base);
         }
-
-        sectorTemplate.derricks.push(...derrickList);
-        return sectorTemplate;
+        return b;
     }
 
-    #initialiseFbGroups(state) {
-        // Application service: Generates initial values in FishBot v3 grouping system
-        state.g.createGroup(AIR_RESERVE);
-
-        for (const d in DIVISION) {
-            state.g.createGroup(DIVISION[d]);
-        }
+    /**
+     * 
+     * @param {worldState} state 
+     * @returns 
+     */
+    #initialisePlayerInfo(state) {
+        let p = [];
+        const playerIdList = generateRange(maxPlayers);       // will create 0-indexed playerIDs from 0, 1, 2, ..., maxPlayers - 1
+        playerIdList.forEach(playerID => p.push(state.createPlayerInfoEntry(playerID)));
         
-        for (const e in ENGINEERING) {
-            state.g.createGroup(ENGINEERING[e]);
-        }
+        return p;
     }
 
-    #initialiseSectors(state) {
-        // Application service: generate initial sector info
-        let playerStartLocations = startPositions.concat();	
-        for (let i=0; i<playerStartLocations.length; ++i) {
-
-            // Assumes enemy bases are not on top of each other
-            const baseLoc = playerStartLocations[i];
-            let base = this.#_createBaseFromTemplate({
-                playerID: i, 
-                location: baseLoc
-            });
-            let t = this.#_createSectorFromTemplate({
-                x: baseLoc.x, 
-                y: baseLoc.y, 
-                base: base, 
-                derrickList: []
-            });
-            state.sectors.push(t);
-        }
-
-        let derrickLocations = derrickPositions.concat();
-
-        const PROXIMITY_TILES = 14;
-
-        for (let i=0; i<derrickLocations.length; i++) {
-            const derrickLoc = derrickLocations[i];
-
-            let combined = false;
-            for (let j=0; j<state.sectors.length; j++) {
-                const currSector = state.sectors[j];
-                if (distance(derrickLoc, currSector) < PROXIMITY_TILES) {
-                    // Don't create a new sector, use existing
-                    state.sectors[j].derricks.push(this.#_createDerrickFromTemplate({location: derrickLoc}));
-                    // debug(`Added ${derrickLoc.x}, ${derrickLoc.y} -> ${state.sectors[j].id}`);
-                    combined = true;
-                    break;
-                }
-            }
-            if (combined) {
-                continue;
-            }
-            
-            // Else, create a new sector
-            let t = this.#_createSectorFromTemplate({
-                x: derrickLoc.x, 
-                y: derrickLoc.y, 
-                base: undefined, 
-                derrickList: [this.#_createDerrickFromTemplate({location: derrickLoc})]
-            });
-            state.sectors.push(t);
-        }
-
-        // Sort sectors to go from closest to furthest from base
-        state.sectors.sort((one, two) => distance(one, baseLocation) - distance(two, baseLocation));
-        
-        for (let i=0; i<state.sectors.length; i++) {
-            // Set adjacent sectors
-            let currSector = state.sectors[i];
-            const otherRangedSectors = state.sectors.filter(nextSector => currSector.id !== nextSector.id).sort((one, two) => distance(one, currSector) - distance(two, currSector));
-            state.sectors[i].adjacentSectors = otherRangedSectors.slice(0, 3);
-
-            // Organise derricks in terms of distance from base
-            currSector.derricks.sort((a, b) => 
-                distSq(a.x, baseLocation.x, a.y, baseLocation.y) - distSq(b.x, baseLocation.x, b.y, baseLocation.y));
-
-        }
-
-        if (false) {
-            state.sectors.forEach(s => {
-                debug(`${s.id}, ${s.x}, ${s.y}`);
-                // hackMarkTiles(s.x, s.y);
-                if (defined(s.base)) {
-                    debug(` - ${s.base.id}, ${s.base.x}, ${s.base.y} with derricks:`);
-                }
-                s.adjacentSectors.forEach(s => debug(`  - adj: sector ${s.id}`));
-                s.derricks.forEach(d => debug(`     - ${d.id}, ${d.x}, ${d.y}`));
-            })
-        }
-    }
-
+    /**
+     * Initialises `state` with the FishBot grouping system, default POIs and basic player information.
+     * @param {worldState} state 
+     * @returns {void}
+     */
     initialise(state) {
         // Application service: Initialises 'worldState' to defaults
-        this.#initialiseFbGroups(state);
-        this.#initialiseSectors(state);
+        state.g = this.#createFbGroupingSystem();
+
+        state.poi.derricks = this.#initialiseDerrickLocs(state);    // this function also modifies each grid cell
+        state.poi.bases = this.#initialiseBaseLocs(state);          // this function also modifies each grid cell
+
+        state.playerInfo = this.#initialisePlayerInfo(state);
     }
 }

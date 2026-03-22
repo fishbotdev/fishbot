@@ -113,23 +113,21 @@ class armyResearchAndDevelopment {
 			
 		// Research priority items if they are available
 		const FISHBOT_CANNON_RESEARCH_PRIORITIES = [
-			"R-Struc-Research-Upgrade06", 	// Only prereq for twin assault cannon in T1
-			"R-Vehicle-Body09",				// Tiger Body
-			"R-Struc-Power", 
+			"R-Struc-Power",
+			"R-Wpn-Cannon3Mk1", 
 			"R-Wpn-Cannon-Damage",
-			"R-Wpn-Mortar-Damage", 
 			"R-Wpn-Cannon6TwinAslt",
-			"R-Wpn-Mortar-ROF", 
-			"R-Struc-Research-Upgrade",
+			"R-Vehicle-Body09",				// Tiger Body
+			"R-Wpn-Mortar-Damage", 
 			"R-Wpn-Cannon-ROF", 
+			"R-Struc-Research-Upgrade",
+			"R-Wpn-Mortar-ROF", 
 			"R-Vehicle-Metals", 
-			// "R-Cyborg-Metals",
-
 			"R-Struc-Factory-Upgrade",
 			"R-Wpn-MG5", 					// Twin AG
-
+			"R-Wpn-AAGun02", 
 			"R-Struc-VTOLPad-Upgrade", 
-
+			"R-Cyborg-Metals",
 			// "R-Wpn-RailGun01",
 			// "R-Wpn-RailGun02",
 			// "R-Wpn-RailGun03",
@@ -137,11 +135,6 @@ class armyResearchAndDevelopment {
 
 			// "R-Wpn-Rail-ROF", 
 			// "R-Wpn-Rail-Accuracy",
-
-			// "R-Wpn-Cannon3Mk1", 
-			// "R-Wpn-AAGun02", 
-
-
 		];
 		for (let i=0; i<FISHBOT_CANNON_RESEARCH_PRIORITIES.length; ++i) {
 			const keyword = FISHBOT_CANNON_RESEARCH_PRIORITIES[i];
