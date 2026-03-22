@@ -111,10 +111,31 @@ class armyResearchAndDevelopment {
 			return false;		// no available (filtered) researches, don't compute anything
 		}
 			
-		// Research priority items if they are available
-		// v0.3.1 release -> Power upgrade, Heavy Cannon, Cannon Dmg, Research upgrade, ROF, twin aslt, vehicle metals
-		// Rule of thumb: to determine priority, iterate through the list. If above next entry, put here, else continue
+		/*
+			Rule of thumb: to determine priority, iterate through the list. 
+			If the item I'm looking at is higher priority than the next entry, put it there, else, continue through the list
 
+			v0.3.1 release -> Power upgrade, Heavy Cannon, Cannon Dmg, Research upgrade, ROF, twin aslt, vehicle metals
+
+			Example v0.3.1 T2 research order:
+				R-Wpn-Cannon-Damage06
+				R-Struc-Power-Upgrade01c
+				R-Wpn-Cannon3Mk1
+				R-Struc-Research-Upgrade06
+				R-Wpn-Cannon-Damage07
+				R-Wpn-Cannon-ROF03
+				R-Wpn-Cannon6TwinAslt
+				R-Vehicle-Metals05
+				R-Struc-Research-Upgrade07
+				R-Cyborg-Metals06
+				R-Wpn-Cannon-Damage08
+				R-Wpn-Cannon-ROF04
+				R-Vehicle-Metals06
+				R-Struc-Power-Upgrade02
+				R-Wpn-Cannon-ROF05
+		*/
+
+		// Research priority items if they are available
 		const FISHBOT_CANNON_RESEARCH_PRIORITIES = [
 			"R-Wpn-Cannon-Damage06",
 			"R-Struc-Power",
