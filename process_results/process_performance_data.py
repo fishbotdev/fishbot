@@ -144,7 +144,7 @@ def plot_comparative_histograms(
 
     ax1.hist(df_a["avg_usec"]/MILLISEC_SCALING, bins=bins, alpha=0.5, label=label1)
     ax1.hist(df_b["avg_usec"]/MILLISEC_SCALING, bins=bins, alpha=0.5, label=label2)
-
+    ax1.set_yscale("log")
     ax1.set_title("Histogram of avg_usec")
     ax1.set_xlabel(f"avg_usec ({MILLISEC_TEXT})")
     ax1.set_ylabel("Frequency")
@@ -153,7 +153,7 @@ def plot_comparative_histograms(
     # ---- worst_usec histogram ----
 
     ax2.grid(color='grey', linestyle='-', linewidth=0.4, alpha=0.3)
-
+    ax2.set_yscale("log")
     ax2.hist(df_a["worst_usec"]/MILLISEC_SCALING, bins=bins, alpha=0.5, label=label1)
     ax2.hist(df_b["worst_usec"]/MILLISEC_SCALING, bins=bins, alpha=0.5, label=label2)
 
@@ -165,7 +165,7 @@ def plot_comparative_histograms(
 
     # ---- worst_call_at histogram ----
     ax3.grid(color='grey', linestyle='-', linewidth=0.4, alpha=0.3)
-
+    ax3.set_yscale("log")
     ax3.hist(df_a["worst_call_at"]/GAME_TIME_SEC_SCALING, bins=bins, alpha=0.5, label=label1)
     ax3.hist(df_b["worst_call_at"]/GAME_TIME_SEC_SCALING, bins=bins, alpha=0.5, label=label2)
 
@@ -248,8 +248,9 @@ path1 = rf"{cwd()}\process_results\v4_perfdata\\" + rf"603cca0,hard,cobra,50g.lo
 # path1 = rf"{cwd()}\process_results\v4_perfdata\\" + rf"a686079,hard,cobra,100g.log"
 # path1 = rf"{cwd()}\process_results\v4_perfdata\\" + rf"f6b053f,hard,cobra,100g.log"
 # path1 = rf"{cwd()}\process_results\v4_perfdata\\" + "edb40f7,hard,cobra,100g" + ".log"
-# path2 = rf"{cwd()}\process_results\v4_perfdata\\" + "06f67d5,hard,cobra,50g" + ".log"       ## can be compared to 603cca0
-path2 = rf"{cwd()}\process_results\v4_perfdata\\" + "770de51,hard,cobra,100g" + ".log"       ## can be compared to 603cca0
+# path2 = rf"{cwd()}\process_results\v4_perfdata\\" + "06f67d5,hard,cobra,50g" + ".log"       ## all subsequent be compared to 603cca0
+# path2 = rf"{cwd()}\process_results\v4_perfdata\\" + "770de51,hard,cobra,100g" + ".log"       
+path2 = rf"{cwd()}\process_results\v4_perfdata\\" + "b94dc92,hard,cobra,100g" + ".log"        
 
 
 if True:

@@ -246,8 +246,9 @@ def show_hard_cobra_results():
     # test_1 = getcwd() + rf"\process_results/v4/" + "6966b26,hard,cobra,50g" + ".txt"              # v4 dev: 4.6.3 [60 % wr; baseline for cannon test]
     # test_1 = getcwd() + rf"\process_results/v4/" + "f50adb5,hard,cobra,50g" + ".txt"              # v4 dev: 4.6.3 [78 % wr; cannon test]
     # test_1 = getcwd() + rf"\process_results/v4/" + "db393ea,hard,cobra,50g" + ".txt"              # v4 dev: 4.6.3 [74 % wr; cannon test + cas changes]
-    test_1 = getcwd() + rf"\process_results/v4/" + "db7403d,hard,cobra,100g" + ".txt"              # v4 dev: 4.6.3 [57 % wr; migrated sector defence to grid system]
-    test_2 = getcwd() + rf"\process_results/v4/" + "770de51,hard,cobra,100g" + ".txt"              # v4 dev: 4.6.3 [28/47 = 59.5 % wr]
+    # test_1 = getcwd() + rf"\process_results/v4/" + "db7403d,hard,cobra,100g" + ".txt"              # v4 dev: 4.6.3 [57 % wr; migrated sector defence to grid system]
+    test_1 = getcwd() + rf"\process_results/v4/" + "770de51,hard,cobra,100g" + ".txt"              # v4 dev: 4.6.3 [28/47 = 59.5 % wr]
+    test_2 = getcwd() + rf"\process_results/v4/" + "b94dc92,hard,cobra,100g" + ".txt"              # v4 dev: 4.6.3 [63% wr]
 
     commit1 = test_1.split(rf"v4/")[1].split(",")[0]
     commit2 = test_2.split(rf"v4/")[1].split(",")[0]
