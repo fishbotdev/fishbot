@@ -250,7 +250,7 @@ path1 = rf"{cwd()}\process_results\v4_perfdata\\" + rf"603cca0,hard,cobra,50g.lo
 # path1 = rf"{cwd()}\process_results\v4_perfdata\\" + "edb40f7,hard,cobra,100g" + ".log"
 # path2 = rf"{cwd()}\process_results\v4_perfdata\\" + "06f67d5,hard,cobra,50g" + ".log"       ## all subsequent be compared to 603cca0
 # path2 = rf"{cwd()}\process_results\v4_perfdata\\" + "770de51,hard,cobra,100g" + ".log"       
-path2 = rf"{cwd()}\process_results\v4_perfdata\\" + "b94dc92,hard,cobra,100g" + ".log"        
+path2 = rf"{cwd()}\process_results\v4_perfdata\\" + "cf7b597,hard,cobra,100g" + ".log"        
 
 
 if True:
