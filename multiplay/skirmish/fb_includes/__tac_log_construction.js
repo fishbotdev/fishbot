@@ -344,11 +344,16 @@ function buildNearbyDefences(taskForceID, structureID, x, y) {
 		return {status: MISSION_STATUS.FAILED};
 	}
 
-	// Check if similar structures have been built nearby (removed check for: obj.x===x && obj.y===y)
-	let struct = enumRange(x, y, 5, ALLIES, false).filter(obj => {		// -> 5-tile radius => within a 7x7 box with x,y at the center (radial distance of corners is 3*sqrt(2) = 4.24)
+	// Check if similar structures have been built nearby 
+	let otherStructureOnTile = false;
+	let struct = enumRange(x, y, 5, ALL_PLAYERS, false).filter(obj => {		// -> 5-tile radius => within a 7x7 box with x,y at the center (radial distance of corners is 3*sqrt(2) = 4.24)
+		if (obj.x === x && obj.y === y && obj.player !== me) {
+			otherStructureOnTile = true;		// fix for trucks freezing
+			return false;			
+		}
 		const lookup = STRUCTURES[obj.name];
 		if (lookup !== undefined) {
-			if (lookup.id === structureID) {		// if similar structure: help build it
+			if (lookup.id === structureID && obj.player === me) {		// if similar structure owned by me: help build it
 				return true;
 			}
 		}
@@ -358,7 +363,7 @@ function buildNearbyDefences(taskForceID, structureID, x, y) {
 	// Case 1: Nothing exists yet -> build
 	if (struct.length === 0) {
 		// If the structure cannot be built at x,y anymore, cancel it.
-		if (!structureCanFit(structureID, x, y)) {
+		if (!structureCanFit(structureID, x, y) || otherStructureOnTile) {		// Note: structureCanFit appears to only work on .status === BUILT structures.
 			// debug(`buildNearbyDefences(): failed, something on ${x}, ${y} already`);
 			return {status: MISSION_STATUS.FAILED};		
 		}
