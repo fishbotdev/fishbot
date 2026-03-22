@@ -237,7 +237,7 @@ NEW TEST DATA
 # path1 = rf"{cwd()}\process_results\v4_perfdata\\" + rf"83ebcd1,hard,cobra,50g.log"
 # path1 = rf"{cwd()}\process_results\v4_perfdata\\" + rf"fd4692d,hard,cobra,50g.log"
 # path2 = rf"{cwd()}\process_results\v4_perfdata\\" + rf"45635e6,med,cobra,100g.log"
-# path1 = rf"{cwd()}\process_results\v4_perfdata\\" + rf"603cca0,hard,cobra,50g.log"
+path1 = rf"{cwd()}\process_results\v4_perfdata\\" + rf"603cca0,hard,cobra,50g.log"          ## can be compared with 06f67d5
 # path1 = rf"{cwd()}\process_results\v4_perfdata\\" + rf"fbf5655,hard,cobra,50g.log"
 # path1 = rf"{cwd()}\process_results\v4_perfdata\\" + rf"e0f8c66,hard,cobra,100g.log"
 # path1 = rf"{cwd()}\process_results\v4_perfdata\\" + rf"29bb952,hard,cobra,100g.log"
@@ -246,8 +246,10 @@ NEW TEST DATA
 # path1 = rf"{cwd()}\process_results\v4_perfdata\\" + rf"6730392,hard,cobra,100g.log"
 # path2 = rf"{cwd()}\process_results\v4_perfdata\\" + rf"df4a549,med,cobra,100g.log"
 # path1 = rf"{cwd()}\process_results\v4_perfdata\\" + rf"a686079,hard,cobra,100g.log"
-path1 = rf"{cwd()}\process_results\v4_perfdata\\" + rf"f6b053f,hard,cobra,100g.log"
-path2 = rf"{cwd()}\process_results\v4_perfdata\\" + rf"edb40f7,hard,cobra,100g.log"
+# path1 = rf"{cwd()}\process_results\v4_perfdata\\" + rf"f6b053f,hard,cobra,100g.log"
+# path1 = rf"{cwd()}\process_results\v4_perfdata\\" + "edb40f7,hard,cobra,100g" + ".log"
+# path2 = rf"{cwd()}\process_results\v4_perfdata\\" + "06f67d5,hard,cobra,50g" + ".log"       ## can be compared to 603cca0
+path2 = rf"{cwd()}\process_results\v4_perfdata\\" + "770de51,hard,cobra,100g" + ".log"       ## can be compared to 603cca0
 
 
 if True:
