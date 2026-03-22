@@ -83,7 +83,7 @@ class armyQuartermaster {
             // Only make direct assault tanks; overwrite weights
             weights = {
                 'Heavy Cav': 10,
-                'Light Cav': 3,
+                'Light Cav': 2,
                 'Fire Support': 2,
                 'Air Defence': 2,
                 'Sensor': 1
@@ -96,7 +96,7 @@ class armyQuartermaster {
             // DEFAULT WEIGHTS
             weights = {
                 'Heavy Cav': 10,
-                'Light Cav': 3,
+                'Light Cav': 2,
                 'Fire Support': 3,
                 'Air Defence': 3,
                 'Sensor': 1
