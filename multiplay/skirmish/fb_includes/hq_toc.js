@@ -172,17 +172,20 @@ class TacticalOperationsCenter {
 		}
 	}
 
-	#printConstructionDebugOutput(task, missionID) {
+	#printConstructionDebugOutput(task, missionID, missionFilter) {
 		let sectorID = '', structureID = '';
 		if (defined(task.payload)) {
 			sectorID = `@ ${task.payload.id}`;
 			structureID = `-- ${task.structureID}`
 		}
-		debug(`Scheduled BUILD (${task.missionType}) for: ${missionID} ${sectorID} ${structureID} ${sectorID}`);
+
+		if (missionFilter.includes(task.missionType)) {
+			debug(`Scheduled BUILD (${task.missionType}) for: ${missionID} ${sectorID} ${structureID} ${sectorID}`);
+		}
 	};
 
 	/**
-	 * 
+	 * Adds new construction tasks to the `activeMissions` queue.
 	 * @param {worldState} state 
 	 * @param {Array} buildTasks 
 	 * @returns {void}
@@ -194,25 +197,25 @@ class TacticalOperationsCenter {
 			const missionData = this.createNewMission({missionType: task.missionType, priority: PRIORITY}, task, i);		
 			if (defined(missionData)) {
 				state.activeMissions.push(missionData);
-				// this.#printConstructionDebugOutput(task, missionData.id);
+				// this.#printConstructionDebugOutput(task, missionData.id, [MISSION_TYPE.CONSTRUCT_NEARBY_DEFENCE]);
 			} 
 		});
 	}
 
+	/**
+	 * This function returns either:
+	 * - `missionID`, if mission was created successfully
+	 * - `undefined`, if mission was not created
+	 * @param {*} param0 
+	 * @param  {...any} args 
+	 * @returns 
+	 */
 	createNewMission({missionType, priority=MISSION_PRIORITY.LOW}, ...args) {
-		// This function returns either:
-		//	- missionID (can be searched with getMissionData(missionID)), if mission was created successfully
-		//	- undefined, if mission was not created
-
-		// Side effect: pushes any successful mission to the activeMissions queue
-
 		let md = undefined; 	
 
 		switch (missionType) {
-			
 			case MISSION_TYPE.ABORT_MISSION:
-				// does nothing for now
-				break;
+				break;		// handled in the mission manager
 
 			/*
 				AVIATION MISSIONS

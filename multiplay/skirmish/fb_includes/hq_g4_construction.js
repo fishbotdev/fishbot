@@ -177,7 +177,7 @@ class armyEngineering {
 	generateOilDefenceConstructionOptions(state, activeConstructionMissions) {
 		/*
 		Algorithm:
-		- For each derrick in state.poi.derricks
+		- For each derrick in `state.poi.derricks`
 			. If grid cell previously processed, continue
 			. Check static defence threat grid (continue if high threat), check unit defence threat grid (after five mins)
 			. Check grid ref for friendly defences in sector (continue if done)
@@ -187,6 +187,8 @@ class armyEngineering {
 			. Build one defence per undefended location also 
 			. Handle special case of clustered derricks with unreachable enemy derricks (build hardpoint)
 		*/
+
+		// NOTE: PRIORITISATION SHOULD BE MOVED TO HQ_COMMAND 
 
 		const grid = state.grid.grid;
 		const derricks = state.poi.derricks;
@@ -201,7 +203,6 @@ class armyEngineering {
 			}
 		});
 
-		const FIVE_MINS = 300000;
 		const makePrimaryDefence = (derrickObj) => this.translateIntoBuildRequest({
 			missionType: MISSION_TYPE.CONSTRUCT_NEARBY_DEFENCE, 
 			structureData: STRUCTURES["Rotary MG Bunker"],
@@ -226,8 +227,9 @@ class armyEngineering {
 			'offensiveOil': [],
 			'highPrioOil': [],
 		};
-
+		let highPrioOil = [], normalPrioOil = [];		// temporary
 		let seenCoords = [];
+
 		for (let i=0; i<derricks.length; i++) {
 			const d = derricks[i];
 
@@ -243,50 +245,45 @@ class armyEngineering {
 				// debug(`skipped derrick ${d.x}, ${d.y} (${d.gx}, ${d.gy}); too low control`);
 				continue;
 			}
-			if (controlStability[d.gx][d.gy] >= 3) {
+
+			const derricksInCell = grid[d.gx][d.gy].derricks;
+			const isHighPriority = derricksInCell.length >= 4;
+			const contestedDerrick = tileIsBurning(d.x, d.y) || derricksInCell.some(d => isOwnedByEnemy(d.playerID));
+
+			const regularContestedDerrick = contestedDerrick && !isHighPriority;
+			const specialContestedDerrick = contestedDerrick && isHighPriority;
+
+			const s = state.grid.enumRange(d.x, d.y, 10);
+			const friendlyDefenceCount = s['friendlyStructures'].filter(t => (t.flags & OBJ_FLAGS.DEFENSIVE_STRUCTURE) && !(t.flags & OBJ_FLAGS.ADA)).length;
+
+			if (controlStability[d.gx][d.gy] >= 3 || friendlyDefenceCount > 0) {
+				if (specialContestedDerrick) {
+					// debug(`added special ${d.x} ${d.y}`);
+					normalPrioOil.push(makeSecondaryDefence(d));
+				}
 				// debug(`skipped derrick ${d.x}, ${d.y} (${d.gx}, ${d.gy}); control too high`);
 				continue;
 			}
 
-			const derricksInCell = grid[d.gx][d.gy].derricks;
-
-			const s = state.grid.enumRange(d.x, d.y, 10);
-			const friendlyDefenceCount = s['friendlyStructures'].filter(t=> (t.flags & OBJ_FLAGS.DEFENSIVE_STRUCTURE) && !(t.flags & OBJ_FLAGS.ADA)).length;
-			const burningResource = tileIsBurning(d.x, d.y);
-			
-			const isHighPriority = derricksInCell.length >= 4;
-			const cellHasResidualEnemyDerricks = derricksInCell.some(d => isOwnedByEnemy(d.playerID));
-			const secondaryDefenceNeeded = isHighPriority && cellHasResidualEnemyDerricks;
-
-			if (friendlyDefenceCount > 0 && !secondaryDefenceNeeded) continue;
-			
-			if (isHighPriority && !secondaryDefenceNeeded) {
+			if (isHighPriority) {
 				result['highPrioOil'].push(makePrimaryDefence(d));
-				continue;
+				highPrioOil.unshift(makePrimaryDefence(d));			// unshift -> reverses the order of `state.poi.derricks` which is ordered in ascending order from base
+			} else if (regularContestedDerrick) {
+				result['offensiveOil'].push(makePrimaryDefence(d));
+				normalPrioOil.unshift(makePrimaryDefence(d));
 			} else {
-				if ((cellHasResidualEnemyDerricks && !isHighPriority) || burningResource) {
-					result['offensiveOil'].push(makePrimaryDefence(d));
-				} else if (secondaryDefenceNeeded) { 
-					// Special case of unreachable enemy derricks
-					result['offensiveOil'].push(makeSecondaryDefence(d));
-				} else {
-					result['friendlyOil'].push(makePrimaryDefence(d));
-				}
+				result['friendlyOil'].push(makePrimaryDefence(d));
+				normalPrioOil.unshift(makePrimaryDefence(d));
 			}
 		}
 
-		// note: state.poi.derricks is arranged in ascending order of distance from base
-		// .reverse() is a hack to prioritise the furthest derricks first
-		const highPrio = result['highPrioOil'].reverse();		
-		const normalPrio = [...result['offensiveOil'], ...result['friendlyOil'].reverse()];
-
 		if (false) {
 			debug(`generateOilDefenceConstructionOptions() @${gameTime}`);
-			debug(`	highPrio: ${highPrio}`);
-			debug(`	normalPrio: ${normalPrio}`);
+			debug(`	highPrio: ${highPrioOil}`);
+			debug(`	normalPrio: ${normalPrioOil}`);
 		}
 
-		return [...highPrio, ...normalPrio];
+		return [...highPrioOil, ...normalPrioOil];
 	}
 
 	/**
