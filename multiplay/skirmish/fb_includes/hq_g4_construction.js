@@ -257,9 +257,6 @@ class armyEngineering {
 			const friendlyDefenceCount = s['friendlyStructures'].filter(t => (t.flags & OBJ_FLAGS.DEFENSIVE_STRUCTURE) && !(t.flags & OBJ_FLAGS.ADA)).length;
 
 			if (controlStability[d.gx][d.gy] >= 3 || friendlyDefenceCount > 0) {
-				if (specialContestedDerrick) {
-					normalPrioOil.unshift(makeSecondaryDefence(d));
-				}
 				continue;
 			}
 
