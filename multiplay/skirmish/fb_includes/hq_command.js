@@ -403,7 +403,7 @@ class CommandCenter {
 		// debug(`nearbyTargetCount ${nearbyTargetCount}, prioritiseCAS: ${prioritiseCasTargets}`);
 		const prioritiseRaidTargets = !IS_OIL_DOMINANT;
 		const prioritiseIndustrialTargets = IS_OIL_DOMINANT;
-		const CLOSING_ANTI_AIR_MISSIONS = prioritiseIndustrialTargets && AIR_UNIT_DOMINANCE;
+		const SATURATION_RAID = prioritiseIndustrialTargets && AIR_UNIT_DOMINANCE;		// Saturation raid = an attack designed to overwhelm defenses
 
 		// Set no-fly regions
 		let threatThreshold = 0;
@@ -424,13 +424,13 @@ class CommandCenter {
 		adaTargets.forEach(t => t.missionType = MISSION_TYPE.DAS_STRIKE);
 
 		if(prioritiseIndustrialTargets) {
-			if (CLOSING_ANTI_AIR_MISSIONS) {
-				targetCandidates = [...adaTargets, ...industrialTargets, ...casTargets, ...airRaidTargets];
+			if (SATURATION_RAID) {
+				targetCandidates = [...industrialTargets, ...adaTargets, ...casTargets, ...airRaidTargets];
 			} else {
-				targetCandidates = [...industrialTargets, ...airRaidTargets, ...casTargets, ...adaTargets, ];			
+				targetCandidates = [...industrialTargets, ...airRaidTargets, ...casTargets, ...adaTargets];			
 			}
 		} else if (prioritiseCasTargets) {
-			targetCandidates = [...casTargets];
+			targetCandidates = [...casTargets, ...airRaidTargets];
 		} else if (prioritiseRaidTargets) {
 			targetCandidates = [...airRaidTargets, ...casTargets];
 		} else {
@@ -470,7 +470,7 @@ class CommandCenter {
 				}
 			}
 
-			if (!CLOSING_ANTI_AIR_MISSIONS) {
+			if (!SATURATION_RAID) {
 				const gx = Math.floor(currObj.x / cellSize), gy = Math.floor(currObj.y / cellSize);
 				let skipIfDangerous = false;
 
@@ -500,7 +500,7 @@ class CommandCenter {
 			}
 
 			// Depending on state, removes dangerous missions
-			if (!CLOSING_ANTI_AIR_MISSIONS) {
+			if (!SATURATION_RAID) {
 				const gx = Math.floor(c.x / cellSize), gy = Math.floor(c.y / cellSize);
 				let skipIfDangerous = false;
 
@@ -530,7 +530,7 @@ class CommandCenter {
 		};
 
 		if (prioritiseIndustrialTargets) {		
-			if (CLOSING_ANTI_AIR_MISSIONS) {
+			if (SATURATION_RAID) {
 				// want simultaneous strikes on target
 				prioritisedTargets['minAircraft'] = 3;			
 			} else {
