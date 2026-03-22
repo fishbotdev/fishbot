@@ -112,22 +112,28 @@ class armyResearchAndDevelopment {
 		}
 			
 		// Research priority items if they are available
+		// v0.3.1 release -> Power upgrade, Heavy Cannon, Cannon Dmg, Research upgrade, ROF, twin aslt, vehicle metals
+		// Rule of thumb: to determine priority, iterate through the list. If above next entry, put here, else continue
+
 		const FISHBOT_CANNON_RESEARCH_PRIORITIES = [
+			"R-Wpn-Cannon-Damage06",
 			"R-Struc-Power",
 			"R-Wpn-Cannon3Mk1", 
+			"R-Struc-Research-Upgrade06",
 			"R-Wpn-Cannon-Damage",
-			"R-Wpn-Cannon6TwinAslt",
-			"R-Vehicle-Body09",				// Tiger Body
-			"R-Wpn-Mortar-Damage", 
 			"R-Wpn-Cannon-ROF", 
+			"R-Wpn-Cannon6TwinAslt",
+			"R-Vehicle-Metals",
 			"R-Struc-Research-Upgrade",
-			"R-Wpn-Mortar-ROF", 
-			"R-Vehicle-Metals", 
+			"R-Vehicle-Body09",				// Tiger Body
 			"R-Struc-Factory-Upgrade",
-			"R-Wpn-MG5", 					// Twin AG
-			"R-Wpn-AAGun02", 
-			"R-Struc-VTOLPad-Upgrade", 
 			"R-Cyborg-Metals",
+			"R-Wpn-MG5", 					// Twin AG
+			"R-Struc-VTOLPad-Upgrade", 
+			"R-Wpn-AAGun02", 		
+			"R-Wpn-Mortar-Damage", 
+			"R-Wpn-Mortar-ROF", 
+			
 			// "R-Wpn-RailGun01",
 			// "R-Wpn-RailGun02",
 			// "R-Wpn-RailGun03",
