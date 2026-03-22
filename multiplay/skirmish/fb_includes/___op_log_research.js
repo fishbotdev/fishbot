@@ -142,6 +142,7 @@ class armyResearchAndDevelopment {
 			"R-Wpn-Cannon3Mk1", 
 			"R-Struc-Research-Upgrade06",
 			"R-Wpn-Cannon-Damage",
+			"R-Wpn-Mortar-Damage", 	
 			"R-Wpn-Cannon-ROF", 
 			"R-Wpn-Cannon6TwinAslt",
 			"R-Vehicle-Metals",
@@ -150,10 +151,9 @@ class armyResearchAndDevelopment {
 			"R-Struc-Factory-Upgrade",
 			"R-Cyborg-Metals",
 			"R-Wpn-MG5", 					// Twin AG
-			"R-Struc-VTOLPad-Upgrade", 
 			"R-Wpn-AAGun02", 		
-			"R-Wpn-Mortar-Damage", 
 			"R-Wpn-Mortar-ROF", 
+			"R-Struc-VTOLPad-Upgrade", 
 			
 			// "R-Wpn-RailGun01",
 			// "R-Wpn-RailGun02",
