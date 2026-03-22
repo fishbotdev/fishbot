@@ -46,6 +46,12 @@ class armyEngineering {
 		return completedModuleCount;
 	}
 
+	/**
+	 * 
+	 * @param {worldState} state 
+	 * @param {*} activeConstructionMissions 
+	 * @returns {Array}
+	 */
 	generateOilCaptureOptions(state, activeConstructionMissions) {
 		/*
 		Algorithm:
@@ -283,6 +289,11 @@ class armyEngineering {
 		return [...highPrio, ...normalPrio];
 	}
 
+	/**
+	 * 
+	 * @param {worldState} state 
+	 * @returns 
+	 */
 	requestBaseConstruction(state) {
 		// Inputs:
 		// -	buildQueue: a list of STRUCTURES['exampleName']

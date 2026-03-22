@@ -21,18 +21,33 @@ class TacticalOperationsCenter {
 
 	}
 	
+	/**
+	 * 
+	 * @param {worldState} state 
+	 * @returns 
+	 */
 	getActiveConstructionMissions(state) {
 		const ACTIVE_MISSION_STATUSES = [MISSION_STATUS.IN_PROGRESS, MISSION_STATUS.NOT_STARTED];
 		return state.activeMissions.filter(missionData => CONSTRUCTION_MISSION_TYPES.includes(missionData.missionType) && 
 														 ACTIVE_MISSION_STATUSES.includes(missionData.missionStatus));
 	}
 
+	/**
+	 * 
+	 * @param {worldState} state 
+	 * @returns 
+	 */
 	getActiveAviationMissions(state) {
 		const ACTIVE_MISSION_STATUSES = [MISSION_STATUS.IN_PROGRESS, MISSION_STATUS.NOT_STARTED];
 		return state.activeMissions.filter(missionData => AVIATION_MISSION_TYPES.includes (missionData.missionType) &&
 										  ACTIVE_MISSION_STATUSES.includes(missionData.missionStatus));
 	}
 
+	/**
+	 * 
+	 * @param {worldState} state 
+	 * @returns 
+	 */
 	manageMissions(state) {
 		// This function manages the queue of missions; it is a state mutator
 
@@ -110,8 +125,9 @@ class TacticalOperationsCenter {
 	/**
 	 * Note: This function shouldn't make decisions. It is the responsibility of higher command to determine which missions are worth doing.
 	 * @param {worldState} state 
-	 * @param {*} aviationTargets 
-	 * @param {*} minAircraft 
+	 * @param {Array} aviationTargets 
+	 * @param {number} minAircraft 
+	 * @returns {void}
 	 */
 	assignAviationMissions(state, aviationTargets, minAircraft) {
 
@@ -132,6 +148,12 @@ class TacticalOperationsCenter {
 		}
 	}
 
+	/**
+	 * 
+	 * @param {worldState} state 
+	 * @param {Array} intelTasks 
+	 * @returns {void}
+	 */
 	assignIntelMissions(state, intelTasks) {
 
 		for (let i=0; i<intelTasks.length; i++) {
@@ -159,6 +181,12 @@ class TacticalOperationsCenter {
 		debug(`Scheduled BUILD (${task.missionType}) for: ${missionID} ${sectorID} ${structureID} ${sectorID}`);
 	};
 
+	/**
+	 * 
+	 * @param {worldState} state 
+	 * @param {Array} buildTasks 
+	 * @returns {void}
+	 */
 	assignConstructionTasks(state, buildTasks) {
 		const PRIORITY = MISSION_PRIORITY.HIGH;
 
@@ -275,9 +303,7 @@ class TacticalOperationsCenter {
 		}
 	}
 
-	#filterField(state, heatmap) {
-		const numXCells = state.grid.numXCells;
-		const numYCells = state.grid.numYCells;
+	#filterField(numXCells, numYCells, heatmap) {
 		const emptyCell = (...args) => {return 0;};
 		let filteredGrid = create2DGrid(numXCells, numYCells, emptyCell);
 
@@ -343,12 +369,12 @@ class TacticalOperationsCenter {
 		}	
 
 		if (false) this.#debugPrintSpatialField(state.fields['adaThreat'], 'adaThreat - BEFORE FILTER');		
-		state.fields['adaThreat'] = this.#filterField(state, state.fields['adaThreat']);
+		state.fields['adaThreat'] = this.#filterField(numXCells, numYCells, state.fields['adaThreat']);
 		if (false) this.#debugPrintSpatialField(state.fields['adaThreat'], 'adaThreat - AFTER FILTER');
 		if (false) this.#debugPrintSpatialField(state.fields['enemyStaticDefenceThreat'], 'enemyStaticDefenceThreat');
 		if (false) this.#debugPrintSpatialField(state.fields['enemyUnitThreat'], 'enemyUnitThreat');
 		if (false) this.#debugPrintSpatialField(state.fields['unclaimedDerricksInCell'], 'unclaimedDerricksInCell');
-		state.fields['controlStability'] = this.#filterField(state, state.fields['controlStability']);
+		state.fields['controlStability'] = this.#filterField(numXCells, numYCells, state.fields['controlStability']);
 		if (false) this.#debugPrintSpatialField(state.fields['controlStability'], 'controlStability');
 	}
 
@@ -475,6 +501,9 @@ class TacticalOperationsCenter {
 
 	/**
 	 * This function writes `oilDominance` to `state`.
+	 * @param {worldState} state
+	 * @param {boolean} isOilDominant
+	 * @returns {void}
 	 */
 	setOilDominanceStatus(state, isOilDominant) {
 
@@ -488,6 +517,9 @@ class TacticalOperationsCenter {
 
 	/**
 	 * This function writes `forceLocation` to `state`.
+	 * @param {worldState} state
+	 * @param {Object} forceLocation
+	 * @returns {void}
 	 */
 	setForceLocation(state, forceLocation) {
 		state.forceLocation = forceLocation;
@@ -495,6 +527,9 @@ class TacticalOperationsCenter {
 
 	/**
 	 * This function writes `nearbyGroundTargets` to `state`.
+	 * @param {worldState} state
+	 * @param {Object} nearbyGroundTargets
+	 * @returns {void}
 	 */
 	setNearbyGroundTargets(state, nearbyGroundTargets) {
 		state.nearbyGroundTargets = nearbyGroundTargets;
@@ -502,6 +537,10 @@ class TacticalOperationsCenter {
 
 	/**
 	 * This function writes `aviationTargets` to `state`.
+	 * @param {worldState} state 
+	 * @param {Object} raidTargets 
+	 * @param {Object} productionTargets 
+	 * @param {Object} adaTargets 
 	 */
 	setAviationTargets(state, raidTargets, productionTargets, adaTargets) {
 		state.aviationTargets['raidTargets'] = raidTargets;

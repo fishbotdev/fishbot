@@ -22,6 +22,11 @@ class armyGroundForceCommand {
 		
 	}
 
+	/**
+	 * 
+	 * @param {worldState} state 
+	 * @returns {Object}
+	 */
 	getGroundForceStatus(state) {
 		const playerInfo = state.playerInfo;
 
@@ -52,13 +57,14 @@ class armyGroundForceCommand {
 		return result;		
 	}
 
+	/**
+	 * Goal: to find the 'median' droid's (x,y) coordinates
+	 * 1. Get x,y of all owned droids
+	 * 2. Iterate through (x,y) coordinate list, get the median, return as 'x' and 'y'
+	 * @param {*} unused 
+	 * @returns 
+	 */
 	getForceMedianLocation(unused) {
-		/*
-			Goal: to find the 'median' droid's (x,y) coordinates
-			1. Get x,y of all owned droids
-			2. Iterate through (x,y) coordinate list, get the median, return as 'x' and 'y'
-		*/
-
 		let generalReserve = state.g.enumGroup(DIVISION.GENERAL_RESERVE);
 		let fireSupportReserve = state.g.enumGroup(DIVISION.FIRE_SUPPORT_RESERVE);
 		let infantryReserve = state.g.enumGroup(DIVISION.INFANTRY_RESERVE);

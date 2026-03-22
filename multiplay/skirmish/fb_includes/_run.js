@@ -17,7 +17,7 @@
 
 /*
 	This file controls the scheduling of all high-level bot functions.
-    It should be included last as it contains the hook to start the game.
+    It should be included last as it contains the hook `eventStartLevel` for the bot to start running.
 */
 
 function runGameEndedWatchdog() {

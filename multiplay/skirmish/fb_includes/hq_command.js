@@ -56,6 +56,10 @@ class CommandCenter {
 
 	/////////////////////////////////////////////////// STATE INITIALISATION ///////////////////////////////////////////////////
 
+	/**
+	 * 
+	 * @param {worldState} state 
+	 */
 	setDefaultMissions(state) {
 		// TODO: mutates the state. move to hq_toc
 
@@ -68,6 +72,10 @@ class CommandCenter {
 		state.activeMissions.push(md1, md2);
 	}
 
+	/**
+	 * 
+	 * @param {worldState} state 
+	 */
 	setSchedulerParameters(state) {
 		// TODO: mutates the state. move to hq_toc
 
@@ -128,6 +136,10 @@ class CommandCenter {
 		return this.campaignStatus;
 	}
 
+	/**
+	 * 
+	 * @param {string} event 
+	 */
 	#updateCampaignStatus(event) {
 		const currState = this.#getCampaignStatus();
 
@@ -143,6 +155,10 @@ class CommandCenter {
 		} 
 	}
 
+	/**
+	 * 
+	 * @param {worldState} state 
+	 */
 	checkCampaignStatus(state) {
 		// Note: this modifies 'campaignStatus' directly -> to be integrated into 'state'
 
@@ -324,6 +340,12 @@ class CommandCenter {
 		return output;
 	}
 
+	/**
+	 * 
+	 * @param {worldState} state 
+	 * @param {number} threshold 
+	 * @returns 
+	 */
 	#extractAdaThreatMap(state, threshold){ 
 		const heatmap = state.fields.adaThreat;
 		const numXCells = state.grid.numXCells;
@@ -352,6 +374,17 @@ class CommandCenter {
 		return adaCells;
 	}
 
+	/**
+	 * 
+	 * @param {worldState} state 
+	 * @param {*} groupPosition 
+	 * @param {*} nearbyTargetCount 
+	 * @param {*} airRaidTargets 
+	 * @param {*} casTargets 
+	 * @param {*} industrialTargets 
+	 * @param {*} adaTargets 
+	 * @returns
+	 */
 	prioritiseAviationTargets(state, groupPosition, nearbyTargetCount, airRaidTargets, casTargets, industrialTargets, adaTargets) {
 		const cellSize = state.grid.cellSize;
 		const IS_OIL_DOMINANT = state.oilDominance;
@@ -515,6 +548,10 @@ class CommandCenter {
 		return prioritisedTargets;
 	}
 
+	/**
+	 * 
+	 * @param {worldState} state 
+	 */
 	runCombatOperations(state) {
 
 		const nearbyGroundTargets = state.nearbyGroundTargets;
@@ -568,6 +605,9 @@ class CommandCenter {
 	 * 	1. Intelligence mission/task is scheduled
 	 * 	2. Mission is either immediately run or scheduled to run by the global mission manager
 	 * 	3. Observations are compiled into the global 'state' by the `toc`
+	 * @param {worldState} state
+	 * @param {string} taskID
+	 * @returns {void}
 	 */
 	runIntelligence(state, taskID) {
 		
@@ -624,9 +664,15 @@ class CommandCenter {
 	/////////////////////////////////////////////////// CONSTRUCTION ///////////////////////////////////////////////////
 
 	/**
-	 * Approves requested tasks based on game state & generates approved buildTasks for TOC execution 
+	 * Approves requested tasks based on game state and generates approved buildTasks for TOC execution.
+	 * @param {worldState} state 
+	 * @param {*} requestedOilCapTasks 
+	 * @param {*} requestedBaseBuildTasks 
+	 * @param {*} requestedSectorDefenceTasks 
+	 * @param {*} sectorIndirectFireBuildTasks 
+	 * @returns {Array}
 	 */
-	prioritiseConstructionTasks(requestedOilCapTasks, requestedBaseBuildTasks, requestedSectorDefenceTasks, sectorIndirectFireBuildTasks, state) {
+	prioritiseConstructionTasks(state, requestedOilCapTasks, requestedBaseBuildTasks, requestedSectorDefenceTasks, sectorIndirectFireBuildTasks) {
 
 		let approvedConstructionTasks = [];
 
@@ -692,6 +738,10 @@ class CommandCenter {
 		return approvedConstructionTasks;
 	}
 
+	/**
+	 * 
+	 * @param {worldState} state 
+	 */
 	abortDangerousConstructionTasks(state) {
 		const cellSize = state.grid.cellSize;
 
@@ -738,6 +788,10 @@ class CommandCenter {
 		});
 	}
 
+	/**
+	 * 
+	 * @param {worldState} state 
+	 */
 	runConstructionTasks(state) {		
 		const activeConstructionMissions = this.toc.getActiveConstructionMissions(state);
 
@@ -747,7 +801,7 @@ class CommandCenter {
 		const baseBuildTasks = engineering.requestBaseConstruction(state);
 
 		// Command approves & delegates assignment 
-		const approvedTasks = this.prioritiseConstructionTasks(sectorOilCaptureBuildTasks, baseBuildTasks, sectorDefenceBuildTasks, undefined, state);
+		const approvedTasks = this.prioritiseConstructionTasks(state, sectorOilCaptureBuildTasks, baseBuildTasks, sectorDefenceBuildTasks, undefined);
 		this.toc.assignConstructionTasks(state, approvedTasks);
 
 		// Command also re-evaluates
@@ -755,6 +809,10 @@ class CommandCenter {
 
 	}
 
+	/**
+	 * 
+	 * @param {worldState} state 
+	 */
 	runLogistics(state) {
 		// Production
 		supply.manageProduction();
@@ -764,7 +822,10 @@ class CommandCenter {
 		this.runConstructionTasks(state);												
 	}
 
-
+	/**
+	 * 
+	 * @param {worldState} state 
+	 */
 	runMissionManager(state) {
 		// Executes all bot actions which use the mission manager (e.g. aviation, construction)
 		// debug(`${gameTime}:		global_missionManager`);

@@ -22,8 +22,7 @@ class armyQuartermaster {
 	}
 
     #checkVtolProduction() {
-        if (!iCanDesign())
-            return false; // don't cheat by producing vtols before design is available
+        if (!iCanDesign()) return false; // don't cheat by producing vtols before design is available
 
         let vtolInProduction = false;
         const idleVtolFactories = getIdleStructuresOfType({structureID: STRUCTURES["VTOL Factory"].id});
@@ -178,8 +177,7 @@ class armyQuartermaster {
 
 
     #checkTankProduction() {
-        if (!iCanDesign())
-            return false; // don't cheat by producing tanks before design is available 
+        if (!iCanDesign()) return false; // don't cheat by producing tanks before design is available 
 
         let success = false;
         getIdleStructuresOfType({structureID: STRUCTURES["Factory"].id}).forEach((factory) => {

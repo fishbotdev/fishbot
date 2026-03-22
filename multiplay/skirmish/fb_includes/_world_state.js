@@ -321,6 +321,14 @@ class worldStateBuilder {
         return g;
     }
 
+    /**
+     * 
+     * @param {number} x 
+     * @param {number} y 
+     * @param {number} gx 
+     * @param {number} gy 
+     * @returns 
+     */
     #createNewDerrick(x, y, gx, gy) {
         // Helper: derrickTemplate factory (new implementation to support new sector system)
         return {
@@ -337,7 +345,7 @@ class worldStateBuilder {
 
     /**
      * This modifies `state.grid` with derrick locations.
-     * @param {*} state 
+     * @param {worldState} state 
      */
     #initialiseDerrickLocs(state) {
         const cellSize = state.grid.cellSize;
@@ -363,6 +371,15 @@ class worldStateBuilder {
         return d;
     }
 
+    /**
+     * 
+     * @param {number} playerID 
+     * @param {number} x 
+     * @param {number} y 
+     * @param {number} gx 
+     * @param {number} gy 
+     * @returns 
+     */
     #createNewBase(playerID, x, y, gx, gy) {
         // Helper: baseTemplate factory (new implementation to support new sector system)
         let baseTemplate = {
@@ -378,6 +395,11 @@ class worldStateBuilder {
         return baseTemplate;
     }
 
+    /**
+     * 
+     * @param {worldState} state 
+     * @returns 
+     */
     #initialiseBaseLocs(state) {
         const cellSize = state.grid.cellSize;
 
@@ -397,6 +419,11 @@ class worldStateBuilder {
         return b;
     }
 
+    /**
+     * 
+     * @param {worldState} state 
+     * @returns 
+     */
     #initialisePlayerInfo(state) {
         let p = [];
         const playerIdList = generateRange(maxPlayers);       // will create 0-indexed playerIDs from 0, 1, 2, ..., maxPlayers - 1
@@ -405,6 +432,11 @@ class worldStateBuilder {
         return p;
     }
 
+    /**
+     * Initialises `state` with the FishBot grouping system, default POIs and basic player information.
+     * @param {worldState} state 
+     * @returns {void}
+     */
     initialise(state) {
         // Application service: Initialises 'worldState' to defaults
         state.g = this.#createFbGroupingSystem();

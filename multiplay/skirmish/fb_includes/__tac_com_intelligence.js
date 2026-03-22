@@ -34,7 +34,12 @@ function getDroidsAndStructsByPlayer(playerIdList=undefined) {
     return objectsByPlayer;
 }
 
-
+/**
+ * 
+ * @param {worldState} state 
+ * @param {number} oilDominancePercentage 
+ * @returns {boolean}
+ */
 function checkOilDominance(state, oilDominancePercentage) {
     const playerInfo = state.playerInfo;
     const totalDerricks = state.poi.derricks.length;

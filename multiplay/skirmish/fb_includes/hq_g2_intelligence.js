@@ -184,6 +184,9 @@ class armyIntelligence {
 	This function performs multiple functions:
 	1. Gets all droids & structures on the map (like taking a satellite image of the whole map)
 	2. Classifies all droids & structures, populating a new `playerInfo` and a new `grid` 
+
+	@param {worldState} state
+	@returns {Object}
 	 */
 	getAllObjects(state) {
 		const numXCells = state.grid.numXCells;		// cellSize is used for computing grid coords
