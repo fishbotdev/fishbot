@@ -2,7 +2,7 @@
 FishBot is a Warzone 2100 AI bot compatible with Warzone 2100 **v4.6.1+**. 
 
 ## Upcoming features
-* **v0.3.1** -- *to be released on **27 Mar 2026***
+* **v0.3.1** -- *to be released on **3 Apr 2026***
     * Significantly fewer lag spikes (performance improvements).
     * Made it easier to import FishBot into your mods folder.
     * Added initial list of supported maps and modes.
