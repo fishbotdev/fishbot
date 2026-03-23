@@ -237,12 +237,19 @@ class armyEngineering {
 			seenCoords.push({'gx': d.gx, 'gy': d.gy});
 			if (previouslySeen) continue;
 
-			if (enemyUnitThreat[d.gx][d.gy] > 0 || enemyStaticDefenceThreat[d.gx][d.gy] > 0) continue;
+			if (enemyUnitThreat[d.gx][d.gy] > 0) continue;
 
 			if (activeMissionIDs.includes(d.id)) continue;
 
 			if (controlStability[d.gx][d.gy] < 0) {
 				// debug(`skipped derrick ${d.x}, ${d.y} (${d.gx}, ${d.gy}); too low control`);
+				continue;
+			}
+
+			const s = state.grid.enumRange(d.x, d.y, 6);
+			const friendlyDefenceCount = s['friendlyStructures'].filter(t => (t.flags & OBJ_FLAGS.DEFENSIVE_STRUCTURE) && !(t.flags & OBJ_FLAGS.ADA)).length;
+
+			if (controlStability[d.gx][d.gy] >= 3 || friendlyDefenceCount > 0) {
 				continue;
 			}
 
@@ -252,13 +259,6 @@ class armyEngineering {
 
 			const regularContestedDerrick = contestedDerrick && !isHighPriority;
 			const specialContestedDerrick = contestedDerrick && isHighPriority;
-
-			const s = state.grid.enumRange(d.x, d.y, 10);
-			const friendlyDefenceCount = s['friendlyStructures'].filter(t => (t.flags & OBJ_FLAGS.DEFENSIVE_STRUCTURE) && !(t.flags & OBJ_FLAGS.ADA)).length;
-
-			if (controlStability[d.gx][d.gy] >= 3 || friendlyDefenceCount > 0) {
-				continue;
-			}
 
 			if (isHighPriority) {
 				result['highPrioOil'].push(makePrimaryDefence(d));
