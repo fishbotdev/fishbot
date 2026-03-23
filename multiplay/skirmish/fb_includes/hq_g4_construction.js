@@ -246,10 +246,14 @@ class armyEngineering {
 				continue;
 			}
 
-			const s = state.grid.enumRange(d.x, d.y, 6);
+			const s = state.grid.enumRange(d.x, d.y, 9);
 			const friendlyDefenceCount = s['friendlyStructures'].filter(t => (t.flags & OBJ_FLAGS.DEFENSIVE_STRUCTURE) && !(t.flags & OBJ_FLAGS.ADA)).length;
+			const enemyDefenceCount = s['targetStructures'].filter(t => (t.flags & OBJ_FLAGS.DEFENSIVE_STRUCTURE) && !(t.flags & OBJ_FLAGS.ADA)).length;
 
 			if (controlStability[d.gx][d.gy] >= 3 || friendlyDefenceCount > 0) {
+				continue;
+			}
+			if (enemyDefenceCount > 0) {
 				continue;
 			}
 
