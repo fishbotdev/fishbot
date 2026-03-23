@@ -20,7 +20,7 @@
 
 	FishBot Introduction
 
-	This is a bot designed for Tech Level 2+ duels (1v1) on low-oil maps (the maps that ship with WZ2100 as of v4.6.1+). 
+	This is a Warzone 2100 bot designed for Tech Level 2+ duels (1v1) on low-oil maps (the maps that ship with WZ2100 as of v4.6.1+). 
 	Ironically, it does not work on sea maps :D. FishBot was developed to win against Insane difficulty AI (while it is Medium difficulty). 
 
 	FishBot's winning strategy revolves around intelligent, highly aggressive, combined-arms warfare. It arranges each type of unit on 
@@ -29,25 +29,7 @@
 	For challengers - I recommend to play against FishBot on Easy mode (or at very low gamespeed) when first playing against it.
 
 	Project started: 15 Oct 2025
-	
-*/
 
-var FISHBOT_VERSION = 3;
-
-//	This file connects all remaining pieces of AI code together. It shouldn't contain any code itself.
-//	NOTE: order matters!
-const FISHBOT_PATH = "/multiplay/skirmish/";
-const FB_INCLUDES = FISHBOT_PATH + "fb_includes/";
-
-// Enable DEBUG_MODE_ON (global) to:
-//	 - Show some useful debug information in the console
-//	 - Automatically colour players 0, 1, 2
-//	 - Transform Player 0 (forced human player slot) to spectator mode (used for automatated bot testing)
-//   - Places a beacon for Player 0 at the location of the current land target.
-var DEBUG_MODE_ON = true;
-
-
-/*
 	Fun stats:
 	
 	To count lines of code without comments, in git bash, cd to the code directory and:
@@ -58,9 +40,30 @@ var DEBUG_MODE_ON = true;
 	- 29 Nov 2025 (43e22ee): 3512 .js
 	- 18 Jan 2026 (eae414d): 4567 .js
 	- 15 Feb 2026 (821b835): 4536 .js -- v0.3.0 public release
-	- 22 Mar 2026 (b94dc92): 5246 .js -- after merging new grid system
+	- 22 Mar 2026 (b94dc92): 5246 .js -- after merging new grid system	
 */
 
+
+const FISHBOT_VERSION = "0.3.1";
+
+//	This file connects all remaining pieces of AI code together. It shouldn't contain any code itself.
+//	NOTE: order matters!
+const FISHBOT_PATH = "/multiplay/skirmish/";
+const FB_INCLUDES = FISHBOT_PATH + "fb_includes/";
+
+// Enable DEBUG_MODE_ON (global) to:
+//	 - Show some useful debug information in the console
+//	 - Automatically colour players 0, 1, 2
+//	 - Transform Player 0 (forced human player slot) to spectator mode (used for automated bot testing)
+const DEBUG_MODE_ON = true;
+
+
+/*
+-- RELEASE CHECKLIST --
+1. Update FISHBOT_VERSION to latest version tag
+2. Update DEBUG_MODE_ON = false
+3. Disable all beacons / hackMarkTiles() used for debugging
+*/
 
 ////////////////////////////////////////////////////////////////////////////////////////////
 
