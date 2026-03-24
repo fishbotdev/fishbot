@@ -119,12 +119,12 @@ function groundForceAttack({state, directFireTarget, fireSupportTarget, adaTarge
 	const rtb = () => retreatToBase(generalReserve, infantryReserve, fireSupportReserve, airDefenceArtilleryReserve, sensorUnits);
 
 	if (generalReserve.length === 0) {
-		rtb();		
+		// rtb();		
 		return;
 	}
 
 	if (!defined(directFireTarget)) {
-		rtb();	
+		// rtb();	
 		return;
 	}
 
