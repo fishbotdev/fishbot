@@ -322,7 +322,7 @@ class worldStateBuilder {
     }
 
     /**
-     * 
+     * Factory function for a 'derrick' object.
      * @param {number} x 
      * @param {number} y 
      * @param {number} gx 
@@ -344,7 +344,7 @@ class worldStateBuilder {
     }
 
     /**
-     * This modifies `state.grid` with derrick locations.
+     * Used to initialise `state.poi.derricks` & also writes a reference to `state.grid.grid` directly.
      * @param {worldState} state 
      */
     #initialiseDerrickLocs(state) {
@@ -372,7 +372,7 @@ class worldStateBuilder {
     }
 
     /**
-     * 
+     * Factory function for a 'base' object.
      * @param {number} playerID 
      * @param {number} x 
      * @param {number} y 
@@ -396,7 +396,7 @@ class worldStateBuilder {
     }
 
     /**
-     * 
+     * Used to initialise `state.poi.bases` & also writes a reference to `state.grid.grid` directly.
      * @param {worldState} state 
      * @returns 
      */
@@ -420,7 +420,7 @@ class worldStateBuilder {
     }
 
     /**
-     * 
+     * Used to initialise `state.playerInfo`.
      * @param {worldState} state 
      * @returns 
      */
@@ -438,7 +438,6 @@ class worldStateBuilder {
      * @returns {void}
      */
     initialise(state) {
-        // Application service: Initialises 'worldState' to defaults
         state.g = this.#createFbGroupingSystem();
 
         state.poi.derricks = this.#initialiseDerrickLocs(state);    // this function also modifies each grid cell

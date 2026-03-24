@@ -241,7 +241,7 @@ class armyEngineering {
 
 			if (activeMissionIDs.includes(d.id)) continue;
 
-			if (controlStability[d.gx][d.gy] < 0) {
+			if (controlStability[d.gx][d.gy] < 0) {		// TODO: move this prioritisation to hq_command (decisions on options should be made in command)
 				// debug(`skipped derrick ${d.x}, ${d.y} (${d.gx}, ${d.gy}); too low control`);
 				continue;
 			}
