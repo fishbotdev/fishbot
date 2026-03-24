@@ -10,6 +10,7 @@ This file records the changes to FishBot over time.
     - Added VTOL saturation attack (a large wave of VTOLs will attack many factories simultaneously).
     - Improved truck danger avoidance.  
     - Ground units now use Heavy Cannon to bridge the tech-gap between Assault Cannon and Twin Assault Cannon.
+    - Anti-air units now focus fire on a single target.
 - Internal changes
     - Packaged bot files nicely for ease of import.
     - Centralised core game data, making the bot behaviour easier to change.
