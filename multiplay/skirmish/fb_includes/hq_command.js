@@ -399,7 +399,7 @@ class CommandCenter {
 		}
 
 		// TEMPORARY IMPLEMENTATION
-		const prioritiseCasTargets = nearbyTargetCount >= 2;
+		const prioritiseCasTargets = nearbyTargetCount >= 1;
 		// debug(`nearbyTargetCount ${nearbyTargetCount}, prioritiseCAS: ${prioritiseCasTargets}`);
 		const prioritiseRaidTargets = !IS_OIL_DOMINANT;
 		const prioritiseIndustrialTargets = IS_OIL_DOMINANT;
@@ -434,7 +434,6 @@ class CommandCenter {
 		} else if (prioritiseRaidTargets) {
 			targetCandidates = [...airRaidTargets, ...casTargets];
 		} else {
-			// assuming industrial targets are prioritised
 			targetCandidates = [...casTargets, ...airRaidTargets];		// same as CAS
 		}
 
