@@ -265,13 +265,13 @@ class armyEngineering {
 			const specialContestedDerrick = contestedDerrick && isHighPriority;
 
 			if (isHighPriority) {
-				result['highPrioOil'].push(makePrimaryDefence(d));
+				result['highPrioOil'].unshift(makePrimaryDefence(d));
 				highPrioOil.unshift(makePrimaryDefence(d));			// unshift -> reverses the order of `state.poi.derricks` which is ordered in ascending order from base
 			} else if (regularContestedDerrick) {
-				result['offensiveOil'].push(makePrimaryDefence(d));
+				result['offensiveOil'].unshift(makePrimaryDefence(d));
 				normalPrioOil.unshift(makePrimaryDefence(d));
 			} else {
-				result['friendlyOil'].push(makePrimaryDefence(d));
+				result['friendlyOil'].unshift(makePrimaryDefence(d));
 				normalPrioOil.unshift(makePrimaryDefence(d));
 			}
 		}
@@ -282,7 +282,7 @@ class armyEngineering {
 			debug(`	normalPrio: ${normalPrioOil}`);
 		}
 
-		return [...highPrioOil, ...normalPrioOil];
+		return [...result['highPrioOil'], ...result['offensiveOil'], ...result['friendlyOil']];
 	}
 
 	/**

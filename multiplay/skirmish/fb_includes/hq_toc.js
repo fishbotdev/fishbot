@@ -197,7 +197,7 @@ class TacticalOperationsCenter {
 			const missionData = this.createNewMission({missionType: task.missionType, priority: PRIORITY}, task, i);		
 			if (defined(missionData)) {
 				state.activeMissions.push(missionData);
-				// this.#printConstructionDebugOutput(task, missionData.id, [MISSION_TYPE.CONSTRUCT_NEARBY_DEFENCE]);
+				if (false) this.#printConstructionDebugOutput(task, missionData.id, [MISSION_TYPE.CONSTRUCT_NEARBY_DEFENCE]);
 			} 
 		});
 	}
@@ -426,12 +426,13 @@ class TacticalOperationsCenter {
 		if (false) this.#debugPrintSpatialField(state.fields['controlStability'], 'controlStability - BEFORE');
 
 		const livingPlayers = state.enumLivingPlayers();
+		const enemyRiskRadius = (state.oilDominance) ? 3 : 5; 		// temporary -> will be part of distanceCostField eventually
 		state.poi.bases.forEach(b => {
 			if (!livingPlayers.includes(b.playerID)) {
 				return;
 			}
 			if (isEnemy(b.playerID)) {
-				this.#floodFillSquareRegion(state.fields['controlStability'], numXCells, numYCells, b.gx, b.gy, 2, -3);
+				this.#floodFillSquareRegion(state.fields['controlStability'], numXCells, numYCells, b.gx, b.gy, enemyRiskRadius, -3);
 			} else {
 				this.#floodFillSquareRegion(state.fields['controlStability'], numXCells, numYCells, b.gx, b.gy, 3, 3);
 			}
