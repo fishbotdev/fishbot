@@ -306,7 +306,47 @@ class TacticalOperationsCenter {
 		}
 	}
 
-	#filterField(numXCells, numYCells, heatmap) {
+	/**
+	 * This function fills in a square region of the `heatmap` centred at `cx`, `cy` with minimum value `minVal`.
+	 * @param {number[][]} heatmap 
+	 * @param {number} numXCells 
+	 * @param {number} numYCells 
+	 * @param {number} cx 
+	 * @param {number} cy 
+	 * @param {number} radius 
+	 * @param {number} minVal 
+	 * @returns {void}
+	 */
+	#floodFillSquareRegion(heatmap, numXCells, numYCells, cx, cy, radius, minVal) {
+
+		const DEV = radius;
+
+		for (let dx=-DEV; dx <= DEV; dx++) {
+			for (let dy=-DEV; dy<=DEV; dy++) {
+				const x = cx+dx;
+				const y = cy+dy;
+
+				if (x < 0 || x >= numXCells || y < 0 || y >= numYCells) 	continue;
+
+				if (minVal === 0) {
+					heatmap[x][y] = 0;
+				} else if (minVal > 0) {
+					heatmap[x][y] = Math.max(heatmap[x][y], minVal);			
+				} else {
+					heatmap[x][y] = Math.min(heatmap[x][y], minVal);
+				}
+			}
+		}
+	}
+
+	/**
+	 * Applies a simple smoothing kernel
+	 * @param {number[][]} heatmap 
+	 * @param {number} numXCells 
+	 * @param {number} numYCells 
+	 * @returns 
+	 */
+	#filterField(heatmap, numXCells, numYCells) {
 		const emptyCell = (...args) => {return 0;};
 		let filteredGrid = create2DGrid(numXCells, numYCells, emptyCell);
 
@@ -344,7 +384,12 @@ class TacticalOperationsCenter {
 		return filteredGrid;
 	}
 
-	
+	/**
+	 * Updates all derived fields which are subsequently used for decision making.
+	 * This is a necessary tool for FishBot to understand the game world.
+	 * @param {worldState} state 
+	 * @param {any[][]} newGrid 
+	 */
 	updateSpatialFields(state, newGrid) {
 		const numXCells = state.grid.numXCells;
 		const numYCells = state.grid.numYCells;
@@ -367,18 +412,31 @@ class TacticalOperationsCenter {
 				});
 
 				const ts = newGrid[gx][gy]['targetStructures'].length - numEnemyDerricks - newGrid[gx][gy]['adaCount'];
-				state.fields['controlStability'][gx][gy] = newGrid[gx][gy]['friendlyStructures'].length - (ts);				// todo remove friendly derricks once safe regions are set
+				state.fields['controlStability'][gx][gy] = newGrid[gx][gy]['friendlyStructures'].length - numFriendlyDerricks - (ts);				// todo remove friendly derricks once safe regions are set
 			}	
 		}	
 
 		if (false) this.#debugPrintSpatialField(state.fields['adaThreat'], 'adaThreat - BEFORE FILTER');		
-		state.fields['adaThreat'] = this.#filterField(numXCells, numYCells, state.fields['adaThreat']);
+		state.fields['adaThreat'] = this.#filterField(state.fields['adaThreat'], numXCells, numYCells);
 		if (false) this.#debugPrintSpatialField(state.fields['adaThreat'], 'adaThreat - AFTER FILTER');
 		if (false) this.#debugPrintSpatialField(state.fields['enemyStaticDefenceThreat'], 'enemyStaticDefenceThreat');
 		if (false) this.#debugPrintSpatialField(state.fields['enemyUnitThreat'], 'enemyUnitThreat');
 		if (false) this.#debugPrintSpatialField(state.fields['unclaimedDerricksInCell'], 'unclaimedDerricksInCell');
-		state.fields['controlStability'] = this.#filterField(numXCells, numYCells, state.fields['controlStability']);
-		if (false) this.#debugPrintSpatialField(state.fields['controlStability'], 'controlStability');
+		state.fields['controlStability'] = this.#filterField(state.fields['controlStability'], numXCells, numYCells);						
+		if (false) this.#debugPrintSpatialField(state.fields['controlStability'], 'controlStability - BEFORE');
+
+		const livingPlayers = state.enumLivingPlayers();
+		state.poi.bases.forEach(b => {
+			if (!livingPlayers.includes(b.playerID)) {
+				return;
+			}
+			if (isEnemy(b.playerID)) {
+				this.#floodFillSquareRegion(state.fields['controlStability'], numXCells, numYCells, b.gx, b.gy, 2, -3);
+			} else {
+				this.#floodFillSquareRegion(state.fields['controlStability'], numXCells, numYCells, b.gx, b.gy, 3, 3);
+			}
+		});
+		if (false) this.#debugPrintSpatialField(state.fields['controlStability'], 'controlStability - AFTER');
 	}
 
 	/**
