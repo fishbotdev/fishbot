@@ -399,7 +399,7 @@ class CommandCenter {
 		}
 
 		// TEMPORARY IMPLEMENTATION
-		const prioritiseCasTargets = nearbyTargetCount >= 1;
+		const prioritiseCasTargets = nearbyTargetCount >= 2;
 		// debug(`nearbyTargetCount ${nearbyTargetCount}, prioritiseCAS: ${prioritiseCasTargets}`);
 		const prioritiseRaidTargets = !IS_OIL_DOMINANT;
 		const prioritiseIndustrialTargets = IS_OIL_DOMINANT;
@@ -537,11 +537,7 @@ class CommandCenter {
 				prioritisedTargets['minAircraft'] = 2;
 			}
 		} else {
-			if (AIR_UNIT_SHORTAGE) {
 				prioritisedTargets['minAircraft'] = 1;
-			} else {
-				prioritisedTargets['minAircraft'] = 2;
-			}
 		}
 
 		return prioritisedTargets;
