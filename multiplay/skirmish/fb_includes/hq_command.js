@@ -622,7 +622,7 @@ class CommandCenter {
 				this.toc.setForceLocation(state, mainForceLocation);
 
 				if (defined(state.forceLocation)) {
-					const nearbyGroundTargets = intelligence.proposeTargetsInRadius2(state, state.forceLocation, 25, 10);		
+					const nearbyGroundTargets = intelligence.proposeTargetsInRadius2(state, state.forceLocation, 25, 15);		
 					hq.toc.setNearbyGroundTargets(state, nearbyGroundTargets);
 				}
 				break;

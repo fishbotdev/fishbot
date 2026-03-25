@@ -459,7 +459,7 @@ class armyIntelligence {
 	 * @param {number} immediateRadius
 	 * @returns {Object}
 	 */
-	proposeTargetsInRadius2(state, loc, searchRadius=20, immediateRadius=15) {
+	proposeTargetsInRadius2(state, loc, searchRadius, immediateRadius) {
 
 		const allTargets = state.allTargets;
 
