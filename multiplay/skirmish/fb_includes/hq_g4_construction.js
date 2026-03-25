@@ -319,6 +319,7 @@ class armyEngineering {
 			STRUCTURES["Research Facility"],
 			STRUCTURES["Power Module"],
 			STRUCTURES["Power Module"],
+			STRUCTURES["Cyborg Factory"],		
 			STRUCTURES["Factory Module"],
 			STRUCTURES["Factory Module"],
 			// STRUCTURES["Repair Facility"],
@@ -326,7 +327,7 @@ class armyEngineering {
 			STRUCTURES["Factory Module"],
 			STRUCTURES["Research Facility"],
 			STRUCTURES["Research Module"],
-			STRUCTURES["Cyborg Factory"],		
+
 			STRUCTURES["VTOL Rearming Pad"],
 			STRUCTURES["VTOL Rearming Pad"],
 			STRUCTURES["Factory Module"],
