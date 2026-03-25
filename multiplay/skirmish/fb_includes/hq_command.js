@@ -32,7 +32,7 @@ class CommandCenter {
 			This constructor is intended to contain *all* FishBot parameters which change how it behaves.
 		*/
 
-		this.OIL_DOMINANCE_PERCENTAGE = 60;
+		this.OIL_DOMINANCE_PERCENTAGE = 55;
 
 
 		// Task scheduling parameters
