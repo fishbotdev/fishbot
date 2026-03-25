@@ -32,7 +32,7 @@ class CommandCenter {
 			This constructor is intended to contain *all* FishBot parameters which change how it behaves.
 		*/
 
-		this.OIL_DOMINANCE_PERCENTAGE = 60;
+		this.OIL_DOMINANCE_PERCENTAGE = 70;
 
 
 		// Task scheduling parameters
@@ -469,7 +469,7 @@ class CommandCenter {
 				}
 			}
 
-			if (!SATURATION_RAID) {
+			if (IS_OIL_DOMINANT) {
 				const gx = Math.floor(currObj.x / cellSize), gy = Math.floor(currObj.y / cellSize);
 				let skipIfDangerous = false;
 
