@@ -705,17 +705,23 @@ class CommandCenter {
 		}
 
 		// OIL CAP
+		const MAX_OIL_CAP_TASKS = 4; 
+		let counter = 0;
 		requestedOilCapTasks.forEach(task => {
+			if (counter >= MAX_OIL_CAP_TASKS) return;
+
 			if (activeOilCapTaskIDs.some(sectorID => sectorID === task.payload.id)) return;		// todo: consider standardising 'sectorID', 'id' etc. to 'metadata' or 'payload'
+			
 			approvedConstructionTasks.push(task);
+			counter++;
 		});
 
 		// DERRICK DEFENCES
-		const MAX_CONCURRENT_FORTIFICATION_TASKS = 1;
+		const MAX_CONCURRENT_FORTIFICATION_TASKS = (gameTime < 180000) ? 1 : 2;		// hack; tuned for Gamma
 		const deficit = MAX_CONCURRENT_FORTIFICATION_TASKS - activeDefenceBuildTaskIDs.length;
 
-		let counter = 0;
 		
+		counter = 0;
 		if (deficit > 0) {
 			for (let i=0; i<requestedSectorDefenceTasks.length; i++) {
 				if (counter >= deficit) 
