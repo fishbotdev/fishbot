@@ -241,16 +241,22 @@ class armyEngineering {
 
 			if (activeMissionIDs.includes(d.id)) continue;
 
-			if (controlStability[d.gx][d.gy] < 0) {		// TODO: move this prioritisation to hq_command (decisions on options should be made in command)
-				// debug(`skipped derrick ${d.x}, ${d.y} (${d.gx}, ${d.gy}); too low control`);
+			if (Math.abs(controlStability[d.gx][d.gy]) >= 3) {		// TODO: move this prioritisation to hq_command (decisions on options should be made in command)
+				// debug(`skipped derrick ${d.x}, ${d.y} (${d.gx}, ${d.gy}); control too large (${controlStability[d.gx][d.gy]})`);
 				continue;
 			}
 
 			const s = state.grid.enumRange(d.x, d.y, 9);
-			const friendlyDefenceCount = s['friendlyStructures'].filter(t => (t.flags & OBJ_FLAGS.DEFENSIVE_STRUCTURE) && !(t.flags & OBJ_FLAGS.ADA)).length;
-			const enemyDefenceCount = s['targetStructures'].filter(t => (t.flags & OBJ_FLAGS.DEFENSIVE_STRUCTURE) && !(t.flags & OBJ_FLAGS.ADA)).length;
 
-			if (controlStability[d.gx][d.gy] >= 3 || friendlyDefenceCount > 0) {
+			const builtDefences = OBJ_FLAGS.DEFENSIVE_STRUCTURE | OBJ_FLAGS.IS_BUILT;
+
+			const friendlyDefences = s['friendlyStructures'].filter(t => (t.flags & builtDefences) === builtDefences && !(t.flags & OBJ_FLAGS.ADA));
+			const enemyDefences = s['targetStructures'].filter(t => (t.flags & builtDefences) === builtDefences && !(t.flags & OBJ_FLAGS.ADA));
+
+			const friendlyDefenceCount = friendlyDefences.length;
+			const enemyDefenceCount = enemyDefences.length;
+
+			if (friendlyDefenceCount > 0) {
 				continue;
 			}
 			if (enemyDefenceCount > 0) {
@@ -268,7 +274,7 @@ class armyEngineering {
 				result['highPrioOil'].unshift(makePrimaryDefence(d));
 				highPrioOil.unshift(makePrimaryDefence(d));			// unshift -> reverses the order of `state.poi.derricks` which is ordered in ascending order from base
 			} else if (regularContestedDerrick) {
-				result['offensiveOil'].unshift(makePrimaryDefence(d));
+				result['offensiveOil'].push(makePrimaryDefence(d));
 				normalPrioOil.unshift(makePrimaryDefence(d));
 			} else {
 				result['friendlyOil'].unshift(makePrimaryDefence(d));
@@ -282,7 +288,7 @@ class armyEngineering {
 			debug(`	normalPrio: ${normalPrioOil}`);
 		}
 
-		return [...highPrioOil, ...normalPrioOil];
+		return [...highPrioOil, ...result['offensiveOil'], ...result['friendlyOil']];
 	}
 
 	/**

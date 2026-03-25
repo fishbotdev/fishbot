@@ -411,8 +411,8 @@ class TacticalOperationsCenter {
 					}
 				});
 
-				const ts = newGrid[gx][gy]['targetStructures'].length - numEnemyDerricks - newGrid[gx][gy]['adaCount'];
-				state.fields['controlStability'][gx][gy] = newGrid[gx][gy]['friendlyStructures'].length - numFriendlyDerricks - (ts);				// todo remove friendly derricks once safe regions are set
+				const ts = newGrid[gx][gy]['targetStructures'].length - numEnemyDerricks;
+				state.fields['controlStability'][gx][gy] = newGrid[gx][gy]['friendlyStructures'].length - numFriendlyDerricks - (ts);				
 			}	
 		}	
 
@@ -426,7 +426,7 @@ class TacticalOperationsCenter {
 		if (false) this.#debugPrintSpatialField(state.fields['controlStability'], 'controlStability - BEFORE');
 
 		const livingPlayers = state.enumLivingPlayers();
-		const enemyRiskRadius = (state.oilDominance) ? 3 : 5; 		// temporary -> will be part of distanceCostField eventually
+		const enemyRiskRadius = (state.oilDominance) ? 3 : 5; 		// temporary -> will be part of distanceCostField eventually, tuned for Gamma
 		state.poi.bases.forEach(b => {
 			if (!livingPlayers.includes(b.playerID)) {
 				return;
