@@ -246,7 +246,7 @@ class armyEngineering {
 				continue;
 			}
 
-			const s = state.grid.enumRange(d.x, d.y, 9);
+			const s = state.grid.enumRange(d.x, d.y, 6);
 
 			const builtDefences = OBJ_FLAGS.DEFENSIVE_STRUCTURE | OBJ_FLAGS.IS_BUILT;
 
@@ -274,7 +274,7 @@ class armyEngineering {
 				result['highPrioOil'].unshift(makePrimaryDefence(d));
 				highPrioOil.unshift(makePrimaryDefence(d));			// unshift -> reverses the order of `state.poi.derricks` which is ordered in ascending order from base
 			} else if (regularContestedDerrick) {
-				result['offensiveOil'].push(makePrimaryDefence(d));
+				result['offensiveOil'].unshift(makePrimaryDefence(d));
 				normalPrioOil.unshift(makePrimaryDefence(d));
 			} else {
 				result['friendlyOil'].unshift(makePrimaryDefence(d));
