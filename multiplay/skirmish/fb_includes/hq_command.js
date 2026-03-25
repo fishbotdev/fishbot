@@ -764,8 +764,8 @@ class CommandCenter {
 		//	2. Check truck distances to grid ref 
 		//	3. Cancel mission
 		activeRemoteMissions.forEach(md => {
-			// Check static defence & unit threat at grid ref
-			if (enemyStaticDefenceThreat[md.gx][md.gy] === 0 && enemyUnitThreat[md.gx][md.gy] === 0) {
+			// Check unit threat at grid ref
+			if (enemyUnitThreat[md.gx][md.gy] === 0) {
 				return;
 			}
 			
