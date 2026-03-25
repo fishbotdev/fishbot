@@ -184,7 +184,8 @@ def show_hard_cobra_results():
     # test_1 = getcwd() + rf"\process_results/v4/" + "db393ea,hard,cobra,50g" + ".txt"              # v4 dev: 4.6.3 [74 % wr; cannon test + cas changes]
     # test_1 = getcwd() + rf"\process_results/v4/" + "db7403d,hard,cobra,100g" + ".txt"              # v4 dev: 4.6.3 [57 % wr; migrated sector defence to grid system]
     # test_2 = getcwd() + rf"\process_results/v4/" + "cf7b597,hard,cobra,100g" + ".txt"              # close to v0.3.1 release [61 % wr] 
-    test_2 = getcwd() + rf"\process_results/v4/" + "ee78a97,hard,cobra,60g" + ".txt"              # close to v0.3.1 release [38/60 = 63 % wr] 
+    # test_2 = getcwd() + rf"\process_results/v4/" + "ee78a97,hard,cobra,60g" + ".txt"              # close to v0.3.1 release [38/60 = 63 % wr] 
+    test_2 = getcwd() + rf"\process_results/v4/" + "bb29af7,hard,cobra,60g" + ".txt"                # 40 / 60 (66.6%)
 
     commit1 = test_1.split(rf"v3/")[1].split(",")[0]
     commit2 = test_2.split(rf"v4/")[1].split(",")[0]
@@ -199,7 +200,7 @@ def show_insane_diff_results():
     # test_1 = getcwd() + rf"\process_results/v4/" + "1df2117,hardins,1v2" + ".txt"           # v4 dev: v3 skrush 1x hard, 1x insane nexus, after perf optimisations [42 / 50 wins]
     # test_1 = getcwd() + rf"\process_results/v4/" + "c7d8eb7,hardins,1v2,targoptim" + ".txt"           # v4 dev: v3 skrush 1x hard, 1x ins nexus, targeting optimisations - cancelVtol [33 / 50 wins]
     test_1 = getcwd() + rf"\process_results/v4/" + "4aee90e,hardins,1v2,vtolfix" + ".txt"           # v4 dev: v3 skrush 1x hard, 1x ins nexus, fixed vtol usage [38 / 50 wins]
-    test_2 = getcwd() + rf"\process_results/v4/" + "e8c65ad,hardins,1v2" + ".txt"           # v4 dev: mid-grid system migration [66% wr]
+    test_2 = getcwd() + rf"\process_results/v4/" + "e8c65ad,hardins,1v2" + ".txt"           # v4 dev: mid-grid system migration [55% wr]
     
     commit1 = test_1.split(rf"v4/")[1].split(",")[0]
     commit2 = test_2.split(rf"v4/")[1].split(",")[0]
