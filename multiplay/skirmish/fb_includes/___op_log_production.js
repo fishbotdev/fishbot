@@ -27,15 +27,15 @@ class armyQuartermaster {
         let vtolInProduction = false;
         const idleVtolFactories = getIdleStructuresOfType({structureID: STRUCTURES["VTOL Factory"].id});
 
-        let r = Math.floor(Math.random() * 2);
+        let r = Math.floor(Math.random() * 4);
 
         for (let i = 0; i < idleVtolFactories.length; i++) {
             const factory = idleVtolFactories[i];
 
             if (r === 0) {
-                vtolInProduction = vtolInProduction || produceCloseAirSupport(factory);
-            } else {
                 vtolInProduction = vtolInProduction || produceDeepAirSupport(factory);
+            } else {
+                vtolInProduction = vtolInProduction || produceCloseAirSupport(factory);
             }
             
         }
@@ -90,7 +90,7 @@ class armyQuartermaster {
             // Only make direct assault tanks; overwrite weights
             weights = {
                 'Heavy Cav': 10,
-                'Light Cav': 2,
+                'Light Cav': 3,
             };
         } else if (directAssaultTanksCount >= 6 && fireSupportCount === 0) {
             weights = {
