@@ -351,9 +351,9 @@ class TacticalOperationsCenter {
 		let filteredGrid = create2DGrid(numXCells, numYCells, emptyCell);
 
 		const KERNEL = [
-			[0.25, 0.25, 0.25],
-			[0.25, 1.0,  0.25],
-			[0.25, 0.25, 0.25]
+			[0.33, 0.33, 0.33],
+			[0.33, 1.0,  0.33],
+			[0.33, 0.33, 0.33]
 		];
 
 		const XDEV = 1;
@@ -421,8 +421,11 @@ class TacticalOperationsCenter {
 		if (false) this.#debugPrintSpatialField(state.fields['adaThreat'], 'adaThreat - AFTER FILTER');
 		if (false) this.#debugPrintSpatialField(state.fields['enemyStaticDefenceThreat'], 'enemyStaticDefenceThreat');
 		if (false) this.#debugPrintSpatialField(state.fields['enemyUnitThreat'], 'enemyUnitThreat');
+		state.fields['enemyUnitThreat'] = this.#filterField(state.fields['enemyUnitThreat'], numXCells, numYCells);		
+		if (true) this.#debugPrintSpatialField(state.fields['enemyUnitThreat'], 'enemyUnitThreat');
 		if (false) this.#debugPrintSpatialField(state.fields['unclaimedDerricksInCell'], 'unclaimedDerricksInCell');
 		state.fields['controlStability'] = this.#filterField(state.fields['controlStability'], numXCells, numYCells);						
+						
 		if (false) this.#debugPrintSpatialField(state.fields['controlStability'], 'controlStability - BEFORE');
 
 		const livingPlayers = state.enumLivingPlayers();
