@@ -91,6 +91,8 @@ class armyQuartermaster {
             weights = {
                 'Heavy Cav': 10,
                 'Light Cav': 3,
+                'Fire Support': 2,
+                'Air Defence': 1,
             };
         } else if (directAssaultTanksCount >= 6 && fireSupportCount === 0) {
             weights = {
