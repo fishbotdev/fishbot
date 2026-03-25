@@ -422,7 +422,7 @@ class TacticalOperationsCenter {
 		if (false) this.#debugPrintSpatialField(state.fields['enemyStaticDefenceThreat'], 'enemyStaticDefenceThreat');
 		if (false) this.#debugPrintSpatialField(state.fields['enemyUnitThreat'], 'enemyUnitThreat');
 		state.fields['enemyUnitThreat'] = this.#filterField(state.fields['enemyUnitThreat'], numXCells, numYCells);		
-		if (true) this.#debugPrintSpatialField(state.fields['enemyUnitThreat'], 'enemyUnitThreat');
+		if (false) this.#debugPrintSpatialField(state.fields['enemyUnitThreat'], 'enemyUnitThreat');
 		if (false) this.#debugPrintSpatialField(state.fields['unclaimedDerricksInCell'], 'unclaimedDerricksInCell');
 		state.fields['controlStability'] = this.#filterField(state.fields['controlStability'], numXCells, numYCells);						
 						
