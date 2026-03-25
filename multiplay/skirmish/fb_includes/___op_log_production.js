@@ -91,9 +91,6 @@ class armyQuartermaster {
             weights = {
                 'Heavy Cav': 10,
                 'Light Cav': 2,
-                'Fire Support': 2,
-                'Air Defence': 2,
-                'Sensor': 1
             };
         } else if (directAssaultTanksCount >= 6 && fireSupportCount === 0) {
             weights = {
@@ -104,8 +101,8 @@ class armyQuartermaster {
             weights = {
                 'Heavy Cav': 10,
                 'Light Cav': 2,
-                'Fire Support': 3,
-                'Air Defence': 3,
+                'Fire Support': 2,
+                'Air Defence': 2,
                 'Sensor': 1
             };
         }
@@ -117,7 +114,7 @@ class armyQuartermaster {
         }
 
         if (defined(weights["Air Defence"])) {
-            if (airDefenceCount >= 4 || getCurrGameTime() < 300000) {
+            if (airDefenceCount >= 3 || getCurrGameTime() < 300000) {
                 weights["Air Defence"] = 0;
             }
         }
