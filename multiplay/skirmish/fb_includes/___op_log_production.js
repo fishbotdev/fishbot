@@ -27,7 +27,7 @@ class armyQuartermaster {
         let vtolInProduction = false;
         const idleVtolFactories = getIdleStructuresOfType({structureID: STRUCTURES["VTOL Factory"].id});
 
-        let r = Math.floor(Math.random() * 4);
+        let r = Math.floor(Math.random() * 10);
 
         for (let i = 0; i < idleVtolFactories.length; i++) {
             const factory = idleVtolFactories[i];
