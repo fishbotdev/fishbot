@@ -217,21 +217,37 @@ class CommandCenter {
 		}
 
 		// DIRECT FIRE TARGETS
+		// todo: droids need to be ranged from furthest to closest
+		let structureTargets = [];
 		const c = targetInfo["closestObject"];
-		if (defined(getObject(c.type, c.player, c.id))) {
+		if (c.type === DROID && !(c.flags & OBJ_FLAGS.CONSTRUCTOR) && !(c.flags && OBJ_FLAGS.ADA) && defined(getObject(c.type, c.player, c.id))) {
 			output["directFireTarget"] = targetInfo["closestObject"];
-		}
-		
-		if (!defined(output["directFireTarget"])) {
-			// This is a fallback to handle stale inputs
+			// debug(`used default direct fire target @${gameTime}`);
+		} else {
+			// This is a fallback to handle stale inputs / non-droid targets
 			for (let i=0; i<targetInfo["closestObjects"].length; i++) {
+
 				const t = targetInfo["closestObjects"][i];
 				const obj = getObject(t.type, t.player, t.id);
-				if (defined(obj)) {
-					output["directFireTarget"] = t;
-					// debug(`fallback directFireTarget used @ ${gameTime} ms`);
-					break;
+
+				if (!defined(obj)) {
+					continue;
 				}
+
+				if (t.type === DROID && !(c.flags & OBJ_FLAGS.CONSTRUCTOR) && !(c.flags && OBJ_FLAGS.ADA)) {
+					output["directFireTarget"] = t;
+					// debug(`fallback directFireTarget (DROID) used @ ${gameTime} ms`);
+					break;
+				} else if (t.type === STRUCTURE) {
+					structureTargets.push(t);
+				}
+			}
+
+			if (!defined(output["directFireTarget"]) && structureTargets.length > 0) {
+				output["directFireTarget"] = structureTargets[0];
+				// debug(`fallback directFireTarget (STRUCTURE) used @ ${gameTime} ms`);
+			} else {
+				output["directFireTarget"] = targetInfo["closestObject"];
 			}
 		}
 
@@ -469,7 +485,7 @@ class CommandCenter {
 				}
 			}
 
-			if (IS_OIL_DOMINANT) {
+			if (!SATURATION_RAID) {
 				const gx = Math.floor(currObj.x / cellSize), gy = Math.floor(currObj.y / cellSize);
 				let skipIfDangerous = false;
 
@@ -537,7 +553,7 @@ class CommandCenter {
 				prioritisedTargets['minAircraft'] = 2;
 			}
 		} else {
-				prioritisedTargets['minAircraft'] = 1;
+			prioritisedTargets['minAircraft'] = 1;
 		}
 
 		return prioritisedTargets;
