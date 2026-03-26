@@ -430,7 +430,7 @@ class CommandCenter {
 		const IS_OIL_DOMINANT = state.oilDominance;
 		const NUM_AIRCRAFT = state.playerInfo[me].numAirUnits;		// TODO: formalise if this is an expected access pattern
 		const AIR_UNIT_DOMINANCE = NUM_AIRCRAFT >= 10;
-		const AIR_UNIT_SHORTAGE = NUM_AIRCRAFT <= 8;
+		const AIR_UNIT_SHORTAGE = NUM_AIRCRAFT <= 6;
 
 		let targetCandidates = [];
 
@@ -577,7 +577,11 @@ class CommandCenter {
 				prioritisedTargets['minAircraft'] = 2;
 			}
 		} else {
+			if (AIR_UNIT_SHORTAGE) {
 			prioritisedTargets['minAircraft'] = 1;
+			} else {
+				prioritisedTargets['minAircraft'] = 2;
+			}
 		}
 
 		return prioritisedTargets;
