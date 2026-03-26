@@ -140,8 +140,7 @@ class armyIntelligence {
 				return flags;
 			}
 
-			// const INDUSTRIAL_TARGETS = [FACTORY, CYBORG_FACTORY, VTOL_FACTORY];	
-			const INDUSTRIAL_TARGETS = [CYBORG_FACTORY, VTOL_FACTORY];	
+			const INDUSTRIAL_TARGETS = [FACTORY, CYBORG_FACTORY, VTOL_FACTORY];	
 			if (INDUSTRIAL_TARGETS.includes(obj.stattype)) {
 				flags |= OBJ_FLAGS.PRODUCTION;
 				return flags;					
