@@ -32,7 +32,7 @@ class CommandCenter {
 			This constructor is intended to contain *all* FishBot parameters which change how it behaves.
 		*/
 
-		this.OIL_DOMINANCE_PERCENTAGE = 70;
+		this.OIL_DOMINANCE_PERCENTAGE = 60;
 
 
 		// Task scheduling parameters
@@ -389,7 +389,7 @@ class CommandCenter {
 	 * @param {*} casTargets 
 	 * @param {*} industrialTargets 
 	 * @param {*} adaTargets 
-	 * @returns
+	 * @returns {Array}
 	 */
 	prioritiseAviationTargets(state, groupPosition, nearbyTargetCount, airRaidTargets, casTargets, industrialTargets, adaTargets) {
 		const adaThreat = state.fields.adaThreat;
@@ -398,7 +398,7 @@ class CommandCenter {
 		const IS_OIL_DOMINANT = state.oilDominance;
 		const NUM_AIRCRAFT = state.playerInfo[me].numAirUnits;		// TODO: formalise if this is an expected access pattern
 		const AIR_UNIT_DOMINANCE = NUM_AIRCRAFT >= 10;
-		const AIR_UNIT_SHORTAGE = NUM_AIRCRAFT <= 6;
+		const AIR_UNIT_SHORTAGE = NUM_AIRCRAFT <= 3;
 
 		let targetCandidates = [];
 
@@ -413,16 +413,33 @@ class CommandCenter {
 		const prioritiseIndustrialTargets = IS_OIL_DOMINANT;
 		const SATURATION_RAID = prioritiseIndustrialTargets && AIR_UNIT_DOMINANCE;		// Saturation raid = an attack designed to overwhelm defenses
 
-		// Set missionType
+		let minAircraft = (AIR_UNIT_SHORTAGE && !IS_OIL_DOMINANT) ? 1 : 2;
+
+		// Set missionType & numAircraft (attached to existing target object)
 		casTargets.forEach(t => {
 			t.missionType = MISSION_TYPE.CAS_STRIKE;
 			if (prioritiseCasTargets) {
 				t.priority = MISSION_PRIORITY.URGENT;
 			}
+			t.minAircraft = minAircraft;
 		});
-		airRaidTargets.forEach(t => t.missionType = MISSION_TYPE.AIR_RAID);
-		industrialTargets.forEach(t => t.missionType = MISSION_TYPE.DAS_STRIKE);
-		adaTargets.forEach(t => t.missionType = MISSION_TYPE.DAS_STRIKE);
+		airRaidTargets.forEach(t => {
+			t.missionType = MISSION_TYPE.AIR_RAID;
+			t.minAircraft = minAircraft;
+		});
+		industrialTargets.forEach(t => {
+			t.missionType = MISSION_TYPE.DAS_STRIKE;
+			if (SATURATION_RAID) {		
+				t.minAircraft = 3;
+			} else {
+				t.minAircraft = minAircraft;
+			}
+		});
+		adaTargets.forEach(t => {
+			t.missionType = MISSION_TYPE.DAS_STRIKE;
+			t.minAircraft = 3;
+		});
+
 
 		if(prioritiseIndustrialTargets) {
 			if (SATURATION_RAID) {
@@ -584,7 +601,7 @@ class CommandCenter {
 			numTargetsInImmediateRadius = groundTargets["targetsInImmediateRadius"];
 		}
 
-		const t = this.prioritiseAviationTargets(state, 
+		const aviationTargets = this.prioritiseAviationTargets(state, 
 			forceLocation, 
 			numTargetsInImmediateRadius, 
 			raidTargets, 
@@ -593,7 +610,7 @@ class CommandCenter {
 			adaTargets,
 		);
 
-		this.toc.assignAviationMissions(state, t['aviationTargets'], t['minAircraft']);					
+		this.toc.assignAviationMissions(state, aviationTargets);					
 	}
 
 	/////////////////////////////////////////////////// INTELLIGENCE ///////////////////////////////////////////////////

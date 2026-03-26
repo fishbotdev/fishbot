@@ -126,18 +126,17 @@ class TacticalOperationsCenter {
 	 * Note: This function shouldn't make decisions. It is the responsibility of higher command to determine which missions are worth doing.
 	 * @param {worldState} state 
 	 * @param {Array} aviationTargets 
-	 * @param {number} minAircraft 
 	 * @returns {void}
 	 */
-	assignAviationMissions(state, aviationTargets, minAircraft) {
+	assignAviationMissions(state, aviationTargets) {
 
 		for (let i=0; i<aviationTargets.length; i++) {
 
 			const newMissionRequest = aviationTargets[i];
-			const NUM_UNITS = minAircraft;
 
 			const missionType = newMissionRequest.missionType;
 			const priority = newMissionRequest.priority;
+			const NUM_UNITS = newMissionRequest.minAircraft;
 
 			const missionData = this.createNewMission({missionType: missionType, priority: priority}, newMissionRequest, NUM_UNITS, i);
 				
