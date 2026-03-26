@@ -540,28 +540,7 @@ class CommandCenter {
 			// debug(`added existing targets`);
 		}
 
-		let prioritisedTargets = {
-			'aviationTargets': aviationTargets,
-			'minAircraft': 0
-		};
-
-		if (prioritiseIndustrialTargets) {		
-			if (SATURATION_RAID) {
-				// want simultaneous strikes on target
-				prioritisedTargets['minAircraft'] = 3;			
-			} else {
-				// regular industrial strikes
-				prioritisedTargets['minAircraft'] = 2;
-			}
-		} else {
-			if (AIR_UNIT_SHORTAGE) {
-				prioritisedTargets['minAircraft'] = 1;
-			} else {
-				prioritisedTargets['minAircraft'] = 2;
-			}
-		}
-
-		return prioritisedTargets;
+		return aviationTargets;
 	}
 
 	/**
