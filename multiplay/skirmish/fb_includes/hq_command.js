@@ -383,40 +383,6 @@ class CommandCenter {
 	/**
 	 * 
 	 * @param {worldState} state 
-	 * @param {number} threshold 
-	 * @returns 
-	 */
-	#extractAdaThreatMap(state, threshold){ 
-		const heatmap = state.fields.adaThreat;
-		const numXCells = state.grid.numXCells;
-		const numYCells = state.grid.numYCells;	
-
-		const gridCoord = (gx, gy) => {return {'gx': gx, 'gy': gy}};
-
-		let adaCells = [];
-
-		const PRINT_HEATMAP = false;
-		
-		if (PRINT_HEATMAP) debug(`\processAdaHeatmap(): ada heatmap @ ${gameTime}`);
-		for (let gy=0; gy<numYCells; gy++) {
-			let row = "";
-			for (let gx=0; gx<numXCells; gx++) {
-
-				// The following line determines the 'pain threshold' of the air force (0 = will be super safe)
-				if (heatmap[gx][gy] > threshold) {
-					adaCells.push(gridCoord(gx, gy));
-				}
-				if (PRINT_HEATMAP) row += `${heatmap[gx][gy]} `;
-			}
-			if (PRINT_HEATMAP) debug(row);
-		}
-	
-		return adaCells;
-	}
-
-	/**
-	 * 
-	 * @param {worldState} state 
 	 * @param {*} groupPosition 
 	 * @param {*} nearbyTargetCount 
 	 * @param {*} airRaidTargets 
@@ -426,6 +392,8 @@ class CommandCenter {
 	 * @returns
 	 */
 	prioritiseAviationTargets(state, groupPosition, nearbyTargetCount, airRaidTargets, casTargets, industrialTargets, adaTargets) {
+		const adaThreat = state.fields.adaThreat;
+
 		const cellSize = state.grid.cellSize;
 		const IS_OIL_DOMINANT = state.oilDominance;
 		const NUM_AIRCRAFT = state.playerInfo[me].numAirUnits;		// TODO: formalise if this is an expected access pattern
@@ -439,18 +407,11 @@ class CommandCenter {
 		}
 
 		// TEMPORARY IMPLEMENTATION
-		const prioritiseCasTargets = nearbyTargetCount >= 2;
+		const prioritiseCasTargets = (casTargets.length >= 5 && !IS_OIL_DOMINANT) || (IS_OIL_DOMINANT && casTargets.length >= 3);
 		// debug(`nearbyTargetCount ${nearbyTargetCount}, prioritiseCAS: ${prioritiseCasTargets}`);
 		const prioritiseRaidTargets = !IS_OIL_DOMINANT;
 		const prioritiseIndustrialTargets = IS_OIL_DOMINANT;
 		const SATURATION_RAID = prioritiseIndustrialTargets && AIR_UNIT_DOMINANCE;		// Saturation raid = an attack designed to overwhelm defenses
-
-		// Set no-fly regions
-		let threatThreshold = 0;
-		if (AIR_UNIT_DOMINANCE) {
-			threatThreshold = 1;
-		}
-		const NO_FLY_ZONES = this.#extractAdaThreatMap(state, threatThreshold);		
 
 		// Set missionType
 		casTargets.forEach(t => {
@@ -484,45 +445,43 @@ class CommandCenter {
 										filter(m => OFFENSIVE_MISSION_TYPES.includes(m.missionType));
 
 		let activeTargetIDs = [];
-		const CAS_RADIUS = 20;
+		const CAS_RADIUS = 25;
+		const threatThreshold = 5000;		// Set no-fly regions
 
+		const medPriorityMissions = [MISSION_TYPE.AIR_RAID, MISSION_TYPE.DAS_STRIKE];
+
+		// debug(`activeMissionIDs`);
 		for (let i=0; i<activeMissions.length; i++) {
 			let c = activeMissions[i];
-			activeTargetIDs.push(c.id);
+			activeTargetIDs.push(c.target.id);
+			// debug(`	${c.target.id} ${c.target.name}`);
 			
 			const currObj = getObject(c.target.type, c.target.player, c.target.id);
 			if (!defined(currObj) || !defined(groupPosition)) {
 				continue;
 			}
 
-			if (prioritiseCasTargets && [MISSION_TYPE.DAS_STRIKE, MISSION_TYPE.AIR_RAID].includes(c.missionType)) {
+			if (prioritiseCasTargets && medPriorityMissions.includes(c.missionType)) {
 				// Make space for CAS missions
+				debug(`removed DAS / RAID mission to make room for CAS`);
 				c.missionStatus = MISSION_STATUS.ABORT;
 				continue;
 			}
 
-			if (c.missionType === MISSION_TYPE.CAS_STRIKE) {
-				if (distSq(currObj.x, groupPosition.x, currObj.y, groupPosition.y) >= CAS_RADIUS ** 2) {
-					// debug(`aborted CAS_STRIKE: ${c.target.name} @ ${gameTime}, too far away`);
-					c.missionStatus = MISSION_STATUS.ABORT;					
+			if (!SATURATION_RAID) {
+				const gx = Math.floor(currObj.x / cellSize); 
+				const gy = Math.floor(currObj.y / cellSize);
+				if (adaThreat[gx][gy] >= threatThreshold) {
+					debug(`	removed ACTIVE: ${currObj.name} (${c.missionType}) @ grid (${currObj.x} ${currObj.y})`);
+					c.missionStatus = MISSION_STATUS.ABORT;		
 					continue;
 				}
 			}
 
-			if (!SATURATION_RAID) {
-				const gx = Math.floor(currObj.x / cellSize), gy = Math.floor(currObj.y / cellSize);
-				let skipIfDangerous = false;
-
-				for (let j=0; j<NO_FLY_ZONES.length; j++) {
-					if (gx === NO_FLY_ZONES[j].gx && gy === NO_FLY_ZONES[j].gy) {
-						skipIfDangerous = true;
-						// debug(`	removed active ${currObj.name} (${c.missionType}) @ grid (${currObj.x} ${currObj.y})`);
-						break;
-					}
-				}
-
-				if (skipIfDangerous) {
-					c.missionStatus = MISSION_STATUS.ABORT;		
+			if (c.missionType === MISSION_TYPE.CAS_STRIKE) {
+				if (distSq(currObj.x, groupPosition.x, currObj.y, groupPosition.y) >= CAS_RADIUS ** 2) {
+					debug(`aborted CAS_STRIKE: ${c.target.name} @ ${gameTime}, too far away`);
+					c.missionStatus = MISSION_STATUS.ABORT;					
 					continue;
 				}
 			}
@@ -533,38 +492,39 @@ class CommandCenter {
 		let newAviationTargets = [], existingAviationTargets = [];
 
 		for (let i=0; i<targetCandidates.length; i++) {
+			if (prioritiseCasTargets && medPriorityMissions.includes(targetCandidates[i].missionType)) {
+				continue;
+			}
+
 			const c = getObject(targetCandidates[i].type, targetCandidates[i].player, targetCandidates[i].id);
 			if (!defined(c)) {
 				continue;
 			}
 
-			// Depending on state, removes dangerous missions
 			if (!SATURATION_RAID) {
-				const gx = Math.floor(c.x / cellSize), gy = Math.floor(c.y / cellSize);
-				let skipIfDangerous = false;
-
-				for (let j=0; j<NO_FLY_ZONES.length; j++) {
-					if (gx === NO_FLY_ZONES[j].gx && gy === NO_FLY_ZONES[j].gy) {
-						skipIfDangerous = true;
-						// debug(`	removed ${c.name} @ grid (${gx} ${gy})`);
-						break;
-					}
-				}
-
-				if (skipIfDangerous) {
+				const gx = Math.floor(c.x / cellSize); 
+				const gy = Math.floor(c.y / cellSize);
+				if (adaThreat[gx][gy] >= threatThreshold) {
+					debug(`	removed CANDIDATE, adaThreat: ${c.name} @ grid (${c.x} ${c.y})`);
 					continue;
 				}
 			}
 
-			if (!activeTargetIDs.includes(targetCandidates[i].id)) {
-				newAviationTargets.push(targetCandidates[i]);
-			} else {
+			if (activeTargetIDs.includes(targetCandidates[i].id)) {
 				existingAviationTargets.push(targetCandidates[i]);
+			} else {
+				newAviationTargets.push(targetCandidates[i]);
 			}
 		}
 
+		let aviationTargets = newAviationTargets;
+		if (newAviationTargets.length <= Math.floor(NUM_AIRCRAFT / 2)) {
+			aviationTargets.push(...existingAviationTargets);
+			// debug(`added existing targets`);
+		}
+
 		let prioritisedTargets = {
-			'aviationTargets': [...newAviationTargets, ...existingAviationTargets],
+			'aviationTargets': aviationTargets,
 			'minAircraft': 0
 		};
 
@@ -578,7 +538,7 @@ class CommandCenter {
 			}
 		} else {
 			if (AIR_UNIT_SHORTAGE) {
-			prioritisedTargets['minAircraft'] = 1;
+				prioritisedTargets['minAircraft'] = 1;
 			} else {
 				prioritisedTargets['minAircraft'] = 2;
 			}
