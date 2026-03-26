@@ -217,13 +217,22 @@ class CommandCenter {
 		}
 
 		// DIRECT FIRE TARGETS
-		// todo: droids need to be ranged from furthest to closest
-		let structureTargets = [];
-		const c = targetInfo["closestObject"];
-		if (c.type === DROID && !(c.flags & OBJ_FLAGS.CONSTRUCTOR) && !(c.flags && OBJ_FLAGS.ADA) && defined(getObject(c.type, c.player, c.id))) {
-			output["directFireTarget"] = targetInfo["closestObject"];
-			// debug(`used default direct fire target @${gameTime}`);
-		} else {
+		const DIRECT_FIRE_DEBUG = false;
+
+		const isNotTruckOrADA = (t) => (t.flags & (OBJ_FLAGS.CONSTRUCTOR | OBJ_FLAGS.ADA)) === 0;
+		const isHighPriorityStructure = (t) => (t.flags & OBJ_FLAGS.IS_BUILT) && (t.flags & (OBJ_FLAGS.RESOURCE_EXTRACTOR | OBJ_FLAGS.PRODUCTION | OBJ_FLAGS.DEFENSIVE_STRUCTURE)) !== 0;
+
+		const cObj = targetInfo["closestObject"];
+		if (defined(getObject(cObj.type, cObj.player, cObj.id))) {
+			if (cObj.type === DROID && isNotTruckOrADA(cObj)) {
+				output["directFireTarget"] = targetInfo["closestObject"];
+				if (DIRECT_FIRE_DEBUG) debug(`used default direct fire target @${gameTime}`);
+			}
+		} 
+
+		let closestDroidTarget = undefined, closestDroidDistSq = 8888;				// some large number is used in case it is never set
+		let closestStructTarget = undefined, closestStrucTargetDistSq = 8888;
+		if (!defined(output["directFireTarget"])) {
 			// This is a fallback to handle stale inputs / non-droid targets
 			for (let i=0; i<targetInfo["closestObjects"].length; i++) {
 
@@ -234,20 +243,35 @@ class CommandCenter {
 					continue;
 				}
 
-				if (t.type === DROID && !(c.flags & OBJ_FLAGS.CONSTRUCTOR) && !(c.flags && OBJ_FLAGS.ADA)) {
-					output["directFireTarget"] = t;
-					// debug(`fallback directFireTarget (DROID) used @ ${gameTime} ms`);
-					break;
-				} else if (t.type === STRUCTURE) {
-					structureTargets.push(t);
+				const d = distSq(obj.x, groupPosition.x, obj.y, groupPosition.y);
+				if (t.type === DROID && isNotTruckOrADA(t)) {
+					if (!defined(closestDroidTarget)) {
+					closestDroidTarget = t;
+					closestDroidDistSq = d;
+					} else if (d < closestDroidDistSq) {
+						closestDroidTarget = t;
+						closestDroidDistSq = d;
+					}
+				} else if (t.type === STRUCTURE && isHighPriorityStructure(t)) {
+					if (!defined(closestStructTarget)) {
+						closestStructTarget = t;
+						closestStrucTargetDistSq = d;
+					} else if (d < closestStrucTargetDistSq) {
+						closestStructTarget = t;
+						closestStrucTargetDistSq = d;
+					}
 				}
 			}
 
-			if (!defined(output["directFireTarget"]) && structureTargets.length > 0) {
-				output["directFireTarget"] = structureTargets[0];
-				// debug(`fallback directFireTarget (STRUCTURE) used @ ${gameTime} ms`);
+			if (defined(closestDroidTarget) && closestDroidDistSq <= 7 ** 2) {
+				output["directFireTarget"] = closestDroidTarget;
+				if (DIRECT_FIRE_DEBUG) debug(`fallback directFireTarget (DROID) used @ ${gameTime} ms`);
+			} else if (defined(closestStructTarget) && closestStrucTargetDistSq <= 7 ** 2) {
+				output["directFireTarget"] = closestStructTarget;
+				if (DIRECT_FIRE_DEBUG) debug(`fallback directFireTarget (STRUCTURE) used @ ${gameTime} ms`);
 			} else {
 				output["directFireTarget"] = targetInfo["closestObject"];
+				if (DIRECT_FIRE_DEBUG) debug(`used non-preferable closestObject @${gameTime}`);
 			}
 		}
 
@@ -638,7 +662,7 @@ class CommandCenter {
 				this.toc.setForceLocation(state, mainForceLocation);
 
 				if (defined(state.forceLocation)) {
-					const nearbyGroundTargets = intelligence.proposeTargetsInRadius2(state, state.forceLocation, 25, 15);		
+					const nearbyGroundTargets = intelligence.proposeTargetsInRadius2(state, state.forceLocation, 25, 20);		
 					hq.toc.setNearbyGroundTargets(state, nearbyGroundTargets);
 				}
 				break;
