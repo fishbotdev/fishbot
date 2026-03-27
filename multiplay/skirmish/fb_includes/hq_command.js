@@ -262,10 +262,10 @@ class CommandCenter {
 				}
 			}
 
-			if (defined(closestDroidTarget) && closestDroidDistSq <= closestStrucTargetDistSq) {
+			if (defined(closestDroidTarget) && closestDroidDistSq <= 10 ** 2) {
 				output["directFireTarget"] = closestDroidTarget;
 				if (DIRECT_FIRE_DEBUG) debug(`fallback directFireTarget (DROID) used @ ${gameTime} ms`);
-			} else if (defined(closestStructTarget) && closestStrucTargetDistSq < closestDroidDistSq) {
+			} else if (defined(closestStructTarget) && closestStrucTargetDistSq < 10 ** 2) {
 				output["directFireTarget"] = closestStructTarget;
 				if (DIRECT_FIRE_DEBUG) debug(`fallback directFireTarget (STRUCTURE) used @ ${gameTime} ms`);
 			} else {
