@@ -262,10 +262,10 @@ class CommandCenter {
 				}
 			}
 
-			if (defined(closestDroidTarget) && closestDroidDistSq <= 12 ** 2) {
+			if (defined(closestDroidTarget) && closestDroidDistSq <= closestStrucTargetDistSq) {
 				output["directFireTarget"] = closestDroidTarget;
 				if (DIRECT_FIRE_DEBUG) debug(`fallback directFireTarget (DROID) used @ ${gameTime} ms`);
-			} else if (defined(closestStructTarget) && closestStrucTargetDistSq <= 12 ** 2) {
+			} else if (defined(closestStructTarget) && closestStrucTargetDistSq < closestDroidDistSq) {
 				output["directFireTarget"] = closestStructTarget;
 				if (DIRECT_FIRE_DEBUG) debug(`fallback directFireTarget (STRUCTURE) used @ ${gameTime} ms`);
 			} else {
@@ -406,7 +406,7 @@ class CommandCenter {
 		}
 
 		// TEMPORARY IMPLEMENTATION
-		const prioritiseCasTargets = (nearbyTargetCount >= 3 && !IS_OIL_DOMINANT) || (IS_OIL_DOMINANT && nearbyTargetCount >= 5);
+		const prioritiseCasTargets = (nearbyTargetCount >= 4 && !IS_OIL_DOMINANT) || (IS_OIL_DOMINANT && nearbyTargetCount >= 5);
 		// debug(`nearbyTargetCount ${nearbyTargetCount}, prioritiseCAS: ${prioritiseCasTargets}`);
 		const prioritiseRaidTargets = !IS_OIL_DOMINANT;
 		const prioritiseIndustrialTargets = IS_OIL_DOMINANT;
@@ -462,7 +462,7 @@ class CommandCenter {
 
 		let activeTargetIDs = [];
 		const CAS_RADIUS = 25;
-		const threatThreshold = 5000;		// Set no-fly regions
+		const threatThreshold = 2;		// Set no-fly regions
 
 		const medPriorityMissions = [MISSION_TYPE.AIR_RAID, MISSION_TYPE.DAS_STRIKE];
 
@@ -514,7 +514,7 @@ class CommandCenter {
 				const gx = Math.floor(c.x / cellSize); 
 				const gy = Math.floor(c.y / cellSize);
 				if (adaThreat[gx][gy] >= threatThreshold) {
-					debug(`	removed CANDIDATE, adaThreat: ${c.name} @ grid (${c.x} ${c.y})`);
+					// debug(`	removed CANDIDATE, adaThreat: ${c.name} @ grid (${c.x} ${c.y})`);
 					continue;
 				}
 			}
