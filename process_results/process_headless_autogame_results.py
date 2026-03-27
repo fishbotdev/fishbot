@@ -186,6 +186,7 @@ def show_hard_cobra_results():
     # test_2 = getcwd() + rf"\process_results/v4/" + "cf7b597,hard,cobra,100g" + ".txt"              # close to v0.3.1 release [61 % wr] 
     # test_2 = getcwd() + rf"\process_results/v4/" + "ee78a97,hard,cobra,60g" + ".txt"              # close to v0.3.1 release [38/60 = 63 % wr] 
     test_2 = getcwd() + rf"\process_results/v4/" + "bb29af7,hard,cobra,60g" + ".txt"                # 40 / 60 (66.6%)
+    test_2 = getcwd() + rf"\process_results/v4/" + "1ec43be,hard,cobra,60g" + ".txt"                # 28 / 47 (60%)
 
     commit1 = test_1.split(rf"v3/")[1].split(",")[0]
     commit2 = test_2.split(rf"v4/")[1].split(",")[0]
