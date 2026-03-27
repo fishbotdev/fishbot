@@ -262,10 +262,10 @@ class CommandCenter {
 				}
 			}
 
-			if (defined(closestDroidTarget) && closestDroidDistSq <= 7 ** 2) {
+			if (defined(closestDroidTarget) && closestDroidDistSq <= 12 ** 2) {
 				output["directFireTarget"] = closestDroidTarget;
 				if (DIRECT_FIRE_DEBUG) debug(`fallback directFireTarget (DROID) used @ ${gameTime} ms`);
-			} else if (defined(closestStructTarget) && closestStrucTargetDistSq <= 7 ** 2) {
+			} else if (defined(closestStructTarget) && closestStrucTargetDistSq <= 12 ** 2) {
 				output["directFireTarget"] = closestStructTarget;
 				if (DIRECT_FIRE_DEBUG) debug(`fallback directFireTarget (STRUCTURE) used @ ${gameTime} ms`);
 			} else {
@@ -397,7 +397,7 @@ class CommandCenter {
 		const IS_OIL_DOMINANT = state.oilDominance;
 		const NUM_AIRCRAFT = state.playerInfo[me].numAirUnits;		// TODO: formalise if this is an expected access pattern
 		const AIR_UNIT_DOMINANCE = NUM_AIRCRAFT >= 10;
-		const AIR_UNIT_SHORTAGE = NUM_AIRCRAFT <= 3;
+		const AIR_UNIT_SHORTAGE = NUM_AIRCRAFT === 1;
 
 		let targetCandidates = [];
 
@@ -406,7 +406,7 @@ class CommandCenter {
 		}
 
 		// TEMPORARY IMPLEMENTATION
-		const prioritiseCasTargets = (casTargets.length >= 5 && !IS_OIL_DOMINANT) || (IS_OIL_DOMINANT && casTargets.length >= 3);
+		const prioritiseCasTargets = (nearbyTargetCount >= 3 && !IS_OIL_DOMINANT) || (IS_OIL_DOMINANT && nearbyTargetCount >= 5);
 		// debug(`nearbyTargetCount ${nearbyTargetCount}, prioritiseCAS: ${prioritiseCasTargets}`);
 		const prioritiseRaidTargets = !IS_OIL_DOMINANT;
 		const prioritiseIndustrialTargets = IS_OIL_DOMINANT;
@@ -614,7 +614,7 @@ class CommandCenter {
 				this.toc.setForceLocation(state, mainForceLocation);
 
 				if (defined(state.forceLocation)) {
-					const nearbyGroundTargets = intelligence.proposeTargetsInRadius2(state, state.forceLocation, 25, 20);		
+					const nearbyGroundTargets = intelligence.proposeTargetsInRadius2(state, state.forceLocation, 20, 16);		
 					hq.toc.setNearbyGroundTargets(state, nearbyGroundTargets);
 				}
 				break;
