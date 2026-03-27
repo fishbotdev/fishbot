@@ -477,6 +477,12 @@ class CommandCenter {
 				continue;
 			}
 
+			if (prioritiseCasTargets && medPriorityMissions.includes(c.missionType)) {
+				debug(`removed DAS / RAID mission to make room for CAS`);
+				c.missionStatus = MISSION_STATUS.ABORT;
+				continue;
+			}
+
 			if (!SATURATION_RAID) {
 				const gx = Math.floor(currObj.x / cellSize); 
 				const gy = Math.floor(currObj.y / cellSize);
