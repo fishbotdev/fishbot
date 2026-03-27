@@ -32,8 +32,7 @@ class CommandCenter {
 			This constructor is intended to contain *all* FishBot parameters which change how it behaves.
 		*/
 
-		this.OIL_DOMINANCE_PERCENTAGE = 60;
-
+		this.OIL_DOMINANCE_PERCENTAGE = 70;
 
 		// Task scheduling parameters
 		// Add regular, high priority, high computational load tasks to the start of the list.
@@ -475,13 +474,6 @@ class CommandCenter {
 			
 			const currObj = getObject(c.target.type, c.target.player, c.target.id);
 			if (!defined(currObj) || !defined(groupPosition)) {
-				continue;
-			}
-
-			if (prioritiseCasTargets && medPriorityMissions.includes(c.missionType)) {
-				// Make space for CAS missions
-				debug(`removed DAS / RAID mission to make room for CAS`);
-				c.missionStatus = MISSION_STATUS.ABORT;
 				continue;
 			}
 
