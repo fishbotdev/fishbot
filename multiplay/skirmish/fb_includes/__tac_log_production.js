@@ -211,12 +211,11 @@ function produceCloseAirSupport(factory) {
 function produceDeepAirSupport(factory) {
 
 	const fishBotDASWeapons = [
-		// { res: "R-Wpn-Rocket03-HvAT", stat: "Rocket-VTOL-BB", name: 'Anti-Structure Rocket'},		// bunker buster
 		{ res: "R-Wpn-Bomb01", stat: "Bomb1-VTOL-LtHE", name: 'Cluster Bomb' },						// bomb
 		{ res: "R-Wpn-Bomb02", stat: "Bomb2-VTOL-HvHE", name: 'HEAP Bomb' },
-		// { res: "R-Wpn-Bomb03", stat: "Bomb3-VTOL-LtINC", name: 'Phosphor Bomb', },
-		// { res: "R-Wpn-Bomb04", stat: "Bomb4-VTOL-HvyINC", name: 'Thermite Bomb', },
-		// { res: "R-Wpn-Bomb05", stat: "Bomb5-VTOL-Plasmite", name: 'Plasmite Bomb', },
+		{ res: "R-Wpn-Bomb03", stat: "Bomb3-VTOL-LtINC", name: 'Phosphor Bomb', },
+		{ res: "R-Wpn-Bomb04", stat: "Bomb4-VTOL-HvyINC", name: 'Thermite Bomb', },
+		{ res: "R-Wpn-Bomb05", stat: "Bomb5-VTOL-Plasmite", name: 'Plasmite Bomb', },
 	].reverse();
 
 	const vtolPropulsions = [

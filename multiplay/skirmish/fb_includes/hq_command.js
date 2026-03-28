@@ -32,8 +32,7 @@ class CommandCenter {
 			This constructor is intended to contain *all* FishBot parameters which change how it behaves.
 		*/
 
-		this.OIL_DOMINANCE_PERCENTAGE = 55;
-
+		this.OIL_DOMINANCE_PERCENTAGE = 60;
 
 		// Task scheduling parameters
 		// Add regular, high priority, high computational load tasks to the start of the list.
@@ -217,21 +216,61 @@ class CommandCenter {
 		}
 
 		// DIRECT FIRE TARGETS
-		const c = targetInfo["closestObject"];
-		if (defined(getObject(c.type, c.player, c.id))) {
-			output["directFireTarget"] = targetInfo["closestObject"];
-		}
-		
+		const DIRECT_FIRE_DEBUG = false;
+
+		const isNotTruckOrADA = (t) => (t.flags & (OBJ_FLAGS.CONSTRUCTOR | OBJ_FLAGS.ADA)) === 0;
+		const isHighPriorityStructure = (t) => (t.flags & OBJ_FLAGS.IS_BUILT) && (t.flags & (OBJ_FLAGS.RESOURCE_EXTRACTOR | OBJ_FLAGS.PRODUCTION | OBJ_FLAGS.DEFENSIVE_STRUCTURE)) !== 0;
+
+		const cObj = targetInfo["closestObject"];
+		if (defined(getObject(cObj.type, cObj.player, cObj.id))) {
+			if (cObj.type === DROID && isNotTruckOrADA(cObj)) {
+				output["directFireTarget"] = targetInfo["closestObject"];
+				if (DIRECT_FIRE_DEBUG) debug(`used default direct fire target @${gameTime}`);
+			}
+		} 
+
+		let closestDroidTarget = undefined, closestDroidDistSq = 8888;				// some large number is used in case it is never set
+		let closestStructTarget = undefined, closestStrucTargetDistSq = 8888;
 		if (!defined(output["directFireTarget"])) {
-			// This is a fallback to handle stale inputs
+			// This is a fallback to handle stale inputs / non-droid targets
 			for (let i=0; i<targetInfo["closestObjects"].length; i++) {
+
 				const t = targetInfo["closestObjects"][i];
 				const obj = getObject(t.type, t.player, t.id);
-				if (defined(obj)) {
-					output["directFireTarget"] = t;
-					// debug(`fallback directFireTarget used @ ${gameTime} ms`);
-					break;
+
+				if (!defined(obj)) {
+					continue;
 				}
+
+				const d = distSq(obj.x, groupPosition.x, obj.y, groupPosition.y);
+				if (t.type === DROID && isNotTruckOrADA(t)) {
+					if (!defined(closestDroidTarget)) {
+					closestDroidTarget = t;
+					closestDroidDistSq = d;
+					} else if (d < closestDroidDistSq) {
+						closestDroidTarget = t;
+						closestDroidDistSq = d;
+					}
+				} else if (t.type === STRUCTURE && isHighPriorityStructure(t)) {
+					if (!defined(closestStructTarget)) {
+						closestStructTarget = t;
+						closestStrucTargetDistSq = d;
+					} else if (d < closestStrucTargetDistSq) {
+						closestStructTarget = t;
+						closestStrucTargetDistSq = d;
+					}
+				}
+			}
+
+			if (defined(closestDroidTarget) && closestDroidDistSq <= 10 ** 2) {
+				output["directFireTarget"] = closestDroidTarget;
+				if (DIRECT_FIRE_DEBUG) debug(`fallback directFireTarget (DROID) used @ ${gameTime} ms`);
+			} else if (defined(closestStructTarget) && closestStrucTargetDistSq < 10 ** 2) {
+				output["directFireTarget"] = closestStructTarget;
+				if (DIRECT_FIRE_DEBUG) debug(`fallback directFireTarget (STRUCTURE) used @ ${gameTime} ms`);
+			} else {
+				output["directFireTarget"] = targetInfo["closestObject"];
+				if (DIRECT_FIRE_DEBUG) debug(`used non-preferable closestObject @${gameTime}`);
 			}
 		}
 
@@ -343,54 +382,22 @@ class CommandCenter {
 	/**
 	 * 
 	 * @param {worldState} state 
-	 * @param {number} threshold 
-	 * @returns 
-	 */
-	#extractAdaThreatMap(state, threshold){ 
-		const heatmap = state.fields.adaThreat;
-		const numXCells = state.grid.numXCells;
-		const numYCells = state.grid.numYCells;	
-
-		const gridCoord = (gx, gy) => {return {'gx': gx, 'gy': gy}};
-
-		let adaCells = [];
-
-		const PRINT_HEATMAP = false;
-		
-		if (PRINT_HEATMAP) debug(`\processAdaHeatmap(): ada heatmap @ ${gameTime}`);
-		for (let gy=0; gy<numYCells; gy++) {
-			let row = "";
-			for (let gx=0; gx<numXCells; gx++) {
-
-				// The following line determines the 'pain threshold' of the air force (0 = will be super safe)
-				if (heatmap[gx][gy] > threshold) {
-					adaCells.push(gridCoord(gx, gy));
-				}
-				if (PRINT_HEATMAP) row += `${heatmap[gx][gy]} `;
-			}
-			if (PRINT_HEATMAP) debug(row);
-		}
-	
-		return adaCells;
-	}
-
-	/**
-	 * 
-	 * @param {worldState} state 
 	 * @param {*} groupPosition 
 	 * @param {*} nearbyTargetCount 
 	 * @param {*} airRaidTargets 
 	 * @param {*} casTargets 
 	 * @param {*} industrialTargets 
 	 * @param {*} adaTargets 
-	 * @returns
+	 * @returns {Array}
 	 */
 	prioritiseAviationTargets(state, groupPosition, nearbyTargetCount, airRaidTargets, casTargets, industrialTargets, adaTargets) {
+		const adaThreat = state.fields.adaThreat;
+
 		const cellSize = state.grid.cellSize;
 		const IS_OIL_DOMINANT = state.oilDominance;
 		const NUM_AIRCRAFT = state.playerInfo[me].numAirUnits;		// TODO: formalise if this is an expected access pattern
 		const AIR_UNIT_DOMINANCE = NUM_AIRCRAFT >= 10;
-		const AIR_UNIT_SHORTAGE = NUM_AIRCRAFT <= 8;
+		const AIR_UNIT_SHORTAGE = NUM_AIRCRAFT === 1;
 
 		let targetCandidates = [];
 
@@ -399,29 +406,39 @@ class CommandCenter {
 		}
 
 		// TEMPORARY IMPLEMENTATION
-		const prioritiseCasTargets = nearbyTargetCount >= 2;
+		const prioritiseCasTargets = (nearbyTargetCount >= 4 && !IS_OIL_DOMINANT) || (IS_OIL_DOMINANT && nearbyTargetCount >= 5);
 		// debug(`nearbyTargetCount ${nearbyTargetCount}, prioritiseCAS: ${prioritiseCasTargets}`);
 		const prioritiseRaidTargets = !IS_OIL_DOMINANT;
 		const prioritiseIndustrialTargets = IS_OIL_DOMINANT;
 		const SATURATION_RAID = prioritiseIndustrialTargets && AIR_UNIT_DOMINANCE;		// Saturation raid = an attack designed to overwhelm defenses
 
-		// Set no-fly regions
-		let threatThreshold = 0;
-		if (AIR_UNIT_DOMINANCE) {
-			threatThreshold = 1;
-		}
-		const NO_FLY_ZONES = this.#extractAdaThreatMap(state, threatThreshold);		
+		let minAircraft = (AIR_UNIT_SHORTAGE && !IS_OIL_DOMINANT) ? 1 : 2;
 
-		// Set missionType
+		// Set missionType & numAircraft (attached to existing target object)
 		casTargets.forEach(t => {
 			t.missionType = MISSION_TYPE.CAS_STRIKE;
 			if (prioritiseCasTargets) {
 				t.priority = MISSION_PRIORITY.URGENT;
 			}
+			t.minAircraft = minAircraft;
 		});
-		airRaidTargets.forEach(t => t.missionType = MISSION_TYPE.AIR_RAID);
-		industrialTargets.forEach(t => t.missionType = MISSION_TYPE.DAS_STRIKE);
-		adaTargets.forEach(t => t.missionType = MISSION_TYPE.DAS_STRIKE);
+		airRaidTargets.forEach(t => {
+			t.missionType = MISSION_TYPE.AIR_RAID;
+			t.minAircraft = minAircraft;
+		});
+		industrialTargets.forEach(t => {
+			t.missionType = MISSION_TYPE.DAS_STRIKE;
+			if (SATURATION_RAID) {		
+				t.minAircraft = 3;
+			} else {
+				t.minAircraft = minAircraft;
+			}
+		});
+		adaTargets.forEach(t => {
+			t.missionType = MISSION_TYPE.DAS_STRIKE;
+			t.minAircraft = 3;
+		});
+
 
 		if(prioritiseIndustrialTargets) {
 			if (SATURATION_RAID) {
@@ -434,7 +451,6 @@ class CommandCenter {
 		} else if (prioritiseRaidTargets) {
 			targetCandidates = [...airRaidTargets, ...casTargets];
 		} else {
-			// assuming industrial targets are prioritised
 			targetCandidates = [...casTargets, ...airRaidTargets];		// same as CAS
 		}
 
@@ -445,45 +461,42 @@ class CommandCenter {
 										filter(m => OFFENSIVE_MISSION_TYPES.includes(m.missionType));
 
 		let activeTargetIDs = [];
-		const CAS_RADIUS = 20;
+		const CAS_RADIUS = 25;
+		const threatThreshold = 2;		// Set no-fly regions
 
+		const medPriorityMissions = [MISSION_TYPE.AIR_RAID, MISSION_TYPE.DAS_STRIKE];
+
+		// debug(`activeMissionIDs`);
 		for (let i=0; i<activeMissions.length; i++) {
 			let c = activeMissions[i];
-			activeTargetIDs.push(c.id);
+			activeTargetIDs.push(c.target.id);
+			// debug(`	${c.target.id} ${c.target.name}`);
 			
 			const currObj = getObject(c.target.type, c.target.player, c.target.id);
 			if (!defined(currObj) || !defined(groupPosition)) {
 				continue;
 			}
 
-			if (prioritiseCasTargets && [MISSION_TYPE.DAS_STRIKE, MISSION_TYPE.AIR_RAID].includes(c.missionType)) {
-				// Make space for CAS missions
+			if (prioritiseCasTargets && medPriorityMissions.includes(c.missionType)) {
+				// debug(`removed DAS / RAID mission to make room for CAS`);
 				c.missionStatus = MISSION_STATUS.ABORT;
 				continue;
+			}
+
+			if (!SATURATION_RAID) {
+				const gx = Math.floor(currObj.x / cellSize); 
+				const gy = Math.floor(currObj.y / cellSize);
+				if (adaThreat[gx][gy] >= threatThreshold) {
+					// debug(`	removed ACTIVE: ${currObj.name} (${c.missionType}) @ grid (${currObj.x} ${currObj.y})`);
+					c.missionStatus = MISSION_STATUS.ABORT;		
+					continue;
+				}
 			}
 
 			if (c.missionType === MISSION_TYPE.CAS_STRIKE) {
 				if (distSq(currObj.x, groupPosition.x, currObj.y, groupPosition.y) >= CAS_RADIUS ** 2) {
 					// debug(`aborted CAS_STRIKE: ${c.target.name} @ ${gameTime}, too far away`);
 					c.missionStatus = MISSION_STATUS.ABORT;					
-					continue;
-				}
-			}
-
-			if (!SATURATION_RAID) {
-				const gx = Math.floor(currObj.x / cellSize), gy = Math.floor(currObj.y / cellSize);
-				let skipIfDangerous = false;
-
-				for (let j=0; j<NO_FLY_ZONES.length; j++) {
-					if (gx === NO_FLY_ZONES[j].gx && gy === NO_FLY_ZONES[j].gy) {
-						skipIfDangerous = true;
-						// debug(`	removed active ${currObj.name} (${c.missionType}) @ grid (${currObj.x} ${currObj.y})`);
-						break;
-					}
-				}
-
-				if (skipIfDangerous) {
-					c.missionStatus = MISSION_STATUS.ABORT;		
 					continue;
 				}
 			}
@@ -494,58 +507,38 @@ class CommandCenter {
 		let newAviationTargets = [], existingAviationTargets = [];
 
 		for (let i=0; i<targetCandidates.length; i++) {
+			if (prioritiseCasTargets && medPriorityMissions.includes(targetCandidates[i].missionType)) {
+				continue;
+			}
+
 			const c = getObject(targetCandidates[i].type, targetCandidates[i].player, targetCandidates[i].id);
 			if (!defined(c)) {
 				continue;
 			}
 
-			// Depending on state, removes dangerous missions
 			if (!SATURATION_RAID) {
-				const gx = Math.floor(c.x / cellSize), gy = Math.floor(c.y / cellSize);
-				let skipIfDangerous = false;
-
-				for (let j=0; j<NO_FLY_ZONES.length; j++) {
-					if (gx === NO_FLY_ZONES[j].gx && gy === NO_FLY_ZONES[j].gy) {
-						skipIfDangerous = true;
-						// debug(`	removed ${c.name} @ grid (${gx} ${gy})`);
-						break;
-					}
-				}
-
-				if (skipIfDangerous) {
+				const gx = Math.floor(c.x / cellSize); 
+				const gy = Math.floor(c.y / cellSize);
+				if (adaThreat[gx][gy] >= threatThreshold) {
+					// debug(`	removed CANDIDATE, adaThreat: ${c.name} @ grid (${c.x} ${c.y})`);
 					continue;
 				}
 			}
 
-			if (!activeTargetIDs.includes(targetCandidates[i].id)) {
-				newAviationTargets.push(targetCandidates[i]);
-			} else {
+			if (activeTargetIDs.includes(targetCandidates[i].id)) {
 				existingAviationTargets.push(targetCandidates[i]);
+			} else {
+				newAviationTargets.push(targetCandidates[i]);
 			}
 		}
 
-		let prioritisedTargets = {
-			'aviationTargets': [...newAviationTargets, ...existingAviationTargets],
-			'minAircraft': 0
-		};
-
-		if (prioritiseIndustrialTargets) {		
-			if (SATURATION_RAID) {
-				// want simultaneous strikes on target
-				prioritisedTargets['minAircraft'] = 3;			
-			} else {
-				// regular industrial strikes
-				prioritisedTargets['minAircraft'] = 2;
-			}
-		} else {
-			if (AIR_UNIT_SHORTAGE) {
-				prioritisedTargets['minAircraft'] = 1;
-			} else {
-				prioritisedTargets['minAircraft'] = 2;
-			}
+		let aviationTargets = newAviationTargets;
+		if (newAviationTargets.length <= Math.floor(NUM_AIRCRAFT / 2)) {
+			aviationTargets.push(...existingAviationTargets);
+			// debug(`added existing targets`);
 		}
 
-		return prioritisedTargets;
+		return aviationTargets;
 	}
 
 	/**
@@ -585,7 +578,7 @@ class CommandCenter {
 			numTargetsInImmediateRadius = groundTargets["targetsInImmediateRadius"];
 		}
 
-		const t = this.prioritiseAviationTargets(state, 
+		const aviationTargets = this.prioritiseAviationTargets(state, 
 			forceLocation, 
 			numTargetsInImmediateRadius, 
 			raidTargets, 
@@ -594,7 +587,7 @@ class CommandCenter {
 			adaTargets,
 		);
 
-		this.toc.assignAviationMissions(state, t['aviationTargets'], t['minAircraft']);					
+		this.toc.assignAviationMissions(state, aviationTargets);					
 	}
 
 	/////////////////////////////////////////////////// INTELLIGENCE ///////////////////////////////////////////////////
@@ -627,7 +620,7 @@ class CommandCenter {
 				this.toc.setForceLocation(state, mainForceLocation);
 
 				if (defined(state.forceLocation)) {
-					const nearbyGroundTargets = intelligence.proposeTargetsInRadius2(state, state.forceLocation, 25, 10);		
+					const nearbyGroundTargets = intelligence.proposeTargetsInRadius2(state, state.forceLocation, 20, 16);		
 					hq.toc.setNearbyGroundTargets(state, nearbyGroundTargets);
 				}
 				break;
@@ -662,100 +655,15 @@ class CommandCenter {
 	}
 
 	/////////////////////////////////////////////////// CONSTRUCTION ///////////////////////////////////////////////////
-
-	/**
-	 * Approves requested tasks based on game state and generates approved buildTasks for TOC execution.
-	 * @param {worldState} state 
-	 * @param {*} requestedOilCapTasks 
-	 * @param {*} requestedBaseBuildTasks 
-	 * @param {*} requestedSectorDefenceTasks 
-	 * @param {*} sectorIndirectFireBuildTasks 
-	 * @returns {Array}
-	 */
-	prioritiseConstructionTasks(state, requestedOilCapTasks, requestedBaseBuildTasks, requestedSectorDefenceTasks, sectorIndirectFireBuildTasks) {
-
-		let approvedConstructionTasks = [];
-
-		const trucksUnavailable = state.g.enumGroup(ENGINEERING.ENGINEERING_RESERVE).length === 0;
-		if (trucksUnavailable) {
-			return approvedConstructionTasks;
-		}
-
-		const OIL_CAPTURE_MISSION_TYPES = [
-			MISSION_TYPE.CONSTRUCT_ALL_DERRICKS_IN_SECTOR, 
-			MISSION_TYPE.CONSTRUCT_OIL_DERRICK
-		];
-		const BASE_BUILD_MISSION_TYPES = [
-			MISSION_TYPE.CONSTRUCT_BASE_STRUCTURE, 
-			MISSION_TYPE.CONSTRUCT_SINGLE_MODULE
-		];
-
-		let activeOilCapTaskIDs = [];
-		let activeBaseBuildTasks = []; 
-		let activeDefenceBuildTaskIDs = [];
-		
-		this.toc.getActiveConstructionMissions(state).forEach(missionData => {
-			if (OIL_CAPTURE_MISSION_TYPES.includes(missionData.missionType)) {
-				activeOilCapTaskIDs.push(missionData.sectorID);	
-			} else if (BASE_BUILD_MISSION_TYPES.includes(missionData.missionType)) {
-				activeBaseBuildTasks.push(missionData);	
-			} else if (missionData.missionType === MISSION_TYPE.CONSTRUCT_NEARBY_DEFENCE) {
-				activeDefenceBuildTaskIDs.push(missionData.sectorID);	
-			}
-		});
-
-		// BASE BUILD
-		if (activeBaseBuildTasks.length === 0) {
-			approvedConstructionTasks.push(...requestedBaseBuildTasks.slice(0, 1));
-		}
-
-		// OIL CAP
-		requestedOilCapTasks.forEach(task => {
-			if (activeOilCapTaskIDs.some(sectorID => sectorID === task.payload.id)) return;		// todo: consider standardising 'sectorID', 'id' etc. to 'metadata' or 'payload'
-			approvedConstructionTasks.push(task);
-		});
-
-		// DERRICK DEFENCES
-		const MAX_CONCURRENT_FORTIFICATION_TASKS = 1;
-		const deficit = MAX_CONCURRENT_FORTIFICATION_TASKS - activeDefenceBuildTaskIDs.length;
-
-		let counter = 0;
-		
-		if (deficit > 0) {
-			for (let i=0; i<requestedSectorDefenceTasks.length; i++) {
-				if (counter >= deficit) 
-					break;
-				// Skip already active tasks
-				const task = requestedSectorDefenceTasks[i];
-				if (activeDefenceBuildTaskIDs.some(sectorID => sectorID === task.payload.id)) 
-					continue;
-				// Else push
-				approvedConstructionTasks.push(task);
-				counter++;
-			}
-		}
-
-		return approvedConstructionTasks;
-	}
-
 	/**
 	 * 
 	 * @param {worldState} state 
+	 * @param {Array} activeRemoteMissions
 	 */
-	abortDangerousConstructionTasks(state) {
+	abortDangerousConstructionTasks(state, activeRemoteMissions) {
 		const cellSize = state.grid.cellSize;
 
-		const enemyStaticDefenceThreat = state.fields.enemyStaticDefenceThreat;
 		const enemyUnitThreat = state.fields.enemyUnitThreat;
-
-		const REMOTE_MISSION_TYPES = [
-			MISSION_TYPE.CONSTRUCT_ALL_DERRICKS_IN_SECTOR, 
-			MISSION_TYPE.CONSTRUCT_OIL_DERRICK,
-			MISSION_TYPE.CONSTRUCT_NEARBY_DEFENCE,
-		];
-		let activeRemoteMissions = this.toc.getActiveConstructionMissions(state).filter(
-			md => REMOTE_MISSION_TYPES.includes(md.missionType)
-		);
 
 		// New mission planning system has implemented .gx, .gy grid references for all missions
 		// This allows the following algorithm:
@@ -763,8 +671,8 @@ class CommandCenter {
 		//	2. Check truck distances to grid ref 
 		//	3. Cancel mission
 		activeRemoteMissions.forEach(md => {
-			// Check static defence & unit threat at grid ref
-			if (enemyStaticDefenceThreat[md.gx][md.gy] === 0 && enemyUnitThreat[md.gx][md.gy] === 0) {
+			// Check unit threat at grid ref
+			if (enemyUnitThreat[md.gx][md.gy] === 0) {
 				return;
 			}
 			
@@ -792,21 +700,73 @@ class CommandCenter {
 	 * 
 	 * @param {worldState} state 
 	 */
-	runConstructionTasks(state) {		
-		const activeConstructionMissions = this.toc.getActiveConstructionMissions(state);
+	runConstructionTasks(state) {
 
-		// g4 generates options for construction tasks
-		const sectorOilCaptureBuildTasks = engineering.generateOilCaptureOptions(state, activeConstructionMissions);	
-		const sectorDefenceBuildTasks = engineering.generateOilDefenceConstructionOptions(state, activeConstructionMissions);
-		const baseBuildTasks = engineering.requestBaseConstruction(state);
+		// Command re-evaluates existing construction tasks
+		const OIL_CAPTURE_MISSION_TYPES = [
+			MISSION_TYPE.CONSTRUCT_ALL_DERRICKS_IN_SECTOR, 
+			MISSION_TYPE.CONSTRUCT_OIL_DERRICK
+		];
+		const BASE_BUILD_MISSION_TYPES = [
+			MISSION_TYPE.CONSTRUCT_BASE_STRUCTURE, 
+			MISSION_TYPE.CONSTRUCT_SINGLE_MODULE
+		];
 
-		// Command approves & delegates assignment 
-		const approvedTasks = this.prioritiseConstructionTasks(state, sectorOilCaptureBuildTasks, baseBuildTasks, sectorDefenceBuildTasks, undefined);
-		this.toc.assignConstructionTasks(state, approvedTasks);
+		let activeOilCapTaskIDs = [];
+		let activeBaseBuildTasks = []; 
+		let activeDefenceBuildTaskIDs = [];
+		let activeRemoteMissions = [];
 
-		// Command also re-evaluates
-		this.abortDangerousConstructionTasks(state);
+		this.toc.getActiveConstructionMissions(state).forEach(missionData => {
+			if (OIL_CAPTURE_MISSION_TYPES.includes(missionData.missionType)) {
+				activeOilCapTaskIDs.push(missionData.sectorID);	
+				activeRemoteMissions.push(missionData);	
+			} else if (BASE_BUILD_MISSION_TYPES.includes(missionData.missionType)) {
+				activeBaseBuildTasks.push(missionData);	
+			} else if (missionData.missionType === MISSION_TYPE.CONSTRUCT_NEARBY_DEFENCE) {
+				activeDefenceBuildTaskIDs.push(missionData.sectorID);	
+				activeRemoteMissions.push(missionData);	
+			}
+		});
+		
+		this.abortDangerousConstructionTasks(state, activeRemoteMissions);
 
+		// Command then terminates, if there are no available trucks this tick (avoids expensive planning tasks)
+		const trucksUnavailable = state.g.enumGroup(ENGINEERING.ENGINEERING_RESERVE).length === 0;
+		if (trucksUnavailable) {
+			return;
+		}
+
+		// Command tasks g4 with option & prioritises options here
+		// For now, assumes that g4 does not propose duplicates - e.g. tracks & removes already assigned tasks 
+		let approvedConstructionTasks = [];
+
+		// BASE BUILD
+		const MAX_BASE_BUILD_TASKS = 1;
+		const baseBuildDeficit = MAX_BASE_BUILD_TASKS - activeBaseBuildTasks.length;
+		if (baseBuildDeficit > 0) {
+			const requestedBaseBuildTasks = engineering.requestBaseConstruction(state);
+			approvedConstructionTasks.push(...requestedBaseBuildTasks.slice(0, 1));
+		}
+
+		// OIL CAP
+		const MAX_OIL_CAP_TASKS = 4; 
+		const oilCapDeficit = MAX_OIL_CAP_TASKS - activeOilCapTaskIDs.length;
+		if (oilCapDeficit > 0) {
+			const sectorOilCapTasks = engineering.generateOilCaptureOptions(state, activeOilCapTaskIDs);
+			approvedConstructionTasks.push(...sectorOilCapTasks.slice(0, oilCapDeficit));
+		}
+	
+		// DERRICK DEFENCES
+		const MAX_CONCURRENT_FORTIFICATION_TASKS = (gameTime < 180000) ? 1 : 2;		// hack; tuned for Gamma
+		const fortificationDeficit = MAX_CONCURRENT_FORTIFICATION_TASKS - activeDefenceBuildTaskIDs.length;
+		if (fortificationDeficit > 0) {
+			const sectorDefenceTasks = engineering.generateOilDefenceConstructionOptions(state, activeDefenceBuildTaskIDs);
+			approvedConstructionTasks.push(...sectorDefenceTasks.slice(0, fortificationDeficit));
+		}
+
+		// Command delegates assignment 
+		this.toc.assignConstructionTasks(state, approvedConstructionTasks);
 	}
 
 	/**

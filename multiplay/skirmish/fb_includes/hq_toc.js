@@ -126,18 +126,17 @@ class TacticalOperationsCenter {
 	 * Note: This function shouldn't make decisions. It is the responsibility of higher command to determine which missions are worth doing.
 	 * @param {worldState} state 
 	 * @param {Array} aviationTargets 
-	 * @param {number} minAircraft 
 	 * @returns {void}
 	 */
-	assignAviationMissions(state, aviationTargets, minAircraft) {
+	assignAviationMissions(state, aviationTargets) {
 
 		for (let i=0; i<aviationTargets.length; i++) {
 
 			const newMissionRequest = aviationTargets[i];
-			const NUM_UNITS = minAircraft;
 
 			const missionType = newMissionRequest.missionType;
 			const priority = newMissionRequest.priority;
+			const NUM_UNITS = newMissionRequest.minAircraft;
 
 			const missionData = this.createNewMission({missionType: missionType, priority: priority}, newMissionRequest, NUM_UNITS, i);
 				
@@ -351,9 +350,9 @@ class TacticalOperationsCenter {
 		let filteredGrid = create2DGrid(numXCells, numYCells, emptyCell);
 
 		const KERNEL = [
-			[0.25, 0.25, 0.25],
-			[0.25, 1.0,  0.25],
-			[0.25, 0.25, 0.25]
+			[0.33, 0.33, 0.33],
+			[0.33, 1.0,  0.33],
+			[0.33, 0.33, 0.33]
 		];
 
 		const XDEV = 1;
@@ -394,6 +393,7 @@ class TacticalOperationsCenter {
 		const numXCells = state.grid.numXCells;
 		const numYCells = state.grid.numYCells;
 		const grid = state.grid.grid;
+		const cellSize = state.grid.cellSize;
 
 		for (let gx=0; gx<numXCells; gx++) {
 			for (let gy=0; gy<numYCells; gy++) {
@@ -411,8 +411,8 @@ class TacticalOperationsCenter {
 					}
 				});
 
-				const ts = newGrid[gx][gy]['targetStructures'].length - numEnemyDerricks - newGrid[gx][gy]['adaCount'];
-				state.fields['controlStability'][gx][gy] = newGrid[gx][gy]['friendlyStructures'].length - numFriendlyDerricks - (ts);				// todo remove friendly derricks once safe regions are set
+				const ts = newGrid[gx][gy]['targetStructures'].length - numEnemyDerricks;
+				state.fields['controlStability'][gx][gy] = newGrid[gx][gy]['friendlyStructures'].length - numFriendlyDerricks - (ts);				
 			}	
 		}	
 
@@ -421,20 +421,24 @@ class TacticalOperationsCenter {
 		if (false) this.#debugPrintSpatialField(state.fields['adaThreat'], 'adaThreat - AFTER FILTER');
 		if (false) this.#debugPrintSpatialField(state.fields['enemyStaticDefenceThreat'], 'enemyStaticDefenceThreat');
 		if (false) this.#debugPrintSpatialField(state.fields['enemyUnitThreat'], 'enemyUnitThreat');
+		state.fields['enemyUnitThreat'] = this.#filterField(state.fields['enemyUnitThreat'], numXCells, numYCells);		
+		if (false) this.#debugPrintSpatialField(state.fields['enemyUnitThreat'], 'enemyUnitThreat');
 		if (false) this.#debugPrintSpatialField(state.fields['unclaimedDerricksInCell'], 'unclaimedDerricksInCell');
 		state.fields['controlStability'] = this.#filterField(state.fields['controlStability'], numXCells, numYCells);						
+						
 		if (false) this.#debugPrintSpatialField(state.fields['controlStability'], 'controlStability - BEFORE');
 
 		const livingPlayers = state.enumLivingPlayers();
-		const enemyRiskRadius = (state.oilDominance) ? 3 : 5; 		// temporary -> will be part of distanceCostField eventually
+		const EQUIDIVISION_RADIUS = Math.max(Math.floor(mapWidth / startPositions.length / cellSize), Math.floor(mapHeight / startPositions.length / cellSize));
+		const baseControlRadius = Math.min(EQUIDIVISION_RADIUS, Math.ceil(30 / cellSize));
+
 		state.poi.bases.forEach(b => {
-			if (!livingPlayers.includes(b.playerID)) {
-				return;
-			}
+			if (!livingPlayers.includes(b.playerID)) return;
+			
 			if (isEnemy(b.playerID)) {
-				this.#floodFillSquareRegion(state.fields['controlStability'], numXCells, numYCells, b.gx, b.gy, enemyRiskRadius, -3);
+				this.#floodFillSquareRegion(state.fields['controlStability'], numXCells, numYCells, b.gx, b.gy, baseControlRadius, -5);
 			} else {
-				this.#floodFillSquareRegion(state.fields['controlStability'], numXCells, numYCells, b.gx, b.gy, 3, 3);
+				this.#floodFillSquareRegion(state.fields['controlStability'], numXCells, numYCells, b.gx, b.gy, baseControlRadius, 5);
 			}
 		});
 		if (false) this.#debugPrintSpatialField(state.fields['controlStability'], 'controlStability - AFTER');

@@ -115,16 +115,17 @@ function groundForceAttack({state, directFireTarget, fireSupportTarget, adaTarge
 	let fireSupportReserve = state.g.enumGroup(DIVISION.FIRE_SUPPORT_RESERVE);
 	let airDefenceArtilleryReserve = state.g.enumGroup(DIVISION.AIR_DEFENCE_RESERVE);
 	const sensorUnits = enumDroid(me, DROID_SENSOR);		// these have not been added to the grouping system yet!
+	const forceLocation = state.forceLocation;
 
 	const rtb = () => retreatToBase(generalReserve, infantryReserve, fireSupportReserve, airDefenceArtilleryReserve, sensorUnits);
 
 	if (generalReserve.length === 0) {
-		rtb();		
+		// rtb();		
 		return;
 	}
 
 	if (!defined(directFireTarget)) {
-		rtb();	
+		// rtb();	
 		return;
 	}
 
@@ -156,6 +157,11 @@ function groundForceAttack({state, directFireTarget, fireSupportTarget, adaTarge
 		}
 		*/
 
+		if (distSq(droid.x, forceLocation.x, droid.y, forceLocation.y) > 10 ** 2) {
+			orderDroidLoc(droid, DORDER_MOVE, forceLocation.x, forceLocation.y);
+			continue;
+		}
+
 		if (_distSqToClosestDroid(droid) < 6 ** 2) {
 			attackTarget(droid, currDirectFireTarget);
 		} else {
@@ -166,15 +172,18 @@ function groundForceAttack({state, directFireTarget, fireSupportTarget, adaTarge
 	// CYBORG (INFANTRY) UNITS
 	for (let i=0; i<infantryReserve.length; ++i) {
 		let droid = infantryReserve[i];
-		if (_distSqToClosestDroid(droid) <= 4 ** 2) {
+		if (_distSqToClosestDroid(droid) <= 6 ** 2) {
 			attackTarget(droid, currDirectFireTarget);
 		} else {
-			orderDroidLoc(droid, DORDER_MOVE, closestDroidToTarget.x, closestDroidToTarget.y);
+			if (distSq(droid.x, currDirectFireTarget.x, droid.y, currDirectFireTarget.y) >= 6) {
+				orderDroidLoc(droid, DORDER_MOVE, currDirectFireTarget.x, currDirectFireTarget.y);
+			} else {
+				orderDroidLoc(droid, DORDER_MOVE, closestDroidToTarget.x, closestDroidToTarget.y);
+			}
 		}
 	}
 
 	// Hack: Sensor units
-
 	sensorUnits.forEach((droid) => {
 		if (_distSqToClosestDroid(droid) > 5 ** 2) {
 			orderDroidLoc(droid, DORDER_MOVE, closestDroidToTarget.x, closestDroidToTarget.y);

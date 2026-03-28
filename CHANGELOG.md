@@ -4,22 +4,33 @@ This file records the changes to FishBot over time.
 
 ## Fishbot v0.3.1
 ### Changes in v0.3.1
-- Significantly reduced lag spikes.
-- AI behaviour
-    - Improved VTOL avoidance of anti-air defences.
-    - Added VTOL saturation attack (a large wave of VTOLs will attack many factories simultaneously).
-    - Improved truck danger avoidance.  
-    - Ground units now use Heavy Cannon to bridge the tech-gap between Assault Cannon and Twin Assault Cannon.
-    - Anti-air units now focus fire on a single target.
+- Significantly reduced bot lag spikes.
+- Bot files have been packaged nicely for ease of import.
+- Minor AI behavioural improvements:
+    - VTOLs
+        - Improved avoidance of anti-air defences.
+        - Improved CAS targeting & target mix based on game state.
+        - Strike group sizes now depend on mission.
+    - Ground units
+        - Ground units prioritise meaningful threats over closest targets.
+        - Early units now move out of base a lot sooner than before.
+        - Units now attempt to stay grouped up when losses mount.
+        - Ground units now use Heavy Cannon to bridge the tech-gap between Assault Cannon and Twin Assault Cannon.
+        - Anti-air units now focus fire on a single target.
+    - Construction
+        - Improved truck danger avoidance.
+        - Trucks no longer get stuck when some base-build / defence-build missions are unachieveable.
+        - Core base build order modified 
+    - Production
+        - Rebalanced ADA & indirect fire production weights.
 - Internal changes
-    - Packaged bot files nicely for ease of import.
-    - Centralised core game data, making the bot behaviour easier to change.
+    - Centralised most core game data and behaviour, making the bot behaviour easier to change.
     - Added system docs (in `.\docs`) & jsdocs (throughout the code).
 
 
 #### Test results (Warzone 2100 v4.6.3)
-- 62 / 100 = **62%** win rate: FishBot-v0.3.1 Medium vs Cobra Hard (Gamma 3P T2 - 1v1)
-- 149 / 150 = **99%** win rate: FishBot-v0.3.1 Medium vs Cobra Medium (Gamma 3P T2 - 1v1)
+- 80 / 100 = **80%** win rate: FishBot-v0.3.1 Medium vs Cobra **Hard** (Gamma 3P T2 - 1v1; commit `04fb0cd`)
+- 95 / 100 = **95%** win rate: FishBot-v0.3.1 Medium vs Cobra **Medium** (Gamma 3P T2 - 1v1; commit `04fb0cd`)
 
 ## Fishbot v3 (v0.3.0)
 ### Changes in v0.3.0

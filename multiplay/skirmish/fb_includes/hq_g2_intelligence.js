@@ -422,11 +422,11 @@ class armyIntelligence {
 					continue;
 				}
 				if (t['targetStructures'][j].flags & OBJ_FLAGS.PRODUCTION) {
-					result.productionTargets.unshift(t['targetStructures'][j]);
+					result.productionTargets.push(t['targetStructures'][j]);
 					continue;
 				}
 				if (t['targetStructures'][j].flags & OBJ_FLAGS.REPAIR) {
-					result.productionTargets.push(t['targetStructures'][j]);
+					result.productionTargets.unshift(t['targetStructures'][j]);
 					continue;
 				}
 			}
@@ -459,7 +459,7 @@ class armyIntelligence {
 	 * @param {number} immediateRadius
 	 * @returns {Object}
 	 */
-	proposeTargetsInRadius2(state, loc, searchRadius=20, immediateRadius=10) {
+	proposeTargetsInRadius2(state, loc, searchRadius, immediateRadius) {
 
 		const allTargets = state.allTargets;
 
