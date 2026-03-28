@@ -393,6 +393,7 @@ class TacticalOperationsCenter {
 		const numXCells = state.grid.numXCells;
 		const numYCells = state.grid.numYCells;
 		const grid = state.grid.grid;
+		const cellSize = state.grid.cellSize;
 
 		for (let gx=0; gx<numXCells; gx++) {
 			for (let gy=0; gy<numYCells; gy++) {
@@ -428,15 +429,16 @@ class TacticalOperationsCenter {
 		if (false) this.#debugPrintSpatialField(state.fields['controlStability'], 'controlStability - BEFORE');
 
 		const livingPlayers = state.enumLivingPlayers();
-		const enemyRiskRadius = (state.oilDominance) ? 3 : 5; 		// temporary -> will be part of distanceCostField eventually, tuned for Gamma
+		const EQUIDIVISION_RADIUS = Math.max(Math.floor(mapWidth / startPositions.length / cellSize), Math.floor(mapHeight / startPositions.length / cellSize));
+		const baseControlRadius = Math.min(EQUIDIVISION_RADIUS, Math.ceil(30 / cellSize));
+
 		state.poi.bases.forEach(b => {
-			if (!livingPlayers.includes(b.playerID)) {
-				return;
-			}
+			if (!livingPlayers.includes(b.playerID)) return;
+			
 			if (isEnemy(b.playerID)) {
-				this.#floodFillSquareRegion(state.fields['controlStability'], numXCells, numYCells, b.gx, b.gy, enemyRiskRadius, -5);
+				this.#floodFillSquareRegion(state.fields['controlStability'], numXCells, numYCells, b.gx, b.gy, baseControlRadius, -5);
 			} else {
-				this.#floodFillSquareRegion(state.fields['controlStability'], numXCells, numYCells, b.gx, b.gy, 3, 5);
+				this.#floodFillSquareRegion(state.fields['controlStability'], numXCells, numYCells, b.gx, b.gy, baseControlRadius, 5);
 			}
 		});
 		if (false) this.#debugPrintSpatialField(state.fields['controlStability'], 'controlStability - AFTER');
