@@ -66,18 +66,12 @@ class armyGroundForceCommand {
 	 */
 	getForceMedianLocation(unused) {
 		let generalReserve = state.g.enumGroup(DIVISION.GENERAL_RESERVE);
-		let fireSupportReserve = state.g.enumGroup(DIVISION.FIRE_SUPPORT_RESERVE);
-		let infantryReserve = state.g.enumGroup(DIVISION.INFANTRY_RESERVE);
-		let allLandUnits = [...generalReserve, ...fireSupportReserve, ...infantryReserve];
-
-		let currGameTime = getCurrGameTime();
-		let droidsInGroup = allLandUnits.filter((droid) => (currGameTime - droid.born) > 30000);	
-		if (droidsInGroup.length === 0) {
-			return undefined;
+		if (generalReserve.length === 0) {
+			return {"x": baseLocation.x, "y": baseLocation.y};
 		}
 
 		let droidX = [], droidY = [];
-		droidsInGroup.forEach((droid) => {
+		generalReserve.forEach((droid) => {
 			droidX.push(droid.x);
 			droidY.push(droid.y);
 		});	
