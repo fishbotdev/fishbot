@@ -169,7 +169,8 @@ def show_medium_cobra_results():
     # test_1 = getcwd() + rf"\process_results/v4/" + "df4a549,med,cobra,100g" + ".txt"               # perf: migrating to new grid system [97 / 100 won; regression fixed]
     # test_1 = getcwd() + rf"\process_results/v4/" + "a686079,med,cobra,100g" + ".txt"               # 99 / 100 won, after vtol optimisations
     # test_2 = getcwd() + rf"\process_results/v4/" + "db393ea,med,cobra,150g" + ".txt"               # 149 / 150 won
-    test_2 = getcwd() + rf"\process_results/v4/" + "868e56f,med,cobra,150g" + ".txt"               # 149 / 150 won [v0.3.1 release]
+    # test_2 = getcwd() + rf"\process_results/v4/" + "868e56f,med,cobra,150g" + ".txt"               # 149 / 150 won 
+    test_2 = getcwd() + rf"\process_results/v4/" + "04fb0cd,med,cobra,100g" + ".txt"               # 149 / 150 won 
     
     commit1 = test_1.split(rf"v4/")[1].split(",")[0]
     commit2 = test_2.split(rf"v4/")[1].split(",")[0]
@@ -185,8 +186,11 @@ def show_hard_cobra_results():
     # test_1 = getcwd() + rf"\process_results/v4/" + "db7403d,hard,cobra,100g" + ".txt"              # v4 dev: 4.6.3 [57 % wr; migrated sector defence to grid system]
     # test_2 = getcwd() + rf"\process_results/v4/" + "cf7b597,hard,cobra,100g" + ".txt"              # close to v0.3.1 release [61 % wr] 
     # test_2 = getcwd() + rf"\process_results/v4/" + "ee78a97,hard,cobra,60g" + ".txt"              # close to v0.3.1 release [38/60 = 63 % wr] 
-    test_2 = getcwd() + rf"\process_results/v4/" + "bb29af7,hard,cobra,60g" + ".txt"                # 40 / 60 (66.6%)
-    test_2 = getcwd() + rf"\process_results/v4/" + "1ec43be,hard,cobra,60g" + ".txt"                # 28 / 47 (60%)
+    # test_1 = getcwd() + rf"\process_results/v4/" + "bb29af7,hard,cobra,60g" + ".txt"                # 40 / 60 (66.6%)
+    # test_2 = getcwd() + rf"\process_results/v4/" + "1ec43be,hard,cobra,60g" + ".txt"                # 28 / 47 (60%)
+    # test_2 = getcwd() + rf"\process_results/v4/" + "9c8a337,hard,cobra,60g" + ".txt"                
+    test_2 = getcwd() + rf"\process_results/v4/" + "04fb0cd,hard,cobra,50g" + ".txt"                #  38 / 50 -> 76% (yay!)
+    test_2 = getcwd() + rf"\process_results/v4/" + "04fb0cd,hard,cobra,50g_part2" + ".txt"                #  42 / 50 -> 84% (yay!)
 
     commit1 = test_1.split(rf"v3/")[1].split(",")[0]
     commit2 = test_2.split(rf"v4/")[1].split(",")[0]
