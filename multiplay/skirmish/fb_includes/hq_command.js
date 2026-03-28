@@ -478,7 +478,7 @@ class CommandCenter {
 			}
 
 			if (prioritiseCasTargets && medPriorityMissions.includes(c.missionType)) {
-				debug(`removed DAS / RAID mission to make room for CAS`);
+				// debug(`removed DAS / RAID mission to make room for CAS`);
 				c.missionStatus = MISSION_STATUS.ABORT;
 				continue;
 			}
@@ -487,7 +487,7 @@ class CommandCenter {
 				const gx = Math.floor(currObj.x / cellSize); 
 				const gy = Math.floor(currObj.y / cellSize);
 				if (adaThreat[gx][gy] >= threatThreshold) {
-					debug(`	removed ACTIVE: ${currObj.name} (${c.missionType}) @ grid (${currObj.x} ${currObj.y})`);
+					// debug(`	removed ACTIVE: ${currObj.name} (${c.missionType}) @ grid (${currObj.x} ${currObj.y})`);
 					c.missionStatus = MISSION_STATUS.ABORT;		
 					continue;
 				}
@@ -495,7 +495,7 @@ class CommandCenter {
 
 			if (c.missionType === MISSION_TYPE.CAS_STRIKE) {
 				if (distSq(currObj.x, groupPosition.x, currObj.y, groupPosition.y) >= CAS_RADIUS ** 2) {
-					debug(`aborted CAS_STRIKE: ${c.target.name} @ ${gameTime}, too far away`);
+					// debug(`aborted CAS_STRIKE: ${c.target.name} @ ${gameTime}, too far away`);
 					c.missionStatus = MISSION_STATUS.ABORT;					
 					continue;
 				}
