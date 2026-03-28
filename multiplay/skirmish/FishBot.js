@@ -60,11 +60,15 @@ const DEBUG_MODE_ON = false;
 
 /*
 -- RELEASE CHECKLIST --
-1. Update FISHBOT_VERSION to latest version tag
-2. Update DEBUG_MODE_ON = false
-3. Disable all beacons / hackMarkTiles() used for debugging
-4. Update LOC above
-5. Test all supported maps once.
+1. Update FISHBOT_VERSION to latest version tag.
+2. Disable all beacons / hackMarkTiles() used for debugging.
+3. Update LOC above.
+4. Test all supported maps (see `README.md`) once, against Cobra @ Medium.
+5. Update `DEBUG_MODE_ON` = `false`.
+6. Update `README.md` with summary of changes.
+7. Update `CHANGELOG.md`.
+8. Merge into `main` with updated changelog.
+9. Add tag: `fishbot-vX.Y.Z` and push to origin.
 */
 
 ////////////////////////////////////////////////////////////////////////////////////////////
