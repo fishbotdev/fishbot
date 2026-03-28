@@ -422,11 +422,11 @@ class armyIntelligence {
 					continue;
 				}
 				if (t['targetStructures'][j].flags & OBJ_FLAGS.PRODUCTION) {
-					result.productionTargets.unshift(t['targetStructures'][j]);
+					result.productionTargets.push(t['targetStructures'][j]);
 					continue;
 				}
 				if (t['targetStructures'][j].flags & OBJ_FLAGS.REPAIR) {
-					result.productionTargets.push(t['targetStructures'][j]);
+					result.productionTargets.unshift(t['targetStructures'][j]);
 					continue;
 				}
 			}
