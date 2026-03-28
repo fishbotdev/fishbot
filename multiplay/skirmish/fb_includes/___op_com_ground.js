@@ -44,7 +44,7 @@ class armyGroundForceCommand {
 				continue;
 			}
 			
-			if (playerInfo[i]['numArmourUnits'] >= 5) {
+			if (playerInfo[i]['numArmourUnits'] >= 2) {
 				result.completedInitialBuildup = true;
 			}
 			if (playerInfo[i]['numIndirectUnits'] >=3 && playerInfo[i]['numArmourUnits'] >= 7) {
