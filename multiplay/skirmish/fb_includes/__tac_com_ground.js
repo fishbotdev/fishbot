@@ -172,10 +172,14 @@ function groundForceAttack({state, directFireTarget, fireSupportTarget, adaTarge
 	// CYBORG (INFANTRY) UNITS
 	for (let i=0; i<infantryReserve.length; ++i) {
 		let droid = infantryReserve[i];
-		if (_distSqToClosestDroid(droid) <= 4 ** 2) {
+		if (_distSqToClosestDroid(droid) <= 6 ** 2) {
 			attackTarget(droid, currDirectFireTarget);
 		} else {
-			orderDroidLoc(droid, DORDER_MOVE, closestDroidToTarget.x, closestDroidToTarget.y);
+			if (distSq(droid.x, currDirectFireTarget.x, droid.y, currDirectFireTarget.y) >= 6) {
+				orderDroidLoc(droid, DORDER_MOVE, currDirectFireTarget.x, currDirectFireTarget.y);
+			} else {
+				orderDroidLoc(droid, DORDER_MOVE, closestDroidToTarget.x, closestDroidToTarget.y);
+			}
 		}
 	}
 
