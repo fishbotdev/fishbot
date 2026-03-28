@@ -655,106 +655,15 @@ class CommandCenter {
 	}
 
 	/////////////////////////////////////////////////// CONSTRUCTION ///////////////////////////////////////////////////
-
-	/**
-	 * Approves requested tasks based on game state and generates approved buildTasks for TOC execution.
-	 * @param {worldState} state 
-	 * @param {*} requestedOilCapTasks 
-	 * @param {*} requestedBaseBuildTasks 
-	 * @param {*} requestedSectorDefenceTasks 
-	 * @param {*} sectorIndirectFireBuildTasks 
-	 * @returns {Array}
-	 */
-	prioritiseConstructionTasks(state, requestedOilCapTasks, requestedBaseBuildTasks, requestedSectorDefenceTasks, sectorIndirectFireBuildTasks) {
-
-		let approvedConstructionTasks = [];
-
-		const trucksUnavailable = state.g.enumGroup(ENGINEERING.ENGINEERING_RESERVE).length === 0;
-		if (trucksUnavailable) {
-			return approvedConstructionTasks;
-		}
-
-		const OIL_CAPTURE_MISSION_TYPES = [
-			MISSION_TYPE.CONSTRUCT_ALL_DERRICKS_IN_SECTOR, 
-			MISSION_TYPE.CONSTRUCT_OIL_DERRICK
-		];
-		const BASE_BUILD_MISSION_TYPES = [
-			MISSION_TYPE.CONSTRUCT_BASE_STRUCTURE, 
-			MISSION_TYPE.CONSTRUCT_SINGLE_MODULE
-		];
-
-		let activeOilCapTaskIDs = [];
-		let activeBaseBuildTasks = []; 
-		let activeDefenceBuildTaskIDs = [];
-		
-		this.toc.getActiveConstructionMissions(state).forEach(missionData => {
-			if (OIL_CAPTURE_MISSION_TYPES.includes(missionData.missionType)) {
-				activeOilCapTaskIDs.push(missionData.sectorID);	
-			} else if (BASE_BUILD_MISSION_TYPES.includes(missionData.missionType)) {
-				activeBaseBuildTasks.push(missionData);	
-			} else if (missionData.missionType === MISSION_TYPE.CONSTRUCT_NEARBY_DEFENCE) {
-				activeDefenceBuildTaskIDs.push(missionData.sectorID);	
-			}
-		});
-
-		// BASE BUILD
-		if (activeBaseBuildTasks.length === 0) {
-			approvedConstructionTasks.push(...requestedBaseBuildTasks.slice(0, 1));
-		}
-
-		// OIL CAP
-		const MAX_OIL_CAP_TASKS = 4; 
-		let counter = 0;
-		requestedOilCapTasks.forEach(task => {
-			if (counter >= MAX_OIL_CAP_TASKS) return;
-
-			if (activeOilCapTaskIDs.some(sectorID => sectorID === task.payload.id)) return;		// todo: consider standardising 'sectorID', 'id' etc. to 'metadata' or 'payload'
-			
-			approvedConstructionTasks.push(task);
-			counter++;
-		});
-
-		// DERRICK DEFENCES
-		const MAX_CONCURRENT_FORTIFICATION_TASKS = (gameTime < 180000) ? 1 : 2;		// hack; tuned for Gamma
-		const deficit = MAX_CONCURRENT_FORTIFICATION_TASKS - activeDefenceBuildTaskIDs.length;
-
-		
-		counter = 0;
-		if (deficit > 0) {
-			for (let i=0; i<requestedSectorDefenceTasks.length; i++) {
-				if (counter >= deficit) 
-					break;
-				// Skip already active tasks
-				const task = requestedSectorDefenceTasks[i];
-				if (activeDefenceBuildTaskIDs.some(sectorID => sectorID === task.payload.id)) 
-					continue;
-				// Else push
-				approvedConstructionTasks.push(task);
-				counter++;
-			}
-		}
-
-		return approvedConstructionTasks;
-	}
-
 	/**
 	 * 
 	 * @param {worldState} state 
+	 * @param {Array} activeRemoteMissions
 	 */
-	abortDangerousConstructionTasks(state) {
+	abortDangerousConstructionTasks(state, activeRemoteMissions) {
 		const cellSize = state.grid.cellSize;
 
-		const enemyStaticDefenceThreat = state.fields.enemyStaticDefenceThreat;
 		const enemyUnitThreat = state.fields.enemyUnitThreat;
-
-		const REMOTE_MISSION_TYPES = [
-			MISSION_TYPE.CONSTRUCT_ALL_DERRICKS_IN_SECTOR, 
-			MISSION_TYPE.CONSTRUCT_OIL_DERRICK,
-			MISSION_TYPE.CONSTRUCT_NEARBY_DEFENCE,
-		];
-		let activeRemoteMissions = this.toc.getActiveConstructionMissions(state).filter(
-			md => REMOTE_MISSION_TYPES.includes(md.missionType)
-		);
 
 		// New mission planning system has implemented .gx, .gy grid references for all missions
 		// This allows the following algorithm:
@@ -791,21 +700,73 @@ class CommandCenter {
 	 * 
 	 * @param {worldState} state 
 	 */
-	runConstructionTasks(state) {		
-		const activeConstructionMissions = this.toc.getActiveConstructionMissions(state);
+	runConstructionTasks(state) {
 
-		// g4 generates options for construction tasks
-		const sectorOilCaptureBuildTasks = engineering.generateOilCaptureOptions(state, activeConstructionMissions);	
-		const sectorDefenceBuildTasks = engineering.generateOilDefenceConstructionOptions(state, activeConstructionMissions);
-		const baseBuildTasks = engineering.requestBaseConstruction(state);
+		// Command re-evaluates existing construction tasks
+		const OIL_CAPTURE_MISSION_TYPES = [
+			MISSION_TYPE.CONSTRUCT_ALL_DERRICKS_IN_SECTOR, 
+			MISSION_TYPE.CONSTRUCT_OIL_DERRICK
+		];
+		const BASE_BUILD_MISSION_TYPES = [
+			MISSION_TYPE.CONSTRUCT_BASE_STRUCTURE, 
+			MISSION_TYPE.CONSTRUCT_SINGLE_MODULE
+		];
 
-		// Command approves & delegates assignment 
-		const approvedTasks = this.prioritiseConstructionTasks(state, sectorOilCaptureBuildTasks, baseBuildTasks, sectorDefenceBuildTasks, undefined);
-		this.toc.assignConstructionTasks(state, approvedTasks);
+		let activeOilCapTaskIDs = [];
+		let activeBaseBuildTasks = []; 
+		let activeDefenceBuildTaskIDs = [];
+		let activeRemoteMissions = [];
 
-		// Command also re-evaluates
-		this.abortDangerousConstructionTasks(state);
+		this.toc.getActiveConstructionMissions(state).forEach(missionData => {
+			if (OIL_CAPTURE_MISSION_TYPES.includes(missionData.missionType)) {
+				activeOilCapTaskIDs.push(missionData.sectorID);	
+				activeRemoteMissions.push(missionData);	
+			} else if (BASE_BUILD_MISSION_TYPES.includes(missionData.missionType)) {
+				activeBaseBuildTasks.push(missionData);	
+			} else if (missionData.missionType === MISSION_TYPE.CONSTRUCT_NEARBY_DEFENCE) {
+				activeDefenceBuildTaskIDs.push(missionData.sectorID);	
+				activeRemoteMissions.push(missionData);	
+			}
+		});
+		
+		this.abortDangerousConstructionTasks(state, activeRemoteMissions);
 
+		// Command then terminates, if there are no available trucks this tick (avoids expensive planning tasks)
+		const trucksUnavailable = state.g.enumGroup(ENGINEERING.ENGINEERING_RESERVE).length === 0;
+		if (trucksUnavailable) {
+			return;
+		}
+
+		// Command tasks g4 with option & prioritises options here
+		// For now, assumes that g4 does not propose duplicates - e.g. tracks & removes already assigned tasks 
+		let approvedConstructionTasks = [];
+
+		// BASE BUILD
+		const MAX_BASE_BUILD_TASKS = 1;
+		const baseBuildDeficit = MAX_BASE_BUILD_TASKS - activeBaseBuildTasks.length;
+		if (baseBuildDeficit > 0) {
+			const requestedBaseBuildTasks = engineering.requestBaseConstruction(state);
+			approvedConstructionTasks.push(...requestedBaseBuildTasks.slice(0, 1));
+		}
+
+		// OIL CAP
+		const MAX_OIL_CAP_TASKS = 4; 
+		const oilCapDeficit = MAX_OIL_CAP_TASKS - activeOilCapTaskIDs.length;
+		if (oilCapDeficit > 0) {
+			const sectorOilCapTasks = engineering.generateOilCaptureOptions(state, activeOilCapTaskIDs);
+			approvedConstructionTasks.push(...sectorOilCapTasks.slice(0, oilCapDeficit));
+		}
+	
+		// DERRICK DEFENCES
+		const MAX_CONCURRENT_FORTIFICATION_TASKS = (gameTime < 180000) ? 1 : 2;		// hack; tuned for Gamma
+		const fortificationDeficit = MAX_CONCURRENT_FORTIFICATION_TASKS - activeDefenceBuildTaskIDs.length;
+		if (fortificationDeficit > 0) {
+			const sectorDefenceTasks = engineering.generateOilDefenceConstructionOptions(state, activeDefenceBuildTaskIDs);
+			approvedConstructionTasks.push(...sectorDefenceTasks.slice(0, fortificationDeficit));
+		}
+
+		// Command delegates assignment 
+		this.toc.assignConstructionTasks(state, approvedConstructionTasks);
 	}
 
 	/**

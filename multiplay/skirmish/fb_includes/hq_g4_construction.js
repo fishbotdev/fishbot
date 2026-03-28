@@ -49,10 +49,10 @@ class armyEngineering {
 	/**
 	 * 
 	 * @param {worldState} state 
-	 * @param {*} activeConstructionMissions 
+	 * @param {*} activeOilCapTaskIDs 
 	 * @returns {Array}
 	 */
-	generateOilCaptureOptions(state, activeConstructionMissions) {
+	generateOilCaptureOptions(state, activeOilCapTaskIDs) {
 		/*
 		Algorithm:
 		Use the grid system to:
@@ -79,15 +79,6 @@ class armyEngineering {
 		const enemyStaticDefenceThreat = state.fields.enemyStaticDefenceThreat;
 		const enemyUnitThreat = state.fields.enemyUnitThreat;
 
-		let existingQueuedDerrickIDs = [];
-		const TYPES_OF_DERRICK_CAPTURE_MISSIONS = [MISSION_TYPE.CONSTRUCT_ALL_DERRICKS_IN_SECTOR, MISSION_TYPE.CONSTRUCT_OIL_DERRICK];
-
-		activeConstructionMissions.forEach(missionData => {
-			if (TYPES_OF_DERRICK_CAPTURE_MISSIONS.includes(missionData.missionType)) {
-				existingQueuedDerrickIDs.push(missionData.sectorID);			// TODO: to be changed for derrickID once old sector system is migrated	
-			}
-		});
-
 		const DEBUG_ON = false;
 		let debugGrid = create2DGrid(numXCells, numYCells, (...args) => {return "_";});
 		let valid = [];
@@ -104,7 +95,7 @@ class armyEngineering {
 				const derricksInCell = grid[gx][gy].derricks;
 				for (let i=0; i<derricksInCell.length; i++) {
 					const d = derricksInCell[i];
-					if (existingQueuedDerrickIDs.indexOf(d.id) !== -1) continue; 	// === found an existing mission 
+					if (activeOilCapTaskIDs.indexOf(d.id) !== -1) continue; 	// === found an existing mission 
 					// if (tileIsBurning(d.x, d.y)) continue;		// seems to be worse
 
 					if (derricksInCell.length >= 4) {
@@ -171,10 +162,10 @@ class armyEngineering {
 	/**
 	 * 
 	 * @param {worldState} state 
-	 * @param {*} activeConstructionMissions 
+	 * @param {*} activeDefenceBuildTaskIDs 
 	 * @returns 
 	 */
-	generateOilDefenceConstructionOptions(state, activeConstructionMissions) {
+	generateOilDefenceConstructionOptions(state, activeDefenceBuildTaskIDs) {
 		/*
 		Algorithm:
 		- For each derrick in `state.poi.derricks`
@@ -187,21 +178,13 @@ class armyEngineering {
 			. Build one defence per undefended location also 
 			. Handle special case of clustered derricks with unreachable enemy derricks (build hardpoint)
 		*/
-
-		// NOTE: PRIORITISATION SHOULD BE MOVED TO HQ_COMMAND 
-
 		const grid = state.grid.grid;
 		const derricks = state.poi.derricks;
 		const controlStability = state.fields.controlStability;
-		const enemyStaticDefenceThreat = state.fields.enemyStaticDefenceThreat;
 		const enemyUnitThreat = state.fields.enemyUnitThreat;
 
-		let activeMissionIDs = []; 
-		activeConstructionMissions.forEach(md => {
-			if (md.missionType === MISSION_TYPE.CONSTRUCT_NEARBY_DEFENCE) {
-				activeMissionIDs.push(md['sectorID']);
-			}
-		});
+		const MAX_CONTROL = 5;
+		const PROXIMITY_RADIUS = 7;
 
 		const makePrimaryDefence = (derrickObj) => this.translateIntoBuildRequest({
 			missionType: MISSION_TYPE.CONSTRUCT_NEARBY_DEFENCE, 
@@ -227,45 +210,114 @@ class armyEngineering {
 			'offensiveOil': [],
 			'highPrioOil': [],
 		};
-		let highPrioOil = [], normalPrioOil = [];		// temporary
-		let seenCoords = [];
+		let highPrioOil = [], normalPrioOil = [];		
+		let seenDerricks = [];
 
+		// debug(``);
 		for (let i=0; i<derricks.length; i++) {
 			const d = derricks[i];
 
-			const previouslySeen = seenCoords.some(gc => (gc.gx === d.gx && gc.gy === d.gy));
-			seenCoords.push({'gx': d.gx, 'gy': d.gy});
-			if (previouslySeen) continue;
-
-			if (enemyUnitThreat[d.gx][d.gy] > 0) continue;
-
-			if (activeMissionIDs.includes(d.id)) continue;
-
-			if (Math.abs(controlStability[d.gx][d.gy]) >= 3) {		// TODO: move this prioritisation to hq_command (decisions on options should be made in command)
-				// debug(`skipped derrick ${d.x}, ${d.y} (${d.gx}, ${d.gy}); control too large (${controlStability[d.gx][d.gy]})`);
+			// the following replicates the old 'sector' system grouping of derricks
+			let previouslySeen = false;
+			for (let j=seenDerricks.length-1; j>=0; j--) {
+				if (distSq(seenDerricks[j].x, d.x, seenDerricks[j].y, d.y) < PROXIMITY_RADIUS ** 2) {
+					previouslySeen = true;
+					break;
+				}
+			}
+			if (previouslySeen) {
+				// debug(`skipped ${d.id}: already seen`);
 				continue;
 			}
 
-			const s = state.grid.enumRange(d.x, d.y, 6);
+			seenDerricks.push(d);			
 
-			const builtDefences = OBJ_FLAGS.DEFENSIVE_STRUCTURE | OBJ_FLAGS.IS_BUILT;
-
-			const friendlyDefences = s['friendlyStructures'].filter(t => (t.flags & builtDefences) === builtDefences && !(t.flags & OBJ_FLAGS.ADA));
-			const enemyDefences = s['targetStructures'].filter(t => (t.flags & builtDefences) === builtDefences && !(t.flags & OBJ_FLAGS.ADA));
-
-			const friendlyDefenceCount = friendlyDefences.length;
-			const enemyDefenceCount = enemyDefences.length;
-
-			if (friendlyDefenceCount > 0) {
-				continue;
-			}
-			if (enemyDefenceCount > 0) {
+			if (activeDefenceBuildTaskIDs.includes(d.id)) {
+				// debug(`skipped ${d.id}: activeMission`);
 				continue;
 			}
 
-			const derricksInCell = grid[d.gx][d.gy].derricks;
-			const isHighPriority = derricksInCell.length >= 4;
-			const contestedDerrick = tileIsBurning(d.x, d.y) || derricksInCell.some(d => isOwnedByEnemy(d.playerID));
+			if (enemyUnitThreat[d.gx][d.gy] > 0) {
+				// debug(`skipped ${d.id}: unit threat`);
+				continue
+			};			// TODO: move this prioritisation to hq_command (decisions on options should be made in command)
+
+			if (controlStability[d.gx][d.gy] <= -1 * MAX_CONTROL) {		// TODO: move this prioritisation to hq_command (decisions on options should be made in command)
+				// debug(`skipped ${d.id}: (${d.gx}, ${d.gy}); control too large (${controlStability[d.gx][d.gy]})`);
+				continue;
+			}
+
+			// Intent: enumRange is used as this offers better granularity compared to directly accessing the grid
+			const s = state.grid.enumRange(d.x, d.y, PROXIMITY_RADIUS);
+			
+			let friendlyDefencesNearby = 0, friendlyBuildSitesNearby = 0, friendlyDerricksNearby = 0;
+
+
+			for (let j=0; j<s['friendlyStructures'].length; j++) {
+				const f = s['friendlyStructures'][j];
+
+				if (f.flags & OBJ_FLAGS.RESOURCE_EXTRACTOR) {
+					friendlyDerricksNearby++;
+
+					if (activeDefenceBuildTaskIDs.includes(f.id)) {
+						previouslySeen = true;
+					}
+				}
+
+				if (f.flags & OBJ_FLAGS.DEFENSIVE_STRUCTURE && !(f.flags & OBJ_FLAGS.ADA)) {
+					if (f.flags && OBJ_FLAGS.IS_BUILT) {
+						friendlyDefencesNearby++;
+					} else {
+						friendlyBuildSitesNearby++;
+					}
+				}
+			}
+
+			if (previouslySeen)  {
+				// debug(`skipped ${d.id}: previouslySeen`);
+				continue;
+			}
+
+			if (friendlyDefencesNearby > 0) {
+				// debug(`skipped ${d.id}: friendlyDefencesNearby`);
+				continue;
+			}
+
+			const BUILT_DEFENCES = OBJ_FLAGS.DEFENSIVE_STRUCTURE | OBJ_FLAGS.IS_BUILT;
+
+			let enemyDefencesNearby = 0, enemyDerricksNearby = 0;
+			for (let j=0; j<s['targetStructures'].length; j++) {
+				const e = s['targetStructures'][j];
+				if (e.flags & OBJ_FLAGS.RESOURCE_EXTRACTOR) {
+					enemyDerricksNearby++;
+
+					if (activeDefenceBuildTaskIDs.includes(e.id)) {
+						previouslySeen = true;
+					}
+				}
+
+				if ((e.flags & BUILT_DEFENCES) === BUILT_DEFENCES && !(e.flags & OBJ_FLAGS.ADA)) {
+					enemyDefencesNearby++;
+				}
+			}
+
+			if (previouslySeen)  {
+				// debug(`skipped ${d.id}: previouslySeen`)
+				continue;
+			}
+
+			if (enemyDefencesNearby > 0) {
+				// debug(`skipped ${d.id}: friendlyDefencesNearby`);
+				continue;
+			}
+
+			if (controlStability[d.gx][d.gy] >= 5 && enemyDerricksNearby === 0) {		// TODO: move this prioritisation to hq_command (decisions on options should be made in command)
+				// debug(`skipped ${d.id}: (${d.gx}, ${d.gy}); control too large (${controlStability[d.gx][d.gy]})`);
+				continue;
+			}
+
+			const isHighPriority = grid[d.gx][d.gy].derricks.length >= 4;
+			const contestedDerrick = tileIsBurning(d.x, d.y) || (enemyDerricksNearby > 0 && friendlyDefencesNearby === 0);		// todo to split
 
 			const regularContestedDerrick = contestedDerrick && !isHighPriority;
 			const specialContestedDerrick = contestedDerrick && isHighPriority;
@@ -273,12 +325,18 @@ class armyEngineering {
 			if (isHighPriority) {
 				result['highPrioOil'].unshift(makePrimaryDefence(d));
 				highPrioOil.unshift(makePrimaryDefence(d));			// unshift -> reverses the order of `state.poi.derricks` which is ordered in ascending order from base
+				// debug(`	${d.id}	HIGH PRIO, numFriendlyBuildSites: ${friendlyBuildSitesNearby}`);
 			} else if (regularContestedDerrick) {
 				result['offensiveOil'].unshift(makePrimaryDefence(d));
 				normalPrioOil.unshift(makePrimaryDefence(d));
+				// debug(`	${d.id}	CONTESTED, numFriendlyBuildSites: ${friendlyBuildSitesNearby}`);
+			} else if (specialContestedDerrick) {
+				result['friendlyOil'].push(makeSecondaryDefence(d));
+				normalPrioOil.push(makeSecondaryDefence(d));
 			} else {
 				result['friendlyOil'].unshift(makePrimaryDefence(d));
 				normalPrioOil.unshift(makePrimaryDefence(d));
+				// debug(`	${d.id}	FRIENDLY, numFriendlyBuildSites: ${friendlyBuildSitesNearby}`);
 			}
 		}
 
