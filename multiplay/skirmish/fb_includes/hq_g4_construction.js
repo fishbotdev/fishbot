@@ -348,7 +348,7 @@ class armyEngineering {
 			debug(`	normalPrio: ${normalPrioOil}`);
 		}
 
-		return [...highPrioOil, ...result['offensiveOil'], ...result['friendlyOil']];
+		return [...highPrioOil, ...normalPrioOil];
 	}
 
 	/**
