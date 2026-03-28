@@ -278,11 +278,6 @@ class armyEngineering {
 				continue;
 			}
 
-			if (friendlyDefencesNearby > 0) {
-				// debug(`skipped ${d.id}: friendlyDefencesNearby`);
-				continue;
-			}
-
 			const BUILT_DEFENCES = OBJ_FLAGS.DEFENSIVE_STRUCTURE | OBJ_FLAGS.IS_BUILT;
 
 			let enemyDefencesNearby = 0, enemyDerricksNearby = 0;
@@ -317,26 +312,33 @@ class armyEngineering {
 			}
 
 			const isHighPriority = grid[d.gx][d.gy].derricks.length >= 4;
-			const contestedDerrick = tileIsBurning(d.x, d.y) || (enemyDerricksNearby > 0 && friendlyDefencesNearby === 0);		// todo to split
-
-			const regularContestedDerrick = contestedDerrick && !isHighPriority;
-			const specialContestedDerrick = contestedDerrick && isHighPriority;
-
 			if (isHighPriority) {
-				result['highPrioOil'].unshift(makePrimaryDefence(d));
-				highPrioOil.unshift(makePrimaryDefence(d));			// unshift -> reverses the order of `state.poi.derricks` which is ordered in ascending order from base
-				// debug(`	${d.id}	HIGH PRIO, numFriendlyBuildSites: ${friendlyBuildSitesNearby}`);
-			} else if (regularContestedDerrick) {
+				// Has a special case of defences === 1 -> can build secondary defence
+				if (friendlyDefencesNearby === 0) {
+					result['highPrioOil'].unshift(makePrimaryDefence(d));
+					highPrioOil.unshift(makePrimaryDefence(d));			// unshift -> reverses the order of `state.poi.derricks` which is ordered in ascending order from base
+				} else if (friendlyDefencesNearby === 1) {
+					const specialContestedDerrick = (enemyDerricksNearby > 0 && friendlyDefencesNearby === 1);
+					if (specialContestedDerrick) {
+						result['friendlyOil'].push(makeSecondaryDefence(d));
+						normalPrioOil.push(makeSecondaryDefence(d));
+					}
+				}
+				continue;
+			}
+
+			if (friendlyDefencesNearby > 0) {
+				// debug(`skipped ${d.id}: friendlyDefencesNearby`);
+				continue;
+			}
+			
+			const regularContestedDerrick = tileIsBurning(d.x, d.y) || (enemyDerricksNearby > 0 && friendlyDefencesNearby === 0);		// todo to split
+			if (regularContestedDerrick) {
 				result['offensiveOil'].unshift(makePrimaryDefence(d));
 				normalPrioOil.unshift(makePrimaryDefence(d));
-				// debug(`	${d.id}	CONTESTED, numFriendlyBuildSites: ${friendlyBuildSitesNearby}`);
-			} else if (specialContestedDerrick) {
-				result['friendlyOil'].push(makeSecondaryDefence(d));
-				normalPrioOil.push(makeSecondaryDefence(d));
 			} else {
 				result['friendlyOil'].unshift(makePrimaryDefence(d));
 				normalPrioOil.unshift(makePrimaryDefence(d));
-				// debug(`	${d.id}	FRIENDLY, numFriendlyBuildSites: ${friendlyBuildSitesNearby}`);
 			}
 		}
 
