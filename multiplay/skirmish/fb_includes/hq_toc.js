@@ -434,9 +434,9 @@ class TacticalOperationsCenter {
 				return;
 			}
 			if (isEnemy(b.playerID)) {
-				this.#floodFillSquareRegion(state.fields['controlStability'], numXCells, numYCells, b.gx, b.gy, enemyRiskRadius, -3);
+				this.#floodFillSquareRegion(state.fields['controlStability'], numXCells, numYCells, b.gx, b.gy, enemyRiskRadius, -5);
 			} else {
-				this.#floodFillSquareRegion(state.fields['controlStability'], numXCells, numYCells, b.gx, b.gy, 3, 3);
+				this.#floodFillSquareRegion(state.fields['controlStability'], numXCells, numYCells, b.gx, b.gy, 3, 5);
 			}
 		});
 		if (false) this.#debugPrintSpatialField(state.fields['controlStability'], 'controlStability - AFTER');
