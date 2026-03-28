@@ -175,11 +175,7 @@ function groundForceAttack({state, directFireTarget, fireSupportTarget, adaTarge
 		if (_distSqToClosestDroid(droid) <= 6 ** 2) {
 			attackTarget(droid, currDirectFireTarget);
 		} else {
-			if (distSq(droid.x, currDirectFireTarget.x, droid.y, currDirectFireTarget.y) >= 6) {
-				orderDroidLoc(droid, DORDER_MOVE, currDirectFireTarget.x, currDirectFireTarget.y);
-			} else {
-				orderDroidLoc(droid, DORDER_MOVE, closestDroidToTarget.x, closestDroidToTarget.y);
-			}
+			orderDroidLoc(droid, DORDER_MOVE, closestDroidToTarget.x, closestDroidToTarget.y);
 		}
 	}
 
