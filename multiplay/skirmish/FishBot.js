@@ -39,8 +39,8 @@
 	Results:
 	- 29 Nov 2025 (43e22ee): 3512 .js
 	- 18 Jan 2026 (eae414d): 4567 .js
-	- 15 Feb 2026 (821b835): 4536 .js -- v0.3.0 public release
-	- 22 Mar 2026 (b94dc92): 5246 .js -- after merging new grid system	
+	- 15 Feb 2026 (821b835): 4536 .js -- v0.3.0 (v3) public release
+	- 22 Mar 2026 (b94dc92): 5360 .js -- v0.3.1 release
 */
 
 
@@ -55,7 +55,7 @@ const FB_INCLUDES = FISHBOT_PATH + "fb_includes/";
 //	 - Show some useful debug information in the console
 //	 - Automatically colour players 0, 1, 2
 //	 - Transform Player 0 (forced human player slot) to spectator mode (used for automated bot testing)
-const DEBUG_MODE_ON = true;
+const DEBUG_MODE_ON = false;
 
 
 /*
@@ -63,6 +63,8 @@ const DEBUG_MODE_ON = true;
 1. Update FISHBOT_VERSION to latest version tag
 2. Update DEBUG_MODE_ON = false
 3. Disable all beacons / hackMarkTiles() used for debugging
+4. Update LOC above
+5. Test all supported maps once.
 */
 
 ////////////////////////////////////////////////////////////////////////////////////////////
