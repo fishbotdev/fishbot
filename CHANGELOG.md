@@ -12,17 +12,17 @@ This file records the changes to FishBot over time.
         - Improved CAS targeting & target mix based on game state.
         - Strike group sizes now depend on mission.
     - Ground units
-        - Ground units prioritise meaningful threats over closest targets.
+        - Ground units prioritise meaningful threats over closest targets (within reason).
         - Early units now move out of base a lot sooner than before.
         - Units now attempt to stay grouped up when losses mount.
         - Ground units now use Heavy Cannon to bridge the tech-gap between Assault Cannon and Twin Assault Cannon.
         - Anti-air units now focus fire on a single target.
     - Construction
         - Improved truck danger avoidance.
-        - Trucks no longer get stuck when some base-build / defence-build missions are unachieveable.
-        - Core base build order modified 
+        - Fixed trucks getting stuck when some base-build / defence-build missions are unachieveable.
+        - Core base build order slightly adjusted. 
     - Production
-        - Rebalanced ADA & indirect fire production weights.
+        - Rebalanced production weights for ADA & indirect fire.
 - Internal changes
     - Centralised most core game data and behaviour, making the bot behaviour easier to change.
     - Added system docs (in `.\docs`) & jsdocs (throughout the code).
