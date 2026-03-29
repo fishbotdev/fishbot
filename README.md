@@ -1,8 +1,9 @@
 # FishBot, a capable T2 Warzone 2100 bot 
-FishBot is a Warzone 2100 AI bot compatible with Warzone 2100 **v4.6.1+**. 
+FishBot is a Warzone 2100 AI bot compatible with Warzone 2100 **v4.6.1+**.
+It is designed for Tech Level 2, No-Base starts on the supported maps below.
 
 ## Most recent update
-* **v0.3.1** -- *to be released on 29 Mar 2026*
+* **v0.3.1** -- *released **29 Mar 2026***
     * Significantly fewer lag spikes (performance improvements).
     * Made it easier to import FishBot into your mods folder.
     * Added list of currently supported maps in `README.md` (this file).
@@ -13,6 +14,10 @@ FishBot is a Warzone 2100 AI bot compatible with Warzone 2100 **v4.6.1+**.
     * Significant improvements in capturing oil.
     * Significant improvements in VTOL targeting and handling.
 
+## Upcoming update
+* **v0.3.2** -- *release date TBA*
+    * TBD
+
 ## Background and Goals
 FishBot was initially forked from NullBot v3. I acknowledge and appreciate the work of the NullBot team in creating the foundation for this work.
 
@@ -21,19 +26,20 @@ It was so much fun to build up a little army, rush the AI and see the enemy base
 I am hoping that FishBot will bring a little bit of that happiness to our dedicated players by being a fun, fresh and challenging opponent (or ally) for your skirmish games.
 
 My goal is to make FishBot a generally useful bot which could be packaged with the official game one day. 
-As mentioned above, I'd like it to be genuinely fun to play with, both as a teammate and as an opponent. 
-Admittedly, there is a long way to go - but I am hoping that one day I am able to make this wish come true! 
+As mentioned above, I'd like it to be genuinely fun to play with, both as a teammate and as an opponent! 
+Admittedly, there is a long way to go - but I am hoping that one day I am able to make this wish come true. 
 
 ## List of supported technology levels
 Currently, only T2 (**Technology Level 2**) starts are supported.
 
 Further support for other technology levels might be added in a future version. 
 
-However, at the moment I feel like Cobra already fills the gap in the other technology levels excellently.
-In particular, I think Cobra performs really well on T1 in Warzone 2100 v4.6.3+. Even as a human player, I think I would struggle to win against T1 Cobra (Warzone 2100 v4.6.3+) without decidedly human strategies (e.g. walls and heavy-MG guard towers in chokepoints during army build-up).
+However, at the moment I feel like Cobra already fills the gap in the other technology levels very well.
+In particular, I think Cobra performs excellently on T1 in Warzone 2100 v4.6.3+. Even as a human player, I think I would struggle to win against T1 Cobra (Warzone 2100 v4.6.3+) without decidedly human strategies (e.g. walls and heavy-MG guard towers in chokepoints during army build-up).
 
 ## List of supported maps
-As of the most current version **v0.3.1**, FishBot works best on large, standard game maps with up to ~10 derricks per player. It currently only has been tested with scavengers disabled.
+As of the most current version **v0.3.1**, FishBot works best on large, standard "low-oil" game maps with up to ~10 derricks per player. 
+It currently only has been tested with scavengers disabled.
 
 ### 2 player
 * `Sk-Startup`
@@ -65,11 +71,12 @@ To check if the path is correct, you should be able to find `FishBot.js` in this
 If you can find `Fishbot.js` here, FishBot should automatically load on the next startup of Warzone 2100. It will then be available to select as an AI bot.
 
 ## Detailed Changelog
-Please see `CHANGELOG.md` for a detailed list of changes between major versions.
+Please see `CHANGELOG.md` for a detailed list of changes between versions.
 
 ## Software Documentation
-jsdocs are used throughout the code, along with with a `.d.ts` file to indicate the typing of commonly used JS API functions and global variables from the Warzone 2100 game engine. The intent of this documentation is to make changing the software easier.
-For a higher-level view of the software system, please see `docs\ARCHITECTURE.md` for some documentation of the software system architecture.
+jsdocs are used throughout the code. Additionally, `wz2100-js-api.d.ts` is used to indicate the typing of commonly used JS API functions and global variables from the Warzone 2100 game engine. The addition of `jsconfig.json` allows VSCode to understand the various symbols within the project, allowing for some type checking and code navigation. The intent of these documentation features is to make changing the software easier.
+
+For a high-level view of the FishBot software system, please see `docs\ARCHITECTURE.md` for some documentation of the software system architecture.
 
 ## Licensing Information (GPL 2.0)
 

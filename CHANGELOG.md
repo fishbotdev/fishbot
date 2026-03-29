@@ -29,8 +29,8 @@ This file records the changes to FishBot over time.
 
 
 #### Test results (Warzone 2100 v4.6.3)
-- 80 / 100 = **80%** win rate: FishBot-v0.3.1 Medium vs Cobra **Hard** (Gamma 3P T2 - 1v1; commit `04fb0cd`)
-- 95 / 100 = **95%** win rate: FishBot-v0.3.1 Medium vs Cobra **Medium** (Gamma 3P T2 - 1v1; commit `04fb0cd`)
+- 79 / 100 = **79%** win rate: FishBot-v0.3.1 Medium vs Cobra **Hard** (Gamma 3P T2 - 1v1; commit `021d39e`)
+- 95 / 100 = **97%** win rate: FishBot-v0.3.1 Medium vs Cobra **Medium** (Gamma 3P T2 - 1v1; commit `021d39e`)
 
 ## Fishbot v3 (v0.3.0)
 ### Changes in v0.3.0

@@ -40,7 +40,7 @@
 	- 29 Nov 2025 (43e22ee): 3512 .js
 	- 18 Jan 2026 (eae414d): 4567 .js
 	- 15 Feb 2026 (821b835): 4536 .js -- v0.3.0 (v3) public release
-	- 22 Mar 2026 (b94dc92): 5360 .js -- v0.3.1 release
+	- 22 Mar 2026 (b94dc92): 5361 .js -- v0.3.1 release
 */
 
 
@@ -63,12 +63,14 @@ const DEBUG_MODE_ON = false;
 1. Update FISHBOT_VERSION to latest version tag.
 2. Disable all beacons / hackMarkTiles() used for debugging.
 3. Update LOC above.
-4. Test all supported maps (see `README.md`) once, against Cobra @ Medium.
-5. Update `DEBUG_MODE_ON` = `false`.
-6. Update `README.md` with summary of changes.
-7. Update `CHANGELOG.md`.
-8. Merge into `main` with updated changelog.
-9. Add tag: `fishbot-vX.Y.Z` and push to origin.
+4. Run 100 automated tests against both Cobra Medium and Cobra Hard on Gamma 3P 1v1. Pass if no regression in either win-rate or performance profiler. 
+5. Update `CHANGELOG.md` with the test results.
+6. Test all supported maps in `README.md` once, against Cobra @ Medium. Pass if it can win a single game in 2 tries or less.
+7. Set `DEBUG_MODE_ON` = `false`.
+8. Update `README.md` with summary of changes.
+9. Update `CHANGELOG.md`.
+10. Merge into `main` with updated changelog.
+11. Add tag: `fishbot-vX.Y.Z` and push to origin.
 */
 
 ////////////////////////////////////////////////////////////////////////////////////////////
