@@ -75,7 +75,7 @@ def get_stats(file_path: str):
         if s["Loss"]:
             loss_counter += 1
 
-    print(f"FishBot lost {loss_counter} of {len(fishbot_stats)} games.")
+    print(f"FishBot won {len(fishbot_stats) - loss_counter} of {len(fishbot_stats)} games.")
 
     return [game_times_mins, fishbot_stats, opp_stats]
 
@@ -158,94 +158,67 @@ from os import getcwd
 
 
 def show_medium_cobra_results():
-
-    # file_path_test1_v2 = getcwd() + rf"\process_results/v3/test3_11_v2_d2c696a.txt"         # v2
-    # file_path_test1_v2 = getcwd() + rf"\process_results/v3/test3_10_v3_1ce1841.txt"       # v3-dev: 4 / 100, basic rush strategy
-    # file_path_test1_v2 = getcwd() + rf"\process_results/v3/test3_13_v3_c2f4e98_hard.txt"    # v3-dev: 1 / 100, after cyborg raiding + vtol optim
-    # file_path_test1_v2 = getcwd() + rf"\process_results/v3/test3_14_hard_deadf9f.txt"       # v3 dev: 4.6.1
-    # file_path_test1_v2 = getcwd() + rf"\process_results/v3/f761908,medium,462.txt"          # v3 dev: 4.6.2
-    # file_path_test1_v2 = getcwd() + rf"\process_results/v3/eeeda14,medium,462.txt"          # v3 dev: 4.6.2, now with oil capping
-    # file_path_test1_v2 = getcwd() + rf"\process_results/v3/b9a9e3a,medium,462.txt"          # v3 dev: 4.6.2, now with oil capping
-    # file_path_test1_v2 = getcwd() + rf"\process_results/v3/83bc176,medium,462.txt"          # v3 dev: 4.6.2, improved oil capping
-    # file_path_test1 = getcwd() + rf"\process_results/v3/7dc1d08,medium,462.txt"          # v3 dev: 4.6.2, optimised truck usage, research, heavy cannon + mortar strat, reverted to AG borgs
-    # test_1 = getcwd() + rf"\process_results/v3/9ed8b2e,medium,462.txt"          # v3 dev: 4.6.2, optimised truck usage, research, safer fire support, raiding in main assault
-    # test_1 = getcwd() + rf"\process_results/v3/ca092ce,medium,462.txt"          # v3 dev: 4.6.2, optimised research, TAC is back, 3rd factory
-    # test_1 = getcwd() + rf"\process_results/v3/16279f6,medium,462.txt"          # v3 dev: 4.6.2, optimised research, TAC is back, 3rd factory
-    # test_1 = getcwd() + rf"\process_results/v3/9bbccf2,medium,462.txt"          # v3 dev: 4.6.2, disabled Cobra teamplay personalities
-    # test_1 = getcwd() + rf"\process_results/v3/8efda7a,medium,462.txt"          # v3 dev: 4.6.2, new (sector system & oil cap) have bugs    -> 28 / 50 were won (56%)
-    # test_1 = getcwd() + rf"\process_results/v3/" + "2423a1e,medium,462" + ".txt"          # v3 dev: 4.6.2, fixed just sector system bugs              -> 83 / 100 games won (83%)
-    # test_1 = getcwd() + rf"\process_results/v3/" + "f237739,medium,462" + ".txt"          # v3 dev: 4.6.2, fixed just sector system bugs              -> 83 / 100 games won (83%)
-    # test_2 = getcwd() + rf"\process_results/v3/" + "9f3f181,medium,462" + ".txt"          # v3 dev: 4.6.2, fixed pickStructLoc bugs              -> 14 / 16 games won (83%)
-    # test_1 = getcwd() + rf"\process_results/v3/" + "d383d0c,medium,462" + ".txt"          # v3 dev: 4.6.2, added mortar building
-    # test_1 = getcwd() + rf"\process_results/v3/" + "a9e5915,medium,462" + ".txt"          # v3 dev: removed repairing when low  & optimised defence building
-    # test_1 = getcwd() + rf"\process_results/v3/" + "5163c1c,medium,462" + ".txt"          # v3 dev: optimisations to construction & VTOL usage
-    # test_1 = getcwd() + rf"\process_results/v3/" + "a5dd47e,medium,462" + ".txt"          # v3 dev: aborting construction missions when dangerous, VTOL unit optimisation
-    # test_1 = getcwd() + rf"\process_results/v3/" + "1a6fac9,medium,462" + ".txt"          # v3 dev: (47/50 wins)
-    # test_1 = getcwd() + rf"\process_results/v3/" + "3d6417d,medium,462" + ".txt"          # v3 dev: defence & oil cap optim (47/50 wins)
-    # test_1 = getcwd() + rf"\process_results/v3/" + "a2ff8ab,medium,462" + ".txt"          # v3 dev: defence & oil cap optim (47/50 wins)
-    # test_1 = getcwd() + rf"\process_results/v3/" + "f8094ef,medium" + ".txt"              # v3 dev: high prio oil cap optim [95 / 100 wins]
-    test_1 = getcwd() + rf"\process_results/v3/" + "68275e8,medium,463" + ".txt"            # v3 dev: [100 / 100 wins]
-    test_2 = getcwd() + rf"\process_results/v3/" + "29ceeb0,med,463" + ".txt"               # v3 dev: [143 / 150 wins]
+    # test_1 = getcwd() + rf"\process_results/v3/" + "29ceeb0,med,463" + ".txt"               # v3 dev: [143 / 150 wins]
+    test_1 = getcwd() + rf"\process_results/v4/" + "a2e13b4,med,cobra_v3_release" + ".txt"    # v3 release: retesting [98 / 100 wins]
+    # test_1 = getcwd() + rf"\process_results/v4/" + "1e3edc5,med,cobra" + ".txt"               # v4 dev: before perf optimisations [96 / 100 won]
+    # test_1 = getcwd() + rf"\process_results/v4/" + "0c6d165,med,cobra,100g" + ".txt"               # perf: removed getAllBaseTargets [95 / 100 won]
+    # test_1 = getcwd() + rf"\process_results/v4/" + "2167472,med,cobra,50g" + ".txt"               # perf: before merging performance-improvements [49 / 49 won]
+    # test_1 = getcwd() + rf"\process_results/v4/" + "f9d0fd4,med,cobra,50g" + ".txt"               # perf: after merging perf-optim2 [49 / 50 won], higher K/D
+    # test_1 = getcwd() + rf"\process_results/v4/" + "45635e6,med,cobra,100g" + ".txt"               # perf: after migrating into fixed time hashing [96 / 100 won]
+    # test_1 = getcwd() + rf"\process_results/v4/" + "7ee8c56,med,cobra,100g" + ".txt"               # perf: migrating to new grid system [91 / 100 won (regression)]
+    # test_1 = getcwd() + rf"\process_results/v4/" + "df4a549,med,cobra,100g" + ".txt"               # perf: migrating to new grid system [97 / 100 won; regression fixed]
+    # test_1 = getcwd() + rf"\process_results/v4/" + "a686079,med,cobra,100g" + ".txt"               # 99 / 100 won, after vtol optimisations
+    # test_2 = getcwd() + rf"\process_results/v4/" + "db393ea,med,cobra,150g" + ".txt"               # 149 / 150 won
+    # test_2 = getcwd() + rf"\process_results/v4/" + "868e56f,med,cobra,150g" + ".txt"               
+    test_2 = getcwd() + rf"\process_results/v4/" + "021d39e,med,cobra,100g" + ".txt"                # 97 / 100 won (v0.3.1 release)
     
-    commit1 = test_1.split(rf"v3/")[1].split(",")[0]
-    commit2 = test_2.split(rf"v3/")[1].split(",")[0]
+    commit1 = test_1.split(rf"v4/")[1].split(",")[0]
+    commit2 = test_2.split(rf"v4/")[1].split(",")[0]
 
     show_stats(*get_stats(test_1), title=f"{commit1} (before)", figNum=2)                             
     show_stats(*get_stats(test_2), title=f"{commit2} (after)", legend=[commit1, commit2], figNum=3)   
 
 def show_hard_cobra_results():
-
-    # test_1 = getcwd() + rf"\process_results/v3/d2c696a,hard,461,v2fishbot.txt"       # v2
-    # file_path_test1_v2 = getcwd() + rf"\process_results/v3/test3_10_v3_1ce1841.txt"       # v3-dev: 4 / 100, basic rush strategy
-    # file_path_test1_v2 = getcwd() + rf"\process_results/v3/test3_13_v3_c2f4e98_hard.txt"  # v3-dev: 1 / 100, after cyborg raiding + vtol optim
-    # test_1 = getcwd() + rf"\process_results/v3/deadf9f,hard,461.txt"                      # v3 dev: 
-    test_1 = getcwd() + rf"\process_results/v3/f761908,hard,462.txt"                      # v3 dev: initial update to 4.6.2 
-    # test_1 = getcwd() + rf"\process_results/v3/" + "9ed8b2e,hard,462" + ".txt"              # v3 dev: 4.6.2, optimised truck usage, research, safer fire support, raiding in main assault
-    # test_1 = getcwd() + rf"\process_results/v3/" + "a5dd47e,hard,462" + ".txt"              # v3 dev: 4.6.2, cobra teamplay removed, 2.5wks later, sector system + general constr + vtol updates
-    # test_1 = getcwd() + rf"\process_results/v3/" + "88bc305,hard,462" + ".txt"              # v3 dev: 4.6.2, 
-    # test_1 = getcwd() + rf"\process_results/v3/" + "de46989,hard,462" + ".txt"              # v3 dev: 4.6.2,
-    # test_1 = getcwd() + rf"\process_results/v3/" + "e924a24,hard,462_2" + ".txt"              # v3 dev: 4.6.2, super ac borgs, more cyborgs
-    # test_2 = getcwd() + rf"\process_results/v3/" + "78b6601,hard,462" + ".txt"              # v3 dev: 4.6.2, cyborg factories rebalanced, VTOL targeting includes CAS earlier
-    # test_2 = getcwd() + rf"\process_results/v3/" + "b45b64a,hard,462" + ".txt"              # v3 dev: 4.6.2, VTOL targeting updated to match with capitalisation potential
-    # test_1 = getcwd() + rf"\process_results/v3/" + "1a6fac9,hard,462" + ".txt"              # v3 dev: 4.6.2, VTOL targeting updated to match with capitalisation potential
-    # test_1 = getcwd() + rf"\process_results/v3/" + "3d6417d,hard,462" + ".txt"              # v3 dev: 4.6.2, defence & oil cap optim (36/50 wins)
-    # test_1 = getcwd() + rf"\process_results/v3/" + "a2ff8ab,hard,462" + ".txt"              # v3 dev: 4.6.2, 
-    # test_1 = getcwd() + rf"\process_results/v3/" + "517541d,hard" + ".txt"              # v3 dev: 4.6.2, 
-    # test_1 = getcwd() + rf"\process_results/v3/" + "1261742,hard" + ".txt"              # v3 dev: 4.6.2, 
-    # test_1 = getcwd() + rf"\process_results/v3/" + "6f04840,hard" + ".txt"              # v3 dev: 4.6.2, 
-    # test_1 = getcwd() + rf"\process_results/v3/" + "5c6703a,hard" + ".txt"              # v3 dev: 4.6.2, 
-    # test_1 = getcwd() + rf"\process_results/v3/" + "68275e8,hard" + ".txt"              # v3 dev: 4.6.2, [40/50 wins] optimised oil cap, optimised cyborgs and research
-    test_2 = getcwd() + rf"\process_results/v3/" + "29ceeb0,hard,463" + ".txt"              # v3 dev: 4.6.3, [63/86 wins] long term test
+    test_1 = getcwd() + rf"\process_results/v3/" + "29ceeb0,hard,463" + ".txt"              # v3 dev: 4.6.3, [63/86 wins] long term test
+    # test_1 = getcwd() + rf"\process_results/v4/" + "6966b26,hard,cobra,50g" + ".txt"              # v4 dev: 4.6.3 [60 % wr; baseline for cannon test]
+    # test_1 = getcwd() + rf"\process_results/v4/" + "f50adb5,hard,cobra,50g" + ".txt"              # v4 dev: 4.6.3 [78 % wr; cannon test]
+    # test_1 = getcwd() + rf"\process_results/v4/" + "db393ea,hard,cobra,50g" + ".txt"              # v4 dev: 4.6.3 [74 % wr; cannon test + cas changes]
+    # test_1 = getcwd() + rf"\process_results/v4/" + "db7403d,hard,cobra,100g" + ".txt"              # v4 dev: 4.6.3 [57 % wr; migrated sector defence to grid system]
+    # test_2 = getcwd() + rf"\process_results/v4/" + "cf7b597,hard,cobra,100g" + ".txt"              # close to v0.3.1 release [61 % wr] 
+    # test_2 = getcwd() + rf"\process_results/v4/" + "ee78a97,hard,cobra,60g" + ".txt"              # close to v0.3.1 release [38/60 = 63 % wr] 
+    # test_1 = getcwd() + rf"\process_results/v4/" + "bb29af7,hard,cobra,60g" + ".txt"                # 40 / 60 (66.6%)
+    # test_2 = getcwd() + rf"\process_results/v4/" + "1ec43be,hard,cobra,60g" + ".txt"                # 28 / 47 (60%)
+    # test_2 = getcwd() + rf"\process_results/v4/" + "9c8a337,hard,cobra,60g" + ".txt"                
+    # test_2 = getcwd() + rf"\process_results/v4/" + "04fb0cd,hard,cobra,50g" + ".txt"                #  38 / 50 -> 76% (yay!)
+    # test_2 = getcwd() + rf"\process_results/v4/" + "04fb0cd,hard,cobra,50g_part2" + ".txt"          #  42 / 50 -> 84% (yay!)
+    test_2 = getcwd() + rf"\process_results/v4/" + "3d997f9,hard,cobra,100g" + ".txt"                #  65 / 100 -> v0.3.1 release candidate
+    test_2 = getcwd() + rf"\process_results/v4/" + "021d39e,hard,cobra,100g" + ".txt"                #  79 / 100 -> v0.3.1 release candidate (reverted removal of median location)
 
     commit1 = test_1.split(rf"v3/")[1].split(",")[0]
-    commit2 = test_2.split(rf"v3/")[1].split(",")[0]
+    commit2 = test_2.split(rf"v4/")[1].split(",")[0]
 
     show_stats(*get_stats(test_1), title=f"{commit1} (before)", figNum=2)                             
     show_stats(*get_stats(test_2), title=f"{commit2} (after)", legend=[commit1, commit2], figNum=3)     
 
-def show_insane_cobra_results():
+def show_insane_diff_results():
 
-    # file_path_test1_v2 = getcwd() + rf"\process_results/v3/test4_v2_insane_d2c696a.txt"                   # v2: insane,
-    # file_path_test1_v2 =  getcwd() + rf"\process_results/v3/test4_insane_90a01a7.txt"                     # v3-dev: insane, after cyborg raiding + vtol optim
-    # file_path_test1_v2 = getcwd() + rf"\process_results/v3/test4_insane_5e16da4_intelligent_arty.txt"     # v3-dev: insane, max cyborg raiding + research
-    # file_path_test1_v2 = getcwd() + rf"\process_results/v3/test4_insane_deadf9f_smart_artyngnd.txt"         # v3-dev: insane, max cyborg raiding + research
-    # file_path_test1_v2 = getcwd() + rf"\process_results/v3/test4_insane_2f7da8e_cohesion,ast_targeting.txt"    
-    # file_path_test1_v2 = getcwd() + rf"\process_results/v3/test4_insane_f06df49.txt"                                           # v3-dev: insane, improved direct assault targeting, cyborg cohesion & light cavalry % increased
-    # file_path_test1_v2 = getcwd() + rf"\process_results/v3/12f6eba,ins.txt"   
-    # file_path_test1 = getcwd() + rf"\process_results/v3/f761908,ins.txt"                   # v3-dev: last commit on v4.6.1 (36 out of 40 won on Cobra Insane)
-    # file_path_test1 = getcwd() + rf"\process_results/v3/f761908,ins,462.txt"             # v3-dev: same commit on v4.6.2 ()
-    file_path_test1 = getcwd() + rf"\process_results/v3/9ed8b2e,insane,461.txt"            # v3-dev: Using a 4.6.2 development version on 4.6.1 (84 / 100 won on Cobra Insane)
-    file_path_test2 = getcwd() + rf"\process_results/v3/29ceeb0,insane,461.txt"            # v3-dev: Using a 4.6.3 development version on 4.6.1 (98 / 100 won on Cobra Insane)
+    # test_1 = getcwd() + rf"\process_results/v4/" + "5c757ab,ins,2v1" + ".txt"               # v4 dev: v3 skrush against 2x nexus @insane
+    # test_1 = getcwd() + rf"\process_results/v4/" + "5c757ab,hardins,1v2" + ".txt"           # v4 dev: v3 skrush 1x hard, 1x insane nexus        [39 / 50 wins]
+    # test_1 = getcwd() + rf"\process_results/v4/" + "1df2117,hardins,1v2" + ".txt"           # v4 dev: v3 skrush 1x hard, 1x insane nexus, after perf optimisations [42 / 50 wins]
+    # test_1 = getcwd() + rf"\process_results/v4/" + "c7d8eb7,hardins,1v2,targoptim" + ".txt"           # v4 dev: v3 skrush 1x hard, 1x ins nexus, targeting optimisations - cancelVtol [33 / 50 wins]
+    test_1 = getcwd() + rf"\process_results/v4/" + "4aee90e,hardins,1v2,vtolfix" + ".txt"           # v4 dev: v3 skrush 1x hard, 1x ins nexus, fixed vtol usage [38 / 50 wins]
+    test_2 = getcwd() + rf"\process_results/v4/" + "e8c65ad,hardins,1v2" + ".txt"           # v4 dev: mid-grid system migration [55% wr]
+    
+    commit1 = test_1.split(rf"v4/")[1].split(",")[0]
+    commit2 = test_2.split(rf"v4/")[1].split(",")[0]
 
-    commit1 = "9ed8b2e"
-    commit2 = "29ceeb0"
-
-    show_stats(*get_stats(file_path_test1), title=f"{commit1} (earlier)", legend=[commit1, commit2], figNum=2)            
-    show_stats(*get_stats(file_path_test2), title=f"{commit2} (newer)", legend=[commit1, commit2], figNum=3)    
+    show_stats(*get_stats(test_1), title=f"{commit1} (earlier)", legend=[commit1, commit2], figNum=2)            
+    show_stats(*get_stats(test_2), title=f"{commit2} (newer)", legend=[commit1, commit2], figNum=3)    
 
 
 # show_medium_cobra_results()
 show_hard_cobra_results()
-# show_insane_cobra_results()
+# show_insane_diff_results()
+
 import matplotlib.pyplot as plt
 plt.show()

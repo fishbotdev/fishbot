@@ -31,9 +31,8 @@ class armyAviation {
 			'ceaseOrders': undefined,
 			'timeStarted': -2,
 			'timeCompleted': -1,
-
-			'sectorID': undefined,
-			'obj': undefined,
+			
+			'target': undefined,
 		};
 
 		return missionDataTemplate;
@@ -64,27 +63,20 @@ class armyAviation {
 		return md;
 	}
 	
-	createCASMission({obj, numRaidAircraft=1, tickUID=undefined}) {
-		// it returns either:
+	createAirStrikeMission({targetInfo, numRaidAircraft=1, tickUID=undefined, type="AIR_STRIKE_GENERIC"}) {
+		// It returns either:
 		// 	- missionData object (according to missionDataTemplate), if mission successfully created, OR
-		//	- undefined, if mission was not able to be created	
-		
+		//	- undefined, if mission was not able to be created	 
+
 		let airReserve = state.g.enumGroup(AIR_RESERVE);
-
-		// Not possible if no available recon units
 		if (airReserve.length < numRaidAircraft) {
-			return undefined;
-		}
-
-		// Not possible if target obj is not defined
-		if (getObject(obj.type, obj.player, obj.id) === null) {		
 			return undefined;
 		}
 
 		let md = this.#createMissionOrders();
 
 		// Create mission details
-		const id = getCurrGameTime() + "_CAS_STRIKE_" + tickUID;
+		const id = getCurrGameTime() + `_${type}_` + tickUID;
 		md.id = id;
 		md.taskForceID = id;
 
@@ -101,56 +93,10 @@ class armyAviation {
 			state.g.removeDroidFromGroup({groupID: AIR_RESERVE, droidID: droid.id});
 		});		
 
-		md.obj = obj;
+		md.target = targetInfo;
 
 		// Assign orders for conducting & ceasing operations			
-		md.orders = () => this.#mcb(doAirStrike, obj, md.taskForceID, numRaidAircraft);		// lambda is necessary otherwise md.orders is not interpreted as a function
-		md.ceaseOrders = () => this.#mcb(this.#finaliseVtolMission, md);
-
-		return md;
-	}
-
-	createDasStructMission({obj, numRaidAircraft=1, tickUID=undefined}) {
-		// it returns either:
-		// 	- missionData object (according to missionDataTemplate), if mission successfully created, OR
-		//	- undefined, if mission was not able to be created	
-		
-		let airReserve = state.g.enumGroup(AIR_RESERVE);
-
-		// Not possible if no available air units
-		if (airReserve.length < numRaidAircraft) {
-			return undefined;
-		}
-
-		// Not possible if target obj is not defined
-		if (getObject(obj.type, obj.player, obj.id) === null) {		
-			return undefined;
-		}
-
-		let md = this.#createMissionOrders();
-
-		// Create mission details
-		const id = getCurrGameTime() + "_DAS_STRUCT_STRIKE_" + tickUID;
-		md.id = id;
-		md.taskForceID = id;
-
-		let taskForceUnits = airReserve.slice(0, numRaidAircraft);  
-		if (airReserve.length > numRaidAircraft) {
-			let armedAircraft = airReserve.filter(aircraft => vtolArmed(aircraft));		
-			if (armedAircraft.length >= numRaidAircraft) {
-				taskForceUnits = armedAircraft.slice(0, numRaidAircraft);
-			}
-		}
-
-		taskForceUnits.forEach((droid) => {
-			state.g.addDroidToGroup({groupID: md.taskForceID, droidID: droid.id});
-			state.g.removeDroidFromGroup({groupID: AIR_RESERVE, droidID: droid.id});
-		});	
-		
-		md.obj = obj;
-
-		// Assign orders for conducting & ceasing operations			
-		md.orders = () => this.#mcb(doAirStrike, obj, md.taskForceID, numRaidAircraft);		// lambda is necessary otherwise md.orders is not interpreted as a function
+		md.orders = () => this.#mcb(doAirStrike, targetInfo, md.taskForceID, numRaidAircraft);		// lambda is necessary otherwise md.orders is not interpreted as a function
 		md.ceaseOrders = () => this.#mcb(this.#finaliseVtolMission, md);
 
 		return md;
@@ -186,7 +132,7 @@ class armyAviation {
 			state.g.removeDroidFromGroup({groupID: AIR_RESERVE, droidID: droid.id});
 		});	
 		
-		md.obj = undefined;
+		md.target = undefined;
 
 		// Assign orders for conducting & ceasing operations
 		const areWeaponsHot = true;
@@ -225,7 +171,7 @@ class armyAviation {
 			state.g.removeDroidFromGroup({groupID: AIR_RESERVE, droidID: droid.id});
 		});		
 
-		md.obj = undefined;
+		md.target = undefined;
 
 		// Assign orders for conducting & ceasing operations
 		const areWeaponsHot = false;
@@ -264,7 +210,7 @@ class armyAviation {
 			state.g.removeDroidFromGroup({groupID: AIR_RESERVE, droidID: droid.id});
 		});		
 
-		md.obj = undefined;
+		md.target = undefined;
 
 		const areWeaponsHot = true;
 		md.orders = () => this.#mcb(doAirRecon, x, y, areWeaponsHot, md.taskForceID);		// lambda is necessary otherwise md.orders is not interpreted as a function

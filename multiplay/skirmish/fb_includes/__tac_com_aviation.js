@@ -20,13 +20,10 @@
 */
 
 function vtolRearm(droid) {
-	// Assumes that vtol rearming pads are built near base.
-	if (droid.order !== DORDER_REARM) {
-		if (distance(droid, baseLocation) < 30)
-			orderDroid(droid, DORDER_REARM);
-		else
-			orderDroidLoc(droid, DORDER_SCOUT, baseLocation.x, baseLocation.y);
-	}	
+	if (droid.order === DORDER_REARM) {
+		return;
+	}
+	orderDroid(droid, DORDER_REARM);		
 }
 
 function vtolArmed(droid, percent) {
@@ -122,41 +119,35 @@ function doAirRecon(x, y, weaponsHot=false, taskForceID) {
 /*
 	TAC SOP: AIR STRIKE
 */
-function doAirStrike(targetObj, taskForceID) {
-	const updatedObject = getObject(targetObj.type, targetObj.player, targetObj.id);
+function doAirStrike(targetInfo, taskForceID) {
 
-	if (updatedObject === null) {		// target destroyed (mission succeeded)
+	const obj = getObject(targetInfo.type, targetInfo.player, targetInfo.id);
+	if (obj === null) {								// target destroyed (mission succeeded)
+		// debug(`succeeded ${taskForceID}`);
 		return {status: MISSION_STATUS.SUCCEEDED};
 	}
 
-	// niceDebug("tactics/doAirStrike: got name, x, y, taskForceID", targetObj.name, targetObj.x, targetObj.y, taskForceID);
-
-	// Else, order strike
-	const taskForceUnits = state.g.enumGroup(taskForceID);
-	
-	if (taskForceUnits.length === 0) {
-		// debug("tactics/doAirStrike: terminated - 0 group size", taskForceID);
-		return {status: MISSION_STATUS.FAILED};		// strike aircraft were killed or reassigned
+	const strikeUnits = state.g.enumGroup(taskForceID);
+	if (strikeUnits.length === 0) {
+		// debug(`failed ${taskForceID}, 0 group length`);
+		return {status: MISSION_STATUS.FAILED};		// strike aircraft were killed
 	}
 
-	// wait until all units are prepared before launching strike
-	let numReady=0;
-	for (let i=0; i<taskForceUnits.length; ++i) {
-		let droid = taskForceUnits[i];
-
+	let numReady = 0;
+	strikeUnits.forEach((droid) => {
 		if (!vtolArmed(droid, 99)) {
 			vtolRearm(droid);
 		} else {
 			numReady++;
-		}
-	}
-
-	if (numReady !== taskForceUnits.length) {
+		} 
+	});
+	
+	if (numReady !== strikeUnits.length) {
 		return {status: MISSION_STATUS.IN_PROGRESS};
 	}
 		
 	// Else conduct strike
-	taskForceUnits.forEach((droid) => attackTarget(droid, updatedObject));
+	strikeUnits.forEach((droid) => attackTarget(droid, obj));
 
 	return {status: MISSION_STATUS.IN_PROGRESS};
 }

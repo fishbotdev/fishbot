@@ -20,19 +20,31 @@
 
 	FishBot Introduction
 
-	This is a bot designed for Tech Level 2+ duels (1v1) on low-oil maps (the maps that ship with WZ2100 as of v4.6.1+). 
+	This is a Warzone 2100 bot designed for Tech Level 2+ duels (1v1) on low-oil maps (the maps that ship with WZ2100 as of v4.6.1+). 
 	Ironically, it does not work on sea maps :D. FishBot was developed to win against Insane difficulty AI (while it is Medium difficulty). 
 
-	FishBot's winning strategy revolves around intelligent, highly aggressive combined-arms warfare. It arranges each type of unit on 
-	the battlefield in a way which maximises their destructive effects while protecting the friendly force (minimising casualties).
+	FishBot's winning strategy revolves around intelligent, highly aggressive, combined-arms warfare. It arranges each type of unit on 
+	the battlefield in a way which maximises their destructive effects while protecting the friendly force.
 	
 	For challengers - I recommend to play against FishBot on Easy mode (or at very low gamespeed) when first playing against it.
 
-	Project started 15 Oct 2025
+	Project started: 15 Oct 2025
+
+	Fun stats:
 	
+	To count lines of code without comments, in git bash, cd to the code directory and:
+
+	git ls-files "*.js" | xargs cat | grep -v '^\s*$' | grep -v '^\s*#' | wc -l 	
+
+	Results:
+	- 29 Nov 2025 (43e22ee): 3512 .js
+	- 18 Jan 2026 (eae414d): 4567 .js
+	- 15 Feb 2026 (821b835): 4536 .js -- v0.3.0 (v3) public release
+	- 22 Mar 2026 (b94dc92): 5361 .js -- v0.3.1 release
 */
 
-var FISHBOT_VERSION = 3;
+
+const FISHBOT_VERSION = "0.3.1";
 
 //	This file connects all remaining pieces of AI code together. It shouldn't contain any code itself.
 //	NOTE: order matters!
@@ -42,23 +54,24 @@ const FB_INCLUDES = FISHBOT_PATH + "fb_includes/";
 // Enable DEBUG_MODE_ON (global) to:
 //	 - Show some useful debug information in the console
 //	 - Automatically colour players 0, 1, 2
-//	 - Transform Player 0 (forced human player slot) to spectator mode (used for automatated bot testing)
-//   - Places a beacon for Player 0 at the location of the current land target.
-var DEBUG_MODE_ON = false;
+//	 - Transform Player 0 (forced human player slot) to spectator mode (used for automated bot testing)
+const DEBUG_MODE_ON = false;
 
-// 
+
 /*
-	Fun stats:
-	
-	In git bash, cd to the code directory and 
-	(1) "git ls-files "*.js" | xargs wc -l", OR: 
-	(2) Can also do "git ls-files "*.js" | xargs cat | grep -v '^\s*$' | grep -v '^\s*#' | wc -l" 	which apparently counts without comments
-
-	- 29 Nov 2025 (43e22ee): (1) 4170 line JS, 490 lines python (first command) OR (2) 3512 .js, 296 .py (second command)
-	- 18 Jan 2026 (eae414d): (1) 5618 line JS, 717 lines python (first command) OR (2) 4567 .js, 448 .py (second command)
-	- 15 Feb 2026 (296a137): (2) 4281 .js, 202 .py (second command)	-- v3 release
+-- RELEASE CHECKLIST --
+1. Update FISHBOT_VERSION to latest version tag.
+2. Disable all beacons / hackMarkTiles() used for debugging.
+3. Update LOC above.
+4. Run 100 automated tests against both Cobra Medium and Cobra Hard on Gamma 3P 1v1. Pass if no regression in either win-rate or performance profiler. 
+5. Update `CHANGELOG.md` with the test results.
+6. Test all supported maps in `README.md` once, against Cobra @ Medium. Pass if it can win a single game in 2 tries or less.
+7. Set `DEBUG_MODE_ON` = `false`.
+8. Update `README.md` with summary of changes.
+9. Update `CHANGELOG.md`.
+10. Merge into `main` with updated changelog.
+11. Add tag: `fishbot-vX.Y.Z` and push to origin.
 */
-
 
 ////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -107,13 +120,14 @@ var DEBUG_MODE_ON = false;
 	/*
 		STRATEGIC-LEVEL
 
-		These files decide what FishBot will do. Their main job is reasoning and delegating the carrying-out
-		of missions to the operational level functions.
+		These files reason about, and then decide on next action that FishBot should take.
 	*/
 	include(FB_INCLUDES + "hq_toc.js");
 	include(FB_INCLUDES + "hq_command.js");		
 
-	// (The following two files contain event handlers and the hook for starting the game)
+	// The following two files contain event handlers and the hook for starting the game. 
+	// The files must be included in this order.
 	include(FB_INCLUDES + "_init.js");	
 	include(FB_INCLUDES + "_events.js");						
+	include(FB_INCLUDES + "_run.js");						
 }

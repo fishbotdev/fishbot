@@ -211,12 +211,11 @@ function produceCloseAirSupport(factory) {
 function produceDeepAirSupport(factory) {
 
 	const fishBotDASWeapons = [
-		// { res: "R-Wpn-Rocket03-HvAT", stat: "Rocket-VTOL-BB", name: 'Anti-Structure Rocket'},		// bunker buster
 		{ res: "R-Wpn-Bomb01", stat: "Bomb1-VTOL-LtHE", name: 'Cluster Bomb' },						// bomb
 		{ res: "R-Wpn-Bomb02", stat: "Bomb2-VTOL-HvHE", name: 'HEAP Bomb' },
-		// { res: "R-Wpn-Bomb03", stat: "Bomb3-VTOL-LtINC", name: 'Phosphor Bomb', },
-		// { res: "R-Wpn-Bomb04", stat: "Bomb4-VTOL-HvyINC", name: 'Thermite Bomb', },
-		// { res: "R-Wpn-Bomb05", stat: "Bomb5-VTOL-Plasmite", name: 'Plasmite Bomb', },
+		{ res: "R-Wpn-Bomb03", stat: "Bomb3-VTOL-LtINC", name: 'Phosphor Bomb', },
+		{ res: "R-Wpn-Bomb04", stat: "Bomb4-VTOL-HvyINC", name: 'Thermite Bomb', },
+		{ res: "R-Wpn-Bomb05", stat: "Bomb5-VTOL-Plasmite", name: 'Plasmite Bomb', },
 	].reverse();
 
 	const vtolPropulsions = [
@@ -263,8 +262,8 @@ function produceHeavyCavalry(factory) {
 			{ res: "R-Wpn-Cannon2Mk1", stat: "Cannon2A-TMk1", name: 'Medium Cannon', }, // mc
 			{ res: "R-Wpn-Cannon4AMk1", stat: "Cannon4AUTOMk1", name: 'Hyper-Velocity Cannon', }, // hpv
 			{ res: "R-Wpn-Cannon5", stat: "Cannon5VulcanMk1", name: 'Assault Cannon', }, // ac
+			{ res: "R-Wpn-Cannon3Mk1", stat: "Cannon375mmMk1", name: 'Heavy Cannon', }, // hc
 			{ res: "R-Wpn-Cannon6TwinAslt", stat: "Cannon6TwinAslt", name: 'Twin Assault Cannon', }, // tac
-			// { res: "R-Wpn-Cannon3Mk1", stat: "Cannon375mmMk1", name: 'Heavy Cannon', }, // hc
 			// { res: "R-Wpn-RailGun01", stat: "RailGun1Mk1", name: 'Needle Gun', }, // needle
 			{ res: "R-Wpn-RailGun02", stat: "RailGun2Mk1", name: 'Rail Gun', }, // rail
 			{ res: "R-Wpn-RailGun03", stat: "RailGun3Mk1", name: 'Gauss Cannon', }, // gauss

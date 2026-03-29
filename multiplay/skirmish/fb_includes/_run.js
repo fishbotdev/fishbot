@@ -16,55 +16,77 @@
 */
 
 /*
- * This file includes event definitions only.
- *
- */
+	This file controls the scheduling of all high-level bot functions.
+    It should be included last as it contains the hook `eventStartLevel` for the bot to start running.
+*/
 
-function eventDroidBuilt(droid, structure) {	
-	supply.assignNewDroidIntoGroup(droid);	
+function runGameEndedWatchdog() {
+	const gameIsFinished = state.gameHasEnded();
+
+	if (gameIsFinished && state.botIsActive) {
+		debug(`FishBot ${me}: gameHasEnded, stopping all function`);
+		state.botIsActive = false;
+	}
+
+	if (!gameIsFinished && !state.botIsActive) {
+		debug(`FishBot ${me}: is alive, resuming function`);
+		state.botIsActive = true;
+	}
 }
 
-function eventStructureReady(structure) {
-	// does nothing for now
-}
+function runIntelligence() {
 
-function eventStructureBuilt(structure) {
-	// does nothing for now
-}
+	const subtasks = hq.INTELLIGENCE_SUBTASK_NAMES;
 
-function eventAttacked(victim, attacker) {
-	// does nothing for now
-}
-
-function eventChat(from, to, message) {
-	// does nothing for now
-}
-
-function eventObjectTransfer(object, from) {
-	// does nothing for now
-}
-
-function eventBeacon(x, y, from, to) {
-	// does nothing for now
-}
-
-function eventBeaconRemoved(from, to) {
-	// does nothing for now
-}
-
-function eventDestroyed(object) {
-	// does nothing for now
+	if (state.botIsActive) {
+		for (let i=0; i<subtasks.length; i++) {
+			if (state.WORKER_IDS[subtasks[i]][state.currWorkerID]) {
+				hq.runIntelligence(state, subtasks[i]);
+			}
+		}
+	}
 }
 
 function runC2() {
-	hq.runC2();
+	if (state.botIsActive) {
+		if (state.WORKER_IDS['combat_runC2'][state.currWorkerID]) {
+			hq.runCombatOperations(state);
+		}
+	}
+}
+
+function runLogistics() {
+	if (state.botIsActive) {
+		if (state.WORKER_IDS['runLogistics'][state.currWorkerID]) {
+			hq.runLogistics(state);
+		}
+	}
+}
+
+function runMissionManager() {
+	if (state.botIsActive) {
+		if (state.WORKER_IDS['global_missionManager'][state.currWorkerID]) {
+			hq.runMissionManager(state);
+		}
+	}
+}
+
+function scheduleCoreFunctions() {
+	if (state.botIsActive) {
+		state.currWorkerID = Math.floor(gameTime / state.TIME_BLOCK_MS) % state.INTERVALS_PER_MIN;
+	}
 }
 
 function setupFishBot() {
-	// This function is already queued with a player-specific delay, so adding a random timer period is 
-	// no longer necessary for the timers of parallel Fishbot instances to be desynchronised           
-	const FISHBOT_DECISION_INTERVAL = 1000;
-    setTimer("runC2", FISHBOT_DECISION_INTERVAL);      
+	// This function queued with a player-specific delay          
+	setTimer("scheduleCoreFunctions", state.TIME_BLOCK_MS);
+
+	setTimer("runIntelligence", state.TIME_BLOCK_MS);
+	setTimer("runC2", state.TIME_BLOCK_MS);
+	setTimer("runLogistics", state.TIME_BLOCK_MS);
+	setTimer("runMissionManager", state.TIME_BLOCK_MS);
+
+	setTimer("runGameEndedWatchdog", 60000);
 }
 
 function eventStartLevel() {
@@ -100,5 +122,9 @@ function eventStartLevel() {
 		transformPlayerToSpectator(0);		// remove default human player (force-added in challenge mode)
 	}
 
-	queue("setupFishBot", me * 100);
+	queue("setupFishBot", me * 100);		
+
+	// Run construction tasks right away
+	queue("runLogistics");				
+	queue("runMissionManager");
 }

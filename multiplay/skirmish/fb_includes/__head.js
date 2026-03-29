@@ -86,12 +86,34 @@ const MISSION_PRIORITY = {
 Object.freeze(MISSION_PRIORITY);
 
 
-const FEATURE_TYPE = {
-	SECTOR: 0,
-	BASE: 1,
-	DERRICK: 2
-}
-Object.freeze(FEATURE_TYPE);
+const OBJ_FLAGS = {
+
+    // unit classes
+    ARMOUR:        				1 << 0,
+    INFANTRY:    				1 << 1,
+    INDIRECT_FIRE:     			1 << 2,
+    AVIATION:          			1 << 3,
+
+    // capabilities
+    ADA:          				1 << 4,
+    CONSTRUCTOR:      			1 << 5,
+	REPAIR:						1 << 6,
+
+	// propulsion
+	CYBORG_PROPULSION: 			1 << 12,
+	TRACKED_PROPULSION: 		1 << 13,
+	HALF_TRACKED_PROPULSION: 	1 << 14,
+	HOVER_PROPULSION: 			1 << 15,
+	WHEELED_PROPULSION: 		1 << 16,
+	VTOL_PROPULSION: 			1 << 17,
+
+    // structures
+    PRODUCTION:   				1 << 8,
+    RESOURCE_EXTRACTOR:       	1 << 9,
+    DEFENSIVE_STRUCTURE:      	1 << 10,
+	IS_BUILT:					1 << 11,
+};
+Object.freeze(OBJ_FLAGS);
 
 
 const MISSION_TYPE = {
@@ -100,8 +122,10 @@ const MISSION_TYPE = {
 	// ARMY AVIATION
 	VTOL_STAGING_MISSION: 1000,
 	CAS_STRIKE: 1001,
-	DAS_STRUCT_STRIKE: 1002,
-	CAS_PATROL: 1003,
+	AIR_RAID: 1002,
+	DAS_STRIKE: 1003,
+
+	CAS_PATROL: 1004,
 	AIR_RECON_SILENT: 1302,
 	AIR_RECON_PATROL: 1301,
 
@@ -110,7 +134,7 @@ const MISSION_TYPE = {
 	RAID: 2003,
 
 	// ARMY INTELLIGENCE
-	SECTOR_RECON_ENGINE: 3000,
+
 
 	// ARMY ENGINEERING
 	HELP_CONSTRUCT: 4000,
@@ -137,48 +161,22 @@ const CONSTRUCTION_MISSION_TYPES = [
 const AVIATION_MISSION_TYPES = [
 	MISSION_TYPE.VTOL_STAGING_MISSION,
 	MISSION_TYPE.CAS_STRIKE,
-	MISSION_TYPE.DAS_STRUCT_STRIKE,
+	MISSION_TYPE.AIR_RAID,
+	MISSION_TYPE.DAS_STRIKE,
 	MISSION_TYPE.CAS_PATROL,
 	MISSION_TYPE.AIR_RECON_SILENT,
 	MISSION_TYPE.AIR_RECON_PATROL
-]
+];
 
 Object.freeze(MISSION_TYPE);
 Object.freeze(CONSTRUCTION_MISSION_TYPES);
 Object.freeze(AVIATION_MISSION_TYPES);
 
 
-const REGION_OWNER = {
-	FRIENDLY: 0,
-	NEUTRAL: 1,
-	CONTESTED: 2,
-	ENEMY: 3,
-}
-Object.freeze(REGION_OWNER);
-
-
-const REGION_THREAT_LEVEL = {
-	LOW: 1,
-	MEDIUM: 2,
-	HIGH: 3
-};
-Object.freeze(REGION_THREAT_LEVEL);
-
-
-const REGION_STABILITY = {
-	LOW: 1,
-	MEDIUM: 2,
-	HIGH: 3
-};
-Object.freeze(REGION_STABILITY);
-
-
 /*
 	TACTICAL PARAMETERS 
     - used for all .js files prefixed with __tac_
 */
-
-
 const WZ2100_v461_DROID_RANGE_SCALING_FACTOR = 1 / 128;
 
 /*
@@ -217,6 +215,3 @@ const ENGINEERING = {
     ENGINEERING_RESERVE: 5000,
 }
 Object.freeze(ENGINEERING);
-
-
-const TOO_MUCH_POWER = 300;

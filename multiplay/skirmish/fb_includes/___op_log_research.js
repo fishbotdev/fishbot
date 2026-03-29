@@ -111,25 +111,50 @@ class armyResearchAndDevelopment {
 			return false;		// no available (filtered) researches, don't compute anything
 		}
 			
+		/*
+			Rule of thumb: to determine priority, iterate through the list. 
+			If the item I'm looking at is higher priority than the next entry, put it there, else, continue through the list
+
+			v0.3.1 release -> Power upgrade, Heavy Cannon, Cannon Dmg, Research upgrade, ROF, twin aslt, vehicle metals
+
+			Example v0.3.1 T2 research order:
+				R-Wpn-Cannon-Damage06
+				R-Struc-Power-Upgrade01c
+				R-Wpn-Cannon3Mk1
+				R-Struc-Research-Upgrade06
+				R-Wpn-Cannon-Damage07
+				R-Wpn-Cannon-ROF03
+				R-Wpn-Cannon6TwinAslt
+				R-Vehicle-Metals05
+				R-Struc-Research-Upgrade07
+				R-Cyborg-Metals06
+				R-Wpn-Cannon-Damage08
+				R-Wpn-Cannon-ROF04
+				R-Vehicle-Metals06
+				R-Struc-Power-Upgrade02
+				R-Wpn-Cannon-ROF05
+		*/
+
 		// Research priority items if they are available
 		const FISHBOT_CANNON_RESEARCH_PRIORITIES = [
-			"R-Struc-Research-Upgrade06", 	// Only prereq for twin assault cannon in T1
-			"R-Vehicle-Body09",				// Tiger Body
-			"R-Struc-Power", 
+			"R-Wpn-Cannon-Damage06",
+			"R-Struc-Power",
+			"R-Wpn-Cannon3Mk1", 
+			"R-Struc-Research-Upgrade06",
 			"R-Wpn-Cannon-Damage",
-			"R-Wpn-Mortar-Damage", 
-			"R-Wpn-Cannon6TwinAslt",
-			"R-Wpn-Mortar-ROF", 
-			"R-Struc-Research-Upgrade",
+			"R-Wpn-Mortar-Damage", 	
 			"R-Wpn-Cannon-ROF", 
-			"R-Vehicle-Metals", 
-			// "R-Cyborg-Metals",
-
+			"R-Wpn-Cannon6TwinAslt",
+			"R-Vehicle-Metals",
+			"R-Struc-Research-Upgrade",
+			"R-Vehicle-Body09",				// Tiger Body
 			"R-Struc-Factory-Upgrade",
+			"R-Cyborg-Metals",
 			"R-Wpn-MG5", 					// Twin AG
-
+			"R-Wpn-AAGun02", 		
+			"R-Wpn-Mortar-ROF", 
 			"R-Struc-VTOLPad-Upgrade", 
-
+			
 			// "R-Wpn-RailGun01",
 			// "R-Wpn-RailGun02",
 			// "R-Wpn-RailGun03",
@@ -137,11 +162,6 @@ class armyResearchAndDevelopment {
 
 			// "R-Wpn-Rail-ROF", 
 			// "R-Wpn-Rail-Accuracy",
-
-			// "R-Wpn-Cannon3Mk1", 
-			// "R-Wpn-AAGun02", 
-
-
 		];
 		for (let i=0; i<FISHBOT_CANNON_RESEARCH_PRIORITIES.length; ++i) {
 			const keyword = FISHBOT_CANNON_RESEARCH_PRIORITIES[i];

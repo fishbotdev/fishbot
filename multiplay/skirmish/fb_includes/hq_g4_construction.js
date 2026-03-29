@@ -19,14 +19,6 @@ class armyEngineering {
 	constructor() {
 
 	}
-	
-	getTruckAvailability() {
-		const truckAvailability = {
-			numAvailable: state.g.enumGroup(ENGINEERING.ENGINEERING_RESERVE).length,
-			numTotal: enumDroid(me, DROID_CONSTRUCT).length
-		}
-		return truckAvailability;
-	}
 
 	#getNumFinishedModules({structureID}) {
 		// Assumes that 
@@ -54,6 +46,316 @@ class armyEngineering {
 		return completedModuleCount;
 	}
 
+	/**
+	 * 
+	 * @param {worldState} state 
+	 * @param {*} activeOilCapTaskIDs 
+	 * @returns {Array}
+	 */
+	generateOilCaptureOptions(state, activeOilCapTaskIDs) {
+		/*
+		Algorithm:
+		Use the grid system to:
+		- Find cells with unclaimed derricks											-- uses state.fields.unclaimedDerricksInCell[gx][gy]
+		- Remove cells with high threat from enemy struct concentrations 				-- uses state.grid.grid[gx][gy].targetStructures 
+		- Remove cells with defensive structures										-- uses state.fields.enemyStaticDefenceThreat
+		- Remove cells with enemy offensive units										-- uses state.fields.enemyUnitThreat
+		- Remove cells with all derricks already being claimed in active missions		-- uses this.toc.getActiveConstructionMissions()
+		
+		-> if all conditions satisfied, push derrick ID to be used to filter state.poi.derricks
+		
+		Iterate through the ordered list
+		1. Skip if id not found in grid entries
+		2. >= 4 derricks which are close to one another (multiple in one grid); move to front of list
+			2a. create new CONSTRUCT_ALL_DERRICKS_IN_SECTOR
+		3. Else, continue (the ordered list already orders the derricks in order of increasing distance from base)
+			3a. create new CONSTRUCT_OIL_DERRICK for single, CONSTRUCT_ALL_DERRICKS_IN_SECTOR for multiple
+		*/
+		const grid = state.grid.grid;
+		const numXCells = state.grid.numXCells;
+		const numYCells = state.grid.numYCells;
+
+		const unclaimedDerricksInCell = state.fields.unclaimedDerricksInCell;
+		const enemyStaticDefenceThreat = state.fields.enemyStaticDefenceThreat;
+		const enemyUnitThreat = state.fields.enemyUnitThreat;
+
+		const DEBUG_ON = false;
+		let debugGrid = create2DGrid(numXCells, numYCells, (...args) => {return "_";});
+		let valid = [];
+
+		// Iterate through the grid, find & remember valid cells
+		for (let gx=0; gx<numXCells; gx++) {
+			for (let gy=0; gy<numYCells; gy++) {
+
+				// Filter out invalid / bad entries
+				if (unclaimedDerricksInCell[gx][gy] === 0) continue;
+				if (enemyStaticDefenceThreat[gx][gy] > 0) continue;			
+				if (enemyUnitThreat[gx][gy] > 0) continue;
+
+				const derricksInCell = grid[gx][gy].derricks;
+				for (let i=0; i<derricksInCell.length; i++) {
+					const d = derricksInCell[i];
+					if (activeOilCapTaskIDs.indexOf(d.id) !== -1) continue; 	// === found an existing mission 
+					// if (tileIsBurning(d.x, d.y)) continue;		// seems to be worse
+
+					if (derricksInCell.length >= 4) {
+						const br = engineering.translateIntoBuildRequest({
+							missionType: MISSION_TYPE.CONSTRUCT_ALL_DERRICKS_IN_SECTOR, 
+							structureData: STRUCTURES["Oil Derrick"],
+							payload: grid[gx][gy]		// needs to have the '.derricks' property to work with the existing system
+						});
+						valid.push([d.id, br]);
+						if (DEBUG_ON) debugGrid[gx][gy] = "X";
+						break;
+					} else {
+						const br = engineering.translateIntoBuildRequest({
+							missionType: MISSION_TYPE.CONSTRUCT_OIL_DERRICK, 
+							structureData: STRUCTURES["Oil Derrick"],
+							payload: d
+						});
+						valid.push([d.id, br]);
+						if (DEBUG_ON) debugGrid[gx][gy] = "X";
+					}
+				}
+			}
+		}
+
+		if (DEBUG_ON) {
+			debug(`prioritiseOilCapTasks() @ ${gameTime} ms`);
+
+			for (let gy=0; gy<numYCells; gy++) {
+				let row = "";
+
+				for (let gx=0; gx<numXCells; gx++) {					
+					row += `${debugGrid[gx][gy]} `;
+				}
+				debug(row);
+			}
+		}
+
+		let result = [];
+		if (valid.length === 0) {
+			return result;
+		}
+		
+		// Order the tasks in order of decreasing distance from base
+		let count = 0;
+		state.poi.derricks.forEach(d => {
+			for (let i=0; i<valid.length; i++) {
+				if (d.id === valid[i][0]) {
+					result.push(valid[i][1]);
+					count++;
+					return;
+				}
+			}
+		});
+
+		if (count !== valid.length) {
+			debug(`WARNING: prioritiseOilCapTasks(): count !== valid.length!`);
+		} else {
+			if (DEBUG_ON) result.forEach(br => debug (`\t${br.payload.id}`));
+		}
+
+		return result;
+	}
+
+	/**
+	 * 
+	 * @param {worldState} state 
+	 * @param {*} activeDefenceBuildTaskIDs 
+	 * @returns 
+	 */
+	generateOilDefenceConstructionOptions(state, activeDefenceBuildTaskIDs) {
+		/*
+		Algorithm:
+		- For each derrick in `state.poi.derricks`
+			. If grid cell previously processed, continue
+			. Check static defence threat grid (continue if high threat), check unit defence threat grid (after five mins)
+			. Check grid ref for friendly defences in sector (continue if done)
+			. Check active missions (continue if already active)
+			. Check grid ref for other derricks in sector ( -- influences how many defences)
+			. Check owner ( -- influences offensive vs friendly oil; if other types of defences are needed) or if tileIsBurning 
+			. Build one defence per undefended location also 
+			. Handle special case of clustered derricks with unreachable enemy derricks (build hardpoint)
+		*/
+		const grid = state.grid.grid;
+		const derricks = state.poi.derricks;
+		const controlStability = state.fields.controlStability;
+		const enemyUnitThreat = state.fields.enemyUnitThreat;
+
+		const MAX_CONTROL = 5;
+		const PROXIMITY_RADIUS = 7;
+
+		const makePrimaryDefence = (derrickObj) => this.translateIntoBuildRequest({
+			missionType: MISSION_TYPE.CONSTRUCT_NEARBY_DEFENCE, 
+			structureData: STRUCTURES["Rotary MG Bunker"],
+			payload: derrickObj
+		});
+		const makeSecondaryDefence = (derrickObj) => this.translateIntoBuildRequest({
+			missionType: MISSION_TYPE.CONSTRUCT_NEARBY_DEFENCE, 
+			structureData: STRUCTURES["Assault Gun Hardpoint"],
+			payload: derrickObj
+		});
+		const isOwnedByEnemy = (ownerID) => {
+			if (defined(ownerID)) {
+				if (isEnemy(ownerID)) {
+					return true;
+				}
+			}
+			return false;
+		};
+
+		let result = {
+			'friendlyOil': [],
+			'offensiveOil': [],
+			'highPrioOil': [],
+		};
+		let highPrioOil = [], normalPrioOil = [];		
+		let seenDerricks = [];
+
+		// debug(``);
+		for (let i=0; i<derricks.length; i++) {
+			const d = derricks[i];
+
+			// the following replicates the old 'sector' system grouping of derricks
+			let previouslySeen = false;
+			for (let j=seenDerricks.length-1; j>=0; j--) {
+				if (distSq(seenDerricks[j].x, d.x, seenDerricks[j].y, d.y) < PROXIMITY_RADIUS ** 2) {
+					previouslySeen = true;
+					break;
+				}
+			}
+			if (previouslySeen) {
+				// debug(`skipped ${d.id}: already seen`);
+				continue;
+			}
+
+			seenDerricks.push(d);			
+
+			if (activeDefenceBuildTaskIDs.includes(d.id)) {
+				// debug(`skipped ${d.id}: activeMission`);
+				continue;
+			}
+
+			if (enemyUnitThreat[d.gx][d.gy] > 0) {
+				// debug(`skipped ${d.id}: unit threat`);
+				continue
+			};			// TODO: move this prioritisation to hq_command (decisions on options should be made in command)
+
+			if (controlStability[d.gx][d.gy] <= -1 * MAX_CONTROL) {		// TODO: move this prioritisation to hq_command (decisions on options should be made in command)
+				// debug(`skipped ${d.id}: (${d.gx}, ${d.gy}); control too large (${controlStability[d.gx][d.gy]})`);
+				continue;
+			}
+
+			// Intent: enumRange is used as this offers better granularity compared to directly accessing the grid
+			const s = state.grid.enumRange(d.x, d.y, PROXIMITY_RADIUS);
+			
+			let friendlyDefencesNearby = 0, friendlyBuildSitesNearby = 0, friendlyDerricksNearby = 0;
+
+
+			for (let j=0; j<s['friendlyStructures'].length; j++) {
+				const f = s['friendlyStructures'][j];
+
+				if (f.flags & OBJ_FLAGS.RESOURCE_EXTRACTOR) {
+					friendlyDerricksNearby++;
+
+					if (activeDefenceBuildTaskIDs.includes(f.id)) {
+						previouslySeen = true;
+					}
+				}
+
+				if (f.flags & OBJ_FLAGS.DEFENSIVE_STRUCTURE && !(f.flags & OBJ_FLAGS.ADA)) {
+					if (f.flags && OBJ_FLAGS.IS_BUILT) {
+						friendlyDefencesNearby++;
+					} else {
+						friendlyBuildSitesNearby++;
+					}
+				}
+			}
+
+			if (previouslySeen)  {
+				// debug(`skipped ${d.id}: previouslySeen`);
+				continue;
+			}
+
+			const BUILT_DEFENCES = OBJ_FLAGS.DEFENSIVE_STRUCTURE | OBJ_FLAGS.IS_BUILT;
+
+			let enemyDefencesNearby = 0, enemyDerricksNearby = 0;
+			for (let j=0; j<s['targetStructures'].length; j++) {
+				const e = s['targetStructures'][j];
+				if (e.flags & OBJ_FLAGS.RESOURCE_EXTRACTOR) {
+					enemyDerricksNearby++;
+
+					if (activeDefenceBuildTaskIDs.includes(e.id)) {
+						previouslySeen = true;
+					}
+				}
+
+				if ((e.flags & BUILT_DEFENCES) === BUILT_DEFENCES && !(e.flags & OBJ_FLAGS.ADA)) {
+					enemyDefencesNearby++;
+				}
+			}
+
+			if (previouslySeen)  {
+				// debug(`skipped ${d.id}: previouslySeen`)
+				continue;
+			}
+
+			if (enemyDefencesNearby > 0) {
+				// debug(`skipped ${d.id}: friendlyDefencesNearby`);
+				continue;
+			}
+
+			if (controlStability[d.gx][d.gy] >= 5 && enemyDerricksNearby === 0) {		// TODO: move this prioritisation to hq_command (decisions on options should be made in command)
+				// debug(`skipped ${d.id}: (${d.gx}, ${d.gy}); control too large (${controlStability[d.gx][d.gy]})`);
+				continue;
+			}
+
+			const isHighPriority = grid[d.gx][d.gy].derricks.length >= 4;
+			if (isHighPriority) {
+				// Has a special case of defences === 1 -> can build secondary defence
+				if (friendlyDefencesNearby === 0) {
+					result['highPrioOil'].unshift(makePrimaryDefence(d));
+					highPrioOil.unshift(makePrimaryDefence(d));			// unshift -> reverses the order of `state.poi.derricks` which is ordered in ascending order from base
+				} else if (friendlyDefencesNearby === 1) {
+					const specialContestedDerrick = (enemyDerricksNearby > 0 && friendlyDefencesNearby === 1);
+					if (specialContestedDerrick) {
+						result['friendlyOil'].push(makeSecondaryDefence(d));
+						normalPrioOil.push(makeSecondaryDefence(d));
+					}
+				}
+				continue;
+			}
+
+			if (friendlyDefencesNearby > 0) {
+				// debug(`skipped ${d.id}: friendlyDefencesNearby`);
+				continue;
+			}
+			
+			const regularContestedDerrick = tileIsBurning(d.x, d.y) || (enemyDerricksNearby > 0 && friendlyDefencesNearby === 0);		// todo to split
+			if (regularContestedDerrick) {
+				result['offensiveOil'].unshift(makePrimaryDefence(d));
+				normalPrioOil.unshift(makePrimaryDefence(d));
+			} else {
+				result['friendlyOil'].unshift(makePrimaryDefence(d));
+				normalPrioOil.unshift(makePrimaryDefence(d));
+			}
+		}
+
+		if (false) {
+			debug(`generateOilDefenceConstructionOptions() @${gameTime}`);
+			debug(`	highPrio: ${highPrioOil}`);
+			debug(`	normalPrio: ${normalPrioOil}`);
+		}
+
+		return [...highPrioOil, ...normalPrioOil];
+	}
+
+	/**
+	 * 
+	 * @param {worldState} state 
+	 * @returns 
+	 */
 	requestBaseConstruction(state) {
 		// Inputs:
 		// -	buildQueue: a list of STRUCTURES['exampleName']
@@ -68,7 +370,7 @@ class armyEngineering {
 			STRUCTURES["Power Module"],
 			STRUCTURES["Power Generator"],
 			STRUCTURES["Cyborg Factory"],		
-
+			STRUCTURES["Cyborg Factory"],		
 			STRUCTURES["VTOL Factory"],
 			STRUCTURES["VTOL Rearming Pad"],
 			STRUCTURES["VTOL Rearming Pad"],
@@ -77,6 +379,7 @@ class armyEngineering {
 			STRUCTURES["Research Facility"],
 			STRUCTURES["Power Module"],
 			STRUCTURES["Power Module"],
+
 			STRUCTURES["Factory Module"],
 			STRUCTURES["Factory Module"],
 			// STRUCTURES["Repair Facility"],
@@ -84,7 +387,7 @@ class armyEngineering {
 			STRUCTURES["Factory Module"],
 			STRUCTURES["Research Facility"],
 			STRUCTURES["Research Module"],
-			STRUCTURES["Cyborg Factory"],		
+
 			STRUCTURES["VTOL Rearming Pad"],
 			STRUCTURES["VTOL Rearming Pad"],
 			STRUCTURES["Factory Module"],
@@ -94,7 +397,8 @@ class armyEngineering {
 			STRUCTURES["Research Module"],
 			STRUCTURES["Research Facility"],
 			STRUCTURES["Research Module"],
-			STRUCTURES["Cyborg Factory"],		
+			STRUCTURES["Research Facility"],
+			STRUCTURES["Research Module"],
 			STRUCTURES["VTOL Rearming Pad"],
 			STRUCTURES["VTOL Rearming Pad"],
 			STRUCTURES["Research Facility"],
@@ -102,17 +406,11 @@ class armyEngineering {
 			STRUCTURES["Factory"],
 			STRUCTURES["Factory Module"],
 			STRUCTURES["Factory Module"],
-
-
-			STRUCTURES["Cyborg Factory"],
 			STRUCTURES["Power Generator"],
 			STRUCTURES["Power Module"],
-			STRUCTURES["Research Facility"],
-			STRUCTURES["Research Module"],
-			STRUCTURES["Power Generator"],
-			STRUCTURES["Power Module"],
-			STRUCTURES["Power Generator"],
-			STRUCTURES["Power Module"],	
+			STRUCTURES["VTOL Rearming Pad"],
+			STRUCTURES["VTOL Rearming Pad"],
+			STRUCTURES["Cyborg Factory"],		
 		];
 
 		// Put each task into an appropriate format for approval ("buildTask", which is internal to g4_construction)
@@ -149,179 +447,13 @@ class armyEngineering {
 			}
 
 			// Else, schedule a new task
-			const buildRequest = this.#translateIntoBuildRequest({
+			const buildRequest = this.translateIntoBuildRequest({
 				missionType: MISSION_TYPE.CONSTRUCT_AUTO_DETECT_BY_STRUCTURE, 
 				structureData: currStructureData,
 				payload: undefined
 			});
 			buildTasks.push(buildRequest);
 			break;
-		}
-		
-		return buildTasks;
-	}
-
-	requestSectorDefenceConstruction(state) {
-		// Select new locations for placing defences
-		let contestedDerricks = [];
-		let friendlyDerricks = [];
-		let highValueDerricks = [];
-
-		for (let i=0; i<state.sectors.length; i++) {
-			const currSector = state.sectors[i];
-
-			// Check nature of derricks (are they all together, or are they spread out?)
-			let clustered = true;
-			if (currSector.derricks.length > 1) {
-				for (let j=1; j<currSector.derricks.length; j++) {
-					let d = distance(currSector.derricks[j], currSector.derricks[0]);
-					if (d > 5) {
-						clustered = false;
-						break;
-					}
-				}
-			}
-
-			for (let i=0; i<currSector.derricks.length; i++) {
-
-				if (clustered && i > 0) {
-					break;		// only run one iteration
-				}
-
-				const currDerrick = currSector.derricks[i];
-
-				if ([REGION_OWNER.FRIENDLY, REGION_OWNER.CONTESTED].includes(currDerrick.owner) &&			// based on current structures (fixed assets) around location
-					currDerrick.threatLevel <= REGION_THREAT_LEVEL.MEDIUM &&									// based on potential for raiding (mobile assets) + reinforcement
-					currDerrick.controlStability <= REGION_STABILITY.MEDIUM) {								// geography (based on map analysis)
-					let bunkerBuildRequest = this.#translateIntoBuildRequest({
-						missionType: MISSION_TYPE.CONSTRUCT_NEARBY_DEFENCE, 
-						structureData: STRUCTURES["Rotary MG Bunker"],
-						payload: currDerrick}
-					);
-
-					if (currSector.derricks.length >= 4) {
-						highValueDerricks.push(bunkerBuildRequest);
-					}
-
-					if (currDerrick.owner === REGION_OWNER.CONTESTED) {
-						contestedDerricks.push(bunkerBuildRequest);
-					} else {
-						friendlyDerricks.push(bunkerBuildRequest);
-					}
-					// debug(`defence requested: ${newDefence.x} ${newDefence.y}, threat: ${resource.threatLevel}, owner: ${resource.owner}`);
-				}
-
-				// Special case of high value, clustered derricks with nothing else built yet
-				if (clustered && 
-					currSector.owner === REGION_OWNER.NEUTRAL &&
-					currSector.derricks.length >= 4) {
-
-					let highValueDefence = this.#translateIntoBuildRequest({
-						missionType: MISSION_TYPE.CONSTRUCT_NEARBY_DEFENCE, 
-						structureData: STRUCTURES["Rotary MG Bunker"],
-						payload: currDerrick}
-					);
-
-					highValueDerricks.push(highValueDefence);
-				}
-
-				// Special case of high value, clustered derricks with residual enemy derricks
-				if (clustered && 
-					currSector.derricks.length >= 4 && 
-					currSector.derricks.some(d => d.owner === REGION_OWNER.FRIENDLY) &&
-					currSector.derricks.some(d => d.owner === REGION_OWNER.ENEMY || d.owner === REGION_OWNER.CONTESTED) &&
-					currSector.enemyDefenceCount === 0) {
-
-					let highValueDefence = this.#translateIntoBuildRequest({
-						missionType: MISSION_TYPE.CONSTRUCT_NEARBY_DEFENCE, 
-						structureData: STRUCTURES["Assault Gun Hardpoint"],
-						payload: currDerrick}
-					);
-
-					friendlyDerricks.push(highValueDefence);
-				}
-			}
-		}
-		
-		// Rationale: contested derricks should be closest to base (highest likelihood to capitalise), whereas friendlyDerricks should be far away from base (highest risk to enemy reinforcement)
-		highValueDerricks.sort((one, two) => 
-			distSq(one.payload.x, baseLocation.x, one.payload.y, baseLocation.y) - distSq(two.payload.x, baseLocation.x, two.payload.y, baseLocation.y));
-		contestedDerricks.sort((one, two) => 
-			distSq(two.payload.x, baseLocation.x, two.payload.y, baseLocation.y) - distSq(one.payload.x, baseLocation.x, one.payload.y, baseLocation.y));
-		friendlyDerricks.sort((one, two) => 
-			distSq(two.payload.x, baseLocation.x, two.payload.y, baseLocation.y) - distSq(one.payload.x, baseLocation.x, one.payload.y, baseLocation.y));
-
-		if (highValueDerricks.length >= 1) {
-			return [...highValueDerricks];
-		}
-
-		return [...highValueDerricks, ...contestedDerricks, ...friendlyDerricks];
-	}
-
-	/*
-		Oil capture
-	*/
-	requestOilCapture(state) {
-		let sectorsWithOilToCapture = [];
-
-		// This function assumes that sectors are arranged in ascending order of distance from base
-		const sectors = state.sectors;
-		for (let i=0; i<sectors.length; i++) {
-
-			let allClaimed = true;
-			for (let j=0; j<sectors[i].derricks.length; j++) {
-				const currDerrick = sectors[i].derricks[j];
-				if (currDerrick.threatLevel > REGION_THREAT_LEVEL.MEDIUM) {
-					continue;
-				}
-
-				if (currDerrick.isClaimed !== true) {
-					allClaimed = false;
-					break;
-				}
-			}
-
-			if (!allClaimed) {
-				sectorsWithOilToCapture.push(sectors[i]);
-			}
-		}
-
-		let buildTasks = [];
-
-		for (let i=0; i<sectorsWithOilToCapture.length; i++) {
-			const currSector = sectorsWithOilToCapture[i];
-
-			// Convert sector oil capture into a build task. Derricks are grouped appropriately
-
-			if (currSector.derricks.length >= 4) {
-				let buildRequest = this.#translateIntoBuildRequest({
-					missionType: MISSION_TYPE.CONSTRUCT_ALL_DERRICKS_IN_SECTOR, 
-					structureData: STRUCTURES["Oil Derrick"],
-					payload: currSector
-				});
-				
-				buildTasks.push(buildRequest);
-			} else {
-				currSector.derricks.forEach(derrick => {
-					if (derrick.isClaimed === true) {
-						return;
-					}
-
-					if (tileIsBurning(derrick.x, derrick.y)) {
-						// debug(`cancelled oil capture - derrick is burning ${derrick.x}, ${derrick.y}`);
-						return;
-					}
-
-					let buildRequest = this.#translateIntoBuildRequest({
-						missionType: MISSION_TYPE.CONSTRUCT_OIL_DERRICK, 
-						structureData: STRUCTURES["Oil Derrick"],
-						payload: derrick
-					});
-					
-					buildTasks.push(buildRequest);
-				});			
-			}
-
 		}
 		
 		return buildTasks;
@@ -342,7 +474,7 @@ class armyEngineering {
 		return buildRequestTemplate;
 	}
 
-	#translateIntoBuildRequest({missionType, structureData, payload}) {
+	translateIntoBuildRequest({missionType, structureData, payload}) {
 		let buildRequest = undefined;
 
 		switch (missionType) {
@@ -379,6 +511,24 @@ class armyEngineering {
 		return buildRequest;
 	}
 
+	/**
+	 * Creates standard mission orders;
+	 * @returns {Object | void} `missionData` with the following parameters: 
+	 * 		- `id`				: Unique ID to designate this particular mission (set here)
+			- `missionType`		: Integer to denote mission type (determined in OPS)
+			- `missionStatus`	: Integer to denote mission status (this function sets it to FAILED_CREATION)
+			- `priority`		: Integer to denote priority (determined in OPS)
+			- `taskForceID`		: Unique ID to designate all units in the group (set here)
+			- `orders`			: how to carry out the mission (__tac level functions)
+			- `ceaseOrders` 	: how to finish the mission (__tac level functions)
+			- `timeStarted`		: gameTime when the mission was executed by the mission manager
+			- `timeCompleted`	: gameTime when ceaseOrders was called & processed (filled by ceaseOrders())
+
+			The following parameters are used for mission cancellation / planning
+			- `sectorID`		: parameter to denote position (v0.3.0 sector system)
+			- `gx`				: grid x coordinate (v0.4.0 sector system)
+			- `gy`				: grid y coordinate (v0.4.0 sector system)
+	 */
 	#createMissionOrders() {
 		let missionDataTemplate = {
 			'id': undefined, 
@@ -391,7 +541,10 @@ class armyEngineering {
 			'timeStarted': -2,
 			'timeCompleted': -1,
 
-			'sectorID': undefined,	// used by Recon missions (for missions that do not complete instantly) -- unused as of 07 Jan 26
+			// The following 3 parameters are used for mission cancellation (they indicate something about position)
+			'sectorID': undefined,	// v0.3.0 sector system	
+			'gx': -1,				// v0.4.0 grid system
+			'gy': -1,				// v0.4.0 grid system
 		};
 
 		return missionDataTemplate;
@@ -423,17 +576,6 @@ class armyEngineering {
 		// it returns either:
 		// 	- missionData object (according to missionDataTemplate), if mission successfully created, OR
 		//	- undefined, if mission was not able to be created	
-			
-		// Make a shallow copy (as long as the template doesn't change, this is fine)
-		// 	- id:				: Unique ID to designate this particular mission (set here)
-		//	- missionType		: Integer to denote mission type (determined in OPS)
-		//	- missionStatus		: Integer to denote mission status (this function sets it to NOT_STARTED)
-		// 	- priority			: Integer to denote priority (determined in OPS)
-		// 	- taskForceID		: Unique ID to designate all units in the group (set here)
-		// 	- orders			: how to carry out the mission (tactics.js)
-		//	- ceaseOrders 		: how to finish the mission (tactics.js)
-		//	- timeCompleted		: gameTime when ceaseOrders was called & processed
-
 		let md = this.#createMissionOrders();
 
 		// Create mission details		
@@ -452,6 +594,8 @@ class armyEngineering {
 		// it returns either:
 		// 	- missionData object (according to missionDataTemplate), if mission successfully created, OR
 		//	- undefined, if mission was not able to be created	
+
+		const cellSize = state.grid.cellSize;
 		
 		let engineeringReserve = state.g.enumGroup(ENGINEERING.ENGINEERING_RESERVE);
 		if (engineeringReserve.length === 0) {			
@@ -468,12 +612,12 @@ class armyEngineering {
 
 		const loc = pickStructLocation(engineeringReserve[0], buildTask.structureID, baseLocation.x, baseLocation.y);		
 		if (!defined(loc)) {
-			debug(`#createBuildBaseStructureTask(): pickStructLocation() couldn't find a good location for ${buildTask.structureID}.`);
+			// debug(`#createBuildBaseStructureTask(): pickStructLocation() couldn't find a good location for ${buildTask.structureID}.`);
 			return undefined;
 		}
 
 		// Select closest trucks to new location
-		engineeringReserve.sort((first, second) => distance(first, buildTask) - distance(second, buildTask));
+		engineeringReserve.sort((a,b) => distSq(a.x, buildTask.x, a.y, buildTask.y) - distSq(b.x, buildTask.x, b.y, buildTask.y));
 		const taskForceUnits = engineeringReserve.slice(0, MAX_TRUCKS); 
 
 		let md = this.#createMissionOrders();
@@ -482,6 +626,8 @@ class armyEngineering {
 		const id = getCurrGameTime() + "_CONSTRUCT_BASE_STRUCTURE_" + tickUID;
 		md.id = id;
 		md.taskForceID = id;
+		md.gx = Math.floor(loc.x / cellSize);
+		md.gy = Math.floor(loc.y / cellSize);
 		
 		taskForceUnits.forEach((droid) => {
 			state.g.addDroidToGroup({groupID: md.taskForceID, droidID: droid.id});
@@ -495,11 +641,14 @@ class armyEngineering {
 		return md;
 	}
 
+	/**
+	 * Creates task to build a single derrick.
+	 * @param {Object} buildTask build information (payload = `derrick` object: requires the `.x`, `.y` properties)
+	 * @param {number} tickUID used to differentiate missions created in the same FishBot tick
+	 * @returns `missionData` object, if mission successfully created, else `undefined`
+	 */
 	createBuildDerrickTask({buildTask, tickUID}) {		
-		// it returns either:
-		// 	- missionData object (according to missionDataTemplate), if mission successfully created, OR
-		//	- undefined, if mission was not able to be created	
-		
+		const cellSize = state.grid.cellSize;
 		const derrick = buildTask.payload;
 
 		let engineeringReserve = state.g.enumGroup(ENGINEERING.ENGINEERING_RESERVE);
@@ -511,7 +660,7 @@ class armyEngineering {
 		let MAX_TRUCKS = 1;
 		
 		// Select closest trucks to sector
-		engineeringReserve.sort((first, second) => distance(first, buildTask) - distance(second, buildTask));		// buildTask = state.sector -> has x,y
+		engineeringReserve.sort((a,b) => distSq(a.x, buildTask.x, a.y, buildTask.y) - distSq(b.x, buildTask.x, b.y, buildTask.y));
 		const taskForceUnits = engineeringReserve.slice(0, MAX_TRUCKS);
 
 		if (!isStructureAvailable(buildTask.structureID, me)) {
@@ -527,6 +676,8 @@ class armyEngineering {
 		md.taskForceID = id;
 
 		md.sectorID = buildTask.payload.id;
+		md.gx = Math.floor(derrick.x / cellSize);
+		md.gy = Math.floor(derrick.y / cellSize);
 		
 		taskForceUnits.forEach((droid) => {
 			state.g.addDroidToGroup({groupID: md.taskForceID, droidID: droid.id});
@@ -540,11 +691,14 @@ class armyEngineering {
 		return md;
 	}
 
-	createBuildAllDerricksInSectorTask({buildTask, tickUID}) {		
-		// it returns either:
-		// 	- missionData object (according to missionDataTemplate), if mission successfully created, OR
-		//	- undefined, if mission was not able to be created	
-		
+	/**
+	 * Creates task to build all derricks in a grid cell.
+	 * @param {Object} buildTask build information (payload = `gridCell` object: requires the `.derricks` property)
+	 * @param {number} tickUID used to differentiate missions created in the same FishBot tick
+	 * @returns `missionData` object, if mission successfully created, else `undefined`
+	 */
+	createBuildAllDerricksInSectorTask({buildTask, tickUID}) {				
+		const sector = buildTask.payload;
 		const sectorDerricks = buildTask.payload.derricks;
 
 		let engineeringReserve = state.g.enumGroup(ENGINEERING.ENGINEERING_RESERVE);
@@ -556,7 +710,7 @@ class armyEngineering {
 		let MAX_TRUCKS = 1;
 		
 		// Select closest trucks to sector
-		engineeringReserve.sort((first, second) => distance(first, buildTask) - distance(second, buildTask));		// buildTask = state.sector -> has x,y
+		engineeringReserve.sort((a,b) => distSq(a.x, buildTask.x, a.y, buildTask.y) - distSq(b.x, buildTask.x, b.y, buildTask.y));	
 		const taskForceUnits = engineeringReserve.slice(0, MAX_TRUCKS);
 
 		if (!isStructureAvailable(buildTask.structureID, me)) {
@@ -571,7 +725,9 @@ class armyEngineering {
 		md.id = id;
 		md.taskForceID = id;
 
-		md.sectorID = buildTask.payload.id;
+		md.sectorID = sector.id;
+		md.gx = sector.gx;
+		md.gy = sector.gy;
 		
 		taskForceUnits.forEach((droid) => {
 			state.g.addDroidToGroup({groupID: md.taskForceID, droidID: droid.id});
@@ -585,12 +741,15 @@ class armyEngineering {
 		return md;
 	}
 
+	/**
+	 * Creates task to build *one* additional module extension on an upgradeable structure.
+	 * @param {Object} buildTask build information (no payload)
+	 * @param {number} tickUID used to differentiate missions created in the same FishBot tick
+	 * @returns `missionData` object, if mission successfully created, else `undefined`
+	 */
 	createBuildSingleModuleTask({buildTask, tickUID}) {
-		// it returns either:
-		// 	- missionData object (according to missionDataTemplate), if mission successfully created, OR
-		//	- undefined, if mission was not able to be created	
 
-		// This function builds *one* additional module extension on *every* structure than can be upgraded.
+		const cellSize = state.grid.cellSize;
 
 		let engineeringReserve = state.g.enumGroup(ENGINEERING.ENGINEERING_RESERVE);
 		if (engineeringReserve.length === 0) {
@@ -638,7 +797,7 @@ class armyEngineering {
 		const numFinishedModules = baseStructures[0].modules + 1;
 
 		// Select closest trucks to location
-		engineeringReserve.sort((first, second) => distance(first, buildTask) - distance(second, buildTask));
+		engineeringReserve.sort((a,b) => distSq(a.x, buildTask.x, a.y, buildTask.y) - distSq(b.x, buildTask.x, b.y, buildTask.y));
 		const taskForceUnits = engineeringReserve.slice(0, MAX_TRUCKS); 
 
 		let md = this.#createMissionOrders();
@@ -647,6 +806,9 @@ class armyEngineering {
 		const id = getCurrGameTime() + "_CONSTRUCT_SINGLE_MODULE_" + tickUID;
 		md.id = id;
 		md.taskForceID = id;
+
+		md.gx = Math.floor(x / cellSize);
+		md.gy = Math.floor(y / cellSize);
 		
 		taskForceUnits.forEach((droid) => {
 			state.g.addDroidToGroup({groupID: md.taskForceID, droidID: droid.id});
@@ -660,10 +822,14 @@ class armyEngineering {
 		return md;
 	}
 
+	/**
+	 * Creates task to build one defensive structure near a specified location.
+	 * @param {Object} buildTask build information (payload = `derrick` object: requires the `.x`, `.y` properties)
+	 * @param {number} tickUID used to differentiate missions created in the same FishBot tick
+	 * @returns `missionData` object, if mission successfully created, else `undefined`
+	 */
 	createBuildNearbyDefenceTask({buildTask, tickUID}) {
-		// it returns either:
-		// 	- missionData object (according to missionDataTemplate), if mission successfully created, OR
-		//	- undefined, if mission was not able to be created	
+		const cellSize = state.grid.cellSize;
 
 		const MINIMUM_TRUCKS = 2;
 		
@@ -675,7 +841,7 @@ class armyEngineering {
 
 		// Select closest trucks to new location
 		const currDerrick = buildTask.payload;
-		engineeringReserve.sort((first, second) => distance(first, currDerrick) - distance(second, currDerrick));
+		engineeringReserve.sort((a,b) => distSq(a.x, currDerrick.x, a.y, currDerrick.y) - distSq(b.x, currDerrick.x, b.y, currDerrick.y));
 		const taskForceUnits = engineeringReserve.slice(0, MINIMUM_TRUCKS); 
 
 		if (!isStructureAvailable(buildTask.structureID, me)) {
@@ -697,6 +863,8 @@ class armyEngineering {
 		md.taskForceID = id;
 
 		md.sectorID = currDerrick.id;			// TODO: CHECK IF "SECTORID" is the correct abstraction even though this is derrick ID (position ID?)
+		md.gx = Math.floor(preferredLoc.x / cellSize);
+		md.gy = Math.floor(preferredLoc.y / cellSize);
 		
 		taskForceUnits.forEach((droid) => {
 			state.g.addDroidToGroup({groupID: md.taskForceID, droidID: droid.id});

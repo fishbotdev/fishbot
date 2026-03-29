@@ -22,15 +22,13 @@ class armyQuartermaster {
 	}
 
     #checkVtolProduction() {
-        if (!iCanDesign())
-            return false; // don't cheat by producing vtols before design is available
+        if (!iCanDesign()) return false; // don't cheat by producing vtols before design is available
 
         let vtolInProduction = false;
         const idleVtolFactories = getIdleStructuresOfType({structureID: STRUCTURES["VTOL Factory"].id});
 
         for (let i = 0; i < idleVtolFactories.length; i++) {
             const factory = idleVtolFactories[i];
-
             vtolInProduction = vtolInProduction || produceCloseAirSupport(factory);
         }
 
@@ -84,10 +82,9 @@ class armyQuartermaster {
             // Only make direct assault tanks; overwrite weights
             weights = {
                 'Heavy Cav': 10,
-                'Light Cav': 2,
-                'Fire Support': 4,
-                'Air Defence': 2,
-                'Sensor': 1
+                'Light Cav': 3,
+                'Fire Support': 2,
+                'Air Defence': 1,
             };
         } else if (directAssaultTanksCount >= 6 && fireSupportCount === 0) {
             weights = {
@@ -97,8 +94,8 @@ class armyQuartermaster {
             // DEFAULT WEIGHTS
             weights = {
                 'Heavy Cav': 10,
-                'Light Cav': 3,
-                'Fire Support': 3,
+                'Light Cav': 2,
+                'Fire Support': 2,
                 'Air Defence': 2,
                 'Sensor': 1
             };
@@ -111,7 +108,7 @@ class armyQuartermaster {
         }
 
         if (defined(weights["Air Defence"])) {
-            if (airDefenceCount >= 4 || getCurrGameTime() < 300000) {
+            if (airDefenceCount >= 3 || getCurrGameTime() < 300000) {
                 weights["Air Defence"] = 0;
             }
         }
@@ -178,8 +175,7 @@ class armyQuartermaster {
 
 
     #checkTankProduction() {
-        if (!iCanDesign())
-            return false; // don't cheat by producing tanks before design is available 
+        if (!iCanDesign()) return false; // don't cheat by producing tanks before design is available 
 
         let success = false;
         getIdleStructuresOfType({structureID: STRUCTURES["Factory"].id}).forEach((factory) => {
@@ -194,9 +190,6 @@ class armyQuartermaster {
         if (truckInProduction) {
             return;
         }
-
-        // 100% chance to produce cyborg if less than 5 (temporary)
-        // 25% chance for vtol, 75% for tank
 
         const MIN_CYBORGS = 8;
         if (enumDroid(me, DROID_CYBORG).length < MIN_CYBORGS) {
@@ -213,6 +206,7 @@ class armyQuartermaster {
         }
 
         // if having too much energy, don't care about what we produce
+        const TOO_MUCH_POWER = 300;
         if (myPower() > TOO_MUCH_POWER) {
             this.#checkTankProduction();
             this.#checkVtolProduction();

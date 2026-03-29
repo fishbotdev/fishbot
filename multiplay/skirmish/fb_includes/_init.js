@@ -16,7 +16,7 @@
 */
 
 // Initialise world state
-let state = new worldState();
+const state = new worldState();
 
 let stateBuilder = new worldStateBuilder();
 stateBuilder.initialise(state);
@@ -46,6 +46,5 @@ const research = new armyResearchAndDevelopment();
 // Commander: Makes all decisions
 const hq = new CommandCenter();
 
-hq.establishSituation(state);		// initialises sector threat
-hq.setDefaultMissions(state);			// initialises default missions
-
+hq.setDefaultMissions(state);			
+hq.setSchedulerParameters(state);
