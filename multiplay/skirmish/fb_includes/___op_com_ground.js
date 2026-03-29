@@ -65,27 +65,16 @@ class armyGroundForceCommand {
 	 * @returns 
 	 */
 	getForceMedianLocation(unused) {
-		const generalReserve = state.g.enumGroup(DIVISION.GENERAL_RESERVE);
-
-		const existingUnits = generalReserve.filter(u => (gameTime - u.born) > 30000);
-
+		let generalReserve = state.g.enumGroup(DIVISION.GENERAL_RESERVE);
 		if (generalReserve.length === 0) {
 			return {"x": baseLocation.x, "y": baseLocation.y};
 		}
 
 		let droidX = [], droidY = [];
-		if (existingUnits.length === 0) {
-			// debug(`used genReserve for forcemed @ ${gameTime}`);
-			generalReserve.forEach((droid) => {
-				droidX.push(droid.x);
-				droidY.push(droid.y);
-			});	
-		} else {
-			existingUnits.forEach((droid) => {
-				droidX.push(droid.x);
-				droidY.push(droid.y);
-			});	
-		}
+		generalReserve.forEach((droid) => {
+			droidX.push(droid.x);
+			droidY.push(droid.y);
+		});	
 
 		// Find median
 		let medianX = Math.floor(arrayMedian(droidX));
