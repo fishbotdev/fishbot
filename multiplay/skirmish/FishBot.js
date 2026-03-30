@@ -44,7 +44,7 @@
 */
 
 
-const FISHBOT_VERSION = "0.3.1";
+const FISHBOT_VERSION = "0.3.2";
 
 //	This file connects all remaining pieces of AI code together. It shouldn't contain any code itself.
 //	NOTE: order matters!
@@ -114,7 +114,7 @@ const DEBUG_MODE_ON = true;
 	include(FB_INCLUDES + "___op_log_research.js");	
 
 	include(FB_INCLUDES + "hq_g3_aviation.js");
-	include(FB_INCLUDES + "___op_com_ground.js");
+	include(FB_INCLUDES + "hq_g3_ground_ops.js");
 	include(FB_INCLUDES + "hq_g2_intelligence.js");			
 	
 	/*
