@@ -16,7 +16,7 @@
 */
 
 
-class armyGroundForceCommand {
+class armyGroundOperations {
 
 	constructor() {
 		

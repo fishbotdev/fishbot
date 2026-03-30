@@ -33,7 +33,7 @@ const intelligence = new armyIntelligence();
 
 const aviation = new armyAviation();
 
-const groundForces = new armyGroundForceCommand();
+const groundForces = new armyGroundOperations();
 
 // G4 - LOGISTICS:
 //	Manages all supply, maintenance, transportation, and support services to ensure the logistical readiness of the division. 
