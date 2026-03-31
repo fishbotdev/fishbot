@@ -36,6 +36,7 @@ class armyGroundOperations {
 		};
 
 		if (playerInfo.length === 0) {
+			// Guard against playerInfo being undefined at the start of the game
 			return result;
 		}
 
