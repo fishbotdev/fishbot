@@ -156,7 +156,12 @@ class armyQuartermaster {
                 factoryInProduction = factoryInProduction || produceLightCavalry(factory);
                 break;
             case 'Fire Support':
-                factoryInProduction = factoryInProduction || produceLandFireSupport(factory);
+                const r = Math.floor(Math.random() * 2);
+                if (r === 0) {
+                    factoryInProduction = factoryInProduction || produceLandAPFireSupport(factory);
+                } else {
+                    factoryInProduction = factoryInProduction || produceLandFireSupportGeneric(factory);
+                }
                 break;
             case 'Air Defence':
                 factoryInProduction = factoryInProduction || produceLandAntiAir(factory);

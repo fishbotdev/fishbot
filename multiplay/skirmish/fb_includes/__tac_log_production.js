@@ -278,7 +278,29 @@ function produceHeavyCavalry(factory) {
 	return produceVehicle({factory: factory, weaponList: heavyCavalryWeapons, propulsionList: heavyCavalryPropulsions});
 }
 
-function produceLandFireSupport(factory) {
+function produceLandAPFireSupport(factory) {
+	// Part of the combined arms strategy
+
+	// Order these by tech level if you want the most technologically advanced weapon to be used
+	const fireSupportWeapons = [
+		{ res: "R-Wpn-Mortar01Lt", stat: "Mortar1Mk1", name: 'Mortar', },
+		{ res: "R-Wpn-Mortar3", stat: "Mortar3ROTARYMk1", name: 'Rotary Mortar', },
+		{stat: "Mortar-Incendiary", name: "Incendiary Mortar"},
+		// { res: "R-Wpn-HowitzerMk1", stat: "Howitzer105Mk1", name: 'Howitzer', },
+		{ res: "R-Wpn-Howitzer03-Rot", stat: "Howitzer03-Rot", name: 'Rotary Howitzer', },
+		// { res: "R-Wpn-HvyHowitzer", stat: "Howitzer150Mk1", name: 'Heavy Howitzer', },
+	].reverse();
+	
+	const fireSupportPropulsions = [
+		PROPULSIONS["Wheels"], 
+		PROPULSIONS["Half-tracks"],
+		PROPULSIONS["Tracks"]
+	].reverse();
+
+	return produceVehicle({factory: factory, weaponList: fireSupportWeapons, propulsionList: fireSupportPropulsions, maxBodyWeight: BODY_WEIGHT.MEDIUM});
+}
+
+function produceLandFireSupportGeneric(factory) {
 	// Part of the combined arms strategy
 
 	// Order these by tech level if you want the most technologically advanced weapon to be used
@@ -286,7 +308,6 @@ function produceLandFireSupport(factory) {
 		{ res: "R-Wpn-Mortar01Lt", stat: "Mortar1Mk1", name: 'Mortar', },
 		{ res: "R-Wpn-Mortar02Hvy", stat: "Mortar2Mk1", name: 'Heavy Mortar', },
 		{ res: "R-Wpn-Mortar3", stat: "Mortar3ROTARYMk1", name: 'Rotary Mortar', },
-		{stat: "Mortar-Incendiary", name: "Incendiary Mortar"},
 		// { res: "R-Wpn-HowitzerMk1", stat: "Howitzer105Mk1", name: 'Howitzer', },
 		{ res: "R-Wpn-Howitzer03-Rot", stat: "Howitzer03-Rot", name: 'Rotary Howitzer', },
 		// { res: "R-Wpn-HvyHowitzer", stat: "Howitzer150Mk1", name: 'Heavy Howitzer', },
