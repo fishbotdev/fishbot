@@ -286,6 +286,7 @@ function produceLandFireSupport(factory) {
 		{ res: "R-Wpn-Mortar01Lt", stat: "Mortar1Mk1", name: 'Mortar', },
 		{ res: "R-Wpn-Mortar02Hvy", stat: "Mortar2Mk1", name: 'Heavy Mortar', },
 		{ res: "R-Wpn-Mortar3", stat: "Mortar3ROTARYMk1", name: 'Rotary Mortar', },
+		{stat: "Mortar-Incendiary", name: "Incendiary Mortar"},
 		// { res: "R-Wpn-HowitzerMk1", stat: "Howitzer105Mk1", name: 'Howitzer', },
 		{ res: "R-Wpn-Howitzer03-Rot", stat: "Howitzer03-Rot", name: 'Rotary Howitzer', },
 		// { res: "R-Wpn-HvyHowitzer", stat: "Howitzer150Mk1", name: 'Heavy Howitzer', },
