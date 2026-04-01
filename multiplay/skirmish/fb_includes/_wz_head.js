@@ -42,7 +42,7 @@ For each structure, e.g. RESEARCHES["Twin Assault Cannon"] the parameters are:
 /*
     STRUCTURE INFORMATION
 */
-const FISHBOT_DEFENCES = [];        // to be used in the future
+
 /**
     ```STRUCTURES```: Object which contains all WZ2100 structure information extracted from the Stats global.
 */
@@ -67,6 +67,8 @@ for (const key in Stats.Building) {
         BASE_STRUCTURES[key] = structObj;       // Append new key
     }
 }
+Object.freeze(STRUCTURES);
+Object.freeze(BASE_STRUCTURES);
 
 /*
 For each structure, e.g. STRUCTURE["Factory"], STRUCTURE["Pepperpot Pit"] the parameters are:
@@ -115,9 +117,10 @@ let FISHBOT_BODIES = [];            // want this to be an array of objects becau
 const FISHBOT_BODY_LIST_ORDERED = ["Viper", "Cobra", "Python", "Mantis", "Leopard", "Panther", "Tiger", "Retaliation", "Retribution", "Vengeance"];       // this is ordered in order of technological sophistication (used in production)
 FISHBOT_BODY_LIST_ORDERED.forEach((bodyName) => {
     const bodyObj = {...Stats.Body[bodyName], ...{'name': bodyName, 'id': Stats.Body[bodyName].Id}};       // adds user-friendly 'name' & id
-    FISHBOT_BODIES = FISHBOT_BODIES.concat(bodyObj);
+    FISHBOT_BODIES.push(bodyObj);
 });
 // FISHBOT_BODIES.forEach((body) => debug( `${body.name}: ${body.Id}, ${body.Size}`));
+
 
 /* 
 For each body e.g. FISHBOT_BODIES["Python"], the parameters are:
