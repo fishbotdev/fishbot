@@ -179,7 +179,7 @@ def show_medium_cobra_results():
     show_stats(*get_stats(test_2), title=f"{commit2} (after)", legend=[commit1, commit2], figNum=3)   
 
 def show_hard_cobra_results():
-    test_1 = getcwd() + rf"\process_results/v3/" + "29ceeb0,hard,463" + ".txt"              # v3 dev: 4.6.3, [63/86 wins] long term test
+    # test_1 = getcwd() + rf"\process_results/v3/" + "29ceeb0,hard,463" + ".txt"              # v3 dev: 4.6.3, [63/86 wins] long term test
     # test_1 = getcwd() + rf"\process_results/v4/" + "6966b26,hard,cobra,50g" + ".txt"              # v4 dev: 4.6.3 [60 % wr; baseline for cannon test]
     # test_1 = getcwd() + rf"\process_results/v4/" + "f50adb5,hard,cobra,50g" + ".txt"              # v4 dev: 4.6.3 [78 % wr; cannon test]
     # test_1 = getcwd() + rf"\process_results/v4/" + "db393ea,hard,cobra,50g" + ".txt"              # v4 dev: 4.6.3 [74 % wr; cannon test + cas changes]
@@ -191,10 +191,11 @@ def show_hard_cobra_results():
     # test_2 = getcwd() + rf"\process_results/v4/" + "9c8a337,hard,cobra,60g" + ".txt"                
     # test_2 = getcwd() + rf"\process_results/v4/" + "04fb0cd,hard,cobra,50g" + ".txt"                #  38 / 50 -> 76% (yay!)
     # test_2 = getcwd() + rf"\process_results/v4/" + "04fb0cd,hard,cobra,50g_part2" + ".txt"          #  42 / 50 -> 84% (yay!)
-    test_2 = getcwd() + rf"\process_results/v4/" + "3d997f9,hard,cobra,100g" + ".txt"                #  65 / 100 -> v0.3.1 release candidate
-    test_2 = getcwd() + rf"\process_results/v4/" + "021d39e,hard,cobra,100g" + ".txt"                #  79 / 100 -> v0.3.1 release candidate (reverted removal of median location)
+    # test_2 = getcwd() + rf"\process_results/v4/" + "3d997f9,hard,cobra,100g" + ".txt"                #  65 / 100 -> v0.3.1 release candidate
+    test_1 = getcwd() + rf"\process_results/v4/" + "021d39e,hard,cobra,100g" + ".txt"                #  79 / 100 -> v0.3.1 release candidate (reverted removal of median location)
+    test_2 = getcwd() + rf"\process_results/v4/" + "e7a4ac4,hard,cobra,50g" + ".txt"                # 42 / 50 won (increased FS weights, decreased ADA weights, added incend mortar)
 
-    commit1 = test_1.split(rf"v3/")[1].split(",")[0]
+    commit1 = test_1.split(rf"v4/")[1].split(",")[0]
     commit2 = test_2.split(rf"v4/")[1].split(",")[0]
 
     show_stats(*get_stats(test_1), title=f"{commit1} (before)", figNum=2)                             
