@@ -357,6 +357,7 @@ let MACHINEGUN_WEAPONS = [];
 let FLAMER_WEAPONS = [];
 let CANNON_WEAPONS = [];
 let AT_ROCKET_WEAPONS = [];
+let VTOL_ARTILLERY_WEAPONS = [];
 let SHORT_RANGE_ARTILLERY_WEAPONS = [];
 let LONG_RANGE_ARTILLERY_WEAPONS = [];
 let AA_DIRECT_FIRE_WEAPONS = [];
@@ -384,8 +385,8 @@ for (const key in Stats.Weapon) {
     WEAPONS[key] = w;       // Append new key
 
     // Filter out artillery first
-    if (w["Effect"] === "ARTILLERY ROUND") {
-        if (w["MaxRange"] >= MAX_SHORT_RANGE_ARTILLERY_RADIUS * WZ2100_TILERANGE_SCALING_FACTOR) {
+    if (w["Effect"] === "ARTILLERY ROUND" && !w["name"].includes("VTOL")) {
+        if (w["MaxRange"] >= MAX_SHORT_RANGE_ARTILLERY_RADIUS * (1 / WZ2100_TILERANGE_SCALING_FACTOR)) {
             // e.g. Archangel Missile, Howitzers
             LONG_RANGE_ARTILLERY_WEAPONS.push(w);
         } else {
@@ -397,9 +398,12 @@ for (const key in Stats.Weapon) {
     // Filter out AA next
     if (w["ShootInAir"] && !w["ShootOnGround"]) {
         switch(w["ImpactClass"]) {
+            case "MISSILE":
             case "ROCKET":
                 AA_ROCKET_WEAPONS.push(w);
                 break;
+            case "A-A GUN":
+            case "ENERGY":
             case "CANNON":
                 AA_DIRECT_FIRE_WEAPONS.push(w);
                 break;
@@ -418,11 +422,15 @@ for (const key in Stats.Weapon) {
         case "ROCKET":
             AT_ROCKET_WEAPONS.push(w);
             break;
+        case "GAUSS":
         case "CANNON":
             CANNON_WEAPONS.push(w);
             break;
         case "MACHINE GUN":
             MACHINEGUN_WEAPONS.push(w);
+            break;
+        case "BOMB":
+            VTOL_ARTILLERY_WEAPONS.push(w);
             break;
         case "FLAME":
             FLAMER_WEAPONS.push(w);
@@ -438,15 +446,27 @@ for (const key in Stats.Weapon) {
 }
 Object.freeze(WEAPONS);
 
-MACHINEGUN_WEAPONS.forEach(w => debug(`\t${w.name}`));
-FLAMER_WEAPONS.forEach(w => debug(`\t${w.name}`));
-CANNON_WEAPONS.forEach(w => debug(`\t${w.name}`));
-AT_ROCKET_WEAPONS.forEach(w => debug(`\t${w.name}`));
-SHORT_RANGE_ARTILLERY_WEAPONS.forEach(w => debug(`\t${w.name}`));
-LONG_RANGE_ARTILLERY_WEAPONS.forEach(w => debug(`\t${w.name}`));
-AA_DIRECT_FIRE_WEAPONS.forEach(w => debug(`\t${w.name}`));
-AA_ROCKET_WEAPONS.forEach(w => debug(`\t${w.name}`));
-LASER_WEAPONS.forEach(w => debug(`\t${w.name}`));
-UNCLASSIFIED_WEAPONS.forEach(w => debug(`\t${w.name}`));
-
-
+if (false) {
+    debug(`MACHINEGUN_WEAPONS`);
+    MACHINEGUN_WEAPONS.forEach(w => debug(`\t${w.name}`));
+    debug(`FLAMER_WEAPONS`);
+    FLAMER_WEAPONS.forEach(w => debug(`\t${w.name}`));
+    debug(`CANNON_WEAPONS`);
+    CANNON_WEAPONS.forEach(w => debug(`\t${w.name}`));
+    debug(`AT_ROCKET_WEAPONS`);
+    AT_ROCKET_WEAPONS.forEach(w => debug(`\t${w.name}`));
+    debug(`VTOL_ARTILLERY_WEAPONS`);
+    VTOL_ARTILLERY_WEAPONS.forEach(w => debug(`\t${w.name}`));
+    debug(`SHORT_RANGE_ARTILLERY_WEAPONS`);
+    SHORT_RANGE_ARTILLERY_WEAPONS.forEach(w => debug(`\t${w.name}`));
+    debug(`LONG_RANGE_ARTILLERY_WEAPONS`);
+    LONG_RANGE_ARTILLERY_WEAPONS.forEach(w => debug(`\t${w.name}`));
+    debug(`AA_DIRECT_FIRE_WEAPONS`);
+    AA_DIRECT_FIRE_WEAPONS.forEach(w => debug(`\t${w.name}`));
+    debug(`AA_ROCKET_WEAPONS`);
+    AA_ROCKET_WEAPONS.forEach(w => debug(`\t${w.name}`));
+    debug(`LASER_WEAPONS`);
+    LASER_WEAPONS.forEach(w => debug(`\t${w.name}`));
+    debug(`UNCLASSIFIED_WEAPONS`);
+    UNCLASSIFIED_WEAPONS.forEach(w => debug(`\t${w.name}`));
+}
