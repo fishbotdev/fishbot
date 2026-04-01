@@ -177,7 +177,6 @@ Object.freeze(AVIATION_MISSION_TYPES);
 	TACTICAL PARAMETERS 
     - used for all .js files prefixed with __tac_
 */
-const WZ2100_v461_DROID_RANGE_SCALING_FACTOR = 1 / 128;
 
 /*
     AIR FORCE PARAMETERS
