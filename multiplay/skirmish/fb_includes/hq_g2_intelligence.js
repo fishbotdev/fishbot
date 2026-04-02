@@ -228,10 +228,11 @@ class armyIntelligence {
 	 */
 	#debugPrintPlayerInfo(p) {
 		
-		if (false) {
+		if (true) {
 			debug(`== ${p.playerID} UNIT STATS ==`);
 
 			// Print Unit stats
+			debug(`\nnumTotalUnits: ${p['numTotalUnits']}`); 
 			debug(`\tnumInfantryUnits: ${p['numInfantryUnits']}`); 
 			debug(`\tnumArmourUnits: ${p['numArmourUnits']}`); 
             debug(`\tnumAirUnits: ${p['numAirUnits']}`);      

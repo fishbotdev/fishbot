@@ -247,6 +247,7 @@ class worldState {
 			'isFriendly': !isEnemy(playerID), 
 
             // Unit stats
+            'numTotalUnits': 0,
 			'numInfantryUnits': 0,
 			'numArmourUnits': 0,
             'numAirUnits': 0,       // air units (e.g. vtol)        
@@ -275,7 +276,7 @@ class worldState {
         let livingPlayerIDs = [];
 
         this.playerInfo.forEach(p => {
-            if (p.numTotalUnits !== 0 || p.numFactories !== 0) {
+            if (p["numTotalUnits"] !== 0 || p["numFactories"] !== 0) {
                 livingPlayerIDs.push(p.playerID);
             }
         });
