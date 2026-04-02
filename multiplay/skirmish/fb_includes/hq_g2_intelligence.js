@@ -70,6 +70,20 @@ class armyIntelligence {
 		// Object-type agnostic capability
 		if (isAntiAirDefense(obj)) {
 			flags |= OBJ_FLAGS.ADA;
+
+			if (obj.type === DROID) {
+				if (obj.weapons.length > 0) {
+					const weapon = obj.weapons[0];
+					if (AA_DIRECT_FIRE_WEAPONS.includes(weapon)) {
+						// Includes AA lasers & AA cannons
+						flags |= OBJ_FLAGS.AA_DIRECT_FIRE_WEAPON;	
+					} else if (AA_ROCKET_WEAPONS.includes(weapon)) {
+						flags |= OBJ_FLAGS.AA_ROCKET_WEAPON;
+					} else {
+						flags |= OBJ_FLAGS.UNCLASSIFIED_WEAPON_TYPE;
+					}
+				}
+			}			
 		}
 
 		if (obj.hasIndirect === true) {
@@ -115,7 +129,7 @@ class armyIntelligence {
 			}
 
 			const ARMOUR_MASK = OBJ_FLAGS.HALF_TRACKED_PROPULSION | OBJ_FLAGS.TRACKED_PROPULSION | OBJ_FLAGS.WHEELED_PROPULSION | OBJ_FLAGS.HOVER_PROPULSION;
-			if (obj.droidType === DROID_WEAPON || obj.droidType === DROID_CYBORG) {
+			if (obj.droidType === DROID_WEAPON) {
 				if (flags & ARMOUR_MASK) {
 					flags |= OBJ_FLAGS.ARMOUR;
 				} else if (flags & OBJ_FLAGS.VTOL_PROPULSION) {
@@ -125,6 +139,36 @@ class armyIntelligence {
 
 			if (obj.droidType === DROID_CYBORG) {
 				flags |= OBJ_FLAGS.INFANTRY;
+			}
+
+			if (obj.weapons.length > 0) {
+				const weapon = obj.weapons[0];		// ignoring special case of dual weapon body
+
+				if (CANNON_WEAPONS.some(w => w.id === weapon.id)) {
+					flags |= OBJ_FLAGS.CANNON_WEAPON;
+				} else if (AT_ROCKET_WEAPONS.some(w => w.id === weapon.id)) {
+					flags | OBJ_FLAGS.AT_ROCKET_WEAPON;
+				} else if (MACHINEGUN_WEAPONS.some(w => w.id === weapon.id)) {
+					flags |= OBJ_FLAGS.MACHINEGUN_WEAPON;
+				} else if (SHORT_RANGE_ARTILLERY_WEAPONS.some(w => w.id === weapon.id)) {
+					flags |= OBJ_FLAGS.SHORT_RANGE_ARTILLERY_WEP;
+				} else if (LONG_RANGE_ARTILLERY_WEAPONS.some(w => w.id === weapon.id)) {
+					flags |= OBJ_FLAGS.LONG_RANGE_ARTILLERY_WEP;
+				} else if (VTOL_ARTILLERY_WEAPONS.some(w => w.id === weapon.id)) {
+					flags |= OBJ_FLAGS.VTOL_ARTILLERY_WEAPON;
+				} else if (AA_DIRECT_FIRE_WEAPONS.some(w => w.id === weapon.id)) {
+					flags |= OBJ_FLAGS.AA_DIRECT_FIRE_WEAPON;
+				} else if (AA_ROCKET_WEAPONS.some(w => w.id === weapon.id)) {
+					flags |= OBJ_FLAGS.AA_ROCKET_WEAPON;
+				} else if (LASER_WEAPONS.some(w => w.id === weapon.id)) {
+					flags |= OBJ_FLAGS.LASER_WEAPON;
+				} else if (FLAMER_WEAPONS.some(w => w.id === weapon.id)) {
+					flags | OBJ_FLAGS.FLAMER_WEAPON;
+				} else {
+					flags |= OBJ_FLAGS.UNCLASSIFIED_WEAPON_TYPE;
+				}
+			} else {
+				flags |= OBJ_FLAGS.UNCLASSIFIED_WEAPON_TYPE;
 			}
 
 			return flags;
@@ -176,6 +220,32 @@ class armyIntelligence {
 			// This is used by the mission management system to store the priority at the time of assignment
 			'priority': MISSION_PRIORITY.LOW,
 		};
+	}
+
+	/**
+	 * Prints `playerInfo` to the console.
+	 * @param {*} p 
+	 */
+	#debugPrintPlayerInfo(p) {
+		
+		if (false) {
+			debug(`== ${p.playerID} UNIT STATS ==`);
+
+			// Print Unit stats
+			debug(`\tnumInfantryUnits: ${p['numInfantryUnits']}`); 
+			debug(`\tnumArmourUnits: ${p['numArmourUnits']}`); 
+            debug(`\tnumAirUnits: ${p['numAirUnits']}`);      
+			debug(``);
+            debug(`\tnumRocketUnits: ${p['numRocketUnits']}`);        
+            debug(`\tnumCannonUnits: ${p['numCannonUnits']}`);      
+            debug(`\tnumMGUnits: ${p['numMGUnits']}`);
+            debug(`\tnumShortRangeIndirectUnits: ${p['numShortRangeIndirectUnits']}`);
+            debug(`\tnumLongRangeIndirectUnits: ${p['numLongRangeIndirectUnits']}`);
+            debug(`\tnumVTOLBombUnits: ${p['numVTOLBombUnits']}`);
+            debug(`\tnumADAUnits: ${p['numADAUnits']}`); 
+            debug(`\tnumLaserUnits: ${p['numLaserUnits']}`);
+            debug(`\tnumFlamerUnits: ${p['numFlamerUnits']}`);
+		}
 	}
 
 	/**
@@ -237,29 +307,38 @@ class armyIntelligence {
 				// Update player information
 				p['numTotalUnits']++;
 
+				// UNIT "BODY" (ARMOUR, CYBORGS, VTOLS)
 				const ARMOUR_FORBIDDEN_FLAGS = (OBJ_FLAGS.ADA | OBJ_FLAGS.INDIRECT_FIRE);
-				const INDIRECT_FIRE_FORBIDDEN_FLAGS = (OBJ_FLAGS.AVIATION | OBJ_FLAGS.INFANTRY);
 
 				if (flags & OBJ_FLAGS.ARMOUR && !(flags & ARMOUR_FORBIDDEN_FLAGS)) {
 					p['numArmourUnits']++;
-				} 
-
-				if (flags & OBJ_FLAGS.INDIRECT_FIRE && !(flags & INDIRECT_FIRE_FORBIDDEN_FLAGS)) {
-					p['numIndirectUnits']++;
-				}
-
-				if (flags & OBJ_FLAGS.INFANTRY) {
+				} else if (flags & OBJ_FLAGS.INFANTRY) {
 					p['numInfantryUnits']++;
-				}
-
-				if (flags & OBJ_FLAGS.AVIATION) {
+				} else if (flags & OBJ_FLAGS.AVIATION) {
 					p['numAirUnits']++;
 				}
-
-				if (flags & OBJ_FLAGS.ADA) {
-					p['numADA']++;
+			
+				// UNIT "WEAPON"
+				if (flags & OBJ_FLAGS.CANNON_WEAPON) {
+					p['numCannonUnits']++;
+				} else if (flags & OBJ_FLAGS.AT_ROCKET_WEAPON) {
+					p['numRocketUnits']++;
+				} else if (flags & OBJ_FLAGS.MACHINEGUN_WEAPON) {
+					p['numMGUnits']++;
+				} else if (flags & OBJ_FLAGS.SHORT_RANGE_ARTILLERY_WEP) {
+					p['numShortRangeIndirectUnits']++;
+				} else if (flags & OBJ_FLAGS.LONG_RANGE_ARTILLERY_WEP) {
+					p['numLongRangeIndirectUnits']++;
+				} else if (flags & OBJ_FLAGS.VTOL_ARTILLERY_WEAPON) {
+					p['numVTOLBombUnits']++;
+				} else if (flags & (OBJ_FLAGS.AA_DIRECT_FIRE_WEAPON | OBJ_FLAGS.AA_ROCKET_WEAPON)) {
+					p['numADAUnits']++;
+				} else if (flags & OBJ_FLAGS.LASER_WEAPON) {
+					p['numLaserUnits']++;
+				} else if (flags & OBJ_FLAGS.FLAMER_WEAPON) {
+					p['numFlamerUnits']++;
 				}
-				
+
 				// Update target list
 				const newObj = this.#createNewTarget(obj, flags, gx, gy);
 				if (IS_TARGET) {
@@ -322,6 +401,7 @@ class armyIntelligence {
 				}
 			}
 
+			this.#debugPrintPlayerInfo(p);
 			result.playerInfo.push(p);
 		}
 

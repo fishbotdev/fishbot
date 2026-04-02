@@ -246,16 +246,25 @@ class worldState {
 			'playerID': playerID,
 			'isFriendly': !isEnemy(playerID), 
 
-			'numTotalUnits': 0,
+            // Unit stats
 			'numInfantryUnits': 0,
 			'numArmourUnits': 0,
-			'numAirUnits': 0,
-			'numIndirectUnits': 0,
-			'numADA': 0,
+            'numAirUnits': 0,       // air units (e.g. vtol)        
 
+            'numRocketUnits': 0,        // anti-personnel units (e.g. MG)
+            'numCannonUnits': 0,        // general-purpose (e.g. cannon)
+            'numMGUnits': 0,
+            'numShortRangeIndirectUnits': 0,  // indirect fires (e.g. mortar)
+            'numLongRangeIndirectUnits': 0,
+            'numVTOLBombUnits': 0,
+            'numADAUnits': 0,       // air-defence-artillery units (e.g. flak cannon)
+            'numLaserUnits': 0,
+            'numFlamerUnits': 0,
+
+            // Structure stats
 			'numStructs': 0,
             'numFactories': 0,
-			'numDerricks': 0,
+			'numDerricks': 0, 
 		};
     }
 
