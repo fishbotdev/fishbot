@@ -96,7 +96,7 @@ function chooseWeapon({weaponList=undefined}) {
 		return undefined;
 	}
 	
-	const availableWeapons = weaponList.filter((weapon) => componentAvailable(weapon.stat));
+	const availableWeapons = weaponList.filter((weapon) => componentAvailable(weapon.id));		
 
 	if (availableWeapons.length === 0) {
 		debug("chooseWeapon(): None of the passed weapons were available.")
@@ -154,7 +154,7 @@ function produceVehicle({factory, weaponList, propulsionList, maxBodyWeight=BODY
 		
 	const tankName = weapon.name + ", " + body.name + ", " + propulsion.name +  ` (FishBot v${FISHBOT_VERSION})`;
 
-	const productionInProgress = buildDroidWrapper(factory, tankName, body.id, propulsion.id, weapon.stat);
+	const productionInProgress = buildDroidWrapper(factory, tankName, body.id, propulsion.id, weapon.id);
 	return productionInProgress;
 }
 
@@ -164,7 +164,7 @@ function produceVehicle({factory, weaponList, propulsionList, maxBodyWeight=BODY
 function produceTruck(factory) {
 
 	const truckTurrets = [
-		{stat: "Spade1Mk1", name: 'Truck'}
+		WEAPONS["Truck"]
 	];
 
 	const truckPropulsions = [
@@ -172,7 +172,12 @@ function produceTruck(factory) {
 		PROPULSIONS["Hover"]
 	].reverse();
 
-	return produceVehicle({factory: factory, weaponList: truckTurrets, propulsionList: truckPropulsions, maxBodyWeight: BODY_WEIGHT.LIGHT});
+	return produceVehicle({
+		factory: factory, 
+		weaponList: truckTurrets, 
+		propulsionList: truckPropulsions, 
+		maxBodyWeight: BODY_WEIGHT.LIGHT
+	});
 }
 
 function produceCombatEngineer(factory) {
@@ -195,34 +200,44 @@ function produceCombatEngineer(factory) {
 function produceCloseAirSupport(factory) {
 
 	const fishBotCASWeapons = [
-		{ res: "R-Wpn-Cannon4AMk1", stat: "Cannon4AUTO-VTOL", name: 'Hyper-Velocity Cannon'}, 		
-		{ res: "R-Wpn-Cannon5", stat: "Cannon5Vulcan-VTOL", name: 'Assault Cannon', }, 
-		{ res: "R-Wpn-RailGun01", stat: "RailGun1-VTOL", name: 'Needle Gun', }, 
-		{ res: "R-Wpn-RailGun02", stat: "RailGun2-VTOL", name: 'Rail Gun', }, 
+		WEAPONS["VTOL Hyper Velocity Cannon"],
+		WEAPONS["VTOL Assault Cannon"],
+		WEAPONS["VTOL Needle Gun"],
+		WEAPONS["VTOL Rail Gun"]
 	].reverse();
 
 	const vtolPropulsions = [
 		PROPULSIONS["VTOL"]
 	].reverse();
 
-	return produceVehicle({factory: factory, weaponList: fishBotCASWeapons, propulsionList: vtolPropulsions, maxBodyWeight: BODY_WEIGHT.MEDIUM});
+	return produceVehicle({
+		factory: factory, 
+		weaponList: fishBotCASWeapons, 
+		propulsionList: vtolPropulsions, 
+		maxBodyWeight: BODY_WEIGHT.MEDIUM
+	});
 }
 
 function produceDeepAirSupport(factory) {
 
 	const fishBotDASWeapons = [
-		{ res: "R-Wpn-Bomb01", stat: "Bomb1-VTOL-LtHE", name: 'Cluster Bomb' },						// bomb
-		{ res: "R-Wpn-Bomb02", stat: "Bomb2-VTOL-HvHE", name: 'HEAP Bomb' },
-		{ res: "R-Wpn-Bomb03", stat: "Bomb3-VTOL-LtINC", name: 'Phosphor Bomb', },
-		{ res: "R-Wpn-Bomb04", stat: "Bomb4-VTOL-HvyINC", name: 'Thermite Bomb', },
-		{ res: "R-Wpn-Bomb05", stat: "Bomb5-VTOL-Plasmite", name: 'Plasmite Bomb', },
+		WEAPONS["Cluster Bomb"],
+		WEAPONS["HEAP Bomb"],
+		WEAPONS["Phosphor Bomb"],
+		WEAPONS["Thermite Bomb"],
+		WEAPONS["Plasmite Bomb"]
 	].reverse();
 
 	const vtolPropulsions = [
 		PROPULSIONS["VTOL"],
 	].reverse();
 
-	return produceVehicle({factory: factory, weaponList: fishBotDASWeapons, propulsionList: vtolPropulsions, maxBodyWeight: BODY_WEIGHT.MEDIUM});
+	return produceVehicle({
+		factory: factory, 
+		weaponList: fishBotDASWeapons, 
+		propulsionList: vtolPropulsions, 
+		maxBodyWeight: BODY_WEIGHT.MEDIUM
+	});
 }
 
 /*
@@ -233,14 +248,11 @@ function produceLightCavalry(factory) {
 
 	// Order these by tech level if you want the most technologically advanced weapon to be used
 	const lightCavalryWeapons = [
-		{ res: "R-Wpn-MG1Mk1", stat: "MG1Mk1", name: 'Machinegun', }, 
-		{ res: "R-Wpn-MG2Mk1", stat: "MG2Mk1", name: 'Twin Machinegun', }, 
-		{ res: "R-Wpn-MG3Mk1", stat: "MG3Mk1", name: 'Heavy Machinegun', }, 
-		{ res: "R-Wpn-MG4", stat: "MG4ROTARYMk1", name: 'Assault Gun', },  
-		{ res: "R-Wpn-MG5", stat: "MG5TWINROTARY", name: 'Twin Assault Gun', }, 
-		// { res: "R-Wpn-Laser01", stat: "Laser3BEAMMk1", name: 'Light Laser', }, // flash
-		// { res: "R-Wpn-Laser02", stat: "Laser2PULSEMk1", name: 'Medium Laser', }, // pulse
-		// { res: "R-Wpn-HvyLaser", stat: "HeavyLaser", name: 'Heavy Laser', }, // hvy laser
+		WEAPONS["Machinegun"],
+		WEAPONS["Twin Machinegun"],
+		WEAPONS["Heavy Machinegun"],
+		WEAPONS["Assault Gun"],
+		WEAPONS["Twin Assault Gun"],
 	].reverse();
 	
 	const lightCavalryPropulsions = [
@@ -249,7 +261,12 @@ function produceLightCavalry(factory) {
 		PROPULSIONS["Tracks"]
 	].reverse();
 
-	return produceVehicle({factory: factory, weaponList: lightCavalryWeapons, propulsionList: lightCavalryPropulsions});
+	return produceVehicle({
+		factory: factory, 
+		weaponList: lightCavalryWeapons, 
+		propulsionList: lightCavalryPropulsions,
+		maxBodyWeight: BODY_WEIGHT.HEAVY
+	});
 }
 
 function produceHeavyCavalry(factory) {
@@ -258,15 +275,15 @@ function produceHeavyCavalry(factory) {
 
 	// Order these by tech level if you want the most technologically advanced body to be used
 	const heavyCavalryWeapons = [
-			{ res: "R-Wpn-Cannon1Mk1", stat: "Cannon1Mk1", name: 'Light Cannon', }, // lc
-			{ res: "R-Wpn-Cannon2Mk1", stat: "Cannon2A-TMk1", name: 'Medium Cannon', }, // mc
-			{ res: "R-Wpn-Cannon4AMk1", stat: "Cannon4AUTOMk1", name: 'Hyper-Velocity Cannon', }, // hpv
-			{ res: "R-Wpn-Cannon5", stat: "Cannon5VulcanMk1", name: 'Assault Cannon', }, // ac
-			{ res: "R-Wpn-Cannon3Mk1", stat: "Cannon375mmMk1", name: 'Heavy Cannon', }, // hc
-			{ res: "R-Wpn-Cannon6TwinAslt", stat: "Cannon6TwinAslt", name: 'Twin Assault Cannon', }, // tac
-			// { res: "R-Wpn-RailGun01", stat: "RailGun1Mk1", name: 'Needle Gun', }, // needle
-			{ res: "R-Wpn-RailGun02", stat: "RailGun2Mk1", name: 'Rail Gun', }, // rail
-			{ res: "R-Wpn-RailGun03", stat: "RailGun3Mk1", name: 'Gauss Cannon', }, // gauss
+		WEAPONS["Light Cannon"],
+		WEAPONS["Medium Cannon"],
+		WEAPONS["Hyper Velocity Cannon"],
+		WEAPONS["Assault Cannon"],
+		WEAPONS["Heavy Cannon"],
+		WEAPONS["Twin Assault Cannon"],
+		WEAPONS["Needle Gun"],
+		WEAPONS["Rail Gun"],
+		WEAPONS["Gauss Cannon"],
 	].reverse();
 	
 	const heavyCavalryPropulsions = [
@@ -275,7 +292,12 @@ function produceHeavyCavalry(factory) {
 		PROPULSIONS["Tracks"]
 	].reverse();
 
-	return produceVehicle({factory: factory, weaponList: heavyCavalryWeapons, propulsionList: heavyCavalryPropulsions});
+	return produceVehicle({
+		factory: factory, 
+		weaponList: heavyCavalryWeapons, 
+		propulsionList: heavyCavalryPropulsions,
+		maxBodyWeight: BODY_WEIGHT.HEAVY
+	});
 }
 
 function produceLandAPFireSupport(factory) {
@@ -283,12 +305,11 @@ function produceLandAPFireSupport(factory) {
 
 	// Order these by tech level if you want the most technologically advanced weapon to be used
 	const fireSupportWeapons = [
-		{ res: "R-Wpn-Mortar01Lt", stat: "Mortar1Mk1", name: 'Mortar', },
-		{ res: "R-Wpn-Mortar3", stat: "Mortar3ROTARYMk1", name: 'Rotary Mortar', },
-		{stat: "Mortar-Incendiary", name: "Incendiary Mortar"},
-		// { res: "R-Wpn-HowitzerMk1", stat: "Howitzer105Mk1", name: 'Howitzer', },
-		{ res: "R-Wpn-Howitzer03-Rot", stat: "Howitzer03-Rot", name: 'Rotary Howitzer', },
-		// { res: "R-Wpn-HvyHowitzer", stat: "Howitzer150Mk1", name: 'Heavy Howitzer', },
+		WEAPONS["Mortar"],
+		WEAPONS["Bombard"],
+		WEAPONS["Pepperpot"],
+		WEAPONS["Incendiary Mortar"],
+		WEAPONS["Incendiary Howitzer"],
 	].reverse();
 	
 	const fireSupportPropulsions = [
@@ -297,7 +318,12 @@ function produceLandAPFireSupport(factory) {
 		PROPULSIONS["Tracks"]
 	].reverse();
 
-	return produceVehicle({factory: factory, weaponList: fireSupportWeapons, propulsionList: fireSupportPropulsions, maxBodyWeight: BODY_WEIGHT.MEDIUM});
+	return produceVehicle({
+		factory: factory, 
+		weaponList: fireSupportWeapons, 
+		propulsionList: fireSupportPropulsions, 
+		maxBodyWeight: BODY_WEIGHT.MEDIUM
+	});
 }
 
 function produceLandFireSupportGeneric(factory) {
@@ -305,12 +331,10 @@ function produceLandFireSupportGeneric(factory) {
 
 	// Order these by tech level if you want the most technologically advanced weapon to be used
 	const fireSupportWeapons = [
-		{ res: "R-Wpn-Mortar01Lt", stat: "Mortar1Mk1", name: 'Mortar', },
-		{ res: "R-Wpn-Mortar02Hvy", stat: "Mortar2Mk1", name: 'Heavy Mortar', },
-		{ res: "R-Wpn-Mortar3", stat: "Mortar3ROTARYMk1", name: 'Rotary Mortar', },
-		// { res: "R-Wpn-HowitzerMk1", stat: "Howitzer105Mk1", name: 'Howitzer', },
-		{ res: "R-Wpn-Howitzer03-Rot", stat: "Howitzer03-Rot", name: 'Rotary Howitzer', },
-		// { res: "R-Wpn-HvyHowitzer", stat: "Howitzer150Mk1", name: 'Heavy Howitzer', },
+		WEAPONS["Mortar"],
+		WEAPONS["Bombard"],
+		WEAPONS["Pepperpot"],
+		WEAPONS["Hellstorm"],		// Rotary Howitzer
 	].reverse();
 	
 	const fireSupportPropulsions = [
@@ -319,15 +343,20 @@ function produceLandFireSupportGeneric(factory) {
 		PROPULSIONS["Tracks"]
 	].reverse();
 
-	return produceVehicle({factory: factory, weaponList: fireSupportWeapons, propulsionList: fireSupportPropulsions, maxBodyWeight: BODY_WEIGHT.MEDIUM});
+	return produceVehicle({
+		factory: factory, 
+		weaponList: fireSupportWeapons, 
+		propulsionList: fireSupportPropulsions, 
+		maxBodyWeight: BODY_WEIGHT.MEDIUM
+	});
 }
 
 function produceLandAntiAir(factory) {
 
 	// Order these by tech level if you want the most technologically advanced weapon to be used
 	const airDefenceArtilleryWeapons = [
-		{ res: "R-Wpn-AAGun01", stat: "AAGun2Mk1", name: "AA Flak Cannon Mk1"},
-		{ res: "R-Wpn-AAGun02", stat: "AAGun2Mk1Quad", name: "AA Flak Cannon Mk2"},
+		WEAPONS["AA Cyclone Flak Cannon"],
+		WEAPONS["AA Tornado Flak Cannon"]
 	].reverse();
 	
 	const airDefenceArtilleryPropulsions = [
@@ -336,14 +365,20 @@ function produceLandAntiAir(factory) {
 		PROPULSIONS["Tracks"]
 	].reverse();
 
-	return produceVehicle({factory: factory, weaponList: airDefenceArtilleryWeapons, propulsionList: airDefenceArtilleryPropulsions, maxBodyWeight: BODY_WEIGHT.HEAVY});
+	return produceVehicle({
+		factory: factory, 
+		weaponList: airDefenceArtilleryWeapons, 
+		propulsionList: airDefenceArtilleryPropulsions, 
+		maxBodyWeight: BODY_WEIGHT.HEAVY
+	});
 }
 
 function produceLandRecon(factory) {
 	// Order these by tech level if you want the most technologically advanced weapon to be used
 	const sensors = [
-		{ stat: "SensorTurret1Mk1", name: "Sensor Turret"},
-		{ stat: "Sys-CBTurret01", name: "CB Sensor"},
+		WEAPONS["Sensor Turret"],
+		WEAPONS["CB Radar Turret"],
+		WEAPONS["Wide Spectrum Sensor"]
 	].reverse();
 	
 	const sensorPropulsions = [
@@ -351,7 +386,12 @@ function produceLandRecon(factory) {
 		PROPULSIONS["Half-tracks"]
 	].reverse();
 
-	return produceVehicle({factory: factory, weaponList: sensors, propulsionList: sensorPropulsions, maxBodyWeight: BODY_WEIGHT.MEDIUM});
+	return produceVehicle({
+		factory: factory, 
+		weaponList: sensors, 
+		propulsionList: sensorPropulsions, 
+		maxBodyWeight: BODY_WEIGHT.MEDIUM
+	});
 }
 
 function produceInfantry(factory) {

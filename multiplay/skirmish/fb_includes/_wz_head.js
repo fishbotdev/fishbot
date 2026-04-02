@@ -332,7 +332,7 @@ For each weapon e.g. WEAPONS["Lancer"], the parameters are:
 -   Radius                  | 0                     | (int)
 -   RadiusDamage            | 0                     | (int)
 -   Recoil                  | 0                     | (int)
--   ReloadTime              | 16000                 | (int) reload time; my assumption is that this is without modifiers, and in measured in ms
+-   ReloadTime              | 16000                 | (int) reload time; my assumption is that this is without modifiers, and is measured in ms
 -   RepeatClass             | "ROCKET"              | (str)
 -   RepeatDamage            | 0                     | (int)
 -   RepeatRadius            | 0                     | (int)
@@ -444,6 +444,13 @@ for (const key in Stats.Weapon) {
     }
     continue;
 }
+
+// The following weapons are not included in the `Stats.Weapon` global in WZ2100 v4.6.3, so they are manually added here:
+WEAPONS["Truck"] = {id: "Spade1Mk1", name: "Truck"};        
+WEAPONS["Sensor Turret"] = {id: "SensorTurret1Mk1", name: "Sensor Turret"};
+WEAPONS["CB Radar Turret"] = {id: "Sys-CBTurret01", name: "CB Radar Turret"},
+WEAPONS["Wide Spectrum Sensor"] = {id: "Sensor-WideSpec", name: "Wide Spectrum Sensor"}
+UNCLASSIFIED_WEAPONS.push(WEAPONS["Truck"], WEAPONS["Sensor Turret"], WEAPONS["CB Radar Turret"], WEAPONS["Wide Spectrum Sensor"]);
 Object.freeze(WEAPONS);
 
 if (false) {
