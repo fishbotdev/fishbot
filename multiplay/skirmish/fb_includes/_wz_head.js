@@ -346,7 +346,7 @@ For each weapon e.g. WEAPONS["Lancer"], the parameters are:
 -   ShortRange              | 512                   | (int)
 -   Weight                  | 250                   | (int)
 -   name                    | "Lancer"              | (str) Human-readable name (added by FishBot)
--   id                      | "hover01"             | (str) same as Id (added by FishBot)
+-   id                      | "Rocket-LtA-T"        | (str) same as Id (added by FishBot)
 */
 
 const MAX_SHORT_RANGE_ARTILLERY_RADIUS = 24;
