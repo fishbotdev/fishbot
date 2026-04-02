@@ -223,7 +223,7 @@ class CommandCenter {
 
 		const cObj = targetInfo["closestObject"];
 		if (defined(getObject(cObj.type, cObj.player, cObj.id))) {
-			if (cObj.type === DROID && isNotTruckOrADA(cObj)) {
+			if (cObj.type === DROID && isNotTruckOrADA(cObj) && cObj.stattype !== WALL) {
 				output["directFireTarget"] = targetInfo["closestObject"];
 				if (DIRECT_FIRE_DEBUG) debug(`used default direct fire target @${gameTime}`);
 			}
