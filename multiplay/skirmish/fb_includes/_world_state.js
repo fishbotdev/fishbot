@@ -262,6 +262,8 @@ class worldState {
             'numLaserUnits': 0,
             'numFlamerUnits': 0,
 
+            'numTrucks': 0,
+
             // Structure stats
 			'numStructs': 0,
             'numFactories': 0,

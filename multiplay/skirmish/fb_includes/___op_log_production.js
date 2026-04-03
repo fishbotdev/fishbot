@@ -46,8 +46,8 @@ class armyQuartermaster {
     #checkTruckProduction() {
         const MAX_OVERALL_TRUCKS = 6;
 
-        const allTrucksCount = enumDroid(me, DROID_CONSTRUCT).length;
-
+        const allTrucksCount = state.playerInfo[me]["numTrucks"];
+        // debug(`numTrucks ${allTrucksCount}`);
         if (allTrucksCount >= getDroidLimit(me, DROID_CONSTRUCT)) {
             return false;
         }

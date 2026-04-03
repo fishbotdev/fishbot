@@ -228,7 +228,7 @@ class armyIntelligence {
 	 */
 	#debugPrintPlayerInfo(p) {
 		
-		if (true) {
+		if (false) {
 			debug(`== ${p.playerID} UNIT STATS ==`);
 
 			// Print Unit stats
@@ -338,6 +338,8 @@ class armyIntelligence {
 					p['numLaserUnits']++;
 				} else if (flags & OBJ_FLAGS.FLAMER_WEAPON) {
 					p['numFlamerUnits']++;
+				} else if (flags & OBJ_FLAGS.CONSTRUCTOR) {
+					p['numTrucks']++;
 				}
 
 				// Update target list
