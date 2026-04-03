@@ -184,6 +184,11 @@ class armyIntelligence {
 				return flags;
 			}
 
+			if (obj.stattype === RESEARCH_LAB) {
+				flags |= OBJ_FLAGS.RESEARCH;
+				return flags;
+			}
+
 			const INDUSTRIAL_TARGETS = [FACTORY, CYBORG_FACTORY, VTOL_FACTORY];	
 			if (INDUSTRIAL_TARGETS.includes(obj.stattype)) {
 				flags |= OBJ_FLAGS.PRODUCTION;
@@ -378,12 +383,29 @@ class armyIntelligence {
 					grid[gx][gy]['claimedDerricks'].push(createNewClaimedDerrick(obj.x, obj.y, obj.player));	
 				}
 
-				if (flags & OBJ_FLAGS.PRODUCTION) {
-					p['numFactories']++;
-				}
-
 				// Update target list
 				const newObj = this.#createNewTarget(obj, flags, gx, gy);
+
+				if (flags & OBJ_FLAGS.PRODUCTION) {
+					p['numFactories']++;
+
+					if (obj.stattype === FACTORY) {
+						p["normalFactoryFbObjects"].push(newObj);
+					} else if (obj.stattype === CYBORG_FACTORY) {
+						p["cyborgFactoryFbObjects"].push(newObj);
+					} else if (obj.stattype === VTOL_FACTORY) {
+						p["vtolFactoryFbObjects"].push(newObj);
+					}
+				}
+
+				if (flags & OBJ_FLAGS.RESEARCH) {
+					p["researchFacilityFbObjects"].push(newObj);
+				}
+
+				if (obj.stattype === HQ) {
+					// manual classification outside of `classifyObject` -> not required to track HQs
+					p['numHQs']++;
+				}			
 
 				if (IS_TARGET) {
 					result.allTargets.push(newObj);		
