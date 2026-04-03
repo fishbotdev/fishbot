@@ -268,12 +268,14 @@ class worldState {
 			'numStructs': 0,
             'numFactories': 0,
 			'numDerricks': 0, 
+            'numHQs': 0,
 
             // Intended to be used for getting idle structures for Production & Research reasons
             'normalFactoryFbObjects': [],           
             'cyborgFactoryFbObjects': [],
             'vtolFactoryFbObjects': [],
             'researchFacilityFbObjects': [],
+            
 		};
     }
 

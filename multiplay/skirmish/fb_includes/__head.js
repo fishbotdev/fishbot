@@ -120,12 +120,13 @@ const OBJ_FLAGS = {
 
     // structures
     PRODUCTION:   				1 << 24,
-    RESOURCE_EXTRACTOR:       	1 << 25,
-    DEFENSIVE_STRUCTURE:      	1 << 26,
-	IS_BUILT:					1 << 27,
+	RESEARCH: 					1 << 25,
+	ENERGY:						1 << 26,
+    RESOURCE_EXTRACTOR:       	1 << 27,
+    DEFENSIVE_STRUCTURE:      	1 << 28,
+	IS_BUILT:					1 << 29,
 };
 Object.freeze(OBJ_FLAGS);
-
 
 const MISSION_TYPE = {
 	ABORT_MISSION: 0,
