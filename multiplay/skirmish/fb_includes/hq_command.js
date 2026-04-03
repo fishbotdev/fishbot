@@ -182,7 +182,71 @@ class CommandCenter {
 		}
 	}
 
-	/////////////////////////////////////////////////// COMBAT OPERATIONS ///////////////////////////////////////////////////
+	/////////////////////////////////////////////////// G2: INTELLIGENCE ///////////////////////////////////////////////////
+
+	/**
+	 * 	For performance reasons, this function was changed from linear to distributed.
+	 * 	The intent is:
+	 * 	1. Intelligence mission/task is scheduled
+	 * 	2. Mission is either immediately run or scheduled to run by the global mission manager
+	 * 	3. Observations are compiled into the global 'state' by the `toc`
+	 * @param {worldState} state
+	 * @param {string} taskID
+	 * @returns {void}
+	 */
+	runIntelligence(state, taskID) {
+		
+		// Note: For performance reasons, anything which can be executed immediately should not use the mission management system.
+
+		switch(taskID) {
+
+			case 'intel_checkOilDominance':
+				const isOilDominant = checkOilDominance(state, this.OIL_DOMINANCE_PERCENTAGE);
+				this.toc.setOilDominanceStatus(state, isOilDominant);
+				break;
+			
+			case 'intel_getNearbyGroundTargets':
+
+				// Update location(s) & composition(s) of active combat force(s) -- TEMPORARY IMPLEMENTATION
+				const mainForceLocation = groundForces.getForceMedianLocation(0);
+				this.toc.setForceLocation(state, mainForceLocation);
+
+				if (defined(state.forceLocation)) {
+					const nearbyGroundTargets = intelligence.proposeTargetsInRadius2(state, state.forceLocation, 20, 16);		
+					hq.toc.setNearbyGroundTargets(state, nearbyGroundTargets);
+				}
+				break;
+			
+			case 'intel_checkCampaignStatus':
+
+				this.checkCampaignStatus(state);
+				break;
+
+			case 'intel_getAviationTargets':
+
+				const raidTargets = intelligence.getTargetsNearDerricks(state);
+				const baseTargets = intelligence.getBaseTargets(state);
+				hq.toc.setAviationTargets(state, raidTargets, baseTargets['productionTargets'], baseTargets['adaTargets']);
+
+				break;
+
+			case 'intel_getMapIntelligence':
+
+				const objectData = intelligence.getAllObjects(state);
+				this.toc.setCoreIntelParameters(state, objectData['grid'], objectData['playerInfo'], objectData['allTargets']);
+				this.toc.updateSpatialFields(state, objectData['grid']);
+				break;
+				
+			default:
+				debug(`	WARNING	runIntelligence(): could not understand ${taskID} @ ${gameTime}`);
+				return;
+		}
+
+		if (false) debug(`${gameTime}:		${taskID}`);
+	
+	}
+
+	/////////////////////////////////////////////////// G3: COMBAT OPERATIONS ///////////////////////////////////////////////////
 	prioritiseLandForceTargets(targetInfo, groupPosition) {
 
 		let output = {
@@ -590,71 +654,7 @@ class CommandCenter {
 		this.toc.assignAviationMissions(state, aviationTargets);					
 	}
 
-	/////////////////////////////////////////////////// INTELLIGENCE ///////////////////////////////////////////////////
-
-	/**
-	 * 	For performance reasons, this function was changed from linear to distributed.
-	 * 	The intent is:
-	 * 	1. Intelligence mission/task is scheduled
-	 * 	2. Mission is either immediately run or scheduled to run by the global mission manager
-	 * 	3. Observations are compiled into the global 'state' by the `toc`
-	 * @param {worldState} state
-	 * @param {string} taskID
-	 * @returns {void}
-	 */
-	runIntelligence(state, taskID) {
-		
-		// Note: For performance reasons, anything which can be executed immediately should not use the mission management system.
-
-		switch(taskID) {
-
-			case 'intel_checkOilDominance':
-				const isOilDominant = checkOilDominance(state, this.OIL_DOMINANCE_PERCENTAGE);
-				this.toc.setOilDominanceStatus(state, isOilDominant);
-				break;
-			
-			case 'intel_getNearbyGroundTargets':
-
-				// Update location(s) & composition(s) of active combat force(s) -- TEMPORARY IMPLEMENTATION
-				const mainForceLocation = groundForces.getForceMedianLocation(0);
-				this.toc.setForceLocation(state, mainForceLocation);
-
-				if (defined(state.forceLocation)) {
-					const nearbyGroundTargets = intelligence.proposeTargetsInRadius2(state, state.forceLocation, 20, 16);		
-					hq.toc.setNearbyGroundTargets(state, nearbyGroundTargets);
-				}
-				break;
-			
-			case 'intel_checkCampaignStatus':
-
-				this.checkCampaignStatus(state);
-				break;
-
-			case 'intel_getAviationTargets':
-
-				const raidTargets = intelligence.getTargetsNearDerricks(state);
-				const baseTargets = intelligence.getBaseTargets(state);
-				hq.toc.setAviationTargets(state, raidTargets, baseTargets['productionTargets'], baseTargets['adaTargets']);
-
-				break;
-
-			case 'intel_getMapIntelligence':
-
-				const objectData = intelligence.getAllObjects(state);
-				this.toc.setCoreIntelParameters(state, objectData['grid'], objectData['playerInfo'], objectData['allTargets']);
-				this.toc.updateSpatialFields(state, objectData['grid']);
-				break;
-				
-			default:
-				debug(`	WARNING	runIntelligence(): could not understand ${taskID} @ ${gameTime}`);
-				return;
-		}
-
-		if (false) debug(`${gameTime}:		${taskID}`);
-	
-	}
-
-	/////////////////////////////////////////////////// CONSTRUCTION ///////////////////////////////////////////////////
+	/////////////////////////////////////////////////// G4: LOGISTICS ///////////////////////////////////////////////////
 	/**
 	 * 
 	 * @param {worldState} state 
