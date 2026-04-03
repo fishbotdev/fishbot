@@ -189,7 +189,7 @@ class armyQuartermaster {
         return success;
     }
 
-    manageProduction() {
+    manageCombatUnitProduction() {
 
         let truckInProduction = this.#checkTruckProduction();
         if (truckInProduction) {

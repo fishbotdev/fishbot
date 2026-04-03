@@ -700,7 +700,7 @@ class CommandCenter {
 	 * 
 	 * @param {worldState} state 
 	 */
-	runConstructionTasks(state) {
+	runConstructionLogistics(state) {
 
 		// Command re-evaluates existing construction tasks
 		const OIL_CAPTURE_MISSION_TYPES = [
@@ -773,13 +773,18 @@ class CommandCenter {
 	 * 
 	 * @param {worldState} state 
 	 */
-	runLogistics(state) {
+	runProductionLogistics(state) {
 		// Production
-		supply.manageProduction();
+		supply.manageCombatUnitProduction();
+	}
+
+	/**
+	 * 
+	 * @param {worldState} state 
+	 */
+	runResearchLogistics(state) {
 		// Research
 		research.manageResearch();
-		// Construction
-		this.runConstructionTasks(state);												
 	}
 
 	/**

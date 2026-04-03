@@ -58,7 +58,9 @@ function runC2() {
 function runLogistics() {
 	if (state.botIsActive) {
 		if (state.WORKER_IDS['runLogistics'][state.currWorkerID]) {
-			hq.runLogistics(state);
+			hq.runConstructionLogistics(state);
+			hq.runProductionLogistics(state);
+			hq.runResearchLogistics(state);
 		}
 	}
 }
