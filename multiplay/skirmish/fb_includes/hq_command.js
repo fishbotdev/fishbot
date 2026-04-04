@@ -771,44 +771,6 @@ class CommandCenter {
 
 	/**
 	 * 
-	 * @param {worldState} state
-	 */
-	getDivisionLogisticUnitDeficit(state) {
-		const MAX_TRUCKS = 6;
-		const currTrucks = state.g.enumGroup(ENGINEERING.ENGINEERING_RESERVE).length;
-
-		return {
-			'trucks': MAX_TRUCKS - currTrucks
-		}
-	}
-
-	/**
-	 * Returns the number of units still required to form a full strength FishBot brigade.
-	 * This function also defines what a FishBot brigade composition looks like.
-	 * @returns 
-	 */
-	getBrigadeUnitDeficit(state) {
-		const MAX_INFANTRY = 8;
-		const MAX_CANNON = 8;
-		const MAX_MG = 3;
-		const MAX_MORTAR = 6;
-		const MAX_VTOL = 8;
-
-		const countUnitsIn = (groupID) => state.g.enumGroup(groupID).length;
-
-        const directAssaultTanksCount = countUnitsIn(DIVISION.HEAVY_CAV_RESERVE) + countUnitsIn(DIVISION.LIGHT_CAV_RESERVE);
-		const infantryCount = countUnitsIn(DIVISION.INFANTRY_RESERVE);
-        const fireSupportCount = countUnitsIn(DIVISION.SHORT_RANGE_FIRE_SUPPORT_RESERVE) + countUnitsIn(DIVISION.LONG_RANGE_FIRE_SUPPORT_RESERVE);
-        const airDefenceCount = countUnitsIn(DIVISION.AIR_DEFENCE_RESERVE);
-        const sensorCount = countUnitsIn(DIVISION.SENSOR_RESERVE);
-
-		return {
-			
-		}
-	}
-
-	/**
-	 * 
 	 * @param {worldState} state 
 	 */
 	runProductionLogistics(state) {

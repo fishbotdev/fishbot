@@ -22,7 +22,7 @@
 
 function eventDroidBuilt(droid, structure) {	
 	// This is the only event handler that FishBot uses (avoids having to perform enumDroid continuously)
-	supply.assignNewDroidIntoGroup(droid);	
+	hq.toc.setNewDroidGroup(state, droid);	
 }
 
 function eventStructureReady(structure) {
