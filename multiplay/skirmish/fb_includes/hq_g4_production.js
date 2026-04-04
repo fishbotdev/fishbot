@@ -69,8 +69,8 @@ class armyQuartermaster {
         const countUnitsIn = (groupID) => state.g.enumGroup(groupID).length;
 
         const directAssaultTanksCount = countUnitsIn(DIVISION.HEAVY_CAV_RESERVE) + countUnitsIn(DIVISION.LIGHT_CAV_RESERVE) + countUnitsIn(DIVISION.GENERAL_RESERVE);     
-        const fireSupportCount = state.g.enumGroup(DIVISION.SHORT_RANGE_FIRE_SUPPORT_RESERVE).length;
-        const airDefenceCount = state.g.enumGroup(DIVISION.AIR_DEFENCE_RESERVE).length;
+        const fireSupportCount = countUnitsIn(DIVISION.SHORT_RANGE_FIRE_SUPPORT_RESERVE);
+        const airDefenceCount = countUnitsIn(DIVISION.AIR_DEFENCE_RESERVE);
         const sensorCount = countUnitsIn(DIVISION.SENSOR_RESERVE);
 
         let weights;    // weights are integers between 0 -> 10
