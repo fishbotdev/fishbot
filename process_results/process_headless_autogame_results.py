@@ -193,7 +193,8 @@ def show_hard_cobra_results():
     # test_2 = getcwd() + rf"\process_results/v4/" + "04fb0cd,hard,cobra,50g_part2" + ".txt"          #  42 / 50 -> 84% (yay!)
     # test_2 = getcwd() + rf"\process_results/v4/" + "3d997f9,hard,cobra,100g" + ".txt"                #  65 / 100 -> v0.3.1 release candidate
     test_1 = getcwd() + rf"\process_results/v4/" + "021d39e,hard,cobra,100g" + ".txt"                #  79 / 100 -> v0.3.1 release candidate (reverted removal of median location)
-    test_2 = getcwd() + rf"\process_results/v4/" + "e7a4ac4,hard,cobra,50g" + ".txt"                # 42 / 50 won (increased FS weights, decreased ADA weights, added incend mortar)
+    # test_2 = getcwd() + rf"\process_results/v4/" + "e7a4ac4,hard,cobra,50g" + ".txt"                # 42 / 50 won (increased FS weights, decreased ADA weights, added incend mortar)
+    test_2 = getcwd() + rf"\process_results/v4/" + "006d007,hard,cobra,100g" + ".txt"                # 86 / 100 won (during migration of production)
 
     commit1 = test_1.split(rf"v4/")[1].split(",")[0]
     commit2 = test_2.split(rf"v4/")[1].split(",")[0]
