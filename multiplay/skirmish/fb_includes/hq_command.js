@@ -774,24 +774,6 @@ class CommandCenter {
 	 * @param {worldState} state 
 	 */
 	runProductionLogistics(state) {
-
-		/**
-		 * Wraps `structureIdle` (WZ2100 JSAPI) to make it compatible with FishBot objects.
-		 * @param {*} factoryObj 
-		 * @returns {boolean}
-		 */
-		const structureIsIdle = (factoryObj) => {
-			if (factoryObj.flags & OBJ_FLAGS.IS_BUILT) {
-				const f = getObject(factoryObj.type, factoryObj.player, factoryObj.id);
-				if (defined(f)) {
-					if (structureIdle(f)) {
-						return true;
-					}
-				}
-			}
-			return false;
-		};
-
 		/**
 		 * Debug print of idle factories.
 		 * @param {any[]} idleFactoryList 
@@ -808,9 +790,9 @@ class CommandCenter {
 		const cyborgFactories = state.playerInfo[me]["cyborgFactoryFbObjects"];
 		const vtolFactories = state.playerInfo[me]["vtolFactoryFbObjects"];
 
-		const idleFactories = factories.filter(f => structureIsIdle(f));
-		const idleCyborgFactories = cyborgFactories.filter(f => structureIsIdle(f));
-		const idleVtolFactories = vtolFactories.filter(f => structureIsIdle(f));
+		const idleFactories = factories.filter(f => fbStructureIsIdle(f));
+		const idleCyborgFactories = cyborgFactories.filter(f => fbStructureIsIdle(f));
+		const idleVtolFactories = vtolFactories.filter(f => fbStructureIsIdle(f));
 
 		if (false) {
 			debugPrintIfIdle(idleFactories, "Factory");
@@ -908,8 +890,10 @@ class CommandCenter {
 	 * @param {worldState} state 
 	 */
 	runResearchLogistics(state) {
-		// Research
-		research.manageResearch();
+		const labs = state.playerInfo[me]["researchFacilityFbObjects"];
+		const idleLabs = labs.filter(r => fbStructureIsIdle(r));
+
+		idleLabs.forEach((lab) => research.doResearch(lab));
 	}
 
 	/**

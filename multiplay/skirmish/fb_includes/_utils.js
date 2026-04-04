@@ -251,14 +251,22 @@ function breadthFirstSearch(grid, bgx, bgy, objectiveFunc) {
 	Try to reduce the number of functions in this section.
 */
 
-function getIdleStructuresOfType({structureID, playerID=me}) {
-	// Default player is me
-	const structuresOfType = enumStruct(playerID, structureID);
-	return structuresOfType.filter(struct => (
-		struct.status === BUILT && 
-		structureIdle(struct)
-	));
-}
+/**
+ * Wraps `structureIdle` (WZ2100 JSAPI) to make it compatible with FishBot objects.
+ * @param {*} fbStructObj 
+ * @returns {boolean}
+ */
+function fbStructureIsIdle(fbStructObj) {
+	if (fbStructObj.flags & OBJ_FLAGS.IS_BUILT) {
+		const s = getObject(fbStructObj.type, fbStructObj.player, fbStructObj.id);
+		if (defined(s)) {
+			if (structureIdle(s)) {
+				return true;
+			}
+		}
+	}
+	return false;
+};
 
 function isAntiAirDefense(obj) {
 	if (obj.canHitAir === true && obj.canHitGround === false) {
