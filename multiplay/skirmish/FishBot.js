@@ -34,11 +34,11 @@
 	
 	LINES OF CODE
 		
-	FishBot uses cloc to count lines of code (https://github.com/aldanial/cloc). More information can be found in `fishbot\software_tools`.
+	FishBot uses cloc to count lines of code (https://github.com/aldanial/cloc). 
+	More information can be found in `fishbot\software_tools\run_cloc.bat`.
+	- 3845 JS @ 30 Mar 2026: v0.3.1 release (commit `0565344`)
+	- 4300 JS @ 04 Apr 2026: (commit `1c7d413`)
 
-	- 
-	- 4300 JS @ 04 Apr 2026: commit 1c7d413
-	  
 */
 
 
