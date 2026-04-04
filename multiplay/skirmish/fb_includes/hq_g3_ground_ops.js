@@ -66,7 +66,9 @@ class armyGroundOperations {
 	 * @returns 
 	 */
 	getForceMedianLocation(unused) {
-		let generalReserve = state.g.enumGroup(DIVISION.GENERAL_RESERVE);
+		const getUnitsIn = (groupID) => state.g.enumGroup(groupID);
+
+		let generalReserve = [...getUnitsIn(DIVISION.HEAVY_CAV_RESERVE), ...getUnitsIn(DIVISION.LIGHT_CAV_RESERVE), ...getUnitsIn(DIVISION.GENERAL_RESERVE)];
 		if (generalReserve.length === 0) {
 			return {"x": baseLocation.x, "y": baseLocation.y};
 		}

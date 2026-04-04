@@ -328,7 +328,7 @@ class worldStateBuilder {
         // Generates initial values in FishBot v3 grouping system
         let g = new fbGroup();
 
-        g.createGroup(AIR_RESERVE);
+        g.createGroup(DIVISION.AIR_RESERVE);
 
         for (const d in DIVISION) {
             g.createGroup(DIVISION[d]);

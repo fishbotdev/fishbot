@@ -771,11 +771,131 @@ class CommandCenter {
 
 	/**
 	 * 
+	 * @param {worldState} state
+	 */
+	getDivisionLogisticUnitDeficit(state) {
+		const MAX_TRUCKS = 6;
+		const currTrucks = state.g.enumGroup(ENGINEERING.ENGINEERING_RESERVE).length;
+
+		return {
+			'trucks': MAX_TRUCKS - currTrucks
+		}
+	}
+
+	/**
+	 * Returns the number of units still required to form a full strength FishBot brigade.
+	 * This function also defines what a FishBot brigade composition looks like.
+	 * @returns 
+	 */
+	getBrigadeUnitDeficit(state) {
+		const MAX_INFANTRY = 8;
+		const MAX_CANNON = 8;
+		const MAX_MG = 3;
+		const MAX_MORTAR = 6;
+		const MAX_VTOL = 8;
+
+		const countUnitsIn = (groupID) => state.g.enumGroup(groupID).length;
+
+        const directAssaultTanksCount = countUnitsIn(DIVISION.HEAVY_CAV_RESERVE) + countUnitsIn(DIVISION.LIGHT_CAV_RESERVE);
+		const infantryCount = countUnitsIn(DIVISION.INFANTRY_RESERVE);
+        const fireSupportCount = countUnitsIn(DIVISION.SHORT_RANGE_FIRE_SUPPORT_RESERVE) + countUnitsIn(DIVISION.LONG_RANGE_FIRE_SUPPORT_RESERVE);
+        const airDefenceCount = countUnitsIn(DIVISION.AIR_DEFENCE_RESERVE);
+        const sensorCount = countUnitsIn(DIVISION.SENSOR_RESERVE);
+
+		return {
+			
+		}
+	}
+
+	/**
+	 * 
 	 * @param {worldState} state 
 	 */
 	runProductionLogistics(state) {
-		// Production
-		supply.manageCombatUnitProduction();
+
+		// Default production order:
+		// 	- Main battle units = tanks (factory)
+		//	- Main infatry units = cyborgs (cyb factory)
+		//	- Supporting: VTOLs (VTOL factory)
+		//	- Trucks = engineers = cyb factory
+
+		/**
+		 * 
+		 * @param {*} factoryObj 
+		 * @returns {boolean}
+		 */
+		const structureIsIdle = (factoryObj) => {
+			if (factoryObj.flags & OBJ_FLAGS.IS_BUILT) {
+				const f = getObject(factoryObj.type, factoryObj.player, factoryObj.id);
+				if (defined(f)) {
+					if (structureIdle(f)) {
+						return true;
+					}
+				}
+			}
+			return false;
+		};
+
+		/**
+		 * 
+		 * @param {any[]} idleFactoryList 
+		 * @param {string} name 
+		 */
+		const debugPrintIfIdle = (idleFactoryList, name) => {
+			if (idleFactoryList.length > 0) {
+				debug(`	${gameTime}: Idle "${name}": ${idleFactoryList.length}`);
+			}
+		};
+
+		// Check factories for idle
+		const factories = state.playerInfo[me]["normalFactoryFbObjects"];
+		const cyborgFactories = state.playerInfo[me]["cyborgFactoryFbObjects"];
+		const vtolFactories = state.playerInfo[me]["vtolFactoryFbObjects"];
+
+		const idleFactories = factories.filter(f => structureIsIdle(f));
+		const idleCyborgFactories = cyborgFactories.filter(f => structureIsIdle(f));
+		const idleVtolFactories = vtolFactories.filter(f => structureIsIdle(f));
+
+		if (false) {
+			debugPrintIfIdle(idleFactories, "Factory");
+			debugPrintIfIdle(idleCyborgFactories, "Cyborg Factory");
+			debugPrintIfIdle(idleVtolFactories, "VTOL Factory");
+		}
+
+		// const currTruckTarget = 6;
+
+		// // Factory production first
+		// idleFactories.forEach(f => {
+
+		// });
+
+		let truckInProduction = supply.checkTruckProduction();
+        if (truckInProduction) {
+            return;
+        }
+
+        const MIN_CYBORGS = 8;
+        if (enumDroid(me, DROID_CYBORG).length < MIN_CYBORGS) {
+            if (supply.checkCyborgProduction()) return;
+        }
+
+        let r = Math.floor(Math.random() * 8); 		
+        if (0 <= r && r < 1) {
+            // Airforce
+            if (supply.checkVtolProduction()) return;
+        } else {
+            // Tanks
+            if (supply.checkTankProduction()) return;
+        }
+
+        // if having too much energy, don't care about what we produce
+        const TOO_MUCH_POWER = 300;
+        if (myPower() > TOO_MUCH_POWER) {
+            supply.checkTankProduction();
+            supply.checkVtolProduction();
+            supply.checkCyborgProduction();
+        }
+
 	}
 
 	/**

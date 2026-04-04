@@ -21,7 +21,7 @@ class armyQuartermaster {
 
 	}
 
-    #checkVtolProduction() {
+    checkVtolProduction() {
         if (!iCanDesign()) return false; // don't cheat by producing vtols before design is available
 
         let vtolInProduction = false;
@@ -35,7 +35,7 @@ class armyQuartermaster {
         return vtolInProduction;
     }
 
-    #checkCyborgProduction() {
+    checkCyborgProduction() {
         let success = false;
         getIdleStructuresOfType({structureID: STRUCTURES["Cyborg Factory"].id}).forEach((factory) => {
             success = success || produceInfantry(factory);
@@ -43,7 +43,7 @@ class armyQuartermaster {
         return success;
     }
 
-    #checkTruckProduction() {
+    checkTruckProduction() {
         const MAX_OVERALL_TRUCKS = 6;
 
         const allTrucksCount = state.playerInfo[me]["numTrucks"];
@@ -65,11 +65,14 @@ class armyQuartermaster {
         return success;
     }
 
-    #produceLandUnit(factory) {
-        const directAssaultTanksCount = state.g.enumGroup(DIVISION.GENERAL_RESERVE).length;     
-        const fireSupportCount = state.g.enumGroup(DIVISION.FIRE_SUPPORT_RESERVE).length;
+    produceLandUnit(factory) {
+        
+        const countUnitsIn = (groupID) => state.g.enumGroup(groupID).length;
+
+        const directAssaultTanksCount = countUnitsIn(DIVISION.HEAVY_CAV_RESERVE) + countUnitsIn(DIVISION.LIGHT_CAV_RESERVE) + countUnitsIn(DIVISION.GENERAL_RESERVE);     
+        const fireSupportCount = state.g.enumGroup(DIVISION.SHORT_RANGE_FIRE_SUPPORT_RESERVE).length;
         const airDefenceCount = state.g.enumGroup(DIVISION.AIR_DEFENCE_RESERVE).length;
-        const sensorCount = enumDroid(me, DROID_SENSOR).length;
+        const sensorCount = countUnitsIn(DIVISION.SENSOR_RESERVE);
 
         let weights;    // weights are integers between 0 -> 10
         
@@ -179,81 +182,72 @@ class armyQuartermaster {
     }
 
 
-    #checkTankProduction() {
+    checkTankProduction() {
         if (!iCanDesign()) return false; // don't cheat by producing tanks before design is available 
 
         let success = false;
         getIdleStructuresOfType({structureID: STRUCTURES["Factory"].id}).forEach((factory) => {
-            success = success || this.#produceLandUnit(factory);
+            success = success || this.produceLandUnit(factory);
         });
         return success;
     }
 
-    manageCombatUnitProduction() {
-
-        let truckInProduction = this.#checkTruckProduction();
-        if (truckInProduction) {
-            return;
-        }
-
-        const MIN_CYBORGS = 8;
-        if (enumDroid(me, DROID_CYBORG).length < MIN_CYBORGS) {
-            if (this.#checkCyborgProduction()) return;
-        }
-
-        let r = Math.floor(Math.random() * 8); 		
-        if (0 <= r && r < 1) {
-            // Airforce
-            if (this.#checkVtolProduction()) return;
-        } else {
-            // Tanks
-            if (this.#checkTankProduction()) return;
-        }
-
-        // if having too much energy, don't care about what we produce
-        const TOO_MUCH_POWER = 300;
-        if (myPower() > TOO_MUCH_POWER) {
-            this.#checkTankProduction();
-            this.#checkVtolProduction();
-            this.#checkCyborgProduction();
-        }
-
-    }
-
+    /**
+     * 
+     * @param {DroidObject} droid 
+     * @returns 
+     */
     assignNewDroidIntoGroup(droid) {
-        if (droid.isVTOL === true) {	
-            state.g.addDroidToGroup({groupID: AIR_RESERVE, droidID: droid.id});
-            return;
-        }
 
-        // Add new trucks to oil capture / base build groups
-        if (droid.droidType == DROID_CONSTRUCT) {
+        const flags = classifyGameObject(droid);
+
+        if (flags & OBJ_FLAGS.CONSTRUCTOR) {
             state.g.addDroidToGroup({groupID: ENGINEERING.ENGINEERING_RESERVE, droidID: droid.id});
             return;
         }
 
-        if (droid.droidType === DROID_CYBORG) {
+        // AVIATION
+        // Air units should be sorted early as AVIATION units could have conflicting flags with LAND FORCES e.g. "OBJ_FLAGS.CANNON_WEAPON"
+        if (flags & OBJ_FLAGS.AVIATION) {
+            state.g.addDroidToGroup({groupID: DIVISION.AIR_RESERVE, droidID: droid.id});
+            return;
+        }
+
+        // LAND FORCES
+        if (flags & (OBJ_FLAGS.INFANTRY)) {
             state.g.addDroidToGroup({groupID: DIVISION.INFANTRY_RESERVE, droidID: droid.id});
             return;
         }
+        
+        if (flags & (OBJ_FLAGS.CANNON_WEAPON)) {        // TODO: future support for other weapon types
+            state.g.addDroidToGroup({groupID: DIVISION.HEAVY_CAV_RESERVE, droidID: droid.id});
+        }
 
-        if (droid.droidType === DROID_WEAPON && droid.hasIndirect === true) {
-            // debug("added to FIRE SUPPORT RESERVE");
-            state.g.addDroidToGroup({groupID: DIVISION.FIRE_SUPPORT_RESERVE, droidID: droid.id});
+        if (flags & (OBJ_FLAGS.MACHINEGUN_WEAPON | OBJ_FLAGS.LASER_WEAPON)) {
+            state.g.addDroidToGroup({groupID: DIVISION.LIGHT_CAV_RESERVE, droidID: droid.id});
+        }
+
+        if (flags & OBJ_FLAGS.SHORT_RANGE_ARTILLERY_WEP) {
+            state.g.addDroidToGroup({groupID: DIVISION.SHORT_RANGE_FIRE_SUPPORT_RESERVE, droidID: droid.id});
             return;
         }
 
-        if (droid.droidType === DROID_WEAPON && isAntiAirDefense(droid)) {
-            // debug("added to AIR DEFENCE RESERVE");
+        if (flags & OBJ_FLAGS.LONG_RANGE_ARTILLERY_WEP) {
+            state.g.addDroidToGroup({groupID: DIVISION.LONG_RANGE_FIRE_SUPPORT_RESERVE, droidID: droid.id});
+            return;
+        }
+
+        if (flags & (OBJ_FLAGS.AA_DIRECT_FIRE_WEAPON | OBJ_FLAGS.AA_ROCKET_WEAPON)) {
             state.g.addDroidToGroup({groupID: DIVISION.AIR_DEFENCE_RESERVE, droidID: droid.id});
             return;
         }
 
-        if (droid.droidType === DROID_WEAPON) {
-            // debug("ADDED TO GENERAL RESERVE");
-            state.g.addDroidToGroup({groupID: DIVISION.GENERAL_RESERVE, droidID: droid.id});		
+        if (droid.droidType === DROID_SENSOR) {
+            // manually accessing the DroidObject properties as I have run out of bits in OBJ_FLAGS.
+            state.g.addDroidToGroup({groupID: DIVISION.SENSOR_RESERVE, droidID: droid.id});		
             return;
         }
+
+        state.g.addDroidToGroup({groupID: DIVISION.GENERAL_RESERVE, droidID: droid.id});
     }
-    
 }
