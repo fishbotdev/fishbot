@@ -32,15 +32,13 @@
 
 	Fun stats:
 	
-	To count lines of code without comments, in git bash, cd to `fishbot\multiplay\skirmish\` and:
+	LINES OF CODE
+		
+	FishBot uses cloc to count lines of code (https://github.com/aldanial/cloc). More information can be found in `fishbot\software_tools`.
 
-	git ls-files "*.js" | xargs cat | grep -v '^\s*$' | grep -v '^\s*#' | wc -l 	
-
-	Results:
-	- 29 Nov 2025 (43e22ee): 3512 .js
-	- 18 Jan 2026 (eae414d): 4567 .js
-	- 15 Feb 2026 (821b835): 4536 .js -- v0.3.0 (v3) public release
-	- 22 Mar 2026 (b94dc92): 5361 .js -- v0.3.1 release
+	- 
+	- 4300 JS @ 04 Apr 2026: commit 1c7d413
+	  
 */
 
 
