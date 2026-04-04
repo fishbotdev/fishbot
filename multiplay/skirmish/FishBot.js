@@ -32,7 +32,7 @@
 
 	Fun stats:
 	
-	To count lines of code without comments, in git bash, cd to the code directory and:
+	To count lines of code without comments, in git bash, cd to `fishbot\multiplay\skirmish\` and:
 
 	git ls-files "*.js" | xargs cat | grep -v '^\s*$' | grep -v '^\s*#' | wc -l 	
 
@@ -110,7 +110,7 @@ const DEBUG_MODE_ON = true;
 		about implementation.
 	*/
 	include(FB_INCLUDES + "hq_g4_construction.js");
-	include(FB_INCLUDES + "___op_log_production.js");
+	include(FB_INCLUDES + "hq_g4_production.js");
 	include(FB_INCLUDES + "___op_log_research.js");	
 
 	include(FB_INCLUDES + "hq_g3_aviation.js");
