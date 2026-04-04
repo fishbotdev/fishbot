@@ -446,7 +446,8 @@ for (const key in Stats.Weapon) {
 }
 
 // The following weapons are not included in the `Stats.Weapon` global in WZ2100 v4.6.3, so they are manually added here:
-WEAPONS["Truck"] = {id: "Spade1Mk1", name: "Truck"};        
+WEAPONS["Truck"] = {id: "Spade1Mk1", name: "Truck"};
+WEAPONS["Cyborg Constructor"] = {id: "CyborgSpade", name: "Cyborg Constructor"};        
 WEAPONS["Sensor Turret"] = {id: "SensorTurret1Mk1", name: "Sensor Turret"};
 WEAPONS["CB Radar Turret"] = {id: "Sys-CBTurret01", name: "CB Radar Turret"},
 WEAPONS["Wide Spectrum Sensor"] = {id: "Sensor-WideSpec", name: "Wide Spectrum Sensor"}

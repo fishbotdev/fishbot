@@ -255,9 +255,9 @@ class armyIntelligence {
 					p["researchFacilityFbObjects"].push(newObj);
 				}
 
-				if (obj.stattype === HQ) {
-					// manual classification outside of `classifyObject` -> not required to track HQs
-					p['numHQs']++;
+				if (obj.stattype === HQ && obj.status === BUILT) {
+					// manual classification (outside of `classifyObject`) -> not required to track HQs
+					p['numConstructedHQs']++;
 				}			
 
 				if (IS_TARGET) {

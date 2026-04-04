@@ -775,14 +775,8 @@ class CommandCenter {
 	 */
 	runProductionLogistics(state) {
 
-		// Default production order:
-		// 	- Main battle units = tanks (factory)
-		//	- Main infatry units = cyborgs (cyb factory)
-		//	- Supporting: VTOLs (VTOL factory)
-		//	- Trucks = engineers = cyb factory
-
 		/**
-		 * 
+		 * Wraps `structureIdle` (WZ2100 JSAPI) to make it compatible with FishBot objects.
 		 * @param {*} factoryObj 
 		 * @returns {boolean}
 		 */
@@ -799,7 +793,7 @@ class CommandCenter {
 		};
 
 		/**
-		 * 
+		 * Debug print of idle factories.
 		 * @param {any[]} idleFactoryList 
 		 * @param {string} name 
 		 */
@@ -824,39 +818,88 @@ class CommandCenter {
 			debugPrintIfIdle(idleVtolFactories, "VTOL Factory");
 		}
 
-		// const currTruckTarget = 6;
+		// Get unit deficits
+		const combatBrigadeDeficit = supply.getBrigadeUnitDeficit(state);
 
-		// // Factory production first
-		// idleFactories.forEach(f => {
+		// Determine if it is possible to build combat vehicles (custom player designs).
+		// FishBot will not build combat vehicles before it can design them, on any difficulty.	
+		const CAN_DESIGN_COMBAT_UNITS = state.playerInfo[me]["numConstructedHQs"] > 0;
 
-		// });
+		// Decide on whether or not to produce trucks
+		const MAX_TRUCKS = 6;
+		const myTruckCount = state.playerInfo[me]["numTrucks"];
+		const GAME_TRUCK_HARD_LIMIT = getDroidLimit(me, DROID_CONSTRUCT);
+		const SHOULD_PRODUCE_TRUCKS = MAX_TRUCKS - myTruckCount > 0 && myTruckCount < GAME_TRUCK_HARD_LIMIT;
+		const CYBORG_CONSTRUCTOR_AVAILABLE = cyborgFactories.length > 0;
 
-		let truckInProduction = supply.checkTruckProduction();
-        if (truckInProduction) {
-            return;
-        }
+		let producedTruckThisTick = false;
+		const SINGLE_TRUCK_ONLY = CAN_DESIGN_COMBAT_UNITS;
 
-        const MIN_CYBORGS = 8;
-        if (enumDroid(me, DROID_CYBORG).length < MIN_CYBORGS) {
-            if (supply.checkCyborgProduction()) return;
-        }
+		// Decide on whether or not to produce combat cyborgs (infantry)
+		const SHOULD_PRODUCE_INFANTRY = combatBrigadeDeficit['infantry'] > 0;
 
-        let r = Math.floor(Math.random() * 8); 		
-        if (0 <= r && r < 1) {
-            // Airforce
-            if (supply.checkVtolProduction()) return;
-        } else {
-            // Tanks
-            if (supply.checkTankProduction()) return;
-        }
+		// Run production
+		const DEBUG_PRODUCTION = false;
+		const getFactoryObj = (f) => getObject(f.type, f.player, f.id);
 
-        // if having too much energy, don't care about what we produce
-        const TOO_MUCH_POWER = 300;
-        if (myPower() > TOO_MUCH_POWER) {
-            supply.checkTankProduction();
-            supply.checkVtolProduction();
-            supply.checkCyborgProduction();
-        }
+		// Note: for now, we will directly call the tactical level functions
+		for (let i=0; i<idleCyborgFactories.length; i++) {
+			const factory = getFactoryObj(idleCyborgFactories[i]);
+			if (!defined(factory)) {
+				continue;
+			}
+
+			if (SHOULD_PRODUCE_TRUCKS && CYBORG_CONSTRUCTOR_AVAILABLE && !producedTruckThisTick) {
+				if (DEBUG_PRODUCTION) debug(`	${gameTime}: produced Combat Engineer`);
+				produceCombatEngineer(factory);
+				if (SINGLE_TRUCK_ONLY) {
+					producedTruckThisTick = true;
+				}
+				continue;
+			}
+
+			if (SHOULD_PRODUCE_INFANTRY) {
+				if (DEBUG_PRODUCTION) debug(`	${gameTime}: produced Infantry`);
+				produceInfantry(factory);
+			}
+		}
+
+		for (let i=0; i<idleFactories.length; i++) {
+			const factory = getFactoryObj(idleFactories[i]);
+			if (!defined(factory)) {
+				continue;
+			}
+
+			if (SHOULD_PRODUCE_TRUCKS && !CYBORG_CONSTRUCTOR_AVAILABLE && !producedTruckThisTick) {
+				if (DEBUG_PRODUCTION) debug(`	${gameTime}: produced Hover Truck`);
+				produceTruck(factory);
+				if (SINGLE_TRUCK_ONLY) {
+					producedTruckThisTick = true;
+				}
+				continue;
+			}
+
+			if (CAN_DESIGN_COMBAT_UNITS) {
+				if (DEBUG_PRODUCTION) debug(`	${gameTime}: produced Land Vehicle Template`);
+				supply.produceLandUnit(factory);
+			} else {
+				break;
+			}
+		}
+
+		for (let i=0; i<idleVtolFactories.length; i++) {
+			const factory = getFactoryObj(idleVtolFactories[i]);
+			if (!defined(factory)) {
+				continue;
+			}
+
+			if (CAN_DESIGN_COMBAT_UNITS) {
+				if (DEBUG_PRODUCTION) debug(`	${gameTime}: produced VTOL`);
+				produceCloseAirSupport(factory);
+			} else {
+				break;
+			}
+		}
 
 	}
 

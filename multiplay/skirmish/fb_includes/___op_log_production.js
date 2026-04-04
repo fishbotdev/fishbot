@@ -21,49 +21,48 @@ class armyQuartermaster {
 
 	}
 
-    checkVtolProduction() {
-        if (!iCanDesign()) return false; // don't cheat by producing vtols before design is available
+	/**
+	 * Returns the number of units still required to form a full strength FishBot brigade.
+	 * This function also defines what a FishBot brigade composition looks like.
+     * @param {worldState} state
+     * @returns Object with numeric deficits of the following categories: 
+     *  - `heavyCavalry`
+     *  - `lightCavalry`
+     *  - `infantry`
+     *  - `shortRangeArtillery`
+     *  - `ADA`
+     *  - `aviation`
+     *  - `sensor`
+	 */
+	getBrigadeUnitDeficit(state) {
+		const MAX_HEAVY_CAVALRY = 8;
+        const MAX_LIGHT_CAVALRY = 3;
+        const MAX_INFANTRY = 8;
+		const MAX_MORTAR = 6;
+        const MAX_ADA = 3;
+		const MAX_VTOL = 8;
+        const MAX_SENSOR = 1;
 
-        let vtolInProduction = false;
-        const idleVtolFactories = getIdleStructuresOfType({structureID: STRUCTURES["VTOL Factory"].id});
+		const countUnitsIn = (groupID) => state.g.enumGroup(groupID).length;
+        // note: this implementation currently looks up the info in playerInfo for performance reasons
+        const heavyCavalryCount = state.playerInfo[me]["numCannonUnits"];
+        const lightCavalryCount = state.playerInfo[me]["numMGUnits"];      // TODO: generalise to: countUnitsIn(DIVISION.LIGHT_CAV_RESERVE);
+		const infantryCount = state.playerInfo[me]["numInfantryUnits"];
+        const shortRangeFireSupportCount = state.playerInfo[me]["numShortRangeIndirectUnits"];
+        const airDefenceCount = state.playerInfo[me]["numADAUnits"];
+        const sensorCount = countUnitsIn(DIVISION.SENSOR_RESERVE);
+        const vtolCount = state.playerInfo[me]["numAirUnits"];
 
-        for (let i = 0; i < idleVtolFactories.length; i++) {
-            const factory = idleVtolFactories[i];
-            vtolInProduction = vtolInProduction || produceCloseAirSupport(factory);
-        }
-
-        return vtolInProduction;
-    }
-
-    checkCyborgProduction() {
-        let success = false;
-        getIdleStructuresOfType({structureID: STRUCTURES["Cyborg Factory"].id}).forEach((factory) => {
-            success = success || produceInfantry(factory);
-        });
-        return success;
-    }
-
-    checkTruckProduction() {
-        const MAX_OVERALL_TRUCKS = 6;
-
-        const allTrucksCount = state.playerInfo[me]["numTrucks"];
-        // debug(`numTrucks ${allTrucksCount}`);
-        if (allTrucksCount >= getDroidLimit(me, DROID_CONSTRUCT)) {
-            return false;
-        }
-
-        if (allTrucksCount >= MAX_OVERALL_TRUCKS) {
-            return false;
-        }
-
-        let success = false;
-        if (enumStruct(me, CYBORG_FACTORY).length > 0) { 
-            getIdleStructuresOfType({structureID: STRUCTURES["Cyborg Factory"].id}).forEach(factory => (success = success || produceCombatEngineer(factory)));
-        } else {
-            getIdleStructuresOfType({structureID: STRUCTURES["Factory"].id}).forEach(factory => (success = success || produceTruck(factory)));
-        };
-        return success;
-    }
+		return {
+            'heavyCavalry': MAX_HEAVY_CAVALRY - heavyCavalryCount,
+            'lightCavalry': MAX_LIGHT_CAVALRY - lightCavalryCount,
+            'infantry': MAX_INFANTRY - infantryCount,
+            'shortRangeArtillery': MAX_MORTAR - shortRangeFireSupportCount,
+            'ADA': MAX_ADA - airDefenceCount,
+            'aviation': MAX_VTOL - vtolCount,
+            'sensor': MAX_SENSOR - sensorCount,
+		}
+	}
 
     produceLandUnit(factory) {
         
@@ -179,17 +178,6 @@ class armyQuartermaster {
         // debug('produceLandUnit(): Manufactured ', category);
 
         return factoryInProduction;
-    }
-
-
-    checkTankProduction() {
-        if (!iCanDesign()) return false; // don't cheat by producing tanks before design is available 
-
-        let success = false;
-        getIdleStructuresOfType({structureID: STRUCTURES["Factory"].id}).forEach((factory) => {
-            success = success || this.produceLandUnit(factory);
-        });
-        return success;
     }
 
 }

@@ -180,12 +180,17 @@ function produceTruck(factory) {
 	});
 }
 
+/**
+ * Produces a cyborg constructor (Combat Engineer) unit.
+ * @param {StructureObject} factory 
+ * @returns 
+ */
 function produceCombatEngineer(factory) {
 	const combatEngineer = { 
 		name: 'Combat Engineer',
 		body: "CyborgLightBody", 
 		prop: PROPULSIONS["Cyborg Propulsion"].id, 
-		weapon: "CyborgSpade"
+		weapon: WEAPONS["Cyborg Constructor"].id,
 	}; 
 
 	const cyborgName = combatEngineer.name + ` (FishBot v${FISHBOT_VERSION})`;
@@ -394,6 +399,11 @@ function produceLandRecon(factory) {
 	});
 }
 
+/**
+ * Produces a combat cyborg (infantry) unit.
+ * @param {StructureObject} factory 
+ * @returns 
+ */
 function produceInfantry(factory) {
 
 	// Arrange in ascending order of technological sophisitication
