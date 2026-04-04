@@ -738,7 +738,7 @@ Mark the given tile(s) on the map. Either give a ```POSITION``` or ```AREA``` la
 or a tile x, y position, or four positions for a square area. If no parameter
 is given, all marked tiles are cleared. (3.2+ only)
  */
-declare function hackMarkTiles(x: int, y: int, x2?: int, y2?: int): void;
+declare function hackMarkTiles(x?: int, y?: int, x2?: int, y2?: int): void;
 
 /**
 ## addBeacon(x, y, playerFilter[, message])

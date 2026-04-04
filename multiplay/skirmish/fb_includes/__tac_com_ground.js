@@ -108,7 +108,6 @@ function retreatToBase(generalReserve, infantryReserve, fireSupportReserve, airD
 */
 
 function groundForceAttack({state, directFireTarget, fireSupportTarget, adaTarget}) {
-	const SHOW_TARGETS = false;
 
 	let generalReserve = state.g.enumGroup(DIVISION.GENERAL_RESERVE);
 	let infantryReserve = state.g.enumGroup(DIVISION.INFANTRY_RESERVE);
@@ -227,7 +226,7 @@ function groundForceAttack({state, directFireTarget, fireSupportTarget, adaTarge
 		}
 	});
 
-	if (SHOW_TARGETS) {
+	if (false) {
 		hackMarkTiles();
 		if (defined(currDirectFireTarget)) {
 			addBeacon(currDirectFireTarget.x, currDirectFireTarget.y, 0);
