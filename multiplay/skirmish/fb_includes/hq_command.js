@@ -158,7 +158,7 @@ class CommandCenter {
 	 * 
 	 * @param {worldState} state 
 	 */
-	checkCampaignStatus(state) {
+	#checkCampaignStatus(state) {
 		// Note: this modifies 'campaignStatus' directly -> to be integrated into 'state'
 
 		// ADVANCE CAMPAIGN BASED ON GAME STATE -- TEMPORARY IMPLEMENTATION
@@ -219,7 +219,7 @@ class CommandCenter {
 			
 			case 'intel_checkCampaignStatus':
 
-				this.checkCampaignStatus(state);
+				this.#checkCampaignStatus(state);
 				break;
 
 			case 'intel_getAviationTargets':
@@ -247,7 +247,7 @@ class CommandCenter {
 	}
 
 	/////////////////////////////////////////////////// G3: COMBAT OPERATIONS ///////////////////////////////////////////////////
-	prioritiseLandForceTargets(targetInfo, groupPosition) {
+	#prioritiseLandForceTargets(targetInfo, groupPosition) {
 
 		let output = {
 			"directFireTarget": undefined, 
@@ -454,7 +454,7 @@ class CommandCenter {
 	 * @param {*} adaTargets 
 	 * @returns {Array}
 	 */
-	prioritiseAviationTargets(state, groupPosition, nearbyTargetCount, airRaidTargets, casTargets, industrialTargets, adaTargets) {
+	#prioritiseAviationTargets(state, groupPosition, nearbyTargetCount, airRaidTargets, casTargets, industrialTargets, adaTargets) {
 		const adaThreat = state.fields.adaThreat;
 
 		const cellSize = state.grid.cellSize;
@@ -625,7 +625,7 @@ class CommandCenter {
 
 		if (readyToAttack) {
 			// Prioritise & assign targets
-			const groundTargets = this.prioritiseLandForceTargets(nearbyGroundTargets, forceLocation);
+			const groundTargets = this.#prioritiseLandForceTargets(nearbyGroundTargets, forceLocation);
 
 			// Attack ground targets; HACK: directly calls tactical level function
 			groundForceAttack({
@@ -642,7 +642,7 @@ class CommandCenter {
 			numTargetsInImmediateRadius = groundTargets["targetsInImmediateRadius"];
 		}
 
-		const aviationTargets = this.prioritiseAviationTargets(state, 
+		const aviationTargets = this.#prioritiseAviationTargets(state, 
 			forceLocation, 
 			numTargetsInImmediateRadius, 
 			raidTargets, 
@@ -660,7 +660,7 @@ class CommandCenter {
 	 * @param {worldState} state 
 	 * @param {Array} activeRemoteMissions
 	 */
-	abortDangerousConstructionTasks(state, activeRemoteMissions) {
+	#abortDangerousConstructionTasks(state, activeRemoteMissions) {
 		const cellSize = state.grid.cellSize;
 
 		const enemyUnitThreat = state.fields.enemyUnitThreat;
@@ -729,7 +729,7 @@ class CommandCenter {
 			}
 		});
 		
-		this.abortDangerousConstructionTasks(state, activeRemoteMissions);
+		this.#abortDangerousConstructionTasks(state, activeRemoteMissions);
 
 		// Command then terminates, if there are no available trucks this tick (avoids expensive planning tasks)
 		const trucksUnavailable = state.g.enumGroup(ENGINEERING.ENGINEERING_RESERVE).length === 0;
