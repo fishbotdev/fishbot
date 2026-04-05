@@ -98,105 +98,48 @@ class armyResearchAndDevelopment {
 
 	}
 
-	doResearch(lab) {
+	proposeResearch(researchPriorities, researchBlacklist) {
 
 		const currAvailableResearches = enumResearch();
 
-		if (currAvailableResearches.length === 0) {
-			return;
-		}
-						
-		/*
-			Research priority items if they are available
-			Heuristic algorithm:
-			1. To determine priority, iterate through the list. 
-			2. If the item I'm looking at is higher priority than the next entry, put it there, else, continue through the list
+		let highPriority = [], highPriorityUnsorted = [], regularPriority = [];
 
-			v0.3.1 release -> Power upgrade, Heavy Cannon, Cannon Dmg, Research upgrade, ROF, twin aslt, vehicle metals
+		for (let i=0; i<currAvailableResearches.length; i++) {
+			const curr = currAvailableResearches[i];
 
-			Example v0.3.1 T2 research order:
-				R-Wpn-Cannon-Damage06
-				R-Struc-Power-Upgrade01c
-				R-Wpn-Cannon3Mk1
-				R-Struc-Research-Upgrade06
-				R-Wpn-Cannon-Damage07
-				R-Wpn-Cannon-ROF03
-				R-Wpn-Cannon6TwinAslt
-				R-Vehicle-Metals05
-				R-Struc-Research-Upgrade07
-				R-Cyborg-Metals06
-				R-Wpn-Cannon-Damage08
-				R-Wpn-Cannon-ROF04
-				R-Vehicle-Metals06
-				R-Struc-Power-Upgrade02
-				R-Wpn-Cannon-ROF05
-		*/
-
-		const FISHBOT_CANNON_RESEARCH_PRIORITIES = [
-			"R-Wpn-Cannon-Damage06",
-			"R-Struc-Power",
-			"R-Wpn-Cannon3Mk1", 
-			"R-Struc-Research-Upgrade06",
-			"R-Wpn-Cannon-Damage",
-			"R-Wpn-Mortar-Damage", 	
-			"R-Wpn-Cannon-ROF", 
-			"R-Wpn-Cannon6TwinAslt",
-			"R-Vehicle-Metals",
-			"R-Struc-Research-Upgrade",
-			"R-Vehicle-Body09",				// Tiger Body
-			"R-Struc-Factory-Upgrade",
-			"R-Cyborg-Metals",
-			"R-Wpn-MG5", 					// Twin AG
-			"R-Wpn-AAGun02", 		
-			"R-Wpn-Mortar-ROF", 
-			"R-Struc-VTOLPad-Upgrade", 
-			
-			"R-Wpn-RailGun01",
-			"R-Wpn-RailGun02",
-			"R-Wpn-RailGun03",
-			"R-Wpn-Rail-Damage",
-
-			"R-Wpn-Rail-ROF", 
-			"R-Wpn-Rail-Accuracy",
-		];
-
-		for (let i=0; i<FISHBOT_CANNON_RESEARCH_PRIORITIES.length; ++i) {
-			const keyword = FISHBOT_CANNON_RESEARCH_PRIORITIES[i];
-
-			let priorityResearches = currAvailableResearches.filter(research => research.id.includes(keyword));
-			if (priorityResearches.length === 0) {
+			// Check if high priority, if so, add to `highPriority` list 
+			if (researchPriorities.some(searchText => curr.id.includes(searchText))) {
+				highPriorityUnsorted.push(curr);
 				continue;
 			}
 
-			const priorityResearch = priorityResearches[0];
-			if (pursueResearch(lab, priorityResearch.id)) {
-				debug(`	${gameTime}: Priority researching: ${priorityResearch.name}`);			
-				return true;
+			// Else, check if blacklisted, if not, add to `regularPriority` list
+			if (researchBlacklist.some(searchText => curr.id.includes(searchText))) {
+				continue;
+			}
+
+			regularPriority.push(curr);
+		}
+
+
+		for (let i=0; i<researchPriorities.length; i++) {
+			const f = highPriorityUnsorted.find(r => r.id.includes(researchPriorities[i]));
+			if (defined(f)) {
+				highPriority.push(f);
 			}
 		}
 
-		// If priority research does not exist, pick a random technology not in the blacklist below
-		const FISHBOT_RESEARCH_BLACKLIST_KEYWORDS = [
-			"Flame", "Rocket", "Missile", "R-Defense", "R-Sys-VTOLStrike-Turret", "R-Wpn-PlasmaCannon", 
-		];
-
-		let filteredAvailableResearches = currAvailableResearches.filter(research => 
-			FISHBOT_RESEARCH_BLACKLIST_KEYWORDS.every(b => !research.id.includes(b))
-		);
-
-		if (filteredAvailableResearches.length === 0) {
-			return false;		
+		if (false) {
+			debug(`\t==${gameTime}: highPriority==`); 
+			highPriority.forEach(r => debug(`\t  ${r.name}`));
+			debug(`\t==${gameTime}: regularPriority==`);
+			regularPriority.forEach(r => debug(`\t  ${r.name}`));
 		}
 
-		const randomChoice = (arr) => arr[Math.floor(Math.random() * arr.length)];
+		return {
+			'regularPriority': regularPriority,
+			'highPriority': highPriority
+		};
 
-		const selectedResearch = randomChoice(filteredAvailableResearches);
-
-		if (pursueResearch(lab, selectedResearch.id)) {
-			debug(`	${gameTime}: Researching: ${selectedResearch.name}`);			
-			return true;
-		}
-
-		return false;
 	}
 }

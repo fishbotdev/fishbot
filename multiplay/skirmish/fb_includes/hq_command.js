@@ -890,10 +890,85 @@ class CommandCenter {
 	 * @param {worldState} state 
 	 */
 	runResearchLogistics(state) {
-		const labs = state.playerInfo[me]["researchFacilityFbObjects"];
-		const idleLabs = labs.filter(r => fbStructureIsIdle(r));
+		const myLabs = state.playerInfo[me]["researchFacilityFbObjects"];
 
-		idleLabs.forEach((lab) => research.doResearch(lab));
+		const getIdleLabList = (fbLabList) => {		// TODO: move to utils & combine with factory method
+			let idleLabList = [];
+			fbLabList.forEach(fbLab => {
+				if (fbLab.flags & OBJ_FLAGS.IS_BUILT) {
+					const s = getObject(fbLab.type, fbLab.player, fbLab.id);
+					if (defined(s)) {
+						if (structureIdle(s)) {
+							idleLabList.push(s);
+						}
+					}
+				}
+			});
+			return idleLabList;
+		};
+
+		const idleLabs = getIdleLabList(myLabs);
+
+		if (idleLabs.length > 0) {
+			/*
+				Research priority items if they are available
+				Heuristic algorithm:
+				1. To determine priority, iterate through the list. 
+				2. If the item I'm looking at is higher priority than the next entry, put it there, else, continue through the list
+
+				v0.3.1 release -> Power upgrade, Heavy Cannon, Cannon Dmg, Research upgrade, ROF, twin aslt, vehicle metals
+
+				Example v0.3.2 T2 research order:
+
+			*/
+
+			const FISHBOT_T2_CANNON_RESEARCH_PRIORITIES = [
+				"R-Wpn-Cannon-Damage06",
+				"R-Struc-Power",
+				"R-Wpn-Cannon6TwinAslt",
+				"R-Struc-Research-Upgrade06",
+				"R-Wpn-Cannon-Damage",
+				"R-Wpn-Mortar-Damage", 	
+				"R-Vehicle-Metals",
+				"R-Wpn-Cannon-ROF", 
+				"R-Struc-Research-Upgrade",
+				"R-Vehicle-Body09",				// Tiger Body
+				"R-Struc-Factory-Upgrade",
+				"R-Cyborg-Metals",
+				"R-Wpn-MG5", 					// Twin AG
+				"R-Wpn-Cannon3Mk1", 
+				"R-Wpn-AAGun02", 		
+				"R-Wpn-Mortar-ROF", 
+				"R-Struc-VTOLPad-Upgrade", 
+				
+				"R-Wpn-RailGun01",
+				"R-Wpn-RailGun02",
+				"R-Wpn-RailGun03",
+				"R-Wpn-Rail-Damage",
+
+				"R-Wpn-Rail-ROF", 
+				"R-Wpn-Rail-Accuracy",
+			];
+
+			const FISHBOT_T2_CANNON_RESEARCH_BLACKLIST = [
+				"Flame", "Rocket", "Missile", "R-Defense", "R-Sys-VTOLStrike-Turret", "R-Wpn-PlasmaCannon", 
+			];
+
+			const proposedResearches = rnd.proposeResearch(FISHBOT_T2_CANNON_RESEARCH_PRIORITIES, FISHBOT_T2_CANNON_RESEARCH_BLACKLIST);
+			const researchOrder = [
+				...proposedResearches['highPriority'].slice(0, idleLabs.length),
+				...proposedResearches['regularPriority'].slice(0, idleLabs.length),
+			];
+			
+			for (let i=0; i<researchOrder.length; i++) {
+				if (i >= idleLabs.length) {
+					break;
+				}
+				// debug(`${gameTime}: ${researchOrder[i].name}`);		
+				pursueResearch(idleLabs[i], researchOrder[i].id);	
+			}
+		}
+
 	}
 
 	/**
