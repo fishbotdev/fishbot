@@ -822,8 +822,13 @@ class CommandCenter {
 		// Adjust unit strategic weights
 		const SUFFICIENT_CAVALRY = deficit['heavyCavalry']['norm'] < 0.5 && deficit['lightCavalry']['norm'] < 0.5;
 		if (SUFFICIENT_CAVALRY) {
-			w_strategic['ADA'] = 0.5;
-			w_strategic['sensor'] = 0.4;
+			w_strategic = {
+				'heavyCavalry': 1,
+				'lightCavalry': 1,
+				'shortRangeArtillery': 0.75,
+				'ADA': 0.5,
+				'sensor': 0.5,
+			};
 		}
 
 		// Adjust unit deficit weights
@@ -881,12 +886,29 @@ class CommandCenter {
 			debugPrintIfIdle(idleVtolFactories, "VTOL Factory");
 		}
 
+		if (idleFactories.length === 0 && idleCyborgFactories.length === 0 && idleVtolFactories.length === 0) {
+			return;
+		}
+
 		// Get unit deficits
 		const combatBrigadeDeficit = supply.getBrigadeUnitDeficit(state);
+
+		// Decide on whether or not to produce combat cyborgs (infantry)
+		const SHOULD_PRODUCE_INFANTRY = combatBrigadeDeficit['infantry']['absolute'] > 0;
 
 		// Determine if it is possible to build combat vehicles (custom player designs).
 		// FishBot will not build combat vehicles before it can design them, on any difficulty.	
 		const CAN_DESIGN_COMBAT_UNITS = state.playerInfo[me]["numConstructedHQs"] > 0;
+
+		// Decide on which category of land combat vehicle to produce (basic greedy algorithm)
+		let landVehicleCategory = "heavyCavalry";
+		if (idleFactories.length > 0) {
+			const prioritisedCategories = this.#prioritiseLandVehicleCategory(state, combatBrigadeDeficit);
+			landVehicleCategory = prioritisedCategories[0].category;
+
+			// this.#debugPrintLandVehicleCategory(prioritisedCategories);
+			// debug(`${gameTime}: producing: ${landVehicleCategory}`);
+		}
 
 		// Decide on whether or not to produce trucks
 		const MAX_TRUCKS = 6;
@@ -897,20 +919,6 @@ class CommandCenter {
 
 		let producedTruckThisTick = false;
 		const SINGLE_TRUCK_ONLY = CAN_DESIGN_COMBAT_UNITS;
-
-		// Decide on whether or not to produce combat cyborgs (infantry)
-		const SHOULD_PRODUCE_INFANTRY = combatBrigadeDeficit['infantry']['absolute'] > 0;
-
-		// Decide on which category of land combat vehicle to produce (basic greedy algorithm)
-		const prioritisedCategories = this.#prioritiseLandVehicleCategory(state, combatBrigadeDeficit);
-		const landVehicleCategory = prioritisedCategories[0].category;
-
-		if (false) {
-			if (idleFactories.length > 0) {
-				// this.#debugPrintLandVehicleCategory(prioritisedCategories);
-				debug(`${gameTime}: producing: ${landVehicleCategory}`);
-			}
-		}
 
 		// Run production
 		const DEBUG_PRODUCTION = false;
@@ -968,7 +976,6 @@ class CommandCenter {
 				break;
 			}
 		}
-
 	}
 
 	/**
