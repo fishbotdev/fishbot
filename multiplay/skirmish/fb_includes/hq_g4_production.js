@@ -15,7 +15,7 @@
 	If not, see <https://www.gnu.org/licenses/>.
 */
 
-class armyQuartermaster {
+class armySupply {
     
 	constructor() {
 

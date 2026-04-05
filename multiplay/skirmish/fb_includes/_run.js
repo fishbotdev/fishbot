@@ -96,11 +96,10 @@ function eventStartLevel() {
 	const initialTrucks = enumDroid(me, DROID_CONSTRUCT);
 	initialTrucks.forEach(droid => {
 		// Copied from NullBot:
-		// the following two lines are necessary to avoid some strange game bug when droids that
+		// The following line is necessary to avoid some strange game bug when droids that
 		// are initially buried into the ground fail to move out of the way when a building
 		// is being placed right above them
-		const randomPerturbation = Math.floor(Math.random() * 3) - 1;		// [-1, 0, 1]
-		orderDroidLoc(droid, DORDER_MOVE, droid.x + randomPerturbation, droid.y + randomPerturbation);
+		orderDroidLoc(droid, DORDER_MOVE, droid.x + 1, droid.y + 1);
 
 		state.g.addDroidToGroup({groupID: ENGINEERING.ENGINEERING_RESERVE, droidID: droid.id});
 	});

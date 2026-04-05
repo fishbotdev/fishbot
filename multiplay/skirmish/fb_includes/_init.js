@@ -18,9 +18,8 @@
 // Initialise world state
 const state = new worldState();
 
-let stateBuilder = new worldStateBuilder();
+const stateBuilder = new worldStateBuilder();
 stateBuilder.initialise(state);
-stateBuilder = null;				// builder should only be run once
 
 // Initialise divisional command
 
@@ -37,7 +36,7 @@ const groundForces = new armyGroundOperations();
 
 // G4 - LOGISTICS:
 //	Manages all supply, maintenance, transportation, and support services to ensure the logistical readiness of the division. 
-const supply = new armyQuartermaster();
+const supply = new armySupply();
 
 const engineering = new armyEngineering();
 
