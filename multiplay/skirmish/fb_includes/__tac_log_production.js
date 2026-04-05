@@ -432,3 +432,33 @@ function produceInfantry(factory) {
 	}
 	return false;
 }
+
+function produceLandUnitCategory(category, factory) {
+	let factoryInProduction = false;   
+	
+	switch (category) {
+		case 'heavyCavalry':
+			factoryInProduction = factoryInProduction || produceHeavyCavalry(factory);
+			break;
+		case 'lightCavalry':
+			factoryInProduction = factoryInProduction || produceLightCavalry(factory);
+			break;
+		case 'shortRangeArtillery':
+			const r = Math.floor(Math.random() * 2);
+			if (r === 0) {
+				factoryInProduction = factoryInProduction || produceLandAPFireSupport(factory);
+			} else {
+				factoryInProduction = factoryInProduction || produceLandFireSupportGeneric(factory);
+			}
+			break;
+		case 'ADA':
+			factoryInProduction = factoryInProduction || produceLandAntiAir(factory);
+			break;
+		case 'sensor': 
+			factoryInProduction = factoryInProduction || produceLandRecon(factory);
+			break;
+		default:
+			factoryInProduction = factoryInProduction || produceLightCavalry(factory);
+	}
+
+}

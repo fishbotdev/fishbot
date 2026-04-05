@@ -769,6 +769,87 @@ class CommandCenter {
 		this.toc.assignConstructionTasks(state, approvedConstructionTasks);
 	}
 
+	#debugPrintLandVehicleCategory(categories) {
+		debug(`\t${gameTime}ms: Production priority`);
+		categories.forEach(c => 
+			debug(`\t    ${c['category'].padEnd(20)}\t | ${String(Math.floor(c['scoreNorm'] * 1000) / 1000).padEnd(5)} \t| ${Math.floor(c['surplusNorm'] * 1000) / 1000}`));
+	}
+
+	/**
+	 * 
+	 * @param {worldState} state 
+	 * @param {*} deficit 
+	 */
+    #prioritiseLandVehicleCategory(state, deficit) {
+        
+		const CATEGORIES = ['heavyCavalry', 'lightCavalry', 'shortRangeArtillery', 'ADA', 'sensor'];
+        let vehicleCategories = [];
+
+		let w_deficit = {
+			'heavyCavalry': 1,
+            'lightCavalry': 1,
+            'shortRangeArtillery': 1,
+            'ADA': 1,
+            'sensor': 1,
+		};
+		let w_strategic = {
+			'heavyCavalry': 1,
+            'lightCavalry': 1,
+            'shortRangeArtillery': 0.75,
+            'ADA': 0.001,
+            'sensor': 0.001,
+		};
+
+		const calculateSurplus = (category) => {return -1 * deficit[category]['norm']};
+		const makeCategory = (category) => {
+			return {
+				'category': category, 
+				'scoreNorm': 0.0, 
+				'surplusNorm': calculateSurplus(category)
+			};
+		};
+
+		let categoriesInSurplus = 0;
+
+		CATEGORIES.forEach(category => {
+			const c = makeCategory(category);
+			vehicleCategories.push(c);
+			if (c['surplusNorm'] >= 0) {
+				categoriesInSurplus++;
+			}
+		});
+
+		// Adjust unit strategic weights
+		const SUFFICIENT_CAVALRY = deficit['heavyCavalry']['norm'] < 0.5 && deficit['lightCavalry']['norm'] < 0.5;
+		if (SUFFICIENT_CAVALRY) {
+			w_strategic['ADA'] = 0.5;
+			w_strategic['sensor'] = 0.4;
+		}
+
+		// Adjust unit deficit weights
+		const BRIGADE_OVERSTRENGTH = categoriesInSurplus === CATEGORIES.length;
+		if (BRIGADE_OVERSTRENGTH) {
+			// All categories in surplus; use a new set of weights to deal with negative deficit. 
+			// In this condition, a large deficit weight = less likely to produce.
+			// This is because the algorithm greedily checks for "largest deficit". When the deficit is negative, "largest deficit" = least negative number.
+			w_deficit = {
+				'heavyCavalry': 1,
+				'lightCavalry': 1,
+				'shortRangeArtillery': 1,
+				'ADA': 3,
+				'sensor': 10,
+			};
+		}
+
+		const calculateScore = (category) => {return w_deficit[category] * deficit[category]['norm'] * w_strategic[category];};
+
+		vehicleCategories.forEach(c => c['scoreNorm'] = calculateScore(c.category));			
+
+		vehicleCategories.sort((a, b) => b['scoreNorm'] - a['scoreNorm']);
+
+		return vehicleCategories;
+    }
+
 	/**
 	 * 
 	 * @param {worldState} state 
@@ -818,7 +899,18 @@ class CommandCenter {
 		const SINGLE_TRUCK_ONLY = CAN_DESIGN_COMBAT_UNITS;
 
 		// Decide on whether or not to produce combat cyborgs (infantry)
-		const SHOULD_PRODUCE_INFANTRY = combatBrigadeDeficit['infantry'] > 0;
+		const SHOULD_PRODUCE_INFANTRY = combatBrigadeDeficit['infantry']['absolute'] > 0;
+
+		// Decide on which category of land combat vehicle to produce (basic greedy algorithm)
+		const prioritisedCategories = this.#prioritiseLandVehicleCategory(state, combatBrigadeDeficit);
+		const landVehicleCategory = prioritisedCategories[0].category;
+
+		if (false) {
+			if (idleFactories.length > 0) {
+				// this.#debugPrintLandVehicleCategory(prioritisedCategories);
+				debug(`${gameTime}: producing: ${landVehicleCategory}`);
+			}
+		}
 
 		// Run production
 		const DEBUG_PRODUCTION = false;
@@ -842,6 +934,17 @@ class CommandCenter {
 			}
 		}
 
+		for (let i=0; i<idleVtolFactories.length; i++) {
+			const factory = idleVtolFactories[i];
+
+			if (CAN_DESIGN_COMBAT_UNITS) {
+				if (DEBUG_PRODUCTION) debug(`	${gameTime}: produced VTOL`);
+				produceCloseAirSupport(factory);
+			} else {
+				break;
+			}
+		}
+
 		for (let i=0; i<idleFactories.length; i++) {
 			const factory = idleFactories[i];
 
@@ -856,18 +959,11 @@ class CommandCenter {
 
 			if (CAN_DESIGN_COMBAT_UNITS) {
 				if (DEBUG_PRODUCTION) debug(`	${gameTime}: produced Land Vehicle Template`);
-				supply.produceLandUnit(factory);
-			} else {
-				break;
-			}
-		}
-
-		for (let i=0; i<idleVtolFactories.length; i++) {
-			const factory = idleVtolFactories[i];
-
-			if (CAN_DESIGN_COMBAT_UNITS) {
-				if (DEBUG_PRODUCTION) debug(`	${gameTime}: produced VTOL`);
-				produceCloseAirSupport(factory);
+				produceLandUnitCategory(landVehicleCategory, factory);
+				return;		
+				// occasionally 'return;' will prevent 2x sensor units from being made 
+				// TODO: better system is to track active production jobs; 
+				// units are usually overmanufactured as production is currently a 'negative-feedback' system
 			} else {
 				break;
 			}
