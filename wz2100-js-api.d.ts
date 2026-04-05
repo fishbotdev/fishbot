@@ -48,32 +48,30 @@ declare const maxPlayers: number;
 (For now only the highest level member attributes are documented here. Use the 'jsdebug' cheat
 to see them all.)
 These values are defined:
-  * ```Body``` Droid bodies
-  * ```Sensor``` Sensor turrets
-  * ```ECM``` ECM (Electronic Counter-Measure) turrets
-  * ```Propulsion``` Propulsions
-  * ```Repair``` Repair turrets (not used, incidentally, for repair centers)
-  * ```Construct``` Constructor turrets (eg for trucks)
-  * ```Brain``` Brains
-  * ```Weapon``` Weapon turrets
-  * ```WeaponClass``` Defined weapon classes
-  * ```Building``` Buildings
-  * ```Research``` Researches
-* ```playerData``` An array of information about the players in a game. Each item in the array is an object
-containing the following variables:
-  * ```difficulty``` (see ```difficulty``` global constant)
-  * ```colour``` number describing the colour of the player
-  * ```position``` number describing the position of the player in the game's setup screen
-  * ```isAI``` whether the player is an AI (3.2+ only)
-  * ```isHuman``` whether the player is human (3.2+ only)
-  * ```name``` the name of the player (3.2+ only)
-  * ```team``` the number of the team the player is part of
-* ```MapTiles``` A two-dimensional array of static information about the map tiles in a game. Each item in MapTiles[y][x] is an object
-containing the following variables:
-  * ```terrainType``` (see ```terrainType(x, y)``` function)
-  * ```height``` the height at the top left of the tile
-  * ```hoverContinent``` (For hover type propulsions)
-  * ```limitedContinent``` (For land or sea limited propulsion types)
+- ```Body``` Droid bodies
+- ```Sensor``` Sensor turrets
+- ```ECM``` ECM (Electronic Counter-Measure) turrets
+- ```Propulsion``` Propulsions
+- ```Repair``` Repair turrets (not used, incidentally, for repair centers)
+- ```Construct``` Constructor turrets (eg for trucks)
+- ```Brain``` Brains
+- ```Weapon``` Weapon turrets
+- ```WeaponClass``` Defined weapon classes
+- ```Building``` Buildings
+- ```Research``` Researches
+- ```playerData``` An array of information about the players in a game. Each item in the array is an object containing the following variables:
+    - ```difficulty``` (see ```difficulty``` global constant)
+    - ```colour``` number describing the colour of the player
+    - ```position``` number describing the position of the player in the game's setup screen
+    - ```isAI``` whether the player is an AI (3.2+ only)
+    - ```isHuman``` whether the player is human (3.2+ only)
+    - ```name``` the name of the player (3.2+ only)
+    - ```team``` the number of the team the player is part of
+- ```MapTiles``` A two-dimensional array of static information about the map tiles in a game. Each item in `MapTiles[y][x]` is an object containing the following variables:
+    - ```terrainType``` (see ```terrainType(x, y)``` function)
+    - ```height``` the height at the top left of the tile
+    - ```hoverContinent``` (For hover type propulsions)
+    - ```limitedContinent``` (For land or sea limited propulsion types)
  */
 declare const Stats: Object;
 
@@ -740,7 +738,7 @@ Mark the given tile(s) on the map. Either give a ```POSITION``` or ```AREA``` la
 or a tile x, y position, or four positions for a square area. If no parameter
 is given, all marked tiles are cleared. (3.2+ only)
  */
-declare function hackMarkTiles(x: int, y: int, x2?: int, y2?: int): void;
+declare function hackMarkTiles(x?: int, y?: int, x2?: int, y2?: int): void;
 
 /**
 ## addBeacon(x, y, playerFilter[, message])

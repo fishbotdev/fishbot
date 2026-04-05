@@ -182,7 +182,71 @@ class CommandCenter {
 		}
 	}
 
-	/////////////////////////////////////////////////// COMBAT OPERATIONS ///////////////////////////////////////////////////
+	/////////////////////////////////////////////////// G2: INTELLIGENCE ///////////////////////////////////////////////////
+
+	/**
+	 * 	For performance reasons, this function was changed from linear to distributed.
+	 * 	The intent is:
+	 * 	1. Intelligence mission/task is scheduled
+	 * 	2. Mission is either immediately run or scheduled to run by the global mission manager
+	 * 	3. Observations are compiled into the global 'state' by the `toc`
+	 * @param {worldState} state
+	 * @param {string} taskID
+	 * @returns {void}
+	 */
+	runIntelligence(state, taskID) {
+		
+		// Note: For performance reasons, anything which can be executed immediately should not use the mission management system.
+
+		switch(taskID) {
+
+			case 'intel_checkOilDominance':
+				const isOilDominant = checkOilDominance(state, this.OIL_DOMINANCE_PERCENTAGE);
+				this.toc.setOilDominanceStatus(state, isOilDominant);
+				break;
+			
+			case 'intel_getNearbyGroundTargets':
+
+				// Update location(s) & composition(s) of active combat force(s) -- TEMPORARY IMPLEMENTATION
+				const mainForceLocation = groundForces.getForceMedianLocation(0);
+				this.toc.setForceLocation(state, mainForceLocation);
+
+				if (defined(state.forceLocation)) {
+					const nearbyGroundTargets = intelligence.proposeTargetsInRadius2(state, state.forceLocation, 20, 16);		
+					hq.toc.setNearbyGroundTargets(state, nearbyGroundTargets);
+				}
+				break;
+			
+			case 'intel_checkCampaignStatus':
+
+				this.checkCampaignStatus(state);
+				break;
+
+			case 'intel_getAviationTargets':
+
+				const raidTargets = intelligence.getTargetsNearDerricks(state);
+				const baseTargets = intelligence.getBaseTargets(state);
+				hq.toc.setAviationTargets(state, raidTargets, baseTargets['productionTargets'], baseTargets['adaTargets']);
+
+				break;
+
+			case 'intel_getMapIntelligence':
+
+				const objectData = intelligence.getAllObjects(state);
+				this.toc.setCoreIntelParameters(state, objectData['grid'], objectData['playerInfo'], objectData['allTargets']);
+				this.toc.updateSpatialFields(state, objectData['grid']);
+				break;
+				
+			default:
+				debug(`	WARNING	runIntelligence(): could not understand ${taskID} @ ${gameTime}`);
+				return;
+		}
+
+		if (false) debug(`${gameTime}:		${taskID}`);
+	
+	}
+
+	/////////////////////////////////////////////////// G3: COMBAT OPERATIONS ///////////////////////////////////////////////////
 	prioritiseLandForceTargets(targetInfo, groupPosition) {
 
 		let output = {
@@ -223,7 +287,7 @@ class CommandCenter {
 
 		const cObj = targetInfo["closestObject"];
 		if (defined(getObject(cObj.type, cObj.player, cObj.id))) {
-			if (cObj.type === DROID && isNotTruckOrADA(cObj)) {
+			if (cObj.type === DROID && isNotTruckOrADA(cObj) && cObj.stattype !== WALL) {
 				output["directFireTarget"] = targetInfo["closestObject"];
 				if (DIRECT_FIRE_DEBUG) debug(`used default direct fire target @${gameTime}`);
 			}
@@ -590,71 +654,7 @@ class CommandCenter {
 		this.toc.assignAviationMissions(state, aviationTargets);					
 	}
 
-	/////////////////////////////////////////////////// INTELLIGENCE ///////////////////////////////////////////////////
-
-	/**
-	 * 	For performance reasons, this function was changed from linear to distributed.
-	 * 	The intent is:
-	 * 	1. Intelligence mission/task is scheduled
-	 * 	2. Mission is either immediately run or scheduled to run by the global mission manager
-	 * 	3. Observations are compiled into the global 'state' by the `toc`
-	 * @param {worldState} state
-	 * @param {string} taskID
-	 * @returns {void}
-	 */
-	runIntelligence(state, taskID) {
-		
-		// Note: For performance reasons, anything which can be executed immediately should not use the mission management system.
-
-		switch(taskID) {
-
-			case 'intel_checkOilDominance':
-				const isOilDominant = checkOilDominance(state, this.OIL_DOMINANCE_PERCENTAGE);
-				this.toc.setOilDominanceStatus(state, isOilDominant);
-				break;
-			
-			case 'intel_getNearbyGroundTargets':
-
-				// Update location(s) & composition(s) of active combat force(s) -- TEMPORARY IMPLEMENTATION
-				const mainForceLocation = groundForces.getForceMedianLocation(0);
-				this.toc.setForceLocation(state, mainForceLocation);
-
-				if (defined(state.forceLocation)) {
-					const nearbyGroundTargets = intelligence.proposeTargetsInRadius2(state, state.forceLocation, 20, 16);		
-					hq.toc.setNearbyGroundTargets(state, nearbyGroundTargets);
-				}
-				break;
-			
-			case 'intel_checkCampaignStatus':
-
-				this.checkCampaignStatus(state);
-				break;
-
-			case 'intel_getAviationTargets':
-
-				const raidTargets = intelligence.getTargetsNearDerricks(state);
-				const baseTargets = intelligence.getBaseTargets(state);
-				hq.toc.setAviationTargets(state, raidTargets, baseTargets['productionTargets'], baseTargets['adaTargets']);
-
-				break;
-
-			case 'intel_getMapIntelligence':
-
-				const objectData = intelligence.getAllObjects(state);
-				this.toc.setCoreIntelParameters(state, objectData['grid'], objectData['playerInfo'], objectData['allTargets']);
-				this.toc.updateSpatialFields(state, objectData['grid']);
-				break;
-				
-			default:
-				debug(`	WARNING	runIntelligence(): could not understand ${taskID} @ ${gameTime}`);
-				return;
-		}
-
-		if (false) debug(`${gameTime}:		${taskID}`);
-	
-	}
-
-	/////////////////////////////////////////////////// CONSTRUCTION ///////////////////////////////////////////////////
+	/////////////////////////////////////////////////// G4: LOGISTICS ///////////////////////////////////////////////////
 	/**
 	 * 
 	 * @param {worldState} state 
@@ -700,7 +700,7 @@ class CommandCenter {
 	 * 
 	 * @param {worldState} state 
 	 */
-	runConstructionTasks(state) {
+	runConstructionLogistics(state) {
 
 		// Command re-evaluates existing construction tasks
 		const OIL_CAPTURE_MISSION_TYPES = [
@@ -769,17 +769,287 @@ class CommandCenter {
 		this.toc.assignConstructionTasks(state, approvedConstructionTasks);
 	}
 
+	#debugPrintLandVehicleCategory(categories) {
+		debug(`\t${gameTime}ms: Production priority`);
+		categories.forEach(c => 
+			debug(`\t    ${c['category'].padEnd(20)}\t | ${String(Math.floor(c['scoreNorm'] * 1000) / 1000).padEnd(5)} \t| ${Math.floor(c['surplusNorm'] * 1000) / 1000}`));
+	}
+
+	/**
+	 * 
+	 * @param {worldState} state 
+	 * @param {*} deficit 
+	 */
+    #prioritiseLandVehicleCategory(state, deficit) {
+        
+		const CATEGORIES = ['heavyCavalry', 'lightCavalry', 'shortRangeArtillery', 'ADA', 'sensor'];
+        let vehicleCategories = [];
+
+		let w_deficit = {
+			'heavyCavalry': 1,
+            'lightCavalry': 1,
+            'shortRangeArtillery': 1,
+            'ADA': 1,
+            'sensor': 1,
+		};
+		let w_strategic = {
+			'heavyCavalry': 1,
+            'lightCavalry': 1,
+            'shortRangeArtillery': 0.75,
+            'ADA': 0.001,
+            'sensor': 0.001,
+		};
+
+		const calculateSurplus = (category) => {return -1 * deficit[category]['norm']};
+		const makeCategory = (category) => {
+			return {
+				'category': category, 
+				'scoreNorm': 0.0, 
+				'surplusNorm': calculateSurplus(category)
+			};
+		};
+
+		let categoriesInSurplus = 0;
+
+		CATEGORIES.forEach(category => {
+			const c = makeCategory(category);
+			vehicleCategories.push(c);
+			if (c['surplusNorm'] >= 0) {
+				categoriesInSurplus++;
+			}
+		});
+
+		// Adjust unit strategic weights
+		const SUFFICIENT_CAVALRY = deficit['heavyCavalry']['norm'] < 0.5 && deficit['lightCavalry']['norm'] < 0.5;
+		if (SUFFICIENT_CAVALRY) {
+			w_strategic['ADA'] = 0.5;
+			w_strategic['sensor'] = 0.4;
+		}
+
+		// Adjust unit deficit weights
+		const BRIGADE_OVERSTRENGTH = categoriesInSurplus === CATEGORIES.length;
+		if (BRIGADE_OVERSTRENGTH) {
+			// All categories in surplus; use a new set of weights to deal with negative deficit. 
+			// In this condition, a large deficit weight = less likely to produce.
+			// This is because the algorithm greedily checks for "largest deficit". When the deficit is negative, "largest deficit" = least negative number.
+			w_deficit = {
+				'heavyCavalry': 1,
+				'lightCavalry': 1,
+				'shortRangeArtillery': 1,
+				'ADA': 3,
+				'sensor': 10,
+			};
+		}
+
+		const calculateScore = (category) => {return w_deficit[category] * deficit[category]['norm'] * w_strategic[category];};
+
+		vehicleCategories.forEach(c => c['scoreNorm'] = calculateScore(c.category));			
+
+		vehicleCategories.sort((a, b) => b['scoreNorm'] - a['scoreNorm']);
+
+		return vehicleCategories;
+    }
+
 	/**
 	 * 
 	 * @param {worldState} state 
 	 */
-	runLogistics(state) {
-		// Production
-		supply.manageProduction();
-		// Research
-		research.manageResearch();
-		// Construction
-		this.runConstructionTasks(state);												
+	runProductionLogistics(state) {
+		/**
+		 * Debug print of idle factories.
+		 * @param {any[]} idleFactoryList 
+		 * @param {string} name 
+		 */
+		const debugPrintIfIdle = (idleFactoryList, name) => {
+			if (idleFactoryList.length > 0) {
+				debug(`	${gameTime}: Idle "${name}": ${idleFactoryList.length}`);
+			}
+		};
+
+		// Check factories for idle
+		const factories = state.playerInfo[me]["normalFactoryFbObjects"];
+		const cyborgFactories = state.playerInfo[me]["cyborgFactoryFbObjects"];
+		const vtolFactories = state.playerInfo[me]["vtolFactoryFbObjects"];
+
+		const idleFactories = getIdleStructureObjects(factories);
+		const idleCyborgFactories = getIdleStructureObjects(cyborgFactories);
+		const idleVtolFactories = getIdleStructureObjects(vtolFactories);
+
+		if (false) {
+			debugPrintIfIdle(idleFactories, "Factory");
+			debugPrintIfIdle(idleCyborgFactories, "Cyborg Factory");
+			debugPrintIfIdle(idleVtolFactories, "VTOL Factory");
+		}
+
+		// Get unit deficits
+		const combatBrigadeDeficit = supply.getBrigadeUnitDeficit(state);
+
+		// Determine if it is possible to build combat vehicles (custom player designs).
+		// FishBot will not build combat vehicles before it can design them, on any difficulty.	
+		const CAN_DESIGN_COMBAT_UNITS = state.playerInfo[me]["numConstructedHQs"] > 0;
+
+		// Decide on whether or not to produce trucks
+		const MAX_TRUCKS = 6;
+		const myTruckCount = state.playerInfo[me]["numTrucks"];
+		const GAME_TRUCK_HARD_LIMIT = getDroidLimit(me, DROID_CONSTRUCT);
+		const SHOULD_PRODUCE_TRUCKS = MAX_TRUCKS - myTruckCount > 0 && myTruckCount < GAME_TRUCK_HARD_LIMIT;
+		const CYBORG_CONSTRUCTOR_AVAILABLE = cyborgFactories.length > 0;
+
+		let producedTruckThisTick = false;
+		const SINGLE_TRUCK_ONLY = CAN_DESIGN_COMBAT_UNITS;
+
+		// Decide on whether or not to produce combat cyborgs (infantry)
+		const SHOULD_PRODUCE_INFANTRY = combatBrigadeDeficit['infantry']['absolute'] > 0;
+
+		// Decide on which category of land combat vehicle to produce (basic greedy algorithm)
+		const prioritisedCategories = this.#prioritiseLandVehicleCategory(state, combatBrigadeDeficit);
+		const landVehicleCategory = prioritisedCategories[0].category;
+
+		if (false) {
+			if (idleFactories.length > 0) {
+				// this.#debugPrintLandVehicleCategory(prioritisedCategories);
+				debug(`${gameTime}: producing: ${landVehicleCategory}`);
+			}
+		}
+
+		// Run production
+		const DEBUG_PRODUCTION = false;
+
+		// Note: for now, we will directly call the tactical level functions
+		for (let i=0; i<idleCyborgFactories.length; i++) {
+			const f = idleCyborgFactories[i];
+
+			if (SHOULD_PRODUCE_TRUCKS && CYBORG_CONSTRUCTOR_AVAILABLE && !producedTruckThisTick) {
+				if (DEBUG_PRODUCTION) debug(`	${gameTime}: produced Combat Engineer`);
+				produceCombatEngineer(f);
+				if (SINGLE_TRUCK_ONLY) {
+					producedTruckThisTick = true;
+				}
+				continue;
+			}
+
+			if (SHOULD_PRODUCE_INFANTRY) {
+				if (DEBUG_PRODUCTION) debug(`	${gameTime}: produced Infantry`);
+				produceInfantry(f);
+			}
+		}
+
+		for (let i=0; i<idleVtolFactories.length; i++) {
+			const factory = idleVtolFactories[i];
+
+			if (CAN_DESIGN_COMBAT_UNITS) {
+				if (DEBUG_PRODUCTION) debug(`	${gameTime}: produced VTOL`);
+				produceCloseAirSupport(factory);
+			} else {
+				break;
+			}
+		}
+
+		for (let i=0; i<idleFactories.length; i++) {
+			const factory = idleFactories[i];
+
+			if (SHOULD_PRODUCE_TRUCKS && !CYBORG_CONSTRUCTOR_AVAILABLE && !producedTruckThisTick) {
+				if (DEBUG_PRODUCTION) debug(`	${gameTime}: produced Hover Truck`);
+				produceTruck(factory);
+				if (SINGLE_TRUCK_ONLY) {
+					producedTruckThisTick = true;
+				}
+				continue;
+			}
+
+			if (CAN_DESIGN_COMBAT_UNITS) {
+				if (DEBUG_PRODUCTION) debug(`	${gameTime}: produced Land Vehicle Template`);
+				produceLandUnitCategory(landVehicleCategory, factory);
+				return;		
+				// occasionally 'return;' will prevent 2x sensor units from being made 
+				// TODO: better system is to track active production jobs; 
+				// units are usually overmanufactured as production is currently a 'negative-feedback' system
+			} else {
+				break;
+			}
+		}
+
+	}
+
+	/**
+	 * 
+	 * @param {worldState} state 
+	 */
+	runResearchLogistics(state) {
+		const myLabs = state.playerInfo[me]["researchFacilityFbObjects"];
+		const idleLabs = getIdleStructureObjects(myLabs);
+		if (idleLabs.length === 0) {
+			return;
+		}
+
+		/*
+			v0.3.1 release -> Power upgrade, Heavy Cannon, Cannon Dmg, Research upgrade, ROF, twin aslt, vehicle metals
+
+			Example v0.3.2 T2 research order (quite one-dimensional)
+				449902: R-Wpn-Cannon-Damage06
+				668902: R-Struc-Power-Upgrade01c
+				690902: R-Struc-Research-Upgrade06
+				814902: R-Wpn-Cannon-Damage07
+				949902: R-Wpn-Cannon6TwinAslt
+				950902: R-Wpn-Mortar-Damage05
+				1045902: R-Wpn-Cannon-Damage08
+				1058902: R-Vehicle-Metals05
+				1096902: R-Wpn-Cannon-ROF03
+				1187902: R-Wpn-Mortar-Damage06
+				1226902: R-Struc-Research-Upgrade07
+				1276902: R-Vehicle-Metals06
+				1279902: R-Wpn-Cannon-Damage09
+				1291902: R-Wpn-Cannon-ROF04
+				1534902: R-Wpn-Cannon-Damage09
+				1559902: R-Wpn-Mortar-Damage06
+		*/
+
+		const FISHBOT_T2_CANNON_RESEARCH_PRIORITIES = [
+			"R-Wpn-Cannon-Damage06",
+			"R-Struc-Power",
+			"R-Wpn-Cannon6TwinAslt",
+			"R-Struc-Research-Upgrade06",
+			"R-Wpn-Cannon-Damage",
+			"R-Wpn-Mortar-Damage", 	
+			"R-Vehicle-Metals",
+			"R-Wpn-Cannon-ROF", 
+			"R-Struc-Research-Upgrade",
+			"R-Vehicle-Body09",				// Tiger Body
+			"R-Struc-Factory-Upgrade",
+			"R-Cyborg-Metals",
+			"R-Wpn-MG5", 					// Twin AG
+			"R-Wpn-Cannon3Mk1", 
+			"R-Wpn-AAGun02", 		
+			"R-Wpn-Mortar-ROF", 
+			"R-Struc-VTOLPad-Upgrade", 
+			
+			"R-Wpn-RailGun01",
+			"R-Wpn-RailGun02",
+			"R-Wpn-RailGun03",
+			"R-Wpn-Rail-Damage",
+
+			"R-Wpn-Rail-ROF", 
+			"R-Wpn-Rail-Accuracy",
+		];
+
+		const FISHBOT_T2_CANNON_RESEARCH_BLACKLIST = [
+			"Flame", "Rocket", "Missile", "R-Defense", "R-Sys-VTOLStrike-Turret", "R-Wpn-PlasmaCannon", 
+		];
+
+		const proposedResearches = rnd.proposeResearch(FISHBOT_T2_CANNON_RESEARCH_PRIORITIES, FISHBOT_T2_CANNON_RESEARCH_BLACKLIST);
+		const researchOrder = [
+			...proposedResearches['highPriority'].slice(0, idleLabs.length),
+			...proposedResearches['regularPriority'].slice(0, idleLabs.length),
+		];
+		
+		for (let i=0; i<researchOrder.length; i++) {
+			if (i >= idleLabs.length) {
+				break;
+			}
+			// debug(`${gameTime}: ${researchOrder[i].name}`);		
+			pursueResearch(idleLabs[i], researchOrder[i].id);	
+		}
+
 	}
 
 	/**

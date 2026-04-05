@@ -32,15 +32,13 @@
 
 	Fun stats:
 	
-	To count lines of code without comments, in git bash, cd to the code directory and:
+	LINES OF CODE
+		
+	FishBot uses cloc to count lines of code (https://github.com/aldanial/cloc). 
+	More information can be found in `fishbot\software_tools\run_cloc.bat`.
+	- 3845 JS @ 30 Mar 2026: v0.3.1 release (commit `0565344`)
+	- 4300 JS @ 04 Apr 2026: (commit `1c7d413`)
 
-	git ls-files "*.js" | xargs cat | grep -v '^\s*$' | grep -v '^\s*#' | wc -l 	
-
-	Results:
-	- 29 Nov 2025 (43e22ee): 3512 .js
-	- 18 Jan 2026 (eae414d): 4567 .js
-	- 15 Feb 2026 (821b835): 4536 .js -- v0.3.0 (v3) public release
-	- 22 Mar 2026 (b94dc92): 5361 .js -- v0.3.1 release
 */
 
 
@@ -110,7 +108,7 @@ const DEBUG_MODE_ON = true;
 		about implementation.
 	*/
 	include(FB_INCLUDES + "hq_g4_construction.js");
-	include(FB_INCLUDES + "___op_log_production.js");
+	include(FB_INCLUDES + "hq_g4_production.js");
 	include(FB_INCLUDES + "___op_log_research.js");	
 
 	include(FB_INCLUDES + "hq_g3_aviation.js");

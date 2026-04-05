@@ -246,16 +246,36 @@ class worldState {
 			'playerID': playerID,
 			'isFriendly': !isEnemy(playerID), 
 
-			'numTotalUnits': 0,
+            // Unit stats
+            'numTotalUnits': 0,
 			'numInfantryUnits': 0,
 			'numArmourUnits': 0,
-			'numAirUnits': 0,
-			'numIndirectUnits': 0,
-			'numADA': 0,
+            'numAirUnits': 0,       // air units (e.g. vtol)        
 
+            'numRocketUnits': 0,        // anti-personnel units (e.g. MG)
+            'numCannonUnits': 0,        // general-purpose (e.g. cannon)
+            'numMGUnits': 0,
+            'numShortRangeIndirectUnits': 0,  // indirect fires (e.g. mortar)
+            'numLongRangeIndirectUnits': 0,
+            'numVTOLBombUnits': 0,
+            'numADAUnits': 0,       // air-defence-artillery units (e.g. flak cannon)
+            'numLaserUnits': 0,
+            'numFlamerUnits': 0,
+
+            'numTrucks': 0,
+
+            // Structure stats
 			'numStructs': 0,
             'numFactories': 0,
-			'numDerricks': 0,
+			'numDerricks': 0, 
+            'numConstructedHQs': 0,
+
+            // Intended to be used for getting idle structures for Production & Research reasons
+            'normalFactoryFbObjects': [],           
+            'cyborgFactoryFbObjects': [],
+            'vtolFactoryFbObjects': [],
+            'researchFacilityFbObjects': [],
+            
 		};
     }
 
@@ -266,7 +286,7 @@ class worldState {
         let livingPlayerIDs = [];
 
         this.playerInfo.forEach(p => {
-            if (p.numTotalUnits !== 0 || p.numFactories !== 0) {
+            if (p["numTotalUnits"] !== 0 || p["numFactories"] !== 0) {
                 livingPlayerIDs.push(p.playerID);
             }
         });
@@ -308,7 +328,7 @@ class worldStateBuilder {
         // Generates initial values in FishBot v3 grouping system
         let g = new fbGroup();
 
-        g.createGroup(AIR_RESERVE);
+        g.createGroup(DIVISION.AIR_RESERVE);
 
         for (const d in DIVISION) {
             g.createGroup(DIVISION[d]);

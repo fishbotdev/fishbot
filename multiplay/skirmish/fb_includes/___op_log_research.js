@@ -16,7 +16,7 @@
 */
 
 /*
-T1 starts with these technologies to be researched
+T2 starts with these technologies to be researched
 	Thermal armor Mk3
 	Turbo-Charged Engine Mk2
 	Dense Composite Alloys Mk2
@@ -45,7 +45,7 @@ T1 starts with these technologies to be researched
 */
 
 /* 
-T2 starts with these technologies to be researched
+T3 starts with these technologies to be researched
 	High Intensity Thermal Armor Mk2
 	Gas Turbine Engine
 	Plasmite Bomb
@@ -80,195 +80,66 @@ T2 starts with these technologies to be researched
 	Heavy Rocket Bastion
 */
 
+/*
+Reference: Original research categories
+
+	'weapons': ['R-Wpn'],
+	'armor': ['R-Vehicle-Metals', 'R-Cyborg-Metals', 'R-Cyborg-Armor-Heat', 'R-Vehicle-Armor-Heat'],
+	'mobility': ['R-Vehicle-Prop', 'R-Vehicle-Engine', 'R-Vehicle-Body'],
+	'prod': ['R-Struc'],
+	'support': ['R-Sys'],
+	'misc': ['']		// catch remaining uncategorised researches
+
+*/
+
 
 class armyResearchAndDevelopment {
 	constructor() {
 
 	}
 
-	manageResearch() {
-		getIdleStructuresOfType({structureID: STRUCTURES["Research Facility"].id}).forEach((lab) => this.#doResearch(lab));
-	}
+	proposeResearch(researchPriorities, researchBlacklist) {
 
-	#doResearch(lab) {
-		let currAvailableResearches = enumResearch();
-		if (currAvailableResearches.length === 0)
-			return;		// no available researches, don't compute anything
+		const currAvailableResearches = enumResearch();
 
-		// Remove unnecessary available researches
-		// FishBot will never use the plasma cannon 
-		const FISHBOT_RESEARCH_BLACKLIST_KEYWORDS = [
-			"Flame", "Rocket", "Missile", "R-Defense", 
-			"R-Sys-VTOLStrike-Turret", "R-Wpn-PlasmaCannon", 
-		];
+		let highPriority = [], highPriorityUnsorted = [], regularPriority = [];
 
-		let filteredAvailableResearches = currAvailableResearches.filter((research) => {
-			const isNotBlacklistedResearch = FISHBOT_RESEARCH_BLACKLIST_KEYWORDS.every(b => !research.id.includes(b));
-			return isNotBlacklistedResearch;
-		});
+		for (let i=0; i<currAvailableResearches.length; i++) {
+			const curr = currAvailableResearches[i];
 
-		if (filteredAvailableResearches.length === 0) {
-			return false;		// no available (filtered) researches, don't compute anything
-		}
-			
-		/*
-			Rule of thumb: to determine priority, iterate through the list. 
-			If the item I'm looking at is higher priority than the next entry, put it there, else, continue through the list
-
-			v0.3.1 release -> Power upgrade, Heavy Cannon, Cannon Dmg, Research upgrade, ROF, twin aslt, vehicle metals
-
-			Example v0.3.1 T2 research order:
-				R-Wpn-Cannon-Damage06
-				R-Struc-Power-Upgrade01c
-				R-Wpn-Cannon3Mk1
-				R-Struc-Research-Upgrade06
-				R-Wpn-Cannon-Damage07
-				R-Wpn-Cannon-ROF03
-				R-Wpn-Cannon6TwinAslt
-				R-Vehicle-Metals05
-				R-Struc-Research-Upgrade07
-				R-Cyborg-Metals06
-				R-Wpn-Cannon-Damage08
-				R-Wpn-Cannon-ROF04
-				R-Vehicle-Metals06
-				R-Struc-Power-Upgrade02
-				R-Wpn-Cannon-ROF05
-		*/
-
-		// Research priority items if they are available
-		const FISHBOT_CANNON_RESEARCH_PRIORITIES = [
-			"R-Wpn-Cannon-Damage06",
-			"R-Struc-Power",
-			"R-Wpn-Cannon3Mk1", 
-			"R-Struc-Research-Upgrade06",
-			"R-Wpn-Cannon-Damage",
-			"R-Wpn-Mortar-Damage", 	
-			"R-Wpn-Cannon-ROF", 
-			"R-Wpn-Cannon6TwinAslt",
-			"R-Vehicle-Metals",
-			"R-Struc-Research-Upgrade",
-			"R-Vehicle-Body09",				// Tiger Body
-			"R-Struc-Factory-Upgrade",
-			"R-Cyborg-Metals",
-			"R-Wpn-MG5", 					// Twin AG
-			"R-Wpn-AAGun02", 		
-			"R-Wpn-Mortar-ROF", 
-			"R-Struc-VTOLPad-Upgrade", 
-			
-			// "R-Wpn-RailGun01",
-			// "R-Wpn-RailGun02",
-			// "R-Wpn-RailGun03",
-			// "R-Wpn-Rail-Damage",
-
-			// "R-Wpn-Rail-ROF", 
-			// "R-Wpn-Rail-Accuracy",
-		];
-		for (let i=0; i<FISHBOT_CANNON_RESEARCH_PRIORITIES.length; ++i) {
-			const keyword = FISHBOT_CANNON_RESEARCH_PRIORITIES[i];
-
-			let priorityResearches = currAvailableResearches.filter(research => research.id.includes(keyword));
-			if (priorityResearches.length === 0) {
+			// Check if high priority, if so, add to `highPriority` list 
+			if (researchPriorities.some(searchText => curr.id.includes(searchText))) {
+				highPriorityUnsorted.push(curr);
 				continue;
 			}
 
-			const priorityResearch = priorityResearches[0];
-			if (pursueResearch(lab, priorityResearch.id)) {
-				if (false) {
-					chat(0, `I'm researching as priority: ${priorityResearch.name}`);		// temporary
-					debug(`I'm priority researching: ${priorityResearch.name}`);			// temporary
-				}
-				return true;
+			// Else, check if blacklisted, if not, add to `regularPriority` list
+			if (researchBlacklist.some(searchText => curr.id.includes(searchText))) {
+				continue;
+			}
+
+			regularPriority.push(curr);
+		}
+
+
+		for (let i=0; i<researchPriorities.length; i++) {
+			const f = highPriorityUnsorted.find(r => r.id.includes(researchPriorities[i]));
+			if (defined(f)) {
+				highPriority.push(f);
 			}
 		}
 
-		// Class available researches into categories.
-		let researchCategoriesLookup = {		// this is a "static plain object" so I need to use Object.keys later.
-			// Sublists under each category are arranged in terms of priority
-			'weapons': ['R-Wpn'],
-			'armor': ['R-Vehicle-Metals', 'R-Cyborg-Metals', 'R-Cyborg-Armor-Heat', 'R-Vehicle-Armor-Heat'],
-			'mobility': ['R-Vehicle-Prop', 'R-Vehicle-Engine', 'R-Vehicle-Body'],
-			'prod': ['R-Struc'],
-			'support': ['R-Sys'],
-			'misc': ['']		// catch remaining uncategorised researches
+		if (false) {
+			debug(`\t==${gameTime}: highPriority==`); 
+			highPriority.forEach(r => debug(`\t  ${r.name}`));
+			debug(`\t==${gameTime}: regularPriority==`);
+			regularPriority.forEach(r => debug(`\t  ${r.name}`));
+		}
+
+		return {
+			'regularPriority': regularPriority,
+			'highPriority': highPriority
 		};
-
-		let categorisedResearches = new Map();
-		const categories = Object.keys(researchCategoriesLookup);
-		categories.forEach((category) => categorisedResearches.set(category, []));
-
-		filteredAvailableResearches.forEach ((research) => {
-			let foundCategory = false;
-
-			// Iterate through each category; append to list
-			for (const [category, itemsInCategory] of categorisedResearches) {
-				// Key is the category of research
-				let lookupTerms = researchCategoriesLookup[category];	
-				lookupTerms.forEach((term) => {
-					if (research.id.includes(term)) {
-						// Add to category & continue with next research in list
-						let currResearchesInCategory = categorisedResearches.get(category);
-						// adds whole research object for further processing
-						categorisedResearches.set(category, [].concat(research, currResearchesInCategory));		
-						
-						foundCategory = true;
-						return;
-					}
-				});
-
-				if (foundCategory)
-					break;
-			}
-		});
-
-		// Now decide on which categorised research to use
-		// 
-		// categorisedResearches.get('weapons').forEach((research) => debug("weapons:", research.name));
-		// categorisedResearches.get('armor').forEach((research) => debug("armor:", research.name));
-		// categorisedResearches.get('mobility').forEach((research) => debug("mobility:", research.name));
-		// categorisedResearches.get('prod').forEach((research) => debug("prod (R-Struc):", research.name));
-		// categorisedResearches.get('support').forEach((research) => debug("support (R-Sys):", research.name));
-		// categorisedResearches.get('misc').forEach((research) => debug("misc (no categ):", research.name));
-
-		// now decide on which category based on user-weights which are modified by the METT-T
-		// TODO: for now, fixed weights
-		let researchCategoryWeights = {
-			'weapons': 0.55,
-			'armor': 0.05,
-			'mobility': 0.15,
-			'prod': 0.1,
-			'support': 0.1,
-			'misc': 0.05
-		};
-
-		const rr = Math.random();
-		let prevUpperBoundary = 0.0;
-		let selectedCategory = undefined;
-
-		for (const [category, weight] of Object.entries(researchCategoryWeights)) {
-			let lowerBoundary = prevUpperBoundary;
-			let upperBoundary = lowerBoundary + weight;
-			if (lowerBoundary <= rr && rr < upperBoundary) {
-				selectedCategory = category;
-				break;
-			}
-			prevUpperBoundary = upperBoundary;
-		}
-
-		// Get selected researches
-		const researchesInCategory = categorisedResearches.get(selectedCategory);
-
-		if (researchesInCategory.length === 0)
-			return false; 	// try again
-
-		const selectedResearch = researchesInCategory[Math.floor(Math.random() * researchesInCategory.length)];
-
-		if (pursueResearch(lab, selectedResearch.id)) {
-			// chat(0, `I'm researching: ${selectedResearch.name}`);		// temporary
-			// debug(`I'm researching: ${selectedResearch.name}`);			// temporary
-			return true;
-		}
-
-		return false;
 
 	}
 }

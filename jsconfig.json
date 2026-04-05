@@ -3,7 +3,10 @@
   "compilerOptions": {
     "target": "ES2020",
     "module": "ESNext",
-    "checkJs": true
+    "checkJs": true,
+
+    "allowUnreachableCode": true,
+    "noImplicitAny": false,
   },
   "include": ["**/*.js", "**/*.d.ts"],
   "exclude": ["Warzone 2100"]

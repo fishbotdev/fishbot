@@ -251,14 +251,26 @@ function breadthFirstSearch(grid, bgx, bgy, objectiveFunc) {
 	Try to reduce the number of functions in this section.
 */
 
-function getIdleStructuresOfType({structureID, playerID=me}) {
-	// Default player is me
-	const structuresOfType = enumStruct(playerID, structureID);
-	return structuresOfType.filter(struct => (
-		struct.status === BUILT && 
-		structureIdle(struct)
-	));
-}
+/**
+ * Converts an array of structures represented as lightweight "FishBot objects" into actual game objects.
+ * This is part of the algorithm to avoid the use of 'enumStruct()' to get up to date game objects. 
+ * @param {*} fbStructureList 
+ * @returns array containing idle `StructureObjects`.
+ */
+function getIdleStructureObjects(fbStructureList) {
+	let idleStructList = [];
+	fbStructureList.forEach(structObj => {
+		if (structObj.flags & OBJ_FLAGS.IS_BUILT) {
+			const s = getObject(structObj.type, structObj.player, structObj.id);
+			if (defined(s)) {
+				if (structureIdle(s)) {
+					idleStructList.push(s);
+				}
+			}
+		}
+	});
+	return idleStructList;
+};
 
 function isAntiAirDefense(obj) {
 	if (obj.canHitAir === true && obj.canHitGround === false) {

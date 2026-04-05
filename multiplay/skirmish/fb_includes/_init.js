@@ -41,7 +41,7 @@ const supply = new armyQuartermaster();
 
 const engineering = new armyEngineering();
 
-const research = new armyResearchAndDevelopment();
+const rnd = new armyResearchAndDevelopment();
 
 // Commander: Makes all decisions
 const hq = new CommandCenter();

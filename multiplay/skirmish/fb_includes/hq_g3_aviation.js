@@ -54,7 +54,7 @@ class armyAviation {
 
 		// Create mission details
 		md.id = "MISSION_TYPE.VTOL_STAGING_MISSION";
-		md.taskForceID = AIR_RESERVE;			// breaks the normal pattern: id === reserveGroup for a default action
+		md.taskForceID = DIVISION.AIR_RESERVE;			// breaks the normal pattern: id === reserveGroup for a default action
 
 		// Assign orders for conducting & ceasing operations			
 		md.orders = () => this.#mcb(rearmVtolGroup, md.taskForceID);		
@@ -68,7 +68,7 @@ class armyAviation {
 		// 	- missionData object (according to missionDataTemplate), if mission successfully created, OR
 		//	- undefined, if mission was not able to be created	 
 
-		let airReserve = state.g.enumGroup(AIR_RESERVE);
+		let airReserve = state.g.enumGroup(DIVISION.AIR_RESERVE);
 		if (airReserve.length < numRaidAircraft) {
 			return undefined;
 		}
@@ -90,7 +90,7 @@ class armyAviation {
 
 		taskForceUnits.forEach((droid) => {
 			state.g.addDroidToGroup({groupID: md.taskForceID, droidID: droid.id});
-			state.g.removeDroidFromGroup({groupID: AIR_RESERVE, droidID: droid.id});
+			state.g.removeDroidFromGroup({groupID: DIVISION.AIR_RESERVE, droidID: droid.id});
 		});		
 
 		md.target = targetInfo;
@@ -111,7 +111,7 @@ class armyAviation {
 		// 	- missionData object (according to missionDataTemplate), if mission successfully created, OR
 		//	- undefined, if mission was not able to be created
 
-		let airReserve = state.g.enumGroup(AIR_RESERVE);
+		let airReserve = state.g.enumGroup(DIVISION.AIR_RESERVE);
 		const MIN_CAS_PATROL_AIRCRAFT = 2;
 
 		// Not possible if no available recon units
@@ -129,7 +129,7 @@ class armyAviation {
 		let taskForceUnits = airReserve.slice(0, 2);  
 		taskForceUnits.forEach((droid) => {
 			state.g.addDroidToGroup({groupID: md.taskForceID, droidID: droid.id});
-			state.g.removeDroidFromGroup({groupID: AIR_RESERVE, droidID: droid.id});
+			state.g.removeDroidFromGroup({groupID: DIVISION.AIR_RESERVE, droidID: droid.id});
 		});	
 		
 		md.target = undefined;
@@ -151,7 +151,7 @@ class armyAviation {
 		// 	- missionData object (according to missionDataTemplate), if mission successfully created, OR
 		//	- undefined, if mission was not able to be created
 
-		let airReserve = state.g.enumGroup(AIR_RESERVE);
+		let airReserve = state.g.enumGroup(DIVISION.AIR_RESERVE);
 
 		// Not possible if no available recon units
 		if (airReserve.length === 0) {
@@ -168,7 +168,7 @@ class armyAviation {
 		let taskForceUnits = airReserve.slice(0, 1);	// only need one aircraft for a silent recon mission
 		taskForceUnits.forEach((droid) => {
 			state.g.addDroidToGroup({groupID: md.taskForceID, droidID: droid.id});
-			state.g.removeDroidFromGroup({groupID: AIR_RESERVE, droidID: droid.id});
+			state.g.removeDroidFromGroup({groupID: DIVISION.AIR_RESERVE, droidID: droid.id});
 		});		
 
 		md.target = undefined;
@@ -190,7 +190,7 @@ class armyAviation {
 		// 	- missionData object (according to missionDataTemplate), if mission successfully created, OR
 		//	- undefined, if mission was not able to be created
 
-		let airReserve = state.g.enumGroup(AIR_RESERVE);
+		let airReserve = state.g.enumGroup(DIVISION.AIR_RESERVE);
 
 		// Not possible if no available recon units
 		if (airReserve.length < 2) {
@@ -207,7 +207,7 @@ class armyAviation {
 		let taskForceUnits = airReserve.slice(0, 2);
 		taskForceUnits.forEach((droid) => {
 			state.g.addDroidToGroup({groupID: md.taskForceID, droidID: droid.id});
-			state.g.removeDroidFromGroup({groupID: AIR_RESERVE, droidID: droid.id});
+			state.g.removeDroidFromGroup({groupID: DIVISION.AIR_RESERVE, droidID: droid.id});
 		});		
 
 		md.target = undefined;
@@ -227,7 +227,7 @@ class armyAviation {
 		
 		// Else release resources
 		taskForceUnits.forEach((droid) => {
-			state.g.addDroidToGroup({groupID: AIR_RESERVE, droidID: droid.id});
+			state.g.addDroidToGroup({groupID: DIVISION.AIR_RESERVE, droidID: droid.id});
 		});	
 		state.g.deleteGroup(md.taskForceID);
 
