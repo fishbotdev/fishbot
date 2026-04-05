@@ -953,7 +953,6 @@ class CommandCenter {
 			// debug(`${gameTime}: ${researchOrder[i].name}`);		
 			pursueResearch(idleLabs[i], researchOrder[i].id);	
 		}
-		}
 
 	}
 
