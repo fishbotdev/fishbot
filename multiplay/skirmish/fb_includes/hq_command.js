@@ -790,9 +790,9 @@ class CommandCenter {
 		const cyborgFactories = state.playerInfo[me]["cyborgFactoryFbObjects"];
 		const vtolFactories = state.playerInfo[me]["vtolFactoryFbObjects"];
 
-		const idleFactories = factories.filter(f => fbStructureIsIdle(f));
-		const idleCyborgFactories = cyborgFactories.filter(f => fbStructureIsIdle(f));
-		const idleVtolFactories = vtolFactories.filter(f => fbStructureIsIdle(f));
+		const idleFactories = getIdleStructureObjects(factories);
+		const idleCyborgFactories = getIdleStructureObjects(cyborgFactories);
+		const idleVtolFactories = getIdleStructureObjects(vtolFactories);
 
 		if (false) {
 			debugPrintIfIdle(idleFactories, "Factory");
@@ -822,18 +822,14 @@ class CommandCenter {
 
 		// Run production
 		const DEBUG_PRODUCTION = false;
-		const getFactoryObj = (f) => getObject(f.type, f.player, f.id);
 
 		// Note: for now, we will directly call the tactical level functions
 		for (let i=0; i<idleCyborgFactories.length; i++) {
-			const factory = getFactoryObj(idleCyborgFactories[i]);
-			if (!defined(factory)) {
-				continue;
-			}
+			const f = idleCyborgFactories[i];
 
 			if (SHOULD_PRODUCE_TRUCKS && CYBORG_CONSTRUCTOR_AVAILABLE && !producedTruckThisTick) {
 				if (DEBUG_PRODUCTION) debug(`	${gameTime}: produced Combat Engineer`);
-				produceCombatEngineer(factory);
+				produceCombatEngineer(f);
 				if (SINGLE_TRUCK_ONLY) {
 					producedTruckThisTick = true;
 				}
@@ -842,15 +838,12 @@ class CommandCenter {
 
 			if (SHOULD_PRODUCE_INFANTRY) {
 				if (DEBUG_PRODUCTION) debug(`	${gameTime}: produced Infantry`);
-				produceInfantry(factory);
+				produceInfantry(f);
 			}
 		}
 
 		for (let i=0; i<idleFactories.length; i++) {
-			const factory = getFactoryObj(idleFactories[i]);
-			if (!defined(factory)) {
-				continue;
-			}
+			const factory = idleFactories[i];
 
 			if (SHOULD_PRODUCE_TRUCKS && !CYBORG_CONSTRUCTOR_AVAILABLE && !producedTruckThisTick) {
 				if (DEBUG_PRODUCTION) debug(`	${gameTime}: produced Hover Truck`);
@@ -870,10 +863,7 @@ class CommandCenter {
 		}
 
 		for (let i=0; i<idleVtolFactories.length; i++) {
-			const factory = getFactoryObj(idleVtolFactories[i]);
-			if (!defined(factory)) {
-				continue;
-			}
+			const factory = idleVtolFactories[i];
 
 			if (CAN_DESIGN_COMBAT_UNITS) {
 				if (DEBUG_PRODUCTION) debug(`	${gameTime}: produced VTOL`);
@@ -891,82 +881,78 @@ class CommandCenter {
 	 */
 	runResearchLogistics(state) {
 		const myLabs = state.playerInfo[me]["researchFacilityFbObjects"];
+		const idleLabs = getIdleStructureObjects(myLabs);
+		if (idleLabs.length === 0) {
+			return;
+		}
 
-		const getIdleLabList = (fbLabList) => {		// TODO: move to utils & combine with factory method
-			let idleLabList = [];
-			fbLabList.forEach(fbLab => {
-				if (fbLab.flags & OBJ_FLAGS.IS_BUILT) {
-					const s = getObject(fbLab.type, fbLab.player, fbLab.id);
-					if (defined(s)) {
-						if (structureIdle(s)) {
-							idleLabList.push(s);
-						}
-					}
-				}
-			});
-			return idleLabList;
-		};
+		/*
+			v0.3.1 release -> Power upgrade, Heavy Cannon, Cannon Dmg, Research upgrade, ROF, twin aslt, vehicle metals
 
-		const idleLabs = getIdleLabList(myLabs);
+			Example v0.3.2 T2 research order (quite one-dimensional)
+				449902: R-Wpn-Cannon-Damage06
+				668902: R-Struc-Power-Upgrade01c
+				690902: R-Struc-Research-Upgrade06
+				814902: R-Wpn-Cannon-Damage07
+				949902: R-Wpn-Cannon6TwinAslt
+				950902: R-Wpn-Mortar-Damage05
+				1045902: R-Wpn-Cannon-Damage08
+				1058902: R-Vehicle-Metals05
+				1096902: R-Wpn-Cannon-ROF03
+				1187902: R-Wpn-Mortar-Damage06
+				1226902: R-Struc-Research-Upgrade07
+				1276902: R-Vehicle-Metals06
+				1279902: R-Wpn-Cannon-Damage09
+				1291902: R-Wpn-Cannon-ROF04
+				1534902: R-Wpn-Cannon-Damage09
+				1559902: R-Wpn-Mortar-Damage06
+		*/
 
-		if (idleLabs.length > 0) {
-			/*
-				Research priority items if they are available
-				Heuristic algorithm:
-				1. To determine priority, iterate through the list. 
-				2. If the item I'm looking at is higher priority than the next entry, put it there, else, continue through the list
-
-				v0.3.1 release -> Power upgrade, Heavy Cannon, Cannon Dmg, Research upgrade, ROF, twin aslt, vehicle metals
-
-				Example v0.3.2 T2 research order:
-
-			*/
-
-			const FISHBOT_T2_CANNON_RESEARCH_PRIORITIES = [
-				"R-Wpn-Cannon-Damage06",
-				"R-Struc-Power",
-				"R-Wpn-Cannon6TwinAslt",
-				"R-Struc-Research-Upgrade06",
-				"R-Wpn-Cannon-Damage",
-				"R-Wpn-Mortar-Damage", 	
-				"R-Vehicle-Metals",
-				"R-Wpn-Cannon-ROF", 
-				"R-Struc-Research-Upgrade",
-				"R-Vehicle-Body09",				// Tiger Body
-				"R-Struc-Factory-Upgrade",
-				"R-Cyborg-Metals",
-				"R-Wpn-MG5", 					// Twin AG
-				"R-Wpn-Cannon3Mk1", 
-				"R-Wpn-AAGun02", 		
-				"R-Wpn-Mortar-ROF", 
-				"R-Struc-VTOLPad-Upgrade", 
-				
-				"R-Wpn-RailGun01",
-				"R-Wpn-RailGun02",
-				"R-Wpn-RailGun03",
-				"R-Wpn-Rail-Damage",
-
-				"R-Wpn-Rail-ROF", 
-				"R-Wpn-Rail-Accuracy",
-			];
-
-			const FISHBOT_T2_CANNON_RESEARCH_BLACKLIST = [
-				"Flame", "Rocket", "Missile", "R-Defense", "R-Sys-VTOLStrike-Turret", "R-Wpn-PlasmaCannon", 
-			];
-
-			const proposedResearches = rnd.proposeResearch(FISHBOT_T2_CANNON_RESEARCH_PRIORITIES, FISHBOT_T2_CANNON_RESEARCH_BLACKLIST);
-			const researchOrder = [
-				...proposedResearches['highPriority'].slice(0, idleLabs.length),
-				...proposedResearches['regularPriority'].slice(0, idleLabs.length),
-			];
+		const FISHBOT_T2_CANNON_RESEARCH_PRIORITIES = [
+			"R-Wpn-Cannon-Damage06",
+			"R-Struc-Power",
+			"R-Wpn-Cannon6TwinAslt",
+			"R-Struc-Research-Upgrade06",
+			"R-Wpn-Cannon-Damage",
+			"R-Wpn-Mortar-Damage", 	
+			"R-Vehicle-Metals",
+			"R-Wpn-Cannon-ROF", 
+			"R-Struc-Research-Upgrade",
+			"R-Vehicle-Body09",				// Tiger Body
+			"R-Struc-Factory-Upgrade",
+			"R-Cyborg-Metals",
+			"R-Wpn-MG5", 					// Twin AG
+			"R-Wpn-Cannon3Mk1", 
+			"R-Wpn-AAGun02", 		
+			"R-Wpn-Mortar-ROF", 
+			"R-Struc-VTOLPad-Upgrade", 
 			
-			for (let i=0; i<researchOrder.length; i++) {
-				if (i >= idleLabs.length) {
-					break;
-				}
-				// debug(`${gameTime}: ${researchOrder[i].name}`);		
-				pursueResearch(idleLabs[i], researchOrder[i].id);	
+			"R-Wpn-RailGun01",
+			"R-Wpn-RailGun02",
+			"R-Wpn-RailGun03",
+			"R-Wpn-Rail-Damage",
+
+			"R-Wpn-Rail-ROF", 
+			"R-Wpn-Rail-Accuracy",
+		];
+
+		const FISHBOT_T2_CANNON_RESEARCH_BLACKLIST = [
+			"Flame", "Rocket", "Missile", "R-Defense", "R-Sys-VTOLStrike-Turret", "R-Wpn-PlasmaCannon", 
+		];
+
+		const proposedResearches = rnd.proposeResearch(FISHBOT_T2_CANNON_RESEARCH_PRIORITIES, FISHBOT_T2_CANNON_RESEARCH_BLACKLIST);
+		const researchOrder = [
+			...proposedResearches['highPriority'].slice(0, idleLabs.length),
+			...proposedResearches['regularPriority'].slice(0, idleLabs.length),
+		];
+		
+		for (let i=0; i<researchOrder.length; i++) {
+			if (i >= idleLabs.length) {
+				break;
 			}
+			// debug(`${gameTime}: ${researchOrder[i].name}`);		
+			pursueResearch(idleLabs[i], researchOrder[i].id);	
+		}
 		}
 
 	}

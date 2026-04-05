@@ -252,20 +252,24 @@ function breadthFirstSearch(grid, bgx, bgy, objectiveFunc) {
 */
 
 /**
- * Wraps `structureIdle` (WZ2100 JSAPI) to make it compatible with FishBot objects.
- * @param {*} fbStructObj 
- * @returns {boolean}
+ * Converts an array of structures represented as lightweight "FishBot objects" into actual game objects.
+ * This is part of the algorithm to avoid the use of 'enumStruct()' to get up to date game objects. 
+ * @param {*} fbStructureList 
+ * @returns array containing idle `StructureObjects`.
  */
-function fbStructureIsIdle(fbStructObj) {
-	if (fbStructObj.flags & OBJ_FLAGS.IS_BUILT) {
-		const s = getObject(fbStructObj.type, fbStructObj.player, fbStructObj.id);
-		if (defined(s)) {
-			if (structureIdle(s)) {
-				return true;
+function getIdleStructureObjects(fbStructureList) {
+	let idleStructList = [];
+	fbStructureList.forEach(structObj => {
+		if (structObj.flags & OBJ_FLAGS.IS_BUILT) {
+			const s = getObject(structObj.type, structObj.player, structObj.id);
+			if (defined(s)) {
+				if (structureIdle(s)) {
+					idleStructList.push(s);
+				}
 			}
 		}
-	}
-	return false;
+	});
+	return idleStructList;
 };
 
 function isAntiAirDefense(obj) {
