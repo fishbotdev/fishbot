@@ -109,7 +109,7 @@ const DEBUG_MODE_ON = true;
 	*/
 	include(FB_INCLUDES + "hq_g4_construction.js");
 	include(FB_INCLUDES + "hq_g4_production.js");
-	include(FB_INCLUDES + "___op_log_research.js");	
+	include(FB_INCLUDES + "hq_g4_research.js");	
 
 	include(FB_INCLUDES + "hq_g3_aviation.js");
 	include(FB_INCLUDES + "hq_g3_ground_ops.js");
