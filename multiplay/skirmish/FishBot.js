@@ -66,6 +66,10 @@ const DEBUG_MODE_ON = false;
 9. Update `CHANGELOG.md`.
 10. Merge into `main` with updated changelog.
 11. Add tag: `fishbot-vX.Y.Z` and push to origin.
+12. .zip the completed mod files as: `fishbot-vx.y.z/multiplay/skirmish/[bot-files-here]` and move this .zip file to the `.\releases` folder.
+13. Create a new "Release" on GitHub titled "FishBot vx.y.z". 
+	13a. Copy-paste the `CHANGELOG.md` markdown description for the new release into the "Release notes" section.
+	13b. Attach the .zip file from Step 12 into the field labeled: "Attach binaries by dropping them here or selecting them". 
 */
 
 ////////////////////////////////////////////////////////////////////////////////////////////
