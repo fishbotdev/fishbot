@@ -383,10 +383,6 @@ class armyIntelligence {
 					result.productionTargets.push(t['targetStructures'][j]);
 					continue;
 				}
-				if (t['targetStructures'][j].flags & OBJ_FLAGS.REPAIR) {
-					result.productionTargets.unshift(t['targetStructures'][j]);
-					continue;
-				}
 			}
 
 			for (let j=0; j<t['targetUnits'].length; j++) {
