@@ -1,5 +1,27 @@
 # Changelog
-This file records the changes to FishBot over time.
+This file is used to record the changes to FishBot between each version.
+
+## Fishbot v0.3.2
+### Changes in v0.3.2
+- Minor AI behavioural improvements:
+    - Production
+        - Fixed issue where factories would idle excessively.
+        - Production decisions are now much less random; production decisions are now made using the composition of the current force.
+    - Ground units
+        - Ground units will no longer use `Heavy Cannon`.
+        - The primary AA weapon is changed to a mix of `Hurricane` and `AA Tornado Flak Cannon` (previously `AA Tornado Flak Cannon` only).
+        - The primary fire support weapon is changed to a mix of `Incendiary Mortar` and `Pepperpot` (previously `Pepperpot` only).
+    - Research
+        - Removed `Heavy Cannon` from research order and re-prioritised other research items accordingly.
+- Internal changes
+    - All decision-making functions are now centralised in `hq_command.js`.
+    - Temporarily removed `Sk-Startup` from the list of supported maps.
+
+#### Test results (Warzone 2100 v4.6.3)
+FishBot `v0.3.2` (commit `4d60e4f`) was automatically tested on: `Gamma 3P T2` 1v1. 
+- 100 / 100 = **100%** win rate: FishBot-v0.3.2 Medium vs Cobra **Medium** 
+- 94 / 100 = **94%** win rate: FishBot-v0.3.2 Medium vs Cobra **Hard** 
+- 8 / 100 = **8%** win rate: FishBot-v0.3.2 Medium vs Cobra **Insane** 
 
 
 ## Fishbot v0.3.1

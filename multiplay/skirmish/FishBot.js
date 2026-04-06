@@ -30,15 +30,12 @@
 
 	Project started: 15 Oct 2025
 
-	Fun stats:
-	
-	LINES OF CODE
+	Fun stats: LINES OF CODE
 		
 	FishBot uses cloc to count lines of code (https://github.com/aldanial/cloc). 
 	More information can be found in `fishbot\software_tools\run_cloc.bat`.
 	- 3845 JS @ 30 Mar 2026: v0.3.1 release (commit `0565344`)
-	- 4300 JS @ 04 Apr 2026: (commit `1c7d413`)
-
+	- 4420 JS @ 04 Apr 2026: v0.3.2 release (commit `69c4754`)
 */
 
 
@@ -53,18 +50,18 @@ const FB_INCLUDES = FISHBOT_PATH + "fb_includes/";
 //	 - Show some useful debug information in the console
 //	 - Automatically colour players 0, 1, 2
 //	 - Transform Player 0 (forced human player slot) to spectator mode (used for automated bot testing)
-const DEBUG_MODE_ON = true;
+const DEBUG_MODE_ON = false;
 
 
 /*
 -- RELEASE CHECKLIST --
 1. Update FISHBOT_VERSION to latest version tag.
 2. Disable all beacons / hackMarkTiles() used for debugging.
-3. Update LOC above.
-4. Run 100 automated tests against both Cobra Medium and Cobra Hard on Gamma 3P 1v1. Pass if no regression in either win-rate or performance profiler. 
-5. Update `CHANGELOG.md` with the test results.
-6. Test all supported maps in `README.md` once, against Cobra @ Medium. Pass if it can win a single game in 2 tries or less.
-7. Set `DEBUG_MODE_ON` = `false`.
+3. Run 100 automated tests against both Cobra Medium and Cobra Hard on Gamma 3P 1v1. Pass if no regression in either win-rate or performance profiler. 
+4. Update `CHANGELOG.md` with the test results.
+5. Test all supported maps in `README.md` once, against Cobra @ Medium. Pass if it can win a single game in 2 tries or less.
+6. Set `DEBUG_MODE_ON` = `false`.
+7. Update LOC above.
 8. Update `README.md` with summary of changes.
 9. Update `CHANGELOG.md`.
 10. Merge into `main` with updated changelog.
