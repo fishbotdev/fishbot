@@ -37,9 +37,170 @@ For each structure, e.g. RESEARCHES["Twin Assault Cannon"] the parameters are:
 -   ResultStructures| []                                                | Array[str] structureIDs
 -   name            | "Twin Assault Cannon"                             | (str) Human-readable name (added by FishBot)
 -   id              | "R-Wpn-Cannon6-TwinAslt"                          | (str) same as Id (added by FishBot)
-
-
 */
+
+const IRRELEVANT_RESEARCHES = [];
+
+let CANNON_RESEARCHES = [];
+let GAUSS_CANNON_RESEARCHES = [];
+let ROCKET_RESEARCHES = [];
+let MISSILE_RESEARCHES = [];
+let MORTAR_RESEARCHES = [];
+let HOWITZER_RESEARCHES = [];
+let MACHINEGUN_RESEARCHES = [];
+let LASER_RESEARCHES = [];
+let AA_DIRECT_FIRE_RESEARCHES = [];
+let AA_ROCKET_RESEARCHES = [];
+let VTOL_BOMB_RESEARCHES = [];
+let FLAMER_RESEARCHES = [];
+let DEFENSIVE_STRUCTURE_RESEARCHES = [];
+let CYBORG_TYPE_RESEARCHES = [];
+let KINETIC_ARMOUR_RESEARCHES = [];
+let HEAT_ARMOUR_RESEARCHES = [];
+let BODY_RESEARCHES = [];
+let PROPULSION_RESEARCHES = [];
+let SENSOR_UPGRADE_RESEARCHES = [];
+let STRUCTURE_UPGRADE_RESEARCHES = []; 
+let SYSTEM_UPGRADE_RESEARCHES = [];
+let UNCLASSIFIED_RESEARCHES = [];
+
+for (const key in Stats.Research) {
+    if (!Object.hasOwnProperty.call(Stats.Research, key)) { 
+        // This checks if the object property is owned by Stats.Weapon and not Object.prototype (parent object)
+        continue;
+    }
+
+    if (IRRELEVANT_RESEARCHES.some(irrelevantText => key.includes(irrelevantText))) {
+        continue;       
+    }
+
+    let r = Stats.Research[key];
+     // add user-friendly 'name' & id
+    r['name'] = key;
+    r['id'] = r.Id;      
+
+    // Add to RESEARCHES global
+    RESEARCHES[key] = r;
+
+    const checkForKeywords = (inputID, searchKeywords, excludeKeywords=[]) => searchKeywords.some(keyword => inputID.includes(keyword)) && !excludeKeywords.some(keyword => inputID.includes(keyword));
+    
+    /*
+        Notes for implementation: 
+         -  Below categories should align with FishBot weapon classes & areas of interest
+         -  Note: T3 weapon research trees diverge from previous weapon researches so they are classified separately here
+            - Cannon -> Gauss Cannon
+            - Rocket -> Missile
+            - Mortar -> Howitzer
+            - Machinegun -> Laser
+            - Flamer -> Plasma weapons (combined)
+    */  
+
+    if (checkForKeywords(r.id, ["R-Defense"], ["R-Defense-TankTrap", "R-Defense-HardcreteGate", "EMP"])) {
+        // This should be first to filter out fortress structures e.g. "R-Defense-Super-Missile"
+        DEFENSIVE_STRUCTURE_RESEARCHES.push(r);
+
+    } else if (checkForKeywords(r.id, ["R-Wpn-Cannon"])) {
+        CANNON_RESEARCHES.push(r);
+    } else if (checkForKeywords(r.id, ["R-Wpn-Rail"])) {
+        GAUSS_CANNON_RESEARCHES.push(r);
+    } else if (checkForKeywords(r.id, ["Rocket"])) {
+        ROCKET_RESEARCHES.push(r);
+    } else if (checkForKeywords(r.id, ["SAM", "R-Wpn-Sunburst"])) {
+        // This captures SAM researches e.g. e.g. "R-Wpn-Missile-HvSAM"; this should be before other missile researches. 
+        AA_ROCKET_RESEARCHES.push(r);
+    } else if (checkForKeywords(r.id, ["Missile"])) {
+        MISSILE_RESEARCHES.push(r);
+    } else if (checkForKeywords(r.id, ["R-Wpn-MG"])) {
+        MACHINEGUN_RESEARCHES.push(r);
+    } else if (checkForKeywords(r.id, ["R-Wpn-Mortar"], ["R-Wpn-MortarEMP"])) {
+        MORTAR_RESEARCHES.push(r);
+    } else if (checkForKeywords(r.id, ["R-Wpn-Howitzer", "R-Wpn-HvyHowitzer"])) {
+        HOWITZER_RESEARCHES.push(r);
+    } else if (checkForKeywords(r.id, ["R-Wpn-AAGun", "R-Wpn-AALaser"])) {
+        AA_DIRECT_FIRE_RESEARCHES.push(r);
+    } else if (checkForKeywords(r.id, ["R-Wpn-Bomb"])) {
+        VTOL_BOMB_RESEARCHES.push(r);
+    } else if (checkForKeywords(r.id, ["R-Wpn-Laser", "R-Wpn-Energy", "R-Wpn-HvyLaser", "R-Wpn-ParticleGun"])) {
+        LASER_RESEARCHES.push(r);
+    } else if (checkForKeywords(r.id, ["Flame", "R-Wpn-PlasmaCannon", "R-Wpn-HeavyPlasmaLauncher"])) {
+        FLAMER_RESEARCHES.push(r);
+
+    } else if (checkForKeywords(r.id, ["R-Vehicle-Metals", "R-Cyborg-Metals"])) {
+        KINETIC_ARMOUR_RESEARCHES.push(r);
+    } else if (checkForKeywords(r.id, ['R-Cyborg-Armor-Heat', 'R-Vehicle-Armor-Heat'])) {
+        HEAT_ARMOUR_RESEARCHES.push(r);    
+    } else if (checkForKeywords(r.id, ['R-Vehicle-Body'])) {
+        BODY_RESEARCHES.push(r);
+    } else if (checkForKeywords(r.id, ['R-Vehicle-Prop', 'R-Vehicle-Engine'])) {
+        PROPULSION_RESEARCHES.push(r);
+    } else if (checkForKeywords(r.id, ["R-Cyborg"], ["R-Cyborg-Transport"])) {
+        // This should be after R-Cyborg-Metals so it only captures new cyborg designs
+        CYBORG_TYPE_RESEARCHES.push(r);   
+
+    } else if (checkForKeywords(r.id, ['R-Struc'])) {
+        STRUCTURE_UPGRADE_RESEARCHES.push(r);
+    } else if (checkForKeywords(r.id, ["R-Sys-Sensor"])) {
+        SENSOR_UPGRADE_RESEARCHES.push(r);
+    } else if (checkForKeywords(r.id, ['R-Sys'], ["R-Sys-Spade1Mk1", "R-Sys-VTOLStrike","R-Sys-VTOLCBS", "R-Sys-Spy", "R-Sys-RadarDetector"])) {
+        SYSTEM_UPGRADE_RESEARCHES.push(r);
+    } else {
+        // Any researches in this category are ignored.
+        UNCLASSIFIED_RESEARCHES.push(r);
+    }
+
+}
+Object.freeze(RESEARCHES);
+
+if (false) {
+    debug(`CANNON_RESEARCHES`);
+    CANNON_RESEARCHES.forEach(r => debug(`\t${r.name}`));
+    debug(`GAUSS_CANNON_RESEARCHES`);
+    GAUSS_CANNON_RESEARCHES.forEach(r => debug(`\t${r.name}`));
+    debug(`ROCKET_RESEARCHES`);
+    ROCKET_RESEARCHES.forEach(r => debug(`\t${r.name}`));
+    debug(`MISSILE_RESEARCHES`);
+    MISSILE_RESEARCHES.forEach(r => debug(`\t${r.name}`));
+    debug(`MACHINEGUN_RESEARCHES`);
+    MACHINEGUN_RESEARCHES.forEach(r => debug(`\t${r.name}`));
+    debug(`LASER_RESEARCHES`);
+    LASER_RESEARCHES.forEach(r => debug(`\t${r.name}`));
+    debug(`MORTAR_RESEARCHES`);
+    MORTAR_RESEARCHES.forEach(r => debug(`\t${r.name}`));
+    debug(`HOWITZER_RESEARCHES`);
+    HOWITZER_RESEARCHES.forEach(r => debug(`\t${r.name}`));
+    debug(`VTOL_BOMB_RESEARCHES`);
+    VTOL_BOMB_RESEARCHES.forEach(r => debug(`\t${r.name}`));
+    debug(`AA_DIRECT_FIRE_RESEARCHES`);
+    AA_DIRECT_FIRE_RESEARCHES.forEach(r => debug(`\t${r.name}`));
+    debug(`AA_ROCKET_RESEARCHES`);
+    AA_ROCKET_RESEARCHES.forEach(r => debug(`\t${r.name}`));
+    debug(`FLAMER_RESEARCHES`);
+    FLAMER_RESEARCHES.forEach(r => debug(`\t${r.name}`));
+
+    debug(`KINETIC_ARMOUR_RESEARCHES`);
+    KINETIC_ARMOUR_RESEARCHES.forEach(r => debug(`\t${r.name}`));
+    debug(`HEAT_ARMOUR_RESEARCHES`);
+    HEAT_ARMOUR_RESEARCHES.forEach(r => debug(`\t${r.name}`));
+    debug(`BODY_RESEARCHES`);
+    BODY_RESEARCHES.forEach(r => debug(`\t${r.name}`));
+    debug(`PROPULSION_RESEARCHES`);
+    PROPULSION_RESEARCHES.forEach(r => debug(`\t${r.name}`));
+    debug(`CYBORG_TYPE_RESEARCHES`);
+    CYBORG_TYPE_RESEARCHES.forEach(r => debug(`\t${r.name}`));
+
+    debug(`STRUCTURE_UPGRADE_RESEARCHES`);
+    STRUCTURE_UPGRADE_RESEARCHES.forEach(r => debug(`\t${r.name}`));
+    debug(`SENSOR_UPGRADE_RESEARCHES`);
+    SENSOR_UPGRADE_RESEARCHES.forEach(r => debug(`\t${r.name}`));
+    debug(`SYSTEM_UPGRADE_RESEARCHES`);
+    SYSTEM_UPGRADE_RESEARCHES.forEach(r => debug(`\t${r.name}`));
+
+    debug(`DEFENSIVE_STRUCTURE_RESEARCHES`);
+    DEFENSIVE_STRUCTURE_RESEARCHES.forEach(r => debug(`\t${r.name}`));
+
+    debug(`UNCLASSIFIED_RESEARCHES`);
+    UNCLASSIFIED_RESEARCHES.forEach(r => debug(`\t${r.name}`));
+}
 
 /*
     STRUCTURE INFORMATION

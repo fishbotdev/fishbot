@@ -1012,31 +1012,33 @@ class CommandCenter {
 		*/
 
 		const FISHBOT_T2_CANNON_RESEARCH_PRIORITIES = [
-			"R-Wpn-Cannon-Damage06",
+			RESEARCHES["APFSDS Cannon Rounds Mk3"].id,
 			"R-Struc-Power",
-			"R-Wpn-Cannon6TwinAslt",
-			"R-Struc-Research-Upgrade06",
+			RESEARCHES["Twin Assault Cannon"].id,
+			RESEARCHES["Dedicated Synaptic Link Data Analysis Mk3"].id,
 			"R-Wpn-Cannon-Damage",
 			"R-Wpn-Mortar-Damage", 	
 			"R-Vehicle-Metals",
 			"R-Wpn-Cannon-ROF", 
 			"R-Struc-Research-Upgrade",
-			"R-Vehicle-Body09",				// Tiger Body
-			"R-Struc-Factory-Upgrade",
 			"R-Cyborg-Metals",
-			"R-Wpn-MG5", 					// Twin AG
-			"R-Wpn-Cannon3Mk1", 
-			"R-Wpn-AAGun02", 		
+			RESEARCHES["Heavy Body - Tiger"].id,
+			"R-Struc-Factory-Upgrade",
+			RESEARCHES["Twin Assault Gun"].id,
+			// RESEARCHES["Whirlwind AA Turret"].id,
+			RESEARCHES["Heavy Cannon"].id, 
+			RESEARCHES["AA Cyclone Flak Cannon"].id, 		
 			"R-Wpn-Mortar-ROF", 
-			"R-Struc-VTOLPad-Upgrade", 
-			
-			"R-Wpn-RailGun01",
-			"R-Wpn-RailGun02",
-			"R-Wpn-RailGun03",
-			"R-Wpn-Rail-Damage",
+			"R-Struc-VTOLPad-Upgrade",
+		];
 
-			"R-Wpn-Rail-ROF", 
+		const FISHBOT_T3_CANNON_RESEARCH_PRIORITIES = [
+			RESEARCHES["Needle Gun"].id,
+			RESEARCHES["Rail Gun"].id,
+			RESEARCHES["Gauss Cannon"].id,
+			"R-Wpn-Rail-Damage",
 			"R-Wpn-Rail-Accuracy",
+			"R-Wpn-Rail-ROF", 
 		];
 
 		const FISHBOT_T2_CANNON_RESEARCH_BLACKLIST = [

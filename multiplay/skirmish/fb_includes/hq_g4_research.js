@@ -80,18 +80,6 @@ T3 starts with these technologies to be researched
 	Heavy Rocket Bastion
 */
 
-/*
-Reference: Original research categories
-
-	'weapons': ['R-Wpn'],
-	'armor': ['R-Vehicle-Metals', 'R-Cyborg-Metals', 'R-Cyborg-Armor-Heat', 'R-Vehicle-Armor-Heat'],
-	'mobility': ['R-Vehicle-Prop', 'R-Vehicle-Engine', 'R-Vehicle-Body'],
-	'prod': ['R-Struc'],
-	'support': ['R-Sys'],
-	'misc': ['']		// catch remaining uncategorised researches
-
-*/
-
 
 class armyResearchAndDevelopment {
 	constructor() {
