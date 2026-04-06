@@ -820,7 +820,7 @@ class CommandCenter {
 		});
 
 		// Adjust unit strategic weights
-		const SUFFICIENT_CAVALRY = deficit['heavyCavalry']['norm'] < 0.5 && deficit['lightCavalry']['norm'] < 0.5;
+		const SUFFICIENT_CAVALRY = deficit['heavyCavalry']['norm'] < 0.65 && deficit['lightCavalry']['norm'] < 0.65;
 		if (SUFFICIENT_CAVALRY) {
 			w_strategic = {
 				'heavyCavalry': 1,

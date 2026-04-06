@@ -356,7 +356,29 @@ function produceLandFireSupportGeneric(factory) {
 	});
 }
 
-function produceLandAntiAir(factory) {
+function produceHighVolumeAAUnit(factory) {
+
+	// Order these by tech level if you want the most technologically advanced weapon to be used
+	const shortRangeAAWeapons = [
+		WEAPONS["Hurricane AA Turret"],
+		WEAPONS["Whirlwind AA Turret"]
+	].reverse();
+	
+	const airDefenceArtilleryPropulsions = [
+		PROPULSIONS["Wheels"], 
+		PROPULSIONS["Half-tracks"],
+		PROPULSIONS["Tracks"]
+	].reverse();
+
+	return produceVehicle({
+		factory: factory, 
+		weaponList: shortRangeAAWeapons, 
+		propulsionList: airDefenceArtilleryPropulsions, 
+		maxBodyWeight: BODY_WEIGHT.HEAVY
+	});
+}
+
+function produceAAFlakUnit(factory) {
 
 	// Order these by tech level if you want the most technologically advanced weapon to be used
 	const airDefenceArtilleryWeapons = [
@@ -435,6 +457,8 @@ function produceInfantry(factory) {
 
 function produceLandUnitCategory(category, factory) {
 	let factoryInProduction = false;   
+
+	let r = Math.floor(Math.random() * 4);
 	
 	switch (category) {
 		case 'heavyCavalry':
@@ -444,15 +468,18 @@ function produceLandUnitCategory(category, factory) {
 			factoryInProduction = factoryInProduction || produceLightCavalry(factory);
 			break;
 		case 'shortRangeArtillery':
-			const r = Math.floor(Math.random() * 2);
-			if (r === 0) {
+			if (r <= 1) {
 				factoryInProduction = factoryInProduction || produceLandAPFireSupport(factory);
 			} else {
 				factoryInProduction = factoryInProduction || produceLandFireSupportGeneric(factory);
 			}
 			break;
 		case 'ADA':
-			factoryInProduction = factoryInProduction || produceLandAntiAir(factory);
+			if (r === 0) {
+				factoryInProduction = factoryInProduction || produceAAFlakUnit(factory);
+			} else {
+				factoryInProduction = factoryInProduction || produceHighVolumeAAUnit(factory);
+			}
 			break;
 		case 'sensor': 
 			factoryInProduction = factoryInProduction || produceLandRecon(factory);
