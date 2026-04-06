@@ -104,22 +104,23 @@ function retreatToBase(generalReserve, infantryReserve, fireSupportReserve, airD
 }
 
 /*
-    TAC SOP: ATTACKS A TARGET; REINFORCEMENTS ARRIVE AT CLOSEST DROID TO TARGET
+    TAC SOP: ATTACK SPECIFIED TARGETS
 */
-
 function groundForceAttack({state, directFireTarget, fireSupportTarget, adaTarget}) {
-	const SHOW_TARGETS = false;
 
-	let generalReserve = state.g.enumGroup(DIVISION.GENERAL_RESERVE);
-	let infantryReserve = state.g.enumGroup(DIVISION.INFANTRY_RESERVE);
-	let fireSupportReserve = state.g.enumGroup(DIVISION.FIRE_SUPPORT_RESERVE);
-	let airDefenceArtilleryReserve = state.g.enumGroup(DIVISION.AIR_DEFENCE_RESERVE);
-	const sensorUnits = enumDroid(me, DROID_SENSOR);		// these have not been added to the grouping system yet!
 	const forceLocation = state.forceLocation;
 
-	const rtb = () => retreatToBase(generalReserve, infantryReserve, fireSupportReserve, airDefenceArtilleryReserve, sensorUnits);
+	const getUnitsIn = (groupID) => state.g.enumGroup(groupID);
 
-	if (generalReserve.length === 0) {
+	const ARMOUR_UNITS = [...getUnitsIn(DIVISION.HEAVY_CAV_RESERVE), ...getUnitsIn(DIVISION.LIGHT_CAV_RESERVE), ...getUnitsIn(DIVISION.GENERAL_RESERVE)];
+	const INFANTRY_UNITS = getUnitsIn(DIVISION.INFANTRY_RESERVE);
+	const SHORT_RANGE_FIRE_SUPPORT = getUnitsIn(DIVISION.SHORT_RANGE_FIRE_SUPPORT_RESERVE);		// TODO: add long range fire support
+	const AA_UNITS = getUnitsIn(DIVISION.AIR_DEFENCE_RESERVE);
+	const SENSOR_UNITS = getUnitsIn(DIVISION.SENSOR_RESERVE);		
+
+	const rtb = () => retreatToBase(ARMOUR_UNITS, INFANTRY_UNITS, SHORT_RANGE_FIRE_SUPPORT, AA_UNITS, SENSOR_UNITS);
+
+	if (ARMOUR_UNITS.length === 0) {
 		// rtb();		
 		return;
 	}
@@ -130,7 +131,7 @@ function groundForceAttack({state, directFireTarget, fireSupportTarget, adaTarge
 	}
 
 	const currDirectFireTarget = getObject(directFireTarget.type, directFireTarget.player, directFireTarget.id);
-	const closestDroidToTarget = findClosestDroidToTarget(generalReserve, currDirectFireTarget);
+	const closestDroidToTarget = findClosestDroidToTarget(ARMOUR_UNITS, currDirectFireTarget);
 
 	if (!defined(closestDroidToTarget) || !defined(currDirectFireTarget)) {
 		rtb();		
@@ -140,8 +141,8 @@ function groundForceAttack({state, directFireTarget, fireSupportTarget, adaTarge
 	const _distSqToClosestDroid = (droid) => distSq(droid.x, closestDroidToTarget.x, droid.y, closestDroidToTarget.y);
 		
 	// MAIN ASSAULT UNITS
-	for (let i=0; i<generalReserve.length; i++) {
-		let droid = generalReserve[i];
+	for (let i=0; i<ARMOUR_UNITS.length; i++) {
+		let droid = ARMOUR_UNITS[i];
 
 		/*
 		// basic implementation of repair facility, only for front line units
@@ -170,8 +171,8 @@ function groundForceAttack({state, directFireTarget, fireSupportTarget, adaTarge
 	}
 
 	// CYBORG (INFANTRY) UNITS
-	for (let i=0; i<infantryReserve.length; ++i) {
-		let droid = infantryReserve[i];
+	for (let i=0; i<INFANTRY_UNITS.length; ++i) {
+		let droid = INFANTRY_UNITS[i];
 		if (_distSqToClosestDroid(droid) <= 6 ** 2) {
 			attackTarget(droid, currDirectFireTarget);
 		} else {
@@ -180,7 +181,7 @@ function groundForceAttack({state, directFireTarget, fireSupportTarget, adaTarge
 	}
 
 	// Hack: Sensor units
-	sensorUnits.forEach((droid) => {
+	SENSOR_UNITS.forEach((droid) => {
 		if (_distSqToClosestDroid(droid) > 5 ** 2) {
 			orderDroidLoc(droid, DORDER_MOVE, closestDroidToTarget.x, closestDroidToTarget.y);
 		} else {
@@ -194,7 +195,7 @@ function groundForceAttack({state, directFireTarget, fireSupportTarget, adaTarge
 		currAdaTarget = getObject(adaTarget.type, adaTarget.player, adaTarget.id);
 	}	
 
-	airDefenceArtilleryReserve.forEach((droid) => {
+	AA_UNITS.forEach((droid) => {
 		if (defined(currAdaTarget)) {
 			attackTarget(droid, currAdaTarget);		
 		} else {
@@ -212,7 +213,7 @@ function groundForceAttack({state, directFireTarget, fireSupportTarget, adaTarge
 		currFireSupportTarget = getObject(fireSupportTarget.type, fireSupportTarget.player, fireSupportTarget.id);
 	}
 	 
-	fireSupportReserve.forEach((droid) => {
+	SHORT_RANGE_FIRE_SUPPORT.forEach((droid) => {
 		const distSqToDirectFireTarget = distSq(droid.x, currDirectFireTarget.x, droid.y, currDirectFireTarget.y);
 		
 		if (distSqToDirectFireTarget <= 7 ** 2 || (_distSqToClosestDroid(currDirectFireTarget) > 12 ** 2 && distSqToDirectFireTarget < 12 ** 2)) {
@@ -227,7 +228,7 @@ function groundForceAttack({state, directFireTarget, fireSupportTarget, adaTarge
 		}
 	});
 
-	if (SHOW_TARGETS) {
+	if (false) {
 		hackMarkTiles();
 		if (defined(currDirectFireTarget)) {
 			addBeacon(currDirectFireTarget.x, currDirectFireTarget.y, 0);

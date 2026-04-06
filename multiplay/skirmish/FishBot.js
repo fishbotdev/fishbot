@@ -30,21 +30,16 @@
 
 	Project started: 15 Oct 2025
 
-	Fun stats:
-	
-	To count lines of code without comments, in git bash, cd to the code directory and:
-
-	git ls-files "*.js" | xargs cat | grep -v '^\s*$' | grep -v '^\s*#' | wc -l 	
-
-	Results:
-	- 29 Nov 2025 (43e22ee): 3512 .js
-	- 18 Jan 2026 (eae414d): 4567 .js
-	- 15 Feb 2026 (821b835): 4536 .js -- v0.3.0 (v3) public release
-	- 22 Mar 2026 (b94dc92): 5361 .js -- v0.3.1 release
+	Fun stats: LINES OF CODE
+		
+	FishBot uses cloc to count lines of code (https://github.com/aldanial/cloc). 
+	More information can be found in `fishbot\software_tools\run_cloc.bat`.
+	- 3845 JS @ 30 Mar 2026: v0.3.1 release (commit `0565344`)
+	- 4420 JS @ 04 Apr 2026: v0.3.2 release (commit `69c4754`)
 */
 
 
-const FISHBOT_VERSION = "0.3.1";
+const FISHBOT_VERSION = "0.3.2";
 
 //	This file connects all remaining pieces of AI code together. It shouldn't contain any code itself.
 //	NOTE: order matters!
@@ -62,11 +57,11 @@ const DEBUG_MODE_ON = false;
 -- RELEASE CHECKLIST --
 1. Update FISHBOT_VERSION to latest version tag.
 2. Disable all beacons / hackMarkTiles() used for debugging.
-3. Update LOC above.
-4. Run 100 automated tests against both Cobra Medium and Cobra Hard on Gamma 3P 1v1. Pass if no regression in either win-rate or performance profiler. 
-5. Update `CHANGELOG.md` with the test results.
-6. Test all supported maps in `README.md` once, against Cobra @ Medium. Pass if it can win a single game in 2 tries or less.
-7. Set `DEBUG_MODE_ON` = `false`.
+3. Run 100 automated tests against both Cobra Medium and Cobra Hard on Gamma 3P 1v1. Pass if no regression in either win-rate or performance profiler. 
+4. Update `CHANGELOG.md` with the test results.
+5. Test all supported maps in `README.md` once, against Cobra @ Medium. Pass if it can win a single game in 2 tries or less.
+6. Set `DEBUG_MODE_ON` = `false`.
+7. Update LOC above.
 8. Update `README.md` with summary of changes.
 9. Update `CHANGELOG.md`.
 10. Merge into `main` with updated changelog.
@@ -110,11 +105,11 @@ const DEBUG_MODE_ON = false;
 		about implementation.
 	*/
 	include(FB_INCLUDES + "hq_g4_construction.js");
-	include(FB_INCLUDES + "___op_log_production.js");
-	include(FB_INCLUDES + "___op_log_research.js");	
+	include(FB_INCLUDES + "hq_g4_production.js");
+	include(FB_INCLUDES + "hq_g4_research.js");	
 
 	include(FB_INCLUDES + "hq_g3_aviation.js");
-	include(FB_INCLUDES + "___op_com_ground.js");
+	include(FB_INCLUDES + "hq_g3_ground_ops.js");
 	include(FB_INCLUDES + "hq_g2_intelligence.js");			
 	
 	/*

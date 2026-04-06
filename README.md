@@ -3,20 +3,28 @@ FishBot is a Warzone 2100 AI bot compatible with Warzone 2100 **v4.6.1+**.
 It is designed for Tech Level 2, No-Base starts on the supported maps below.
 
 ## Most recent update
+* **v0.3.2** -- *released **06 Apr 2026***
+    * Production decisions are no longer random (depends on current force composition instead).
+    * Fixed an issue where some factories would do nothing for a long period of time.
+    * Changed primary fire support & AA weapons.
+    * Temporarily removed `Sk-Startup` from the list of supported maps.
+    * Please see [`CHANGELOG.md`](CHANGELOG.md) for a more detailed list of changes.
+
+## Previous update
 * **v0.3.1** -- *released **29 Mar 2026***
     * Significantly fewer lag spikes (performance improvements).
     * Made it easier to import FishBot into your mods folder.
     * Added list of currently supported maps in `README.md` (this file).
-    * Minor behavioural improvements (please see `CHANGELOG.md` for the most up-to-date list).
+    * Minor behavioural improvements (please see [`CHANGELOG.md`](CHANGELOG.md) for a more detailed list of changes).
 
-## Previous update
-* **v3 (relabeled as v0.3.0)** -- *released **15 Feb 2026*** 
-    * Significant improvements in capturing oil.
-    * Significant improvements in VTOL targeting and handling.
+## Roadmap for upcoming features
+* **v0.3.3** -- *release date TBA*
+    * Minor patches to AI behaviour.
 
-## Upcoming update
-* **v0.3.2** -- *release date TBA*
-    * TBD
+* **v0.4.0** -- *release date TBA*
+    * Improve combat unit pathing.
+    * Increase number of compatible maps.
+    * Fix trucks getting stuck on maps with destroyable features.
 
 ## Background and Goals
 FishBot was initially forked from NullBot v3. I acknowledge and appreciate the work of the NullBot team in creating the foundation for this work.
@@ -42,7 +50,6 @@ As of the most current version **v0.3.1**, FishBot works best on large, standard
 It currently only has been tested with scavengers disabled.
 
 ### 2 player
-* `Sk-Startup`
 * `Roughness`
 * `Vision`
 

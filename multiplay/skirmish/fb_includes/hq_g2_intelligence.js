@@ -62,104 +62,6 @@ class armyIntelligence {
 	/*
 		REAL-TIME TARGETING
 	*/
-	
-	#classifyObject(obj) {
-
-		let flags = 0;
-
-		// Object-type agnostic capability
-		if (isAntiAirDefense(obj)) {
-			flags |= OBJ_FLAGS.ADA;
-		}
-
-		if (obj.hasIndirect === true) {
-			flags |= OBJ_FLAGS.INDIRECT_FIRE;
-		}
-
-		if (obj.type === DROID) {
-
-			switch (obj.propulsion) {
-				case PROPULSIONS["Cyborg Propulsion"].id: 
-					flags |= OBJ_FLAGS.CYBORG_PROPULSION;
-					break;
-				case PROPULSIONS["Wheels"].id:
-					flags |= OBJ_FLAGS.WHEELED_PROPULSION;
-					break;
-				case PROPULSIONS["Half-tracks"].id:
-					flags |= OBJ_FLAGS.HALF_TRACKED_PROPULSION;
-					break;
-				case PROPULSIONS["Tracks"].id:
-					flags |= OBJ_FLAGS.TRACKED_PROPULSION;
-					break;
-				case PROPULSIONS["Hover"].id:
-					flags |= OBJ_FLAGS.HOVER_PROPULSION;
-					break;
-				case PROPULSIONS["VTOL"].id:
-					flags |= OBJ_FLAGS.VTOL_PROPULSION;
-					break;
-
-				default:
-					flags |= OBJ_FLAGS.TRACKED_PROPULSION;
-					debug(`WARNING	intelligence/#classifyObject(): obj.propulsion was not understood: ${obj.propulsion}`);
-			}
-
-			// Droid-specific capability
-			if (obj.droidType === DROID_CONSTRUCT) {
-				flags |= OBJ_FLAGS.CONSTRUCTOR;
-				return flags;
-			}
-			
-			if (obj.droidType === DROID_REPAIR) {
-				flags |= OBJ_FLAGS.REPAIR;
-				return flags;
-			}
-
-			const ARMOUR_MASK = OBJ_FLAGS.HALF_TRACKED_PROPULSION | OBJ_FLAGS.TRACKED_PROPULSION | OBJ_FLAGS.WHEELED_PROPULSION | OBJ_FLAGS.HOVER_PROPULSION;
-			if (obj.droidType === DROID_WEAPON || obj.droidType === DROID_CYBORG) {
-				if (flags & ARMOUR_MASK) {
-					flags |= OBJ_FLAGS.ARMOUR;
-				} else if (flags & OBJ_FLAGS.VTOL_PROPULSION) {
-					flags |= OBJ_FLAGS.AVIATION;
-				}
-			}
-
-			if (obj.droidType === DROID_CYBORG) {
-				flags |= OBJ_FLAGS.INFANTRY;
-			}
-
-			return flags;
-		}
-
-		if (obj.type === STRUCTURE) {
-			if (obj.status === BUILT) {
-				flags |= OBJ_FLAGS.IS_BUILT;
-			}
-
-			if (obj.stattype === DEFENSE) {
-				flags |= OBJ_FLAGS.DEFENSIVE_STRUCTURE;
-				return flags;
-			}
-
-			const INDUSTRIAL_TARGETS = [FACTORY, CYBORG_FACTORY, VTOL_FACTORY];	
-			if (INDUSTRIAL_TARGETS.includes(obj.stattype)) {
-				flags |= OBJ_FLAGS.PRODUCTION;
-				return flags;					
-			}
-
-			if (obj.stattype === RESOURCE_EXTRACTOR) {
-				flags |= OBJ_FLAGS.RESOURCE_EXTRACTOR;
-				return flags;
-			}
-
-			if (obj.stattype === REPAIR_FACILITY) {
-				flags |= OBJ_FLAGS.REPAIR;
-				return flags;
-			}
-		}
-		
-		return flags;
-	}
-
 	#createNewTarget(targetObject, flags=0, gx=0, gy=0) {
 		return {
 			'name': targetObject.name,
@@ -176,6 +78,33 @@ class armyIntelligence {
 			// This is used by the mission management system to store the priority at the time of assignment
 			'priority': MISSION_PRIORITY.LOW,
 		};
+	}
+
+	/**
+	 * Prints `playerInfo` to the console.
+	 * @param {*} p 
+	 */
+	#debugPrintPlayerInfo(p) {
+		
+		if (false) {
+			debug(`== ${p.playerID} UNIT STATS ==`);
+
+			// Print Unit stats
+			debug(`\nnumTotalUnits: ${p['numTotalUnits']}`); 
+			debug(`\tnumInfantryUnits: ${p['numInfantryUnits']}`); 
+			debug(`\tnumArmourUnits: ${p['numArmourUnits']}`); 
+            debug(`\tnumAirUnits: ${p['numAirUnits']}`);      
+			debug(``);
+            debug(`\tnumRocketUnits: ${p['numRocketUnits']}`);        
+            debug(`\tnumCannonUnits: ${p['numCannonUnits']}`);      
+            debug(`\tnumMGUnits: ${p['numMGUnits']}`);
+            debug(`\tnumShortRangeIndirectUnits: ${p['numShortRangeIndirectUnits']}`);
+            debug(`\tnumLongRangeIndirectUnits: ${p['numLongRangeIndirectUnits']}`);
+            debug(`\tnumVTOLBombUnits: ${p['numVTOLBombUnits']}`);
+            debug(`\tnumADAUnits: ${p['numADAUnits']}`); 
+            debug(`\tnumLaserUnits: ${p['numLaserUnits']}`);
+            debug(`\tnumFlamerUnits: ${p['numFlamerUnits']}`);
+		}
 	}
 
 	/**
@@ -231,35 +160,46 @@ class armyIntelligence {
 			for (let j=0; j<currPlayerEntry['droids'].length; j++) {
 				const obj = currPlayerEntry['droids'][j];
 
-				const flags = this.#classifyObject(obj);
+				const flags = classifyGameObject(obj);
 				const gx = Math.floor(obj.x / cellSize), gy = Math.floor(obj.y / cellSize);		
 
 				// Update player information
 				p['numTotalUnits']++;
 
+				// UNIT "BODY" (ARMOUR, CYBORGS, VTOLS)
 				const ARMOUR_FORBIDDEN_FLAGS = (OBJ_FLAGS.ADA | OBJ_FLAGS.INDIRECT_FIRE);
-				const INDIRECT_FIRE_FORBIDDEN_FLAGS = (OBJ_FLAGS.AVIATION | OBJ_FLAGS.INFANTRY);
 
 				if (flags & OBJ_FLAGS.ARMOUR && !(flags & ARMOUR_FORBIDDEN_FLAGS)) {
 					p['numArmourUnits']++;
-				} 
-
-				if (flags & OBJ_FLAGS.INDIRECT_FIRE && !(flags & INDIRECT_FIRE_FORBIDDEN_FLAGS)) {
-					p['numIndirectUnits']++;
-				}
-
-				if (flags & OBJ_FLAGS.INFANTRY) {
+				} else if (flags & OBJ_FLAGS.INFANTRY) {
 					p['numInfantryUnits']++;
-				}
-
-				if (flags & OBJ_FLAGS.AVIATION) {
+				} else if (flags & OBJ_FLAGS.AVIATION) {
 					p['numAirUnits']++;
 				}
-
-				if (flags & OBJ_FLAGS.ADA) {
-					p['numADA']++;
+			
+				// UNIT "WEAPON"
+				if (flags & OBJ_FLAGS.CANNON_WEAPON) {
+					p['numCannonUnits']++;
+				} else if (flags & OBJ_FLAGS.AT_ROCKET_WEAPON) {
+					p['numRocketUnits']++;
+				} else if (flags & OBJ_FLAGS.MACHINEGUN_WEAPON) {
+					p['numMGUnits']++;
+				} else if (flags & OBJ_FLAGS.SHORT_RANGE_ARTILLERY_WEP) {
+					p['numShortRangeIndirectUnits']++;
+				} else if (flags & OBJ_FLAGS.LONG_RANGE_ARTILLERY_WEP) {
+					p['numLongRangeIndirectUnits']++;
+				} else if (flags & OBJ_FLAGS.VTOL_ARTILLERY_WEAPON) {
+					p['numVTOLBombUnits']++;
+				} else if (flags & (OBJ_FLAGS.AA_DIRECT_FIRE_WEAPON | OBJ_FLAGS.AA_ROCKET_WEAPON)) {
+					p['numADAUnits']++;
+				} else if (flags & OBJ_FLAGS.LASER_WEAPON) {
+					p['numLaserUnits']++;
+				} else if (flags & OBJ_FLAGS.FLAMER_WEAPON) {
+					p['numFlamerUnits']++;
+				} else if (flags & OBJ_FLAGS.CONSTRUCTOR) {
+					p['numTrucks']++;
 				}
-				
+
 				// Update target list
 				const newObj = this.#createNewTarget(obj, flags, gx, gy);
 				if (IS_TARGET) {
@@ -285,7 +225,7 @@ class armyIntelligence {
 			for (let j=0; j<currPlayerEntry['structs'].length; j++) {
 				const obj = currPlayerEntry['structs'][j];
 				
-				const flags = this.#classifyObject(obj);
+				const flags = classifyGameObject(obj);
 				const gx = Math.floor(obj.x / cellSize), gy = Math.floor(obj.y / cellSize);		
 
 				// Update player information
@@ -296,12 +236,29 @@ class armyIntelligence {
 					grid[gx][gy]['claimedDerricks'].push(createNewClaimedDerrick(obj.x, obj.y, obj.player));	
 				}
 
-				if (flags & OBJ_FLAGS.PRODUCTION) {
-					p['numFactories']++;
-				}
-
 				// Update target list
 				const newObj = this.#createNewTarget(obj, flags, gx, gy);
+
+				if (flags & OBJ_FLAGS.PRODUCTION) {
+					p['numFactories']++;
+
+					if (obj.stattype === FACTORY) {
+						p["normalFactoryFbObjects"].push(newObj);
+					} else if (obj.stattype === CYBORG_FACTORY) {
+						p["cyborgFactoryFbObjects"].push(newObj);
+					} else if (obj.stattype === VTOL_FACTORY) {
+						p["vtolFactoryFbObjects"].push(newObj);
+					}
+				}
+
+				if (flags & OBJ_FLAGS.RESEARCH) {
+					p["researchFacilityFbObjects"].push(newObj);
+				}
+
+				if (obj.stattype === HQ && obj.status === BUILT) {
+					// manual classification (outside of `classifyObject`) -> not required to track HQs
+					p['numConstructedHQs']++;
+				}			
 
 				if (IS_TARGET) {
 					result.allTargets.push(newObj);		
@@ -322,6 +279,7 @@ class armyIntelligence {
 				}
 			}
 
+			this.#debugPrintPlayerInfo(p);
 			result.playerInfo.push(p);
 		}
 
@@ -423,10 +381,6 @@ class armyIntelligence {
 				}
 				if (t['targetStructures'][j].flags & OBJ_FLAGS.PRODUCTION) {
 					result.productionTargets.push(t['targetStructures'][j]);
-					continue;
-				}
-				if (t['targetStructures'][j].flags & OBJ_FLAGS.REPAIR) {
-					result.productionTargets.unshift(t['targetStructures'][j]);
 					continue;
 				}
 			}

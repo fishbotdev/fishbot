@@ -87,34 +87,46 @@ Object.freeze(MISSION_PRIORITY);
 
 
 const OBJ_FLAGS = {
-
     // unit classes
     ARMOUR:        				1 << 0,
     INFANTRY:    				1 << 1,
     INDIRECT_FIRE:     			1 << 2,
     AVIATION:          			1 << 3,
+	ADA: 						1 << 4,
 
-    // capabilities
-    ADA:          				1 << 4,
-    CONSTRUCTOR:      			1 << 5,
-	REPAIR:						1 << 6,
+	MACHINEGUN_WEAPON: 			1 << 5,
+	FLAMER_WEAPON:				1 << 6,
+	CANNON_WEAPON:				1 << 7,
+	AT_ROCKET_WEAPON:			1 << 8,
+	VTOL_ARTILLERY_WEAPON:		1 << 9,
+	SHORT_RANGE_ARTILLERY_WEP:	1 << 10,		
+	LONG_RANGE_ARTILLERY_WEP:	1 << 11,
+    AA_DIRECT_FIRE_WEAPON:      1 << 12,
+	AA_ROCKET_WEAPON:			1 << 13,
+	LASER_WEAPON:				1 << 14,
+	UNCLASSIFIED_WEAPON_TYPE:	1 << 15,
 
 	// propulsion
-	CYBORG_PROPULSION: 			1 << 12,
-	TRACKED_PROPULSION: 		1 << 13,
-	HALF_TRACKED_PROPULSION: 	1 << 14,
-	HOVER_PROPULSION: 			1 << 15,
-	WHEELED_PROPULSION: 		1 << 16,
-	VTOL_PROPULSION: 			1 << 17,
+	CYBORG_PROPULSION: 			1 << 16,
+	TRACKED_PROPULSION: 		1 << 17,
+	HALF_TRACKED_PROPULSION: 	1 << 18,
+	HOVER_PROPULSION: 			1 << 19,
+	WHEELED_PROPULSION: 		1 << 20,
+	VTOL_PROPULSION: 			1 << 21,
+
+	// capabilities
+    CONSTRUCTOR:      			1 << 22,
+	REPAIR:						1 << 23,
 
     // structures
-    PRODUCTION:   				1 << 8,
-    RESOURCE_EXTRACTOR:       	1 << 9,
-    DEFENSIVE_STRUCTURE:      	1 << 10,
-	IS_BUILT:					1 << 11,
+    PRODUCTION:   				1 << 24,
+	RESEARCH: 					1 << 25,
+	ENERGY:						1 << 26,
+    RESOURCE_EXTRACTOR:       	1 << 27,
+    DEFENSIVE_STRUCTURE:      	1 << 28,
+	IS_BUILT:					1 << 29,
 };
 Object.freeze(OBJ_FLAGS);
-
 
 const MISSION_TYPE = {
 	ABORT_MISSION: 0,
@@ -172,44 +184,30 @@ Object.freeze(MISSION_TYPE);
 Object.freeze(CONSTRUCTION_MISSION_TYPES);
 Object.freeze(AVIATION_MISSION_TYPES);
 
-
 /*
-	TACTICAL PARAMETERS 
-    - used for all .js files prefixed with __tac_
+    COMBAT FORCE PARAMETERS
 */
-const WZ2100_v461_DROID_RANGE_SCALING_FACTOR = 1 / 128;
-
-/*
-    AIR FORCE PARAMETERS
-*/
-const AIR_RESERVE = 1000;
-
-/*
-    GROUND FORCE PARAMETERS
-*/
-
 const DIVISION = {
+	AIR_RESERVE: 1000,
+
     GENERAL_RESERVE: 2001,
     HEAVY_CAV_RESERVE: 2002,
     LIGHT_CAV_RESERVE: 2003,
-    FIRE_SUPPORT_RESERVE: 2004,
-    INFANTRY_RESERVE: 2005,
-    AIR_DEFENCE_RESERVE: 2006,    
-    BRIGADE1: 2011,                 // this is a combined arms team
-    BRIGADE2: 2012,
-    BRIGADE3: 2013,
-    BRIGADE4: 2014,
-    BRIGADE5: 2015,
-    FIRE_SUPPORT1: 2021,
-    FIRE_SUPPORT2: 2022,
-    FIRE_SUPPORT3: 2023,
-    FIRE_SUPPORT4: 2024,
-    FIRE_SUPPORT5: 2025,
+	INFANTRY_RESERVE: 2004,
+	SHORT_RANGE_FIRE_SUPPORT_RESERVE: 2005,
+    LONG_RANGE_FIRE_SUPPORT_RESERVE: 2006,
+    AIR_DEFENCE_RESERVE: 2007,
+	SENSOR_RESERVE: 2008,
+	
+    BRIGADE1: 3011,                 // this is a combined arms team
+    BRIGADE2: 3012,
+    BRIGADE3: 3013,
+    BRIGADE4: 3014,
 };
 Object.freeze(DIVISION);
 
 /*
-    [LOGISTICS] CONSTRUCTION PARAMETERS
+    LOGISTICS PARAMETERS
 */
 const ENGINEERING = {
     ENGINEERING_RESERVE: 5000,

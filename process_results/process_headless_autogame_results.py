@@ -159,7 +159,7 @@ from os import getcwd
 
 def show_medium_cobra_results():
     # test_1 = getcwd() + rf"\process_results/v3/" + "29ceeb0,med,463" + ".txt"               # v3 dev: [143 / 150 wins]
-    test_1 = getcwd() + rf"\process_results/v4/" + "a2e13b4,med,cobra_v3_release" + ".txt"    # v3 release: retesting [98 / 100 wins]
+    # test_1 = getcwd() + rf"\process_results/v4/" + "a2e13b4,med,cobra_v3_release" + ".txt"    # v3 release: retesting [98 / 100 wins]
     # test_1 = getcwd() + rf"\process_results/v4/" + "1e3edc5,med,cobra" + ".txt"               # v4 dev: before perf optimisations [96 / 100 won]
     # test_1 = getcwd() + rf"\process_results/v4/" + "0c6d165,med,cobra,100g" + ".txt"               # perf: removed getAllBaseTargets [95 / 100 won]
     # test_1 = getcwd() + rf"\process_results/v4/" + "2167472,med,cobra,50g" + ".txt"               # perf: before merging performance-improvements [49 / 49 won]
@@ -170,7 +170,8 @@ def show_medium_cobra_results():
     # test_1 = getcwd() + rf"\process_results/v4/" + "a686079,med,cobra,100g" + ".txt"               # 99 / 100 won, after vtol optimisations
     # test_2 = getcwd() + rf"\process_results/v4/" + "db393ea,med,cobra,150g" + ".txt"               # 149 / 150 won
     # test_2 = getcwd() + rf"\process_results/v4/" + "868e56f,med,cobra,150g" + ".txt"               
-    test_2 = getcwd() + rf"\process_results/v4/" + "021d39e,med,cobra,100g" + ".txt"                # 97 / 100 won (v0.3.1 release)
+    test_1 = getcwd() + rf"\process_results/v4/" + "021d39e,med,cobra,100g" + ".txt"                # 97 / 100 won (v0.3.1 release)
+    test_2 = getcwd() + rf"\process_results/v4/" + "4d60e4f,med,cobra,100g" + ".txt"                # 100 / 100 won (v0.3.2 release)
     
     commit1 = test_1.split(rf"v4/")[1].split(",")[0]
     commit2 = test_2.split(rf"v4/")[1].split(",")[0]
@@ -179,7 +180,7 @@ def show_medium_cobra_results():
     show_stats(*get_stats(test_2), title=f"{commit2} (after)", legend=[commit1, commit2], figNum=3)   
 
 def show_hard_cobra_results():
-    test_1 = getcwd() + rf"\process_results/v3/" + "29ceeb0,hard,463" + ".txt"              # v3 dev: 4.6.3, [63/86 wins] long term test
+    # test_1 = getcwd() + rf"\process_results/v3/" + "29ceeb0,hard,463" + ".txt"              # v3 dev: 4.6.3, [63/86 wins] long term test
     # test_1 = getcwd() + rf"\process_results/v4/" + "6966b26,hard,cobra,50g" + ".txt"              # v4 dev: 4.6.3 [60 % wr; baseline for cannon test]
     # test_1 = getcwd() + rf"\process_results/v4/" + "f50adb5,hard,cobra,50g" + ".txt"              # v4 dev: 4.6.3 [78 % wr; cannon test]
     # test_1 = getcwd() + rf"\process_results/v4/" + "db393ea,hard,cobra,50g" + ".txt"              # v4 dev: 4.6.3 [74 % wr; cannon test + cas changes]
@@ -191,10 +192,15 @@ def show_hard_cobra_results():
     # test_2 = getcwd() + rf"\process_results/v4/" + "9c8a337,hard,cobra,60g" + ".txt"                
     # test_2 = getcwd() + rf"\process_results/v4/" + "04fb0cd,hard,cobra,50g" + ".txt"                #  38 / 50 -> 76% (yay!)
     # test_2 = getcwd() + rf"\process_results/v4/" + "04fb0cd,hard,cobra,50g_part2" + ".txt"          #  42 / 50 -> 84% (yay!)
-    test_2 = getcwd() + rf"\process_results/v4/" + "3d997f9,hard,cobra,100g" + ".txt"                #  65 / 100 -> v0.3.1 release candidate
-    test_2 = getcwd() + rf"\process_results/v4/" + "021d39e,hard,cobra,100g" + ".txt"                #  79 / 100 -> v0.3.1 release candidate (reverted removal of median location)
+    # test_2 = getcwd() + rf"\process_results/v4/" + "3d997f9,hard,cobra,100g" + ".txt"                #  65 / 100 -> v0.3.1 release candidate
+    # test_1 = getcwd() + rf"\process_results/v4/" + "021d39e,hard,cobra,100g" + ".txt"                #  79 / 100 -> v0.3.1 release candidate (reverted removal of median location)
+    # test_2 = getcwd() + rf"\process_results/v4/" + "e7a4ac4,hard,cobra,50g" + ".txt"                # 42 / 50 won (increased FS weights, decreased ADA weights, added incend mortar)
+    # test_1 = getcwd() + rf"\process_results/v4/" + "006d007,hard,cobra,100g" + ".txt"                # 86 / 100 won (during migration of production)
+    # test_1 = getcwd() + rf"\process_results/v4/" + "e293c48,hard,cobra,100g" + ".txt"                # 94 / 100 won (finished basic migration of research)
+    test_1 = getcwd() + rf"\process_results/v4/" + "c4a1769,hard,cobra,100g" + ".txt"                # 88 / 100 won (finished basic migration of production)
+    test_2 = getcwd() + rf"\process_results/v4/" + "4d60e4f,hard,cobra,100g" + ".txt"                # 94 / 100 won (refined production & research after migration)
 
-    commit1 = test_1.split(rf"v3/")[1].split(",")[0]
+    commit1 = test_1.split(rf"v4/")[1].split(",")[0]
     commit2 = test_2.split(rf"v4/")[1].split(",")[0]
 
     show_stats(*get_stats(test_1), title=f"{commit1} (before)", figNum=2)                             
@@ -206,8 +212,9 @@ def show_insane_diff_results():
     # test_1 = getcwd() + rf"\process_results/v4/" + "5c757ab,hardins,1v2" + ".txt"           # v4 dev: v3 skrush 1x hard, 1x insane nexus        [39 / 50 wins]
     # test_1 = getcwd() + rf"\process_results/v4/" + "1df2117,hardins,1v2" + ".txt"           # v4 dev: v3 skrush 1x hard, 1x insane nexus, after perf optimisations [42 / 50 wins]
     # test_1 = getcwd() + rf"\process_results/v4/" + "c7d8eb7,hardins,1v2,targoptim" + ".txt"           # v4 dev: v3 skrush 1x hard, 1x ins nexus, targeting optimisations - cancelVtol [33 / 50 wins]
-    test_1 = getcwd() + rf"\process_results/v4/" + "4aee90e,hardins,1v2,vtolfix" + ".txt"           # v4 dev: v3 skrush 1x hard, 1x ins nexus, fixed vtol usage [38 / 50 wins]
-    test_2 = getcwd() + rf"\process_results/v4/" + "e8c65ad,hardins,1v2" + ".txt"           # v4 dev: mid-grid system migration [55% wr]
+    # test_1 = getcwd() + rf"\process_results/v4/" + "4aee90e,hardins,1v2,vtolfix" + ".txt"           # v4 dev: v3 skrush 1x hard, 1x ins nexus, fixed vtol usage [38 / 50 wins]
+    test_1 = getcwd() + rf"\process_results/v4/" + "e8c65ad,hardins,1v2" + ".txt"           # v4 dev: mid-grid system migration [55% wr]
+    test_2 = getcwd() + rf"\process_results/v4/" + "4d60e4f,ins,cobra,100g" + ".txt"           #  (v0.3.2 release) [8% wr; 1v1 vs Cobra Insane]
     
     commit1 = test_1.split(rf"v4/")[1].split(",")[0]
     commit2 = test_2.split(rf"v4/")[1].split(",")[0]

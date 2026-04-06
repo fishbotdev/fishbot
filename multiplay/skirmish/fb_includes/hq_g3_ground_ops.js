@@ -16,7 +16,7 @@
 */
 
 
-class armyGroundForceCommand {
+class armyGroundOperations {
 
 	constructor() {
 		
@@ -36,6 +36,7 @@ class armyGroundForceCommand {
 		};
 
 		if (playerInfo.length === 0) {
+			// Guard against playerInfo being undefined at the start of the game
 			return result;
 		}
 
@@ -65,7 +66,9 @@ class armyGroundForceCommand {
 	 * @returns 
 	 */
 	getForceMedianLocation(unused) {
-		let generalReserve = state.g.enumGroup(DIVISION.GENERAL_RESERVE);
+		const getUnitsIn = (groupID) => state.g.enumGroup(groupID);
+
+		let generalReserve = [...getUnitsIn(DIVISION.HEAVY_CAV_RESERVE), ...getUnitsIn(DIVISION.LIGHT_CAV_RESERVE), ...getUnitsIn(DIVISION.GENERAL_RESERVE)];
 		if (generalReserve.length === 0) {
 			return {"x": baseLocation.x, "y": baseLocation.y};
 		}
