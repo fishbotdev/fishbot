@@ -91,41 +91,61 @@ function setupFishBot() {
 	setTimer("runGameEndedWatchdog", 60000);
 }
 
+/**
+ * This function is intended to be used during development & automated testing.
+ * @returns {void}
+ */
+function setupDebugMode() {
+	const COLOURS = {
+		"green": 0,
+		"orange": 1,
+		"gray": 2, 
+		"black": 3, 
+		"red": 4, 
+		"blue": 5,
+		"pink" : 6,
+		"cyan": 7,
+		"yellow": 8,
+		"purple": 9,
+		"white": 10,
+		"bright-blue": 11,
+		"neon-green": 12,
+		"infrared": 13,
+		"ultraviolet": 14,		
+		"brown": 15,
+	};
+	
+	changePlayerColour(0, COLOURS["gray"]);
+	changePlayerColour(1, COLOURS["yellow"]);		
+	changePlayerColour(2, COLOURS["cyan"]);
+	changePlayerColour(3, COLOURS["blue"]);
+	changePlayerColour(4, COLOURS["neon-green"]);
+	changePlayerColour(5, COLOURS["infrared"]);
+	changePlayerColour(6, COLOURS["pink"]);
+	changePlayerColour(7, COLOURS["white"]);
+	changePlayerColour(8, COLOURS["red"]);
+	changePlayerColour(9, COLOURS["orange"]);
+	changePlayerColour(10, COLOURS["purple"]);
+	changePlayerColour(11, COLOURS["brown"]);
+
+	// remove default human player (force-added in challenge mode)
+	transformPlayerToSpectator(0);		
+}
+
 function eventStartLevel() {
-
-	const initialTrucks = enumDroid(me, DROID_CONSTRUCT);
-	initialTrucks.forEach(droid => {
-		// Copied from NullBot:
-		// The following line is necessary to avoid some strange game bug when droids that
-		// are initially buried into the ground fail to move out of the way when a building
-		// is being placed right above them
-		orderDroidLoc(droid, DORDER_MOVE, droid.x + 1, droid.y + 1);
-
-		state.g.addDroidToGroup({groupID: ENGINEERING.ENGINEERING_RESERVE, droidID: droid.id});
-	});
-
+	queue("setupFishBot", me * 100);	
+	
+	// Debug mode is enabled for development & automated testing. 
 	if (DEBUG_MODE_ON) {
-		// colour reference: 
-		const playerColours = {	// from js-functions.md
-			"pink" : 6,
-			"cyan": 7,
-			"yellow": 8,
-			"white": 10,
-			"bright-blue": 11,
-			"neon-green": 12,
-			"infra-red": 13,
-			"ultra-violet": 14,
-		};		
-		changePlayerColour(0, playerColours["white"]);
-		changePlayerColour(1, playerColours["yellow"]);		
-		changePlayerColour(2, playerColours["cyan"]);
-		changePlayerColour(3, playerColours["bright-blue"]);
-		transformPlayerToSpectator(0);		// remove default human player (force-added in challenge mode)
+		setupDebugMode();
 	}
 
-	queue("setupFishBot", me * 100);		
-
-	// Run construction tasks right away
+	// One time use: start initial construction tasks immediately
+	const initialTrucks = enumDroid(me, DROID_CONSTRUCT);
+	initialTrucks.forEach(droid => {
+		orderDroidLoc(droid, DORDER_MOVE, droid.x + 1, droid.y + 1);		// copied from NullBot (apparently trucks can sometimes get stuck when a building is placed on top of them)
+		state.g.addDroidToGroup({groupID: ENGINEERING.ENGINEERING_RESERVE, droidID: droid.id});
+	});
 	queue("runLogistics");				
 	queue("runMissionManager");
 }
