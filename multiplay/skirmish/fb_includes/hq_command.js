@@ -1025,11 +1025,11 @@ class CommandCenter {
 			RESEARCHES["Heavy Body - Tiger"].id,
 			"R-Struc-Factory-Upgrade",
 			RESEARCHES["Twin Assault Gun"].id,
-			// RESEARCHES["Whirlwind AA Turret"].id,
-			RESEARCHES["Heavy Cannon"].id, 
-			RESEARCHES["AA Cyclone Flak Cannon"].id, 		
+			RESEARCHES["Whirlwind AA Turret"].id,
 			"R-Wpn-Mortar-ROF", 
 			"R-Struc-VTOLPad-Upgrade",
+			RESEARCHES["Heavy Cannon"].id, 
+			RESEARCHES["AA Cyclone Flak Cannon"].id, 		
 		];
 
 		const FISHBOT_T3_CANNON_RESEARCH_PRIORITIES = [
