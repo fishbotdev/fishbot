@@ -374,7 +374,7 @@ function produceHighVolumeAAUnit(factory) {
 		factory: factory, 
 		weaponList: shortRangeAAWeapons, 
 		propulsionList: airDefenceArtilleryPropulsions, 
-		maxBodyWeight: BODY_WEIGHT.HEAVY
+		maxBodyWeight: BODY_WEIGHT.MEDIUM
 	});
 }
 
