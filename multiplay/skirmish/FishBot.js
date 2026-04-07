@@ -36,10 +36,11 @@
 	More information can be found in `fishbot\software_tools\run_cloc.bat`.
 	- 3845 JS @ 30 Mar 2026: v0.3.1 release (commit `0565344`)
 	- 4420 JS @ 04 Apr 2026: v0.3.2 release (commit `69c4754`)
+	- 4437 JS @ 07 Apr 2026: v0.3.3 release (commit `b6c85a5`)
 */
 
 
-const FISHBOT_VERSION = "0.3.2";
+const FISHBOT_VERSION = "0.3.3";
 
 //	This file connects all remaining pieces of AI code together. It shouldn't contain any code itself.
 //	NOTE: order matters!
@@ -64,11 +65,12 @@ const DEBUG_MODE_ON = false;
 7. Update LOC above.
 8. Update `README.md` with summary of changes.
 9. Update `CHANGELOG.md`.
-10. Merge into `main` with updated changelog.
-11. Add tag: `fishbot-vX.Y.Z` and push to origin.
+10. Commit all changes to the top of the `vx.y.z-development` branch.
+10. Open a PR on GitHub (titled 'FishBot vx.y.z Release') & merge into `main`.
+11. On the main branch, add tag: `fishbot-vx.y.z` and push to origin.
 12. .zip the completed mod files as: `fishbot-vx.y.z/multiplay/skirmish/[bot-files-here]` and move this .zip file to the `.\releases` folder.
 13. Create a new "Release" on GitHub titled "FishBot vx.y.z". 
-	13a. Copy-paste the `CHANGELOG.md` markdown description for the new release into the "Release notes" section.
+	13a. Copy-paste the `CHANGELOG.md` description for the new release into the "Release notes" section.
 	13b. Attach the .zip file from Step 12 into the field labeled: "Attach binaries by dropping them here or selecting them". 
 */
 

@@ -160,18 +160,9 @@ from os import getcwd
 def show_medium_cobra_results():
     # test_1 = getcwd() + rf"\process_results/v3/" + "29ceeb0,med,463" + ".txt"               # v3 dev: [143 / 150 wins]
     # test_1 = getcwd() + rf"\process_results/v4/" + "a2e13b4,med,cobra_v3_release" + ".txt"    # v3 release: retesting [98 / 100 wins]
-    # test_1 = getcwd() + rf"\process_results/v4/" + "1e3edc5,med,cobra" + ".txt"               # v4 dev: before perf optimisations [96 / 100 won]
-    # test_1 = getcwd() + rf"\process_results/v4/" + "0c6d165,med,cobra,100g" + ".txt"               # perf: removed getAllBaseTargets [95 / 100 won]
-    # test_1 = getcwd() + rf"\process_results/v4/" + "2167472,med,cobra,50g" + ".txt"               # perf: before merging performance-improvements [49 / 49 won]
-    # test_1 = getcwd() + rf"\process_results/v4/" + "f9d0fd4,med,cobra,50g" + ".txt"               # perf: after merging perf-optim2 [49 / 50 won], higher K/D
-    # test_1 = getcwd() + rf"\process_results/v4/" + "45635e6,med,cobra,100g" + ".txt"               # perf: after migrating into fixed time hashing [96 / 100 won]
-    # test_1 = getcwd() + rf"\process_results/v4/" + "7ee8c56,med,cobra,100g" + ".txt"               # perf: migrating to new grid system [91 / 100 won (regression)]
-    # test_1 = getcwd() + rf"\process_results/v4/" + "df4a549,med,cobra,100g" + ".txt"               # perf: migrating to new grid system [97 / 100 won; regression fixed]
-    # test_1 = getcwd() + rf"\process_results/v4/" + "a686079,med,cobra,100g" + ".txt"               # 99 / 100 won, after vtol optimisations
-    # test_2 = getcwd() + rf"\process_results/v4/" + "db393ea,med,cobra,150g" + ".txt"               # 149 / 150 won
-    # test_2 = getcwd() + rf"\process_results/v4/" + "868e56f,med,cobra,150g" + ".txt"               
-    test_1 = getcwd() + rf"\process_results/v4/" + "021d39e,med,cobra,100g" + ".txt"                # 97 / 100 won (v0.3.1 release)
-    test_2 = getcwd() + rf"\process_results/v4/" + "4d60e4f,med,cobra,100g" + ".txt"                # 100 / 100 won (v0.3.2 release)
+    # test_1 = getcwd() + rf"\process_results/v4/" + "021d39e,med,cobra,100g" + ".txt"                # 97 / 100 won (v0.3.1 release)
+    test_1 = getcwd() + rf"\process_results/v4/" + "4d60e4f,med,cobra,100g" + ".txt"                # 100 / 100 won (v0.3.2 release)
+    test_2 = getcwd() + rf"\process_results/v4/" + "b6c85a5,med,cobra,50g" + ".txt"                # 50 / 50 won (v0.3.3 release)
     
     commit1 = test_1.split(rf"v4/")[1].split(",")[0]
     commit2 = test_2.split(rf"v4/")[1].split(",")[0]
@@ -180,25 +171,10 @@ def show_medium_cobra_results():
     show_stats(*get_stats(test_2), title=f"{commit2} (after)", legend=[commit1, commit2], figNum=3)   
 
 def show_hard_cobra_results():
-    # test_1 = getcwd() + rf"\process_results/v3/" + "29ceeb0,hard,463" + ".txt"              # v3 dev: 4.6.3, [63/86 wins] long term test
-    # test_1 = getcwd() + rf"\process_results/v4/" + "6966b26,hard,cobra,50g" + ".txt"              # v4 dev: 4.6.3 [60 % wr; baseline for cannon test]
-    # test_1 = getcwd() + rf"\process_results/v4/" + "f50adb5,hard,cobra,50g" + ".txt"              # v4 dev: 4.6.3 [78 % wr; cannon test]
-    # test_1 = getcwd() + rf"\process_results/v4/" + "db393ea,hard,cobra,50g" + ".txt"              # v4 dev: 4.6.3 [74 % wr; cannon test + cas changes]
-    # test_1 = getcwd() + rf"\process_results/v4/" + "db7403d,hard,cobra,100g" + ".txt"              # v4 dev: 4.6.3 [57 % wr; migrated sector defence to grid system]
-    # test_2 = getcwd() + rf"\process_results/v4/" + "cf7b597,hard,cobra,100g" + ".txt"              # close to v0.3.1 release [61 % wr] 
-    # test_2 = getcwd() + rf"\process_results/v4/" + "ee78a97,hard,cobra,60g" + ".txt"              # close to v0.3.1 release [38/60 = 63 % wr] 
-    # test_1 = getcwd() + rf"\process_results/v4/" + "bb29af7,hard,cobra,60g" + ".txt"                # 40 / 60 (66.6%)
-    # test_2 = getcwd() + rf"\process_results/v4/" + "1ec43be,hard,cobra,60g" + ".txt"                # 28 / 47 (60%)
-    # test_2 = getcwd() + rf"\process_results/v4/" + "9c8a337,hard,cobra,60g" + ".txt"                
-    # test_2 = getcwd() + rf"\process_results/v4/" + "04fb0cd,hard,cobra,50g" + ".txt"                #  38 / 50 -> 76% (yay!)
-    # test_2 = getcwd() + rf"\process_results/v4/" + "04fb0cd,hard,cobra,50g_part2" + ".txt"          #  42 / 50 -> 84% (yay!)
-    # test_2 = getcwd() + rf"\process_results/v4/" + "3d997f9,hard,cobra,100g" + ".txt"                #  65 / 100 -> v0.3.1 release candidate
-    # test_1 = getcwd() + rf"\process_results/v4/" + "021d39e,hard,cobra,100g" + ".txt"                #  79 / 100 -> v0.3.1 release candidate (reverted removal of median location)
-    # test_2 = getcwd() + rf"\process_results/v4/" + "e7a4ac4,hard,cobra,50g" + ".txt"                # 42 / 50 won (increased FS weights, decreased ADA weights, added incend mortar)
-    # test_1 = getcwd() + rf"\process_results/v4/" + "006d007,hard,cobra,100g" + ".txt"                # 86 / 100 won (during migration of production)
-    # test_1 = getcwd() + rf"\process_results/v4/" + "e293c48,hard,cobra,100g" + ".txt"                # 94 / 100 won (finished basic migration of research)
-    test_1 = getcwd() + rf"\process_results/v4/" + "c4a1769,hard,cobra,100g" + ".txt"                # 88 / 100 won (finished basic migration of production)
-    test_2 = getcwd() + rf"\process_results/v4/" + "4d60e4f,hard,cobra,100g" + ".txt"                # 94 / 100 won (refined production & research after migration)
+    # test_1 = getcwd() + rf"\process_results/v3/" + "29ceeb0,hard,463" + ".txt"                    # v3 dev: 4.6.3, [63/86 wins] long term test
+    # test_1 = getcwd() + rf"\process_results/v4/" + "021d39e,hard,cobra,100g" + ".txt"             #  79 / 100 -> v0.3.1 release candidate (reverted removal of median location)
+    test_1 = getcwd() + rf"\process_results/v4/" + "4d60e4f,hard,cobra,100g" + ".txt"               # v0.3.2 release -- 94 / 100 won (refined production & research after migration)
+    test_2 = getcwd() + rf"\process_results/v4/" + "b6c85a5,hard,cobra,50g" + ".txt"                # v0.3.3 release -- 48 / 50 won (research collision patch)
 
     commit1 = test_1.split(rf"v4/")[1].split(",")[0]
     commit2 = test_2.split(rf"v4/")[1].split(",")[0]
