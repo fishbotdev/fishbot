@@ -40,7 +40,7 @@
 */
 
 
-const FISHBOT_VERSION = "0.3.3";
+const FISHBOT_VERSION = "0.3.4";
 
 //	This file connects all remaining pieces of AI code together. It shouldn't contain any code itself.
 //	NOTE: order matters!
@@ -51,7 +51,7 @@ const FB_INCLUDES = FISHBOT_PATH + "fb_includes/";
 //	 - Show some useful debug information in the console
 //	 - Automatically colour players 0, 1, 2
 //	 - Transform Player 0 (forced human player slot) to spectator mode (used for automated bot testing)
-const DEBUG_MODE_ON = false;
+const DEBUG_MODE_ON = true;
 
 
 /*
@@ -82,7 +82,7 @@ const DEBUG_MODE_ON = false;
  	
 		The primary purpose of these files is to gather information from the WZ2100 game engine.
 	*/
-	include(FB_INCLUDES + "_wz_head.js");
+	include(FB_INCLUDES + "__wz_head.js");
 	include(FB_INCLUDES + "_utils.js");
 
 	/*
@@ -91,7 +91,7 @@ const DEBUG_MODE_ON = false;
 		The purpose of these files is to direct the tactical level functions e.g. "how to produce a standard FishBot droid".
 		These can be considered as WZ2100-specific drivers.
 	*/
-	include(FB_INCLUDES + "__head.js");	
+	include(FB_INCLUDES + "_head.js");	
 
 	// world_state stores persistent parameters that FishBot uses to make decisions. Its access and mutation is strictly controlled.
 	include(FB_INCLUDES + "_world_state.js");
