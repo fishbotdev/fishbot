@@ -5,6 +5,9 @@ This file is used to record the changes to FishBot between each version.
 ### Changes in v0.3.3
 - Fixes:
     - Fixed research collisions: FishBot will now try to research other technologies if they are already being researched by an ally.
+    - Added Gauss Cannon to the T2 research order.
+- Internal changes
+    - Fixed player-colour conflicts in `DEBUG_MODE`.
 
 #### Test results (Warzone 2100 v4.7.0-beta2)
 FishBot `v0.3.3` (commit `b6c85a5`) was automatically tested on: `Gamma 3P T2` 1v1. 

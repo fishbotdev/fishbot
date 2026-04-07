@@ -11,13 +11,14 @@ It is designed for Tech Level 2, No-Base starts on the supported maps below.
     * Fixed an issue where some factories would do nothing for a long period of time.
     * Changed primary fire support & AA weapons.
     * Temporarily removed `Sk-Startup` from the list of supported maps.
-    * Please see [`CHANGELOG.md`](CHANGELOG.md) for a more detailed list of changes.
 
 * **v0.3.1** -- *released **29 Mar 2026***
     * Significantly fewer lag spikes (performance improvements).
     * Made it easier to import FishBot into your mods folder.
     * Added list of currently supported maps in `README.md` (this file).
-    * Minor behavioural improvements (please see [`CHANGELOG.md`](CHANGELOG.md) for a more detailed list of changes).
+    * Improvements to VTOL danger avoidance & ground unit targeting.
+
+Please see [`CHANGELOG.md`](CHANGELOG.md) for a detailed list of changes.
 
 ## Roadmap for upcoming features
 * **v0.3.4** -- *release date TBA*
