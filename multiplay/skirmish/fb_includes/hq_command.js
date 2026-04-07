@@ -1046,17 +1046,18 @@ class CommandCenter {
 		];
 
 		const proposedResearches = rnd.proposeResearch(FISHBOT_T2_CANNON_RESEARCH_PRIORITIES, FISHBOT_T2_CANNON_RESEARCH_BLACKLIST);
-		const researchOrder = [
-			...proposedResearches['highPriority'].slice(0, idleLabs.length),
-			...proposedResearches['regularPriority'].slice(0, idleLabs.length),
-		];
+		const researchOrder = [...proposedResearches['highPriority'], ...proposedResearches['regularPriority']];
 		
-		for (let i=0; i<researchOrder.length; i++) {
-			if (i >= idleLabs.length) {
+		let positionInResearchOrder = 0;
+		for (let i=0; i<idleLabs.length; i++) {
+
+			for (let j=positionInResearchOrder; j<researchOrder.length; j++) {
+				if (pursueResearch(idleLabs[i], researchOrder[j].id)) {
+					positionInResearchOrder++;
+					debug(`${gameTime} (FishBot ${me}): ${researchOrder[j].name}`);		
 				break;
 			}
-			// debug(`${gameTime}: ${researchOrder[i].name}`);		
-			pursueResearch(idleLabs[i], researchOrder[i].id);	
+			}
 		}
 
 	}
