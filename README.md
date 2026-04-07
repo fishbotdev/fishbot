@@ -2,7 +2,10 @@
 FishBot is a Warzone 2100 AI bot compatible with Warzone 2100 **v4.6.1+**.
 It is designed for Tech Level 2, No-Base starts on the supported maps below.
 
-## Most recent update
+## Most recent updates
+* **v0.3.3** -- *released **07 Apr 2026***
+    * Fixed research collisions: FishBot will now try to research other technologies if they are already being researched by an ally.
+
 * **v0.3.2** -- *released **06 Apr 2026***
     * Production decisions are no longer random (depends on current force composition instead).
     * Fixed an issue where some factories would do nothing for a long period of time.
@@ -10,7 +13,6 @@ It is designed for Tech Level 2, No-Base starts on the supported maps below.
     * Temporarily removed `Sk-Startup` from the list of supported maps.
     * Please see [`CHANGELOG.md`](CHANGELOG.md) for a more detailed list of changes.
 
-## Previous update
 * **v0.3.1** -- *released **29 Mar 2026***
     * Significantly fewer lag spikes (performance improvements).
     * Made it easier to import FishBot into your mods folder.
@@ -18,7 +20,7 @@ It is designed for Tech Level 2, No-Base starts on the supported maps below.
     * Minor behavioural improvements (please see [`CHANGELOG.md`](CHANGELOG.md) for a more detailed list of changes).
 
 ## Roadmap for upcoming features
-* **v0.3.3** -- *release date TBA*
+* **v0.3.4** -- *release date TBA*
     * Minor patches to AI behaviour.
 
 * **v0.4.0** -- *release date TBA*
