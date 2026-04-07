@@ -1025,20 +1025,20 @@ class CommandCenter {
 			RESEARCHES["Heavy Body - Tiger"].id,
 			"R-Struc-Factory-Upgrade",
 			RESEARCHES["Twin Assault Gun"].id,
-			RESEARCHES["Whirlwind AA Turret"].id,
 			"R-Wpn-Mortar-ROF", 
 			"R-Struc-VTOLPad-Upgrade",
-			RESEARCHES["Heavy Cannon"].id, 
-			RESEARCHES["AA Cyclone Flak Cannon"].id, 		
-		];
 
-		const FISHBOT_T3_CANNON_RESEARCH_PRIORITIES = [
+			// Gauss Researches added here temporarily - need to figure out how to do
 			RESEARCHES["Needle Gun"].id,
 			RESEARCHES["Rail Gun"].id,
 			RESEARCHES["Gauss Cannon"].id,
 			"R-Wpn-Rail-Damage",
 			"R-Wpn-Rail-Accuracy",
 			"R-Wpn-Rail-ROF", 
+			
+			RESEARCHES["Whirlwind AA Turret"].id,
+			RESEARCHES["Heavy Cannon"].id, 
+			RESEARCHES["AA Cyclone Flak Cannon"].id, 		
 		];
 
 		const FISHBOT_T2_CANNON_RESEARCH_BLACKLIST = [
@@ -1055,8 +1055,8 @@ class CommandCenter {
 				if (pursueResearch(idleLabs[i], researchOrder[j].id)) {
 					positionInResearchOrder++;
 					debug(`${gameTime} (FishBot ${me}): ${researchOrder[j].name}`);		
-				break;
-			}
+					break;
+				}
 			}
 		}
 
