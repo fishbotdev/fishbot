@@ -76,7 +76,7 @@ function helpConstructAroundBase(taskForceID) {
 
 	const MAX_HELP_RADIUS = Math.floor(1.42 * Math.min(mapHeight/3, mapWidth/3));		// 1.42 ~ sqrt(2)
 	const baseStructuresBeingBuilt = enumStruct(me).filter(struct => struct.status === BEING_BUILT).
-													filter(struct => distance(struct, baseLocation) < MAX_HELP_RADIUS);	
+													filter(struct => distSq(struct.x, baseLocation.x, struct.y, baseLocation.y) < MAX_HELP_RADIUS ** 2);	
 
 	for (let i=0; i<baseStructuresBeingBuilt.length; i++) {
 		const struct = baseStructuresBeingBuilt[i];

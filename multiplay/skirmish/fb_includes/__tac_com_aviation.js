@@ -96,7 +96,7 @@ function doAirRecon(x, y, weaponsHot=false, taskForceID) {
 		// niceDebug("tactics/doAirRecon: inside do something")
 
 		// If the VTOL is already at the target x, y, return {status: MISSION_STATUS.SUCCEEDED};
-		if (distance(droid, x, y) < 8) {
+		if (distSq(droid.x, x, droid.y, y) < 8 ** 2) {
 			// if within 8 tiles, target coordinates have been reconnoitered, return true (mission success)
 			return {status: MISSION_STATUS.SUCCEEDED};		
 		}
