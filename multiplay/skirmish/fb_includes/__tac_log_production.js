@@ -32,15 +32,6 @@ function buildDroidWrapper(factory, droidName, bodies, propulsions, weapon) {
 	}
 }
 
-function iCanDesign() {
-	// FishBot will not build units before it can design them, on any difficulty.
-	const hqIsBuilt = (enumStruct(me, HQ).filter(hq => hq.status === BUILT).length > 0);
-	if (hqIsBuilt)
-		return true;
-	else
-		return false;
-}
-
 function chooseVehicleBody({bodies=[], factory=undefined, maxFactoryModules=undefined}) {
 	const DEBUG_MODE = false;
 	
