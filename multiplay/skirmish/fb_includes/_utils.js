@@ -287,10 +287,6 @@ function getCurrGameTime() {
 	return currGameTime;
 }
 
-function myPower() {
-	return playerPower(me) - queuedPower(me);
-}
-
 function isEnemy(playerID) {
 	if (!defined(playerID)) {
 		debug("isEnemy(): playerID is undefined. Check the calling function.");

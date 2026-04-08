@@ -83,6 +83,7 @@ const DEBUG_MODE_ON = true;
 		The primary purpose of these files is to gather information from the WZ2100 game engine.
 	*/
 	include(FB_INCLUDES + "__wz_head.js");
+	include(FB_INCLUDES + "_head.js");	
 	include(FB_INCLUDES + "_utils.js");
 
 	/*
@@ -91,7 +92,7 @@ const DEBUG_MODE_ON = true;
 		The purpose of these files is to direct the tactical level functions e.g. "how to produce a standard FishBot droid".
 		These can be considered as WZ2100-specific drivers.
 	*/
-	include(FB_INCLUDES + "_head.js");	
+
 
 	// world_state stores persistent parameters that FishBot uses to make decisions. Its access and mutation is strictly controlled.
 	include(FB_INCLUDES + "_world_state.js");
