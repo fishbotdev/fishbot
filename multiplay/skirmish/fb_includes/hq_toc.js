@@ -614,8 +614,63 @@ class TacticalOperationsCenter {
 		state.aviationTargets['adaTargets'] = adaTargets;
 	}
 
-	 /**
-     * Adds all newly manufactured droids into a group dependent on droid properties. 
+	/**
+     * Returns the FishBot group classification for a specified droid.
+	 * FishBot grouping is distinct from droid properties / flags; FishBot groups are used to control the behaviour of droids.
+	 * Many different objects may have different properties but have the same desired behaviour.
+	 * @param {worldState} state 
+     * @param {DroidObject} droid  
+     * @returns {number} Classified group ID
+     */
+    getDroidFbGroupClassification(state, droid) {
+
+        const flags = classifyGameObject(droid);
+
+        if (flags & OBJ_FLAGS.CONSTRUCTOR) {
+            return ENGINEERING.ENGINEERING_RESERVE;
+        }
+
+        // AVIATION
+        // Air units should be sorted early as AVIATION units could have conflicting flags with LAND FORCES e.g. "OBJ_FLAGS.CANNON_WEAPON"
+        if (flags & OBJ_FLAGS.AVIATION) {
+            return DIVISION.AIR_RESERVE;
+        }
+
+        // LAND FORCES
+        if (flags & (OBJ_FLAGS.INFANTRY)) {
+            return DIVISION.INFANTRY_RESERVE;
+        }
+        
+        if (flags & (OBJ_FLAGS.CANNON_WEAPON)) {        // TODO: future support for other weapon types
+            return DIVISION.HEAVY_CAV_RESERVE;
+        }
+
+        if (flags & (OBJ_FLAGS.MACHINEGUN_WEAPON | OBJ_FLAGS.LASER_WEAPON)) {
+            return DIVISION.LIGHT_CAV_RESERVE;
+        }
+
+        if (flags & OBJ_FLAGS.SHORT_RANGE_ARTILLERY_WEP) {
+            return DIVISION.SHORT_RANGE_FIRE_SUPPORT_RESERVE;
+        }
+
+        if (flags & OBJ_FLAGS.LONG_RANGE_ARTILLERY_WEP) {
+            return DIVISION.LONG_RANGE_FIRE_SUPPORT_RESERVE;
+        }
+
+        if (flags & (OBJ_FLAGS.AA_DIRECT_FIRE_WEAPON | OBJ_FLAGS.AA_ROCKET_WEAPON)) {
+            return DIVISION.AIR_DEFENCE_RESERVE;
+        }
+
+        if (droid.droidType === DROID_SENSOR) {
+            // manually accessing the DroidObject properties as I have run out of bits in OBJ_FLAGS.
+            return DIVISION.SENSOR_RESERVE;		
+        }
+
+        return DIVISION.GENERAL_RESERVE;
+    }
+
+	/**
+     * Adds all newly manufactured droids into a FishBot group. 
 	 * Called directly by the `eventDroidBuilt` handler.
 	 * @param {worldState} state
      * @param {DroidObject} droid 
@@ -623,57 +678,9 @@ class TacticalOperationsCenter {
      */
     setNewDroidGroup(state, droid) {
 
-        const flags = classifyGameObject(droid);
+		const groupID = this.getDroidFbGroupClassification(state, droid);
 
-        if (flags & OBJ_FLAGS.CONSTRUCTOR) {
-            state.g.addDroidToGroup({groupID: ENGINEERING.ENGINEERING_RESERVE, droidID: droid.id});
-            return;
-        }
+		state.g.addDroidToGroup({groupID: groupID, droidID: droid.id});
 
-        // AVIATION
-        // Air units should be sorted early as AVIATION units could have conflicting flags with LAND FORCES e.g. "OBJ_FLAGS.CANNON_WEAPON"
-        if (flags & OBJ_FLAGS.AVIATION) {
-            state.g.addDroidToGroup({groupID: DIVISION.AIR_RESERVE, droidID: droid.id});
-            return;
-        }
-
-        // LAND FORCES
-        if (flags & (OBJ_FLAGS.INFANTRY)) {
-            state.g.addDroidToGroup({groupID: DIVISION.INFANTRY_RESERVE, droidID: droid.id});
-            return;
-        }
-        
-        if (flags & (OBJ_FLAGS.CANNON_WEAPON)) {        // TODO: future support for other weapon types
-            state.g.addDroidToGroup({groupID: DIVISION.HEAVY_CAV_RESERVE, droidID: droid.id});
-			return;
-        }
-
-        if (flags & (OBJ_FLAGS.MACHINEGUN_WEAPON | OBJ_FLAGS.LASER_WEAPON)) {
-            state.g.addDroidToGroup({groupID: DIVISION.LIGHT_CAV_RESERVE, droidID: droid.id});
-			return;
-        }
-
-        if (flags & OBJ_FLAGS.SHORT_RANGE_ARTILLERY_WEP) {
-            state.g.addDroidToGroup({groupID: DIVISION.SHORT_RANGE_FIRE_SUPPORT_RESERVE, droidID: droid.id});
-            return;
-        }
-
-        if (flags & OBJ_FLAGS.LONG_RANGE_ARTILLERY_WEP) {
-            state.g.addDroidToGroup({groupID: DIVISION.LONG_RANGE_FIRE_SUPPORT_RESERVE, droidID: droid.id});
-            return;
-        }
-
-        if (flags & (OBJ_FLAGS.AA_DIRECT_FIRE_WEAPON | OBJ_FLAGS.AA_ROCKET_WEAPON)) {
-            state.g.addDroidToGroup({groupID: DIVISION.AIR_DEFENCE_RESERVE, droidID: droid.id});
-            return;
-        }
-
-        if (droid.droidType === DROID_SENSOR) {
-            // manually accessing the DroidObject properties as I have run out of bits in OBJ_FLAGS.
-            state.g.addDroidToGroup({groupID: DIVISION.SENSOR_RESERVE, droidID: droid.id});		
-            return;
-        }
-
-        state.g.addDroidToGroup({groupID: DIVISION.GENERAL_RESERVE, droidID: droid.id});
-    }
+	}
 }
