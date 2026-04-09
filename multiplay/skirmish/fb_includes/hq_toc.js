@@ -645,10 +645,12 @@ class TacticalOperationsCenter {
         
         if (flags & (OBJ_FLAGS.CANNON_WEAPON)) {        // TODO: future support for other weapon types
             state.g.addDroidToGroup({groupID: DIVISION.HEAVY_CAV_RESERVE, droidID: droid.id});
+			return;
         }
 
         if (flags & (OBJ_FLAGS.MACHINEGUN_WEAPON | OBJ_FLAGS.LASER_WEAPON)) {
             state.g.addDroidToGroup({groupID: DIVISION.LIGHT_CAV_RESERVE, droidID: droid.id});
+			return;
         }
 
         if (flags & OBJ_FLAGS.SHORT_RANGE_ARTILLERY_WEP) {
