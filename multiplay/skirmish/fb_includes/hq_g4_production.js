@@ -66,6 +66,8 @@ class armySupply {
         }
 
 		return {
+            'totalLandUnits': heavyCavalryCount + lightCavalryCount + infantryCount + shortRangeFireSupportCount + airDefenceCount + sensorCount,\
+            'totalAirUnits': vtolCount,
             'heavyCavalry': computeDeficit(MAX_HEAVY_CAVALRY, heavyCavalryCount),
             'lightCavalry': computeDeficit(MAX_LIGHT_CAVALRY, lightCavalryCount),
             'infantry': computeDeficit(MAX_INFANTRY, infantryCount),

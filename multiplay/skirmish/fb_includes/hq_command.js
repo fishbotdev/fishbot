@@ -890,35 +890,44 @@ class CommandCenter {
 			return;
 		}
 
+		// Define hard limits
+		const MAX_TRUCKS = 6;
+		const FB_BRIGADE_SIZE = 29;
+
+		const TRUCK_HARD_LIMIT = getDroidLimit(me, DROID_CONSTRUCT);
+		const COMBAT_UNIT_HARD_LIMIT = getDroidLimit(me, DROID_WEAPON) - Math.min(TRUCK_HARD_LIMIT, MAX_TRUCKS);
+		const LAND_COMBAT_UNIT_LIMIT = Math.min(COMBAT_UNIT_HARD_LIMIT, FB_BRIGADE_SIZE * 4);
+
 		// Get unit deficits
 		const combatBrigadeDeficit = supply.getBrigadeUnitDeficit(state);
 
-		// Decide on whether or not to produce combat cyborgs (infantry)
-		const SHOULD_PRODUCE_INFANTRY = combatBrigadeDeficit['infantry']['absolute'] > 0;
-
-		// Determine if it is possible to build combat vehicles (custom player designs).
-		// FishBot will not build combat vehicles before it can design them, on any difficulty.	
+		// Decide on whether or not to produce combat units
+		// Note: FishBot will not build combat vehicles before it can design them, on any difficulty.	
 		const CAN_DESIGN_COMBAT_UNITS = state.playerInfo[me]["numConstructedHQs"] > 0;
+		const SHOULD_PRODUCE_COMBAT_UNITS = combatBrigadeDeficit['totalLandUnits'] + combatBrigadeDeficit['totalAirUnits'] < COMBAT_UNIT_HARD_LIMIT;
+		const SHOULD_PRODUCE_LAND_COMBAT_UNITS = combatBrigadeDeficit['totalLandUnits'] < LAND_COMBAT_UNIT_LIMIT;
+
+		const SHOULD_PRODUCE_INFANTRY = SHOULD_PRODUCE_LAND_COMBAT_UNITS && combatBrigadeDeficit['infantry']['absolute'] > 0;
+		const SHOULD_PRODUCE_VTOLS = CAN_DESIGN_COMBAT_UNITS && SHOULD_PRODUCE_COMBAT_UNITS;
+		const SHOULD_PRODUCE_LAND_VEHICLES = SHOULD_PRODUCE_LAND_COMBAT_UNITS && CAN_DESIGN_COMBAT_UNITS;
 
 		// Decide on which category of land combat vehicle to produce (basic greedy algorithm)
 		let landVehicleCategory = "heavyCavalry";
-		if (idleFactories.length > 0) {
+		if (SHOULD_PRODUCE_LAND_VEHICLES && idleFactories.length > 0) {
 			const prioritisedCategories = this.#prioritiseLandVehicleCategory(state, combatBrigadeDeficit);
 			landVehicleCategory = prioritisedCategories[0].category;
-
 			// this.#debugPrintLandVehicleCategory(prioritisedCategories);
 			// debug(`${gameTime}: producing: ${landVehicleCategory}`);
 		}
 
 		// Decide on whether or not to produce trucks
-		const MAX_TRUCKS = 6;
 		const myTruckCount = state.playerInfo[me]["numTrucks"];
-		const GAME_TRUCK_HARD_LIMIT = getDroidLimit(me, DROID_CONSTRUCT);
-		const SHOULD_PRODUCE_TRUCKS = MAX_TRUCKS - myTruckCount > 0 && myTruckCount < GAME_TRUCK_HARD_LIMIT;
 		const CYBORG_CONSTRUCTOR_AVAILABLE = cyborgFactories.length > 0;
 
-		let producedTruckThisTick = false;
+		const SHOULD_PRODUCE_TRUCKS = MAX_TRUCKS - myTruckCount > 0 && myTruckCount < TRUCK_HARD_LIMIT;
+		
 		const SINGLE_TRUCK_ONLY = CAN_DESIGN_COMBAT_UNITS;
+		let producedTruckThisTick = false;
 
 		// Run production
 		const DEBUG_PRODUCTION = false;
@@ -945,7 +954,7 @@ class CommandCenter {
 		for (let i=0; i<idleVtolFactories.length; i++) {
 			const factory = idleVtolFactories[i];
 
-			if (CAN_DESIGN_COMBAT_UNITS) {
+			if (SHOULD_PRODUCE_VTOLS) {
 				if (DEBUG_PRODUCTION) debug(`	${gameTime}: produced VTOL`);
 				produceCloseAirSupport(factory);
 			} else {
@@ -965,7 +974,7 @@ class CommandCenter {
 				continue;
 			}
 
-			if (CAN_DESIGN_COMBAT_UNITS) {
+			if (SHOULD_PRODUCE_LAND_VEHICLES) {
 				if (DEBUG_PRODUCTION) debug(`	${gameTime}: produced Land Vehicle Template`);
 				produceLandUnitCategory(landVehicleCategory, factory);
 				return;		
