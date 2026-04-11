@@ -615,72 +615,35 @@ class TacticalOperationsCenter {
 	}
 
 	/**
-     * Returns the FishBot group classification for a specified droid.
-	 * FishBot grouping is distinct from droid properties / flags; FishBot groups are used to control the behaviour of droids.
-	 * Many different objects may have different properties but have the same desired behaviour.
-	 * @param {worldState} state 
-     * @param {DroidObject} droid  
-     * @returns {number} Classified group ID
-     */
-    getDroidFbGroupClassification(state, droid) {
-
-        const flags = classifyGameObject(droid);
-
-        if (flags & OBJ_FLAGS.CONSTRUCTOR) {
-            return ENGINEERING.ENGINEERING_RESERVE;
-        }
-
-        // AVIATION
-        // Air units should be sorted early as AVIATION units could have conflicting flags with LAND FORCES e.g. "OBJ_FLAGS.CANNON_WEAPON"
-        if (flags & OBJ_FLAGS.AVIATION) {
-            return DIVISION.AIR_RESERVE;
-        }
-
-        // LAND FORCES
-        if (flags & (OBJ_FLAGS.INFANTRY)) {
-            return DIVISION.INFANTRY_RESERVE;
-        }
-        
-        if (flags & (OBJ_FLAGS.CANNON_WEAPON)) {        // TODO: future support for other weapon types
-            return DIVISION.HEAVY_CAV_RESERVE;
-        }
-
-        if (flags & (OBJ_FLAGS.MACHINEGUN_WEAPON | OBJ_FLAGS.LASER_WEAPON)) {
-            return DIVISION.LIGHT_CAV_RESERVE;
-        }
-
-        if (flags & OBJ_FLAGS.SHORT_RANGE_ARTILLERY_WEP) {
-            return DIVISION.SHORT_RANGE_FIRE_SUPPORT_RESERVE;
-        }
-
-        if (flags & OBJ_FLAGS.LONG_RANGE_ARTILLERY_WEP) {
-            return DIVISION.LONG_RANGE_FIRE_SUPPORT_RESERVE;
-        }
-
-        if (flags & (OBJ_FLAGS.AA_DIRECT_FIRE_WEAPON | OBJ_FLAGS.AA_ROCKET_WEAPON)) {
-            return DIVISION.AIR_DEFENCE_RESERVE;
-        }
-
-        if (droid.droidType === DROID_SENSOR) {
-            // manually accessing the DroidObject properties as I have run out of bits in OBJ_FLAGS.
-            return DIVISION.SENSOR_RESERVE;		
-        }
-
-        return DIVISION.GENERAL_RESERVE;
-    }
-
-	/**
      * Adds all newly manufactured droids into a FishBot group. 
 	 * Called directly by the `eventDroidBuilt` handler.
 	 * @param {worldState} state
      * @param {DroidObject} droid 
-     * @returns 
+     * @returns {void}
      */
     setNewDroidGroup(state, droid) {
 
-		const groupID = this.getDroidFbGroupClassification(state, droid);
+		const groupID = getDroidFbGroupClassification(droid);
 
 		state.g.addDroidToGroup({groupID: groupID, droidID: droid.id});
+	}
 
+	/**
+	 * Assigns units to a brigade.
+	 * @param {worldState} state 
+	 * @param {*} unitRoster 
+	 * @param {number} brigadeID 
+	 * @returns {void}
+	 */
+	assignUnitsToBrigade(state, unitRoster, brigadeID) {
+		
+		for (let i=0; i<unitRoster.length; i++) {
+			const u = unitRoster[i];
+
+			u['unitList'].forEach(droid => {
+				state.g.removeDroidFromGroup({groupID: u['category'], droidID: droid.id});
+				state.g.addDroidToGroup({groupID: brigadeID, droidID: droid.id});
+			});
+		}
 	}
 }

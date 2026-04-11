@@ -32,8 +32,25 @@ class CommandCenter {
 			This constructor is intended to contain *all* FishBot parameters which change how it behaves.
 		*/
 
+		// Strategic parameters
 		this.OIL_DOMINANCE_PERCENTAGE = 60;
 
+		// Production parameters
+		this.MAX_TRUCKS = 6;
+
+		this.FISHBOT_BRIGADE_COMPOSITION = {
+			'MAX_HEAVY_CAVALRY': 7,
+			'MAX_LIGHT_CAVALRY': 3,
+			'MAX_MORTAR': 5,
+			'MAX_ADA': 3,
+			'MAX_SENSOR': 1,
+			'MAX_INFANTRY': 7
+		}
+		this.TOTAL_UNITS_PER_BRIGADE = Object.values(this.FISHBOT_BRIGADE_COMPOSITION).reduce((a, b) => a + b, 0);
+
+		this.NUMBER_OF_BRIGADES = 4;
+
+		
 		// Task scheduling parameters
 		// Add regular, high priority, high computational load tasks to the start of the list.
 		// The naming convention is important as this allows the handlers in _run.js to run the correct function.
@@ -208,7 +225,7 @@ class CommandCenter {
 			case 'intel_getNearbyGroundTargets':
 
 				// Update location(s) & composition(s) of active combat force(s) -- TEMPORARY IMPLEMENTATION
-				const mainForceLocation = groundForces.getForceMedianLocation(0);
+				const mainForceLocation = groundForces.getForceMedianLocation(DIVISION.FIRST_BCT);
 				this.toc.setForceLocation(state, mainForceLocation);
 
 				if (defined(state.forceLocation)) {
@@ -854,6 +871,261 @@ class CommandCenter {
 
 		return vehicleCategories;
     }
+
+	#printDebugResupply(state) {
+		const BRIGADE_DESIGNATIONS = [DIVISION.FIRST_BCT, DIVISION.SECOND_BCT, DIVISION.THIRD_BCT, DIVISION.FOURTH_BCT, DIVISION.FIFTH_BCT];
+
+		const getReserveUnitsOfType = (groupID) => state.g.enumGroup(groupID);
+
+		const HEAVY_CAV_RESERVE = getReserveUnitsOfType(DIVISION.HEAVY_CAV_RESERVE);
+		const LIGHT_CAV_RESERVE = getReserveUnitsOfType(DIVISION.LIGHT_CAV_RESERVE);
+		const INFANTRY_RESERVE = getReserveUnitsOfType(DIVISION.INFANTRY_RESERVE);
+		const SHORT_RANGE_FIRE_SUPPORT_RESERVE = getReserveUnitsOfType(DIVISION.SHORT_RANGE_FIRE_SUPPORT_RESERVE);
+		const SENSOR_RESERVE = getReserveUnitsOfType(DIVISION.SENSOR_RESERVE);
+		const AIR_DEFENCE_RESERVE = getReserveUnitsOfType(DIVISION.AIR_DEFENCE_RESERVE);
+
+		let printedTitle = false;
+
+		BRIGADE_DESIGNATIONS.forEach(brigadeID => {
+			const deficit = supply.getBrigadeUnitDeficit2(state, brigadeID, this.FISHBOT_BRIGADE_COMPOSITION);
+
+			const brigadeStrength = Math.floor(deficit['totalLandUnits'] / deficit['targetTotalLandUnits'] * 100);
+			if (brigadeStrength !== 0) {
+				if (!printedTitle) {					
+					debug(`==${getOrdinal(me)} DIVISION @ ${gameTime}==`);
+					debug(`\tRESERVE:\t hc: ${HEAVY_CAV_RESERVE.length}, lc: ${LIGHT_CAV_RESERVE.length}, inf: ${INFANTRY_RESERVE.length}, mort: ${SHORT_RANGE_FIRE_SUPPORT_RESERVE.length}, sens: ${SENSOR_RESERVE.length}, ada: ${AIR_DEFENCE_RESERVE.length}`)
+					printedTitle = true;
+				}
+				debug(`\tBrigade ${brigadeID}: ${brigadeStrength} % (${deficit['totalLandUnits']} / ${this.TOTAL_UNITS_PER_BRIGADE} units)`);
+			}
+		});
+
+	}
+
+	runResupplyLogistics(state) {
+		// This function assigns reserve units to active brigade combat teams
+		const getReserveUnitsOfType = (groupID) => state.g.enumGroup(groupID);
+
+		const RECOMBINATION_THRESHOLD = 50;
+		const OVERSTRENGTH_THRESHOLD = 100;
+		const brigadesForRecombination = [];
+		const overstrengthBrigades = [];
+
+		// Check strength of brigades
+		const BRIGADE_IDS = [DIVISION.FIRST_BCT, DIVISION.SECOND_BCT, DIVISION.THIRD_BCT, DIVISION.FOURTH_BCT, DIVISION.FIFTH_BCT].slice(0, this.NUMBER_OF_BRIGADES);
+
+		for (let i=0; i<BRIGADE_IDS.length; i++) {
+
+			// Check reserves
+			// TODO - FIND MORE EFFICIENT WAY TO RECALCULATE REMAINING RESERVE QTY
+			const HEAVY_CAV_RESERVE = getReserveUnitsOfType(DIVISION.HEAVY_CAV_RESERVE);
+			const LIGHT_CAV_RESERVE = getReserveUnitsOfType(DIVISION.LIGHT_CAV_RESERVE);
+			const INFANTRY_RESERVE = getReserveUnitsOfType(DIVISION.INFANTRY_RESERVE);
+			const SHORT_RANGE_FIRE_SUPPORT_RESERVE = getReserveUnitsOfType(DIVISION.SHORT_RANGE_FIRE_SUPPORT_RESERVE);
+			const SENSOR_RESERVE = getReserveUnitsOfType(DIVISION.SENSOR_RESERVE);
+			const AIR_DEFENCE_RESERVE = getReserveUnitsOfType(DIVISION.AIR_DEFENCE_RESERVE);
+
+			const brigadeID = BRIGADE_IDS[i];
+
+  			const deficit = supply.getBrigadeUnitDeficit2(state, brigadeID, this.FISHBOT_BRIGADE_COMPOSITION);
+			
+			// Check brigade strength as percentage
+			const brigadeStrength = Math.floor(deficit['totalLandUnits'] / deficit['targetTotalLandUnits'] * 100);
+
+			// Earmark for dissolution if understrength
+			if (brigadeStrength < RECOMBINATION_THRESHOLD) {
+				brigadesForRecombination.push(brigadeID);
+			}
+
+			// Ignore if overstrength
+			if (brigadeStrength > OVERSTRENGTH_THRESHOLD) {
+				overstrengthBrigades.push(brigadeID);
+			}	
+
+			// Else, reinforce
+			const getReinforcementUnits = (reserveType, reserveID, reserveUnitList) => {
+				return {
+					'category': reserveID,
+					'unitList': reserveUnitList.slice(0, deficit[reserveType]['abs'])
+				};
+			};
+
+			const resupplyUnits = [
+				getReinforcementUnits('heavyCavalry', DIVISION.HEAVY_CAV_RESERVE, HEAVY_CAV_RESERVE),
+				getReinforcementUnits('lightCavalry', DIVISION.LIGHT_CAV_RESERVE, LIGHT_CAV_RESERVE),
+				getReinforcementUnits('infantry', DIVISION.INFANTRY_RESERVE, INFANTRY_RESERVE),
+				getReinforcementUnits('shortRangeArtillery', DIVISION.SHORT_RANGE_FIRE_SUPPORT_RESERVE, SHORT_RANGE_FIRE_SUPPORT_RESERVE),
+				getReinforcementUnits('ADA', DIVISION.AIR_DEFENCE_RESERVE, AIR_DEFENCE_RESERVE),
+				getReinforcementUnits('sensor', DIVISION.SENSOR_RESERVE, SENSOR_RESERVE),
+			];
+
+			this.toc.assignUnitsToBrigade(state, resupplyUnits, brigadeID);
+
+		}
+
+		this.#printDebugResupply(state);
+
+	}
+
+	runProductionLogistics2(state) {
+		/**
+		 * Debug print of idle factories.
+		 * @param {any[]} idleFactoryList 
+		 * @param {string} name 
+		 */
+		const debugPrintIfIdle = (idleFactoryList, name) => {
+			if (idleFactoryList.length > 0) {
+				debug(`	${gameTime}: Idle "${name}": ${idleFactoryList.length}`);
+			}
+		};
+
+		// Check factories for idle
+		const factories = state.playerInfo[me]["normalFactoryFbObjects"];
+		const cyborgFactories = state.playerInfo[me]["cyborgFactoryFbObjects"];
+		const vtolFactories = state.playerInfo[me]["vtolFactoryFbObjects"];
+
+		const idleFactories = getIdleStructureObjects(factories);
+		const idleCyborgFactories = getIdleStructureObjects(cyborgFactories);
+		const idleVtolFactories = getIdleStructureObjects(vtolFactories);
+
+		if (false) {
+			debugPrintIfIdle(idleFactories, "Factory");
+			debugPrintIfIdle(idleCyborgFactories, "Cyborg Factory");
+			debugPrintIfIdle(idleVtolFactories, "VTOL Factory");
+		}
+
+		if (idleFactories.length === 0 && idleCyborgFactories.length === 0 && idleVtolFactories.length === 0) {
+			return;
+		}
+
+		// Define unit limits
+		const TRUCK_HARD_LIMIT = getDroidLimit(me, DROID_CONSTRUCT);
+		const TRUCK_SOFT_LIMIT = Math.min(TRUCK_HARD_LIMIT, this.MAX_TRUCKS);
+
+		const COMBAT_UNIT_HARD_LIMIT = getDroidLimit(me, DROID_WEAPON) - TRUCK_SOFT_LIMIT;
+		// Future: this.NUMBER_OF_BRIGADES should be matched to hard limit
+		const INFANTRY_UNIT_SOFT_LIMIT = this.FISHBOT_BRIGADE_COMPOSITION['MAX_INFANTRY'] * this.NUMBER_OF_BRIGADES;
+		const LAND_VEHICLE_SOFT_LIMIT = (this.TOTAL_UNITS_PER_BRIGADE - this.FISHBOT_BRIGADE_COMPOSITION['MAX_INFANTRY']) * this.NUMBER_OF_BRIGADES;
+		const VTOL_UNIT_HARD_LIMIT = COMBAT_UNIT_HARD_LIMIT - LAND_VEHICLE_SOFT_LIMIT - INFANTRY_UNIT_SOFT_LIMIT;
+
+		// Get player data
+		const HQ_IS_CONSTRUCTED = state.playerInfo[me]["numConstructedHQs"] > 0;
+		const CYBORG_CONSTRUCTOR_AVAILABLE = cyborgFactories.length > 0;
+		const MY_TRUCK_COUNT = state.playerInfo[me]["numTrucks"];
+		const MY_INFANTRY_COUNT = state.playerInfo[me]["numInfantryUnits"];
+		const MY_LAND_VEHICLE_COUNT = (state.playerInfo[me]["numArmourUnits"] + state.playerInfo[me]["numADAUnits"] + 
+									   state.playerInfo[me]["numShortRangeIndirectUnits"] + state.playerInfo[me]["numLongRangeIndirectUnits"]);
+			// todo: add sensor to land vehicle count
+		const MY_VTOL_COUNT = state.playerInfo[me]["numAirUnits"];
+
+		// Compare to limits
+		const HIT_TRUCK_LIMIT = MY_TRUCK_COUNT >= TRUCK_SOFT_LIMIT;
+		const HIT_INFANTRY_LIMIT = MY_INFANTRY_COUNT >= INFANTRY_UNIT_SOFT_LIMIT;
+		const HIT_LAND_VEHICLE_LIMIT = MY_LAND_VEHICLE_COUNT >= LAND_VEHICLE_SOFT_LIMIT;
+		const HIT_AIR_UNIT_LIMIT = MY_VTOL_COUNT >= VTOL_UNIT_HARD_LIMIT;
+
+		if (true) {
+			debug(`==${gameTime}: (FishBot ${me}) PRODUCTION LIMITS==`);
+			debug(`  HIT_TRUCK_LIMIT: ${MY_TRUCK_COUNT} >= ${TRUCK_SOFT_LIMIT}?`);
+			debug(`  HIT_INFANTRY_LIMIT: ${MY_INFANTRY_COUNT} >= ${INFANTRY_UNIT_SOFT_LIMIT}?`);
+			debug(`  HIT_LAND_VEHICLE_LIMIT: ${MY_LAND_VEHICLE_COUNT} >= ${LAND_VEHICLE_SOFT_LIMIT}?`);
+			debug(`  HIT_AIR_UNIT_LIMIT: ${MY_VTOL_COUNT} >= ${VTOL_UNIT_HARD_LIMIT}?`);
+		}
+		
+		// Get unit deficits
+		const BRIGADE_DESIGNATIONS = [DIVISION.FIRST_BCT, DIVISION.SECOND_BCT, DIVISION.THIRD_BCT, DIVISION.FOURTH_BCT];
+
+		let deficit = supply.getBrigadeUnitDeficit2(state, BRIGADE_DESIGNATIONS[0], this.FISHBOT_BRIGADE_COMPOSITION);
+		for (let i=1; i<BRIGADE_DESIGNATIONS.length; i++) {
+			// Test the previous one
+			const brigadeStrength = Math.floor(deficit['totalLandUnits'] / deficit['targetTotalLandUnits'] * 100);
+			if (brigadeStrength < 100) {
+				break;
+			}
+			deficit = supply.getBrigadeUnitDeficit2(state, BRIGADE_DESIGNATIONS[i], this.FISHBOT_BRIGADE_COMPOSITION);
+		}
+		const combatBrigadeDeficit = deficit;
+
+		// Decide on whether or not to produce combat units
+		// Note: FishBot will not build combat vehicles before it can design them, on any difficulty.	
+		const CAN_DESIGN_COMBAT_UNITS = HQ_IS_CONSTRUCTED;
+
+		const SHOULD_PRODUCE_LAND_VEHICLES = CAN_DESIGN_COMBAT_UNITS && !HIT_LAND_VEHICLE_LIMIT;
+		const SHOULD_PRODUCE_INFANTRY = !HIT_INFANTRY_LIMIT;
+		const SHOULD_PRODUCE_VTOLS = CAN_DESIGN_COMBAT_UNITS && !HIT_AIR_UNIT_LIMIT;
+		
+		// Decide on which category of land combat vehicle to produce (basic greedy algorithm)
+		let landVehicleCategory = "heavyCavalry";
+		if (SHOULD_PRODUCE_LAND_VEHICLES && idleFactories.length > 0) {
+			const prioritisedCategories = this.#prioritiseLandVehicleCategory(state, combatBrigadeDeficit);
+			landVehicleCategory = prioritisedCategories[0].category;
+			// this.#debugPrintLandVehicleCategory(prioritisedCategories);
+			// debug(`${gameTime}: producing: ${landVehicleCategory}`);
+		}
+
+		// Decide on whether or not to produce trucks
+		const SHOULD_PRODUCE_TRUCKS = !HIT_TRUCK_LIMIT;
+		const SINGLE_TRUCK_THIS_TICK = CAN_DESIGN_COMBAT_UNITS;
+		let producedTruckThisTick = false;
+
+		// Run production
+		const DEBUG_PRODUCTION = false;
+
+		// Note: for now, we will directly call the tactical level functions
+		for (let i=0; i<idleCyborgFactories.length; i++) {
+			const f = idleCyborgFactories[i];
+
+			if (SHOULD_PRODUCE_TRUCKS && CYBORG_CONSTRUCTOR_AVAILABLE && !producedTruckThisTick) {
+				if (DEBUG_PRODUCTION) debug(`	${gameTime}: produced Combat Engineer`);
+				produceCombatEngineer(f);
+				if (SINGLE_TRUCK_THIS_TICK) {
+					producedTruckThisTick = true;
+				}
+				continue;
+			}
+
+			if (SHOULD_PRODUCE_INFANTRY) {
+				if (DEBUG_PRODUCTION) debug(`	${gameTime}: produced Infantry`);
+				produceInfantry(f);
+			}
+		}
+
+		for (let i=0; i<idleVtolFactories.length; i++) {
+			const factory = idleVtolFactories[i];
+
+			if (SHOULD_PRODUCE_VTOLS) {
+				if (DEBUG_PRODUCTION) debug(`	${gameTime}: produced VTOL`);
+				produceCloseAirSupport(factory);
+			} else {
+				break;
+			}
+		}
+
+		for (let i=0; i<idleFactories.length; i++) {
+			const factory = idleFactories[i];
+
+			if (SHOULD_PRODUCE_TRUCKS && !CYBORG_CONSTRUCTOR_AVAILABLE && !producedTruckThisTick) {
+				if (DEBUG_PRODUCTION) debug(`	${gameTime}: produced Hover Truck`);
+				produceTruck(factory);
+				if (SINGLE_TRUCK_THIS_TICK) {
+					producedTruckThisTick = true;
+				}
+				continue;
+			}
+
+			if (SHOULD_PRODUCE_LAND_VEHICLES) {
+				if (DEBUG_PRODUCTION) debug(`	${gameTime}: produced Land Vehicle Template`);
+				produceLandUnitCategory(landVehicleCategory, factory);
+				return;		
+				// occasionally 'return;' will prevent 2x sensor units from being made 
+				// TODO: better system is to track active production jobs; 
+				// units are usually overmanufactured as production is currently a 'negative-feedback' system
+			} else {
+				break;
+			}
+		}
+
+	}
 
 	/**
 	 * 

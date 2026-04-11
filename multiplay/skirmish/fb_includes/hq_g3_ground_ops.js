@@ -62,19 +62,19 @@ class armyGroundOperations {
 	 * Goal: to find the 'median' droid's (x,y) coordinates
 	 * 1. Get x,y of all owned droids
 	 * 2. Iterate through (x,y) coordinate list, get the median, return as 'x' and 'y'
-	 * @param {*} unused 
+	 * @param {number} brigadeID 
 	 * @returns 
 	 */
-	getForceMedianLocation(unused) {
-		const getUnitsIn = (groupID) => state.g.enumGroup(groupID);
+	getForceMedianLocation(brigadeID) {
+		const getUnitsIn = (brigadeID) => state.g.enumGroup(brigadeID);
 
-		let generalReserve = [...getUnitsIn(DIVISION.HEAVY_CAV_RESERVE), ...getUnitsIn(DIVISION.LIGHT_CAV_RESERVE), ...getUnitsIn(DIVISION.GENERAL_RESERVE)];
-		if (generalReserve.length === 0) {
+		let brigadeUnits = getUnitsIn(brigadeID);
+		if (brigadeUnits.length === 0) {
 			return {"x": baseLocation.x, "y": baseLocation.y};
 		}
 
 		let droidX = [], droidY = [];
-		generalReserve.forEach((droid) => {
+		brigadeUnits.forEach((droid) => {
 			droidX.push(droid.x);
 			droidY.push(droid.y);
 		});	
