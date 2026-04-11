@@ -49,6 +49,7 @@ class CommandCenter {
 		this.TOTAL_UNITS_PER_BRIGADE = Object.values(this.FISHBOT_BRIGADE_COMPOSITION).reduce((a, b) => a + b, 0);
 
 		this.NUMBER_OF_BRIGADES = 4;
+		this.BRIGADE_DESIGNATIONS = [DIVISION.FIRST_BCT, DIVISION.SECOND_BCT, DIVISION.THIRD_BCT, DIVISION.FOURTH_BCT, DIVISION.FIFTH_BCT].slice(0, this.NUMBER_OF_BRIGADES);
 
 		
 		// Task scheduling parameters
@@ -873,7 +874,6 @@ class CommandCenter {
     }
 
 	#printDebugResupply(state) {
-		const BRIGADE_DESIGNATIONS = [DIVISION.FIRST_BCT, DIVISION.SECOND_BCT, DIVISION.THIRD_BCT, DIVISION.FOURTH_BCT, DIVISION.FIFTH_BCT];
 
 		const getReserveUnitsOfType = (groupID) => state.g.enumGroup(groupID);
 
@@ -886,7 +886,7 @@ class CommandCenter {
 
 		let printedTitle = false;
 
-		BRIGADE_DESIGNATIONS.forEach(brigadeID => {
+		this.BRIGADE_DESIGNATIONS.forEach(brigadeID => {
 			const deficit = supply.getBrigadeUnitDeficit2(state, brigadeID, this.FISHBOT_BRIGADE_COMPOSITION);
 
 			const brigadeStrength = Math.floor(deficit['totalLandUnits'] / deficit['targetTotalLandUnits'] * 100);
@@ -911,21 +911,9 @@ class CommandCenter {
 		const brigadesForRecombination = [];
 		const overstrengthBrigades = [];
 
-		// Check strength of brigades
-		const BRIGADE_IDS = [DIVISION.FIRST_BCT, DIVISION.SECOND_BCT, DIVISION.THIRD_BCT, DIVISION.FOURTH_BCT, DIVISION.FIFTH_BCT].slice(0, this.NUMBER_OF_BRIGADES);
+		for (let i=0; i<this.BRIGADE_DESIGNATIONS.length; i++) {
 
-		for (let i=0; i<BRIGADE_IDS.length; i++) {
-
-			// Check reserves
-			// TODO - FIND MORE EFFICIENT WAY TO RECALCULATE REMAINING RESERVE QTY
-			const HEAVY_CAV_RESERVE = getReserveUnitsOfType(DIVISION.HEAVY_CAV_RESERVE);
-			const LIGHT_CAV_RESERVE = getReserveUnitsOfType(DIVISION.LIGHT_CAV_RESERVE);
-			const INFANTRY_RESERVE = getReserveUnitsOfType(DIVISION.INFANTRY_RESERVE);
-			const SHORT_RANGE_FIRE_SUPPORT_RESERVE = getReserveUnitsOfType(DIVISION.SHORT_RANGE_FIRE_SUPPORT_RESERVE);
-			const SENSOR_RESERVE = getReserveUnitsOfType(DIVISION.SENSOR_RESERVE);
-			const AIR_DEFENCE_RESERVE = getReserveUnitsOfType(DIVISION.AIR_DEFENCE_RESERVE);
-
-			const brigadeID = BRIGADE_IDS[i];
+			const brigadeID = this.BRIGADE_DESIGNATIONS[i];
 
   			const deficit = supply.getBrigadeUnitDeficit2(state, brigadeID, this.FISHBOT_BRIGADE_COMPOSITION);
 			
@@ -942,7 +930,15 @@ class CommandCenter {
 				overstrengthBrigades.push(brigadeID);
 			}	
 
-			// Else, reinforce
+			// Else, check reserves & assign reinforcements
+			// TODO - FIND MORE EFFICIENT WAY TO RECALCULATE REMAINING RESERVE QTY
+			const HEAVY_CAV_RESERVE = getReserveUnitsOfType(DIVISION.HEAVY_CAV_RESERVE);
+			const LIGHT_CAV_RESERVE = getReserveUnitsOfType(DIVISION.LIGHT_CAV_RESERVE);
+			const INFANTRY_RESERVE = getReserveUnitsOfType(DIVISION.INFANTRY_RESERVE);
+			const SHORT_RANGE_FIRE_SUPPORT_RESERVE = getReserveUnitsOfType(DIVISION.SHORT_RANGE_FIRE_SUPPORT_RESERVE);
+			const SENSOR_RESERVE = getReserveUnitsOfType(DIVISION.SENSOR_RESERVE);
+			const AIR_DEFENCE_RESERVE = getReserveUnitsOfType(DIVISION.AIR_DEFENCE_RESERVE);
+
 			const getReinforcementUnits = (reserveType, reserveID, reserveUnitList) => {
 				return {
 					'category': reserveID,
@@ -1033,16 +1029,14 @@ class CommandCenter {
 		}
 		
 		// Get unit deficits
-		const BRIGADE_DESIGNATIONS = [DIVISION.FIRST_BCT, DIVISION.SECOND_BCT, DIVISION.THIRD_BCT, DIVISION.FOURTH_BCT];
-
-		let deficit = supply.getBrigadeUnitDeficit2(state, BRIGADE_DESIGNATIONS[0], this.FISHBOT_BRIGADE_COMPOSITION);
-		for (let i=1; i<BRIGADE_DESIGNATIONS.length; i++) {
+		let deficit = supply.getBrigadeUnitDeficit2(state, this.BRIGADE_DESIGNATIONS[0], this.FISHBOT_BRIGADE_COMPOSITION);
+		for (let i=1; i<this.BRIGADE_DESIGNATIONS.length; i++) {
 			// Test the previous one
 			const brigadeStrength = Math.floor(deficit['totalLandUnits'] / deficit['targetTotalLandUnits'] * 100);
 			if (brigadeStrength < 100) {
 				break;
 			}
-			deficit = supply.getBrigadeUnitDeficit2(state, BRIGADE_DESIGNATIONS[i], this.FISHBOT_BRIGADE_COMPOSITION);
+			deficit = supply.getBrigadeUnitDeficit2(state, this.BRIGADE_DESIGNATIONS[i], this.FISHBOT_BRIGADE_COMPOSITION);
 		}
 		const combatBrigadeDeficit = deficit;
 
