@@ -1024,7 +1024,7 @@ class CommandCenter {
 		const HIT_LAND_VEHICLE_LIMIT = MY_LAND_VEHICLE_COUNT >= LAND_VEHICLE_SOFT_LIMIT;
 		const HIT_AIR_UNIT_LIMIT = MY_VTOL_COUNT >= VTOL_UNIT_HARD_LIMIT;
 
-		if (true) {
+		if (false) {
 			debug(`==${gameTime}: (FishBot ${me}) PRODUCTION LIMITS==`);
 			debug(`  HIT_TRUCK_LIMIT: ${MY_TRUCK_COUNT} >= ${TRUCK_SOFT_LIMIT}?`);
 			debug(`  HIT_INFANTRY_LIMIT: ${MY_INFANTRY_COUNT} >= ${INFANTRY_UNIT_SOFT_LIMIT}?`);
@@ -1125,138 +1125,6 @@ class CommandCenter {
 			}
 		}
 
-	}
-
-	/**
-	 * 
-	 * @param {worldState} state 
-	 */
-	runProductionLogistics(state) {
-		/**
-		 * Debug print of idle factories.
-		 * @param {any[]} idleFactoryList 
-		 * @param {string} name 
-		 */
-		const debugPrintIfIdle = (idleFactoryList, name) => {
-			if (idleFactoryList.length > 0) {
-				debug(`	${gameTime}: Idle "${name}": ${idleFactoryList.length}`);
-			}
-		};
-
-		// Check factories for idle
-		const factories = state.playerInfo[me]["normalFactoryFbObjects"];
-		const cyborgFactories = state.playerInfo[me]["cyborgFactoryFbObjects"];
-		const vtolFactories = state.playerInfo[me]["vtolFactoryFbObjects"];
-
-		const idleFactories = getIdleStructureObjects(factories);
-		const idleCyborgFactories = getIdleStructureObjects(cyborgFactories);
-		const idleVtolFactories = getIdleStructureObjects(vtolFactories);
-
-		if (false) {
-			debugPrintIfIdle(idleFactories, "Factory");
-			debugPrintIfIdle(idleCyborgFactories, "Cyborg Factory");
-			debugPrintIfIdle(idleVtolFactories, "VTOL Factory");
-		}
-
-		if (idleFactories.length === 0 && idleCyborgFactories.length === 0 && idleVtolFactories.length === 0) {
-			return;
-		}
-
-		// Define hard limits
-		const MAX_TRUCKS = 6;
-		const FB_BRIGADE_SIZE = 29;
-
-		const TRUCK_HARD_LIMIT = getDroidLimit(me, DROID_CONSTRUCT);
-		const COMBAT_UNIT_HARD_LIMIT = getDroidLimit(me, DROID_WEAPON) - Math.min(TRUCK_HARD_LIMIT, MAX_TRUCKS);
-		const LAND_COMBAT_UNIT_LIMIT = Math.min(COMBAT_UNIT_HARD_LIMIT, FB_BRIGADE_SIZE * 4);
-
-		// Get unit deficits
-		const combatBrigadeDeficit = supply.getBrigadeUnitDeficit(state);
-
-		// Decide on whether or not to produce combat units
-		// Note: FishBot will not build combat vehicles before it can design them, on any difficulty.	
-		const CAN_DESIGN_COMBAT_UNITS = state.playerInfo[me]["numConstructedHQs"] > 0;
-		const SHOULD_PRODUCE_COMBAT_UNITS = combatBrigadeDeficit['totalLandUnits'] + combatBrigadeDeficit['totalAirUnits'] < COMBAT_UNIT_HARD_LIMIT;
-		const SHOULD_PRODUCE_LAND_COMBAT_UNITS = combatBrigadeDeficit['totalLandUnits'] < LAND_COMBAT_UNIT_LIMIT;
-
-		const SHOULD_PRODUCE_INFANTRY = SHOULD_PRODUCE_LAND_COMBAT_UNITS && combatBrigadeDeficit['infantry']['absolute'] > 0;
-		const SHOULD_PRODUCE_VTOLS = CAN_DESIGN_COMBAT_UNITS && SHOULD_PRODUCE_COMBAT_UNITS;
-		const SHOULD_PRODUCE_LAND_VEHICLES = SHOULD_PRODUCE_LAND_COMBAT_UNITS && CAN_DESIGN_COMBAT_UNITS;
-
-		// Decide on which category of land combat vehicle to produce (basic greedy algorithm)
-		let landVehicleCategory = "heavyCavalry";
-		if (SHOULD_PRODUCE_LAND_VEHICLES && idleFactories.length > 0) {
-			const prioritisedCategories = this.#prioritiseLandVehicleCategory(state, combatBrigadeDeficit);
-			landVehicleCategory = prioritisedCategories[0].category;
-			// this.#debugPrintLandVehicleCategory(prioritisedCategories);
-			// debug(`${gameTime}: producing: ${landVehicleCategory}`);
-		}
-
-		// Decide on whether or not to produce trucks
-		const myTruckCount = state.playerInfo[me]["numTrucks"];
-		const CYBORG_CONSTRUCTOR_AVAILABLE = cyborgFactories.length > 0;
-
-		const SHOULD_PRODUCE_TRUCKS = MAX_TRUCKS - myTruckCount > 0 && myTruckCount < TRUCK_HARD_LIMIT;
-		
-		const SINGLE_TRUCK_ONLY = CAN_DESIGN_COMBAT_UNITS;
-		let producedTruckThisTick = false;
-
-		// Run production
-		const DEBUG_PRODUCTION = false;
-
-		// Note: for now, we will directly call the tactical level functions
-		for (let i=0; i<idleCyborgFactories.length; i++) {
-			const f = idleCyborgFactories[i];
-
-			if (SHOULD_PRODUCE_TRUCKS && CYBORG_CONSTRUCTOR_AVAILABLE && !producedTruckThisTick) {
-				if (DEBUG_PRODUCTION) debug(`	${gameTime}: produced Combat Engineer`);
-				produceCombatEngineer(f);
-				if (SINGLE_TRUCK_ONLY) {
-					producedTruckThisTick = true;
-				}
-				continue;
-			}
-
-			if (SHOULD_PRODUCE_INFANTRY) {
-				if (DEBUG_PRODUCTION) debug(`	${gameTime}: produced Infantry`);
-				produceInfantry(f);
-			}
-		}
-
-		for (let i=0; i<idleVtolFactories.length; i++) {
-			const factory = idleVtolFactories[i];
-
-			if (SHOULD_PRODUCE_VTOLS) {
-				if (DEBUG_PRODUCTION) debug(`	${gameTime}: produced VTOL`);
-				produceCloseAirSupport(factory);
-			} else {
-				break;
-			}
-		}
-
-		for (let i=0; i<idleFactories.length; i++) {
-			const factory = idleFactories[i];
-
-			if (SHOULD_PRODUCE_TRUCKS && !CYBORG_CONSTRUCTOR_AVAILABLE && !producedTruckThisTick) {
-				if (DEBUG_PRODUCTION) debug(`	${gameTime}: produced Hover Truck`);
-				produceTruck(factory);
-				if (SINGLE_TRUCK_ONLY) {
-					producedTruckThisTick = true;
-				}
-				continue;
-			}
-
-			if (SHOULD_PRODUCE_LAND_VEHICLES) {
-				if (DEBUG_PRODUCTION) debug(`	${gameTime}: produced Land Vehicle Template`);
-				produceLandUnitCategory(landVehicleCategory, factory);
-				return;		
-				// occasionally 'return;' will prevent 2x sensor units from being made 
-				// TODO: better system is to track active production jobs; 
-				// units are usually overmanufactured as production is currently a 'negative-feedback' system
-			} else {
-				break;
-			}
-		}
 	}
 
 	/**

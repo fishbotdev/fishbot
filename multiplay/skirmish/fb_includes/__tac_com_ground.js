@@ -108,59 +108,48 @@ function retreatToBase(generalReserve, infantryReserve, fireSupportReserve, airD
 */
 function groundForceAttack({state, directFireTarget, fireSupportTarget, adaTarget}) {
 
+	const brigadeID = DIVISION.FIRST_BCT;
 	const forceLocation = state.forceLocation;
 
 	const getUnitsIn = (groupID) => state.g.enumGroup(groupID);
 
-	let ARMOUR_UNITS = [];
-	let INFANTRY_UNITS = [];
-	let SHORT_RANGE_FIRE_SUPPORT = [];
-	let AA_UNITS = [];
-	let SENSOR_UNITS = [];
+	const ARMOUR_UNITS = [];
+	const INFANTRY_UNITS = [];
+	const SHORT_RANGE_FIRE_SUPPORT = [];
+	const AA_UNITS = [];
+	const SENSOR_UNITS = [];
+
+	const brigadeUnits = getUnitsIn(brigadeID);		
+	brigadeUnits.forEach(droid => {
+		const category = getDroidFbGroupClassification(droid);
+		switch(category) {
+			case DIVISION.HEAVY_CAV_RESERVE:
+			case DIVISION.LIGHT_CAV_RESERVE:
+				ARMOUR_UNITS.push(droid);
+				break;
+			case DIVISION.INFANTRY_RESERVE:
+				INFANTRY_UNITS.push(droid);
+				break;
+			case DIVISION.SHORT_RANGE_FIRE_SUPPORT_RESERVE:
+				SHORT_RANGE_FIRE_SUPPORT.push(droid);
+				break;
+			case DIVISION.SENSOR_RESERVE:
+				SENSOR_UNITS.push(droid);
+				break;
+			case DIVISION.AIR_DEFENCE_RESERVE:
+				AA_UNITS.push(droid);
+				break;
+			default:
+				debug(`tac_com_ground -> brigadeUnit classifier failed for ${droid.name} (${droid.id})`);
+				break;
+		}
+	});
 
 	if (false) {
-		ARMOUR_UNITS = [...getUnitsIn(DIVISION.HEAVY_CAV_RESERVE), ...getUnitsIn(DIVISION.LIGHT_CAV_RESERVE), ...getUnitsIn(DIVISION.GENERAL_RESERVE)];
-		INFANTRY_UNITS = getUnitsIn(DIVISION.INFANTRY_RESERVE);
-		SHORT_RANGE_FIRE_SUPPORT = getUnitsIn(DIVISION.SHORT_RANGE_FIRE_SUPPORT_RESERVE);		// TODO: add long range fire support
-		AA_UNITS = getUnitsIn(DIVISION.AIR_DEFENCE_RESERVE);
-		SENSOR_UNITS = getUnitsIn(DIVISION.SENSOR_RESERVE);		
-	} else {
-		// To support 'brigades' (subdivisions of army)
-		const brigadeID = DIVISION.FIRST_BCT;
-
-		const brigadeUnits = state.g.enumGroup(brigadeID);		
-		brigadeUnits.forEach(droid => {
-			const category = getDroidFbGroupClassification(droid);
-			switch(category) {
-				case DIVISION.HEAVY_CAV_RESERVE:
-				case DIVISION.LIGHT_CAV_RESERVE:
-					ARMOUR_UNITS.push(droid);
-					break;
-				case DIVISION.INFANTRY_RESERVE:
-					INFANTRY_UNITS.push(droid);
-					break;
-				case DIVISION.SHORT_RANGE_FIRE_SUPPORT_RESERVE:
-					SHORT_RANGE_FIRE_SUPPORT.push(droid);
-					break;
-				case DIVISION.SENSOR_RESERVE:
-					SENSOR_UNITS.push(droid);
-					break;
-				case DIVISION.AIR_DEFENCE_RESERVE:
-					AA_UNITS.push(droid);
-					break;
-				default:
-					debug(`tac_com_ground -> brigadeUnit classifier failed for ${droid.name} (${droid.id})`);
-					break;
-			}
-		});
-
-		if (false) {
-			debug(`ARMOUR_UNITS: ${ARMOUR_UNITS.length}`);
-			debug(`INFANTRY_UNITS: ${INFANTRY_UNITS.length}`);
-			debug(`SHORT_RANGE_FIRE_SUPPORT: ${SHORT_RANGE_FIRE_SUPPORT.length}`);
-			debug(`AA_UNITS: ${AA_UNITS.length}`);
-		}
-
+		debug(`ARMOUR_UNITS: ${ARMOUR_UNITS.length}`);
+		debug(`INFANTRY_UNITS: ${INFANTRY_UNITS.length}`);
+		debug(`SHORT_RANGE_FIRE_SUPPORT: ${SHORT_RANGE_FIRE_SUPPORT.length}`);
+		debug(`AA_UNITS: ${AA_UNITS.length}`);
 	}
 
 	const rtb = () => retreatToBase(ARMOUR_UNITS, INFANTRY_UNITS, SHORT_RANGE_FIRE_SUPPORT, AA_UNITS, SENSOR_UNITS);
