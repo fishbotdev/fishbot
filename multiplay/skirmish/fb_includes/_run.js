@@ -61,7 +61,7 @@ function runLogistics() {
 			hq.runConstructionLogistics(state);
 
 			hq.runResupplyLogistics(state);				// assigns reserve units to brigades
-			hq.runProductionLogistics2(state);			// schedules production to replenish reserves
+			hq.runProductionLogistics(state);			// schedules production to replenish reserves
 
 			hq.runResearchLogistics(state);
 			

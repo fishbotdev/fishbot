@@ -41,16 +41,16 @@ class CommandCenter {
 		this.MAX_TRUCKS = 6;
 
 		this.FISHBOT_BRIGADE_COMPOSITION = {
-			'MAX_HEAVY_CAVALRY': 7,
-			'MAX_LIGHT_CAVALRY': 3,
-			'MAX_MORTAR': 5,
-			'MAX_ADA': 3,
+			'MAX_HEAVY_CAVALRY': 5,
+			'MAX_LIGHT_CAVALRY': 2,
+			'MAX_MORTAR': 4,
+			'MAX_ADA': 2,
 			'MAX_SENSOR': 1,
-			'MAX_INFANTRY': 7
+			'MAX_INFANTRY': 5
 		}
 		this.TOTAL_UNITS_PER_BRIGADE = Object.values(this.FISHBOT_BRIGADE_COMPOSITION).reduce((a, b) => a + b, 0);
 
-		this.NUMBER_OF_BRIGADES = 4;
+		this.NUMBER_OF_BRIGADES = 5;
 		this.BRIGADE_DESIGNATIONS = [DIVISION.FIRST_BCT, DIVISION.SECOND_BCT, DIVISION.THIRD_BCT, DIVISION.FOURTH_BCT, DIVISION.FIFTH_BCT].slice(0, this.NUMBER_OF_BRIGADES);
 
 		
@@ -1001,7 +1001,7 @@ class CommandCenter {
 
 	}
 
-	runProductionLogistics2(state) {
+	runProductionLogistics(state) {
 		/**
 		 * Debug print of idle factories.
 		 * @param {any[]} idleFactoryList 
