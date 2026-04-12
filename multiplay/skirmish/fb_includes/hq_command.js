@@ -489,7 +489,7 @@ class CommandCenter {
 	/**
 	 * 
 	 * @param {worldState} state 
-	 * @param {*} groupPosition 
+	 * @param {*} groupPositions 
 	 * @param {*} nearbyTargetCount 
 	 * @param {*} airRaidTargets 
 	 * @param {*} casTargets 
@@ -499,8 +499,8 @@ class CommandCenter {
 	 */
 	#prioritiseAviationTargets(state, groupPositions, nearbyTargetCount, airRaidTargets, casTargets, industrialTargets, adaTargets) {
 		
-		const GROUP_POSITIONS = [];
-		groupPositions.forEach(p => GROUP_POSITIONS.push(p['location']));
+		// const GROUP_POSITIONS = [];
+		// groupPositions.forEach(p => GROUP_POSITIONS.push(p['location']));
 
 		const adaThreat = state.fields.adaThreat;
 		const cellSize = state.grid.cellSize;
@@ -603,15 +603,15 @@ class CommandCenter {
 				}
 			}
 
-			const nearPosition = (gameObj, groupPos) => {return distSq(gameObj.x, groupPos.x, gameObj.y, groupPos.y) <= this.TARGET_SEARCH_RADIUS ** 2};
+			// const nearPosition = (gameObj, groupPos) => {return distSq(gameObj.x, groupPos.x, gameObj.y, groupPos.y) <= this.TARGET_SEARCH_RADIUS ** 2};
 
-			if (c.missionType === MISSION_TYPE.CAS_STRIKE) {
-				if (!GROUP_POSITIONS.some(p => nearPosition(currObj, p))) {
-					// debug(`aborted CAS_STRIKE: ${c.target.name} @ ${gameTime}, too far away`);
-					c.missionStatus = MISSION_STATUS.ABORT;					
-					continue;
-				}
-			}
+			// if (c.missionType === MISSION_TYPE.CAS_STRIKE) {
+			// 	if (!GROUP_POSITIONS.some(p => nearPosition(currObj, p))) {
+			// 		// debug(`aborted CAS_STRIKE: ${c.target.name} @ ${gameTime}, too far away`);
+			// 		c.missionStatus = MISSION_STATUS.ABORT;					
+			// 		continue;
+			// 	}
+			// }
 		}
 		
 		// Remove already active missions (inefficient, loops through the list again)
