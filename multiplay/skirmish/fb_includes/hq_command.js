@@ -34,8 +34,10 @@ class CommandCenter {
 
 		// Strategic parameters
 		this.OIL_DOMINANCE_PERCENTAGE = 60;
+		this.TARGET_SEARCH_RADIUS = 25;
+		this.FORCE_IMMEDIATE_RADIUS = 16;
 
-		// Production parameters
+		// Production logistics parameters
 		this.MAX_TRUCKS = 6;
 
 		this.FISHBOT_BRIGADE_COMPOSITION = {
@@ -225,14 +227,37 @@ class CommandCenter {
 			
 			case 'intel_getNearbyGroundTargets':
 
-				// Update location(s) & composition(s) of active combat force(s) -- TEMPORARY IMPLEMENTATION
-				const mainForceLocation = groundForces.getForceMedianLocation(DIVISION.FIRST_BCT);
-				this.toc.setForceLocation(state, mainForceLocation);
+				// Update location(s) & composition(s) of active combat force(s)
+				const forceLocations = [];
 
-				if (defined(state.forceLocation)) {
-					const nearbyGroundTargets = intelligence.proposeTargetsInRadius2(state, state.forceLocation, 20, 16);		
-					hq.toc.setNearbyGroundTargets(state, nearbyGroundTargets);
-				}
+				this.BRIGADE_DESIGNATIONS.forEach(brigadeID => {
+					forceLocations.push({
+						'brigadeID': brigadeID,
+						'location': groundForces.getForceMedianLocation(brigadeID)
+					});
+				});
+				this.toc.setForceLocations(state, forceLocations);
+
+				const nearbyGroundTargets = [];
+				state.forceLocations.forEach(fLoc => {
+
+					// Check for already-computed entries
+					// const index = nearbyGroundTargets.indexOf(l => l.x === fLoc['location'].x && l.y === fLoc['location'].y);
+					// if (index >= 0) {
+					// 	debug(`Reused previously computed target list for ${fLoc['brigadeID']}.`);
+					// } else {
+						
+					// }					
+
+					const targetInfo = {
+						'brigadeID': fLoc['brigadeID'],
+						'targets' : intelligence.proposeTargetsInRadius2(state, fLoc['location'], this.TARGET_SEARCH_RADIUS, this.FORCE_IMMEDIATE_RADIUS)
+					};
+
+					nearbyGroundTargets.push(targetInfo);						
+				});
+
+				hq.toc.setNearbyGroundTargets(state, nearbyGroundTargets);
 				break;
 			
 			case 'intel_checkCampaignStatus':
@@ -271,7 +296,7 @@ class CommandCenter {
 			"directFireTarget": undefined, 
 			"fireSupportTarget": undefined,
 			"adaTarget": undefined, 
-			"casTargets": undefined,
+			"casTargets": [],
 			"targetsInImmediateRadius": 0
 		};
 
@@ -357,7 +382,7 @@ class CommandCenter {
 		}
 
 		// CAS
-		output["casTargets"] = [...targetInfo["enemyIndirectFire"], ...targetInfo["enemyArmor"]];
+		output["casTargets"].push(...targetInfo["enemyIndirectFire"], ...targetInfo["enemyArmor"]);
 
 		// FIRE SUPPORT
 		const EFFECTIVE_SQ_FS_RADIUS = 12 ** 2;
@@ -472,9 +497,12 @@ class CommandCenter {
 	 * @param {*} adaTargets 
 	 * @returns {Array}
 	 */
-	#prioritiseAviationTargets(state, groupPosition, nearbyTargetCount, airRaidTargets, casTargets, industrialTargets, adaTargets) {
-		const adaThreat = state.fields.adaThreat;
+	#prioritiseAviationTargets(state, groupPositions, nearbyTargetCount, airRaidTargets, casTargets, industrialTargets, adaTargets) {
+		
+		const GROUP_POSITIONS = [];
+		groupPositions.forEach(p => GROUP_POSITIONS.push(p['location']));
 
+		const adaThreat = state.fields.adaThreat;
 		const cellSize = state.grid.cellSize;
 		const IS_OIL_DOMINANT = state.oilDominance;
 		const NUM_AIRCRAFT = state.playerInfo[me].numAirUnits;		// TODO: formalise if this is an expected access pattern
@@ -543,19 +571,19 @@ class CommandCenter {
 										filter(m => OFFENSIVE_MISSION_TYPES.includes(m.missionType));
 
 		let activeTargetIDs = [];
-		const CAS_RADIUS = 25;
 		const threatThreshold = 2;		// Set no-fly regions
 
 		const medPriorityMissions = [MISSION_TYPE.AIR_RAID, MISSION_TYPE.DAS_STRIKE];
 
 		// debug(`activeMissionIDs`);
+
 		for (let i=0; i<activeMissions.length; i++) {
 			let c = activeMissions[i];
 			activeTargetIDs.push(c.target.id);
 			// debug(`	${c.target.id} ${c.target.name}`);
 			
 			const currObj = getObject(c.target.type, c.target.player, c.target.id);
-			if (!defined(currObj) || !defined(groupPosition)) {
+			if (!defined(currObj)) {
 				continue;
 			}
 
@@ -575,8 +603,10 @@ class CommandCenter {
 				}
 			}
 
+			const nearPosition = (gameObj, groupPos) => {return distSq(gameObj.x, groupPos.x, gameObj.y, groupPos.y) <= this.TARGET_SEARCH_RADIUS ** 2};
+
 			if (c.missionType === MISSION_TYPE.CAS_STRIKE) {
-				if (distSq(currObj.x, groupPosition.x, currObj.y, groupPosition.y) >= CAS_RADIUS ** 2) {
+				if (!GROUP_POSITIONS.some(p => nearPosition(currObj, p))) {
 					// debug(`aborted CAS_STRIKE: ${c.target.name} @ ${gameTime}, too far away`);
 					c.missionStatus = MISSION_STATUS.ABORT;					
 					continue;
@@ -630,7 +660,7 @@ class CommandCenter {
 	runCombatOperations(state) {
 
 		const nearbyGroundTargets = state.nearbyGroundTargets;
-		const forceLocation = state.forceLocation;
+		const forceLocations = state.forceLocations;
 		const raidTargets = state.aviationTargets['raidTargets'];
 		const productionTargets = state.aviationTargets['productionTargets'];
 		const adaTargets = state.aviationTargets['adaTargets'];
@@ -643,25 +673,33 @@ class CommandCenter {
 
 		if (readyToAttack) {
 			// Prioritise & assign targets
-			const groundTargets = this.#prioritiseLandForceTargets(nearbyGroundTargets, forceLocation);
+			this.BRIGADE_DESIGNATIONS.forEach((brigadeID, i) => {
+				const brigadeTargets = nearbyGroundTargets[i]['targets'];
+				const brigadeLocation = forceLocations[i]['location'];
 
-			// Attack ground targets; HACK: directly calls tactical level function
-			groundForceAttack({
-				"state": state, 
-				"directFireTarget": groundTargets["directFireTarget"], 
-				"fireSupportTarget": groundTargets["fireSupportTarget"],
-				"adaTarget": groundTargets["adaTarget"]
-			});
+				const groundTargets = this.#prioritiseLandForceTargets(brigadeTargets, brigadeLocation);
 
-			// Extract further information for aviation missions
-			if (defined(groundTargets["casTargets"])) {
+				// TODO: use mission management system once this mission can be conducted independently on brigade-level
+				moveBrigadeToAttack(
+					state, 
+					brigadeID, 
+					brigadeLocation,
+					groundTargets["directFireTarget"], 
+					groundTargets["fireSupportTarget"], 
+					groundTargets["adaTarget"]
+				);
+
+				// Extract further information for aviation missions
 				casTargets.push(...groundTargets["casTargets"]);
-			}
-			numTargetsInImmediateRadius = groundTargets["targetsInImmediateRadius"];
+
+				// Temporary: get max targets to decide if CAS should be prioritised for all brigades
+				numTargetsInImmediateRadius = Math.max(groundTargets["targetsInImmediateRadius"], numTargetsInImmediateRadius);
+					
+			});
 		}
 
 		const aviationTargets = this.#prioritiseAviationTargets(state, 
-			forceLocation, 
+			forceLocations, 
 			numTargetsInImmediateRadius, 
 			raidTargets, 
 			casTargets, 
@@ -959,7 +997,7 @@ class CommandCenter {
 
 		}
 
-		this.#printDebugResupply(state);
+		// this.#printDebugResupply(state);
 
 	}
 

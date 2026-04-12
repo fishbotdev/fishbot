@@ -584,17 +584,17 @@ class TacticalOperationsCenter {
 	/**
 	 * This function writes `forceLocation` to `state`.
 	 * @param {worldState} state
-	 * @param {Object} forceLocation
+	 * @param {any[]} forceLocations
 	 * @returns {void}
 	 */
-	setForceLocation(state, forceLocation) {
-		state.forceLocation = forceLocation;
+	setForceLocations(state, forceLocations) {
+		state.forceLocations = forceLocations;
 	}
 
 	/**
 	 * This function writes `nearbyGroundTargets` to `state`.
 	 * @param {worldState} state
-	 * @param {Object} nearbyGroundTargets
+	 * @param {any[]} nearbyGroundTargets
 	 * @returns {void}
 	 */
 	setNearbyGroundTargets(state, nearbyGroundTargets) {

@@ -104,14 +104,11 @@ function retreatToBase(generalReserve, infantryReserve, fireSupportReserve, airD
 }
 
 /*
-    TAC SOP: ATTACK SPECIFIED TARGETS
+    TAC SOP: MOVE A BRIGADE COMBAT TEAM (BCT) TO ATTACK A TARGET
 */
-function groundForceAttack({state, directFireTarget, fireSupportTarget, adaTarget}) {
+function moveBrigadeToAttack(state, brigadeID, brigadeLocation, directFireTarget, fireSupportTarget, adaTarget) {
 
-	const brigadeID = DIVISION.FIRST_BCT;
-	const forceLocation = state.forceLocation;
-
-	const getUnitsIn = (groupID) => state.g.enumGroup(groupID);
+	const forceLocation = brigadeLocation;
 
 	const ARMOUR_UNITS = [];
 	const INFANTRY_UNITS = [];
@@ -119,6 +116,7 @@ function groundForceAttack({state, directFireTarget, fireSupportTarget, adaTarge
 	const AA_UNITS = [];
 	const SENSOR_UNITS = [];
 
+	const getUnitsIn = (groupID) => state.g.enumGroup(groupID);
 	const brigadeUnits = getUnitsIn(brigadeID);		
 	brigadeUnits.forEach(droid => {
 		const category = getDroidFbGroupClassification(droid);
