@@ -151,9 +151,10 @@ function moveBrigadeToAttack(state, brigadeID, brigadeLocation, directFireTarget
 	}
 
 	const rtb = () => retreatToBase(ARMOUR_UNITS, INFANTRY_UNITS, SHORT_RANGE_FIRE_SUPPORT, AA_UNITS, SENSOR_UNITS);
+	const moveToClosestDroid = (droid) => orderDroidLoc(droid, DORDER_MOVE, closestDroidToTarget.x, closestDroidToTarget.y);
 
 	if (ARMOUR_UNITS.length === 0) {
-		// rtb();		
+		rtb();		
 		return;
 	}
 
@@ -171,6 +172,7 @@ function moveBrigadeToAttack(state, brigadeID, brigadeLocation, directFireTarget
 	}
 
 	const _distSqToClosestDroid = (droid) => distSq(droid.x, closestDroidToTarget.x, droid.y, closestDroidToTarget.y);
+
 		
 	// MAIN ASSAULT UNITS
 	for (let i=0; i<ARMOUR_UNITS.length; i++) {
@@ -198,7 +200,7 @@ function moveBrigadeToAttack(state, brigadeID, brigadeLocation, directFireTarget
 		if (_distSqToClosestDroid(droid) < 6 ** 2) {
 			attackTarget(droid, currDirectFireTarget);
 		} else {
-			orderDroidLoc(droid, DORDER_MOVE, closestDroidToTarget.x, closestDroidToTarget.y);
+			moveToClosestDroid(droid);
 		}
 	}
 
@@ -208,14 +210,14 @@ function moveBrigadeToAttack(state, brigadeID, brigadeLocation, directFireTarget
 		if (_distSqToClosestDroid(droid) <= 6 ** 2) {
 			attackTarget(droid, currDirectFireTarget);
 		} else {
-			orderDroidLoc(droid, DORDER_MOVE, closestDroidToTarget.x, closestDroidToTarget.y);
+			moveToClosestDroid(droid);
 		}
 	}
 
 	// SENSOR UNITS
 	SENSOR_UNITS.forEach((droid) => {
 		if (_distSqToClosestDroid(droid) > 5 ** 2) {
-			orderDroidLoc(droid, DORDER_MOVE, closestDroidToTarget.x, closestDroidToTarget.y);
+			moveToClosestDroid(droid);
 		} else {
 			orderDroidLoc(droid, DORDER_MOVE, baseLocation.x, baseLocation.y);
 		}
@@ -232,7 +234,7 @@ function moveBrigadeToAttack(state, brigadeID, brigadeLocation, directFireTarget
 			attackTarget(droid, currAdaTarget);		
 		} else {
 			if (_distSqToClosestDroid(droid) > 5 ** 2) {
-				orderDroidLoc(droid, DORDER_MOVE, closestDroidToTarget.x, closestDroidToTarget.y);
+				moveToClosestDroid(droid);
 			} else {
 				orderDroidLoc(droid, DORDER_MOVE, baseLocation.x, baseLocation.y);
 			}
@@ -246,7 +248,7 @@ function moveBrigadeToAttack(state, brigadeID, brigadeLocation, directFireTarget
 	}
 
 	if (!defined(currFireSupportTarget)) {			
-		SHORT_RANGE_FIRE_SUPPORT.forEach(droid => orderDroidLoc(droid, DORDER_MOVE, closestDroidToTarget.x, closestDroidToTarget.y));
+		SHORT_RANGE_FIRE_SUPPORT.forEach(moveToClosestDroid);
 	} else {
 
 		const closestDroidDistSqToBase = _distSqToClosestDroid(baseLocation);
@@ -261,7 +263,7 @@ function moveBrigadeToAttack(state, brigadeID, brigadeLocation, directFireTarget
 			if (MORTAR_CLOSEST_TO_BASE || ENEMY_CLOSEST_TO_BASE) {
 				attackTarget(droid, currFireSupportTarget);	
 			} else {
-				orderDroidLoc(droid, DORDER_MOVE, baseLocation.x, baseLocation.y);
+				moveToClosestDroid(droid);
 			}
 		});
 	}

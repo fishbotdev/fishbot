@@ -678,7 +678,8 @@ class CommandCenter {
 				const brigadeLocation = forceLocations[i]['location'];
 
 				const groundTargets = this.#prioritiseLandForceTargets(brigadeTargets, brigadeLocation);
-
+				// hackMarkTiles();
+				
 				// TODO: use mission management system once this mission can be conducted independently on brigade-level
 				moveBrigadeToAttack(
 					state, 
