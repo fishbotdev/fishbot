@@ -212,12 +212,12 @@ function moveBrigadeToAttack(state, brigadeID, brigadeLocation, directFireTarget
 		}
 	}
 
-	// Hack: Sensor units
+	// SENSOR UNITS
 	SENSOR_UNITS.forEach((droid) => {
 		if (_distSqToClosestDroid(droid) > 5 ** 2) {
 			orderDroidLoc(droid, DORDER_MOVE, closestDroidToTarget.x, closestDroidToTarget.y);
 		} else {
-			orderDroid(droid, DORDER_STOP);
+			orderDroidLoc(droid, DORDER_MOVE, baseLocation.x, baseLocation.y);
 		}
 	});
 
@@ -244,21 +244,27 @@ function moveBrigadeToAttack(state, brigadeID, brigadeLocation, directFireTarget
 	if (defined(fireSupportTarget)) {
 		currFireSupportTarget = getObject(fireSupportTarget.type, fireSupportTarget.player, fireSupportTarget.id);
 	}
-	 
-	SHORT_RANGE_FIRE_SUPPORT.forEach((droid) => {
-		const distSqToDirectFireTarget = distSq(droid.x, currDirectFireTarget.x, droid.y, currDirectFireTarget.y);
-		
-		if (distSqToDirectFireTarget <= 7 ** 2 || (_distSqToClosestDroid(currDirectFireTarget) > 12 ** 2 && distSqToDirectFireTarget < 12 ** 2)) {
-			// Fire support units should fall back if they find themselves on the front line
-			orderDroidLoc(droid, DORDER_MOVE, baseLocation.x, baseLocation.y);
-		} else {
-			if (_distSqToClosestDroid(droid) > 8 ** 2 || !defined(currFireSupportTarget)) {
-				orderDroidLoc(droid, DORDER_MOVE, closestDroidToTarget.x, closestDroidToTarget.y);
+
+	if (!defined(currFireSupportTarget)) {			
+		SHORT_RANGE_FIRE_SUPPORT.forEach(droid => orderDroidLoc(droid, DORDER_MOVE, closestDroidToTarget.x, closestDroidToTarget.y));
+	} else {
+
+		const closestDroidDistSqToBase = _distSqToClosestDroid(baseLocation);
+		const fsTargetDistSqToBase = distSq(currFireSupportTarget.x, baseLocation.x, currFireSupportTarget.y, baseLocation.y);
+
+		SHORT_RANGE_FIRE_SUPPORT.forEach((droid) => {
+			const droidDistSqToBase = distSq(droid.x, baseLocation.x, droid.y, baseLocation.y);
+
+			const MORTAR_CLOSEST_TO_BASE = droidDistSqToBase < closestDroidDistSqToBase && droidDistSqToBase < fsTargetDistSqToBase;
+			const ENEMY_CLOSEST_TO_BASE = fsTargetDistSqToBase < droidDistSqToBase && fsTargetDistSqToBase < closestDroidDistSqToBase;
+
+			if (MORTAR_CLOSEST_TO_BASE || ENEMY_CLOSEST_TO_BASE) {
+				attackTarget(droid, currFireSupportTarget);	
 			} else {
-				attackTarget(droid, currFireSupportTarget);
-			}			
-		}
-	});
+				orderDroidLoc(droid, DORDER_MOVE, baseLocation.x, baseLocation.y);
+			}
+		});
+	}
 
 	if (false) {
 		hackMarkTiles();
