@@ -56,7 +56,7 @@ const DEBUG_MODE_ON = true;
 
 /*
 -- RELEASE CHECKLIST --
-1. Update FISHBOT_VERSION to latest version tag.
+1. Update FISHBOT_VERSION to latest version tag. Also update the version number in the "name" property in `FishBot.json`.
 2. Disable all beacons / hackMarkTiles() used for debugging.
 3. Run 100 automated tests against both Cobra Medium and Cobra Hard on Gamma 3P 1v1. Pass if no regression in either win-rate or performance profiler. 
 4. Update `CHANGELOG.md` with the test results.
