@@ -253,8 +253,9 @@ NEW TEST DATA
 # path1 = rf"{cwd()}\process_results\v4_perfdata\\" + "cf7b597,hard,cobra,100g" + ".log"        
 # path2 = rf"{cwd()}\process_results\v4_perfdata\\" + "021d39e,med_hard_cobra" + ".log"        
 # path1 = rf"{cwd()}\process_results\v4_perfdata\\" + "006d007,hard,cobra,100g" + ".log"        
-path1 = rf"{cwd()}\process_results\v4_perfdata\\" + "e293c48,hard,cobra,100g" + ".log"        
-path2 = rf"{cwd()}\process_results\v4_perfdata\\" + "c4a1769,hard,cobra,100g" + ".log"        
+# path1 = rf"{cwd()}\process_results\v4_perfdata\\" + "e293c48,hard,cobra,100g" + ".log"        
+path1 = rf"{cwd()}\process_results\v4_perfdata\\" + "c4a1769,hard,cobra,100g" + ".log"        
+path2 = rf"{cwd()}\process_results\v4_perfdata\\" + "83bf457,hard,cobra,100g" + ".log"          # v0.3.4 development after splitting into brigades
 
 
 if True:

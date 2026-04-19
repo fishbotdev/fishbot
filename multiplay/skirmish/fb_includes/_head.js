@@ -199,10 +199,11 @@ const DIVISION = {
     AIR_DEFENCE_RESERVE: 2007,
 	SENSOR_RESERVE: 2008,
 	
-    BRIGADE1: 3011,                 // this is a combined arms team
-    BRIGADE2: 3012,
-    BRIGADE3: 3013,
-    BRIGADE4: 3014,
+    FIRST_BCT: 3011,                 // this is a combined arms team; each brigade with ~26 units
+    SECOND_BCT: 3012,
+    THIRD_BCT: 3013,
+    FOURTH_BCT: 3014,
+	FIFTH_BCT: 3015
 };
 Object.freeze(DIVISION);
 

@@ -59,8 +59,12 @@ function runLogistics() {
 	if (state.botIsActive) {
 		if (state.WORKER_IDS['runLogistics'][state.currWorkerID]) {
 			hq.runConstructionLogistics(state);
-			hq.runProductionLogistics(state);
+
+			hq.runResupplyLogistics(state);				// assigns reserve units to brigades
+			hq.runProductionLogistics(state);			// schedules production to replenish reserves
+
 			hq.runResearchLogistics(state);
+			
 		}
 	}
 }

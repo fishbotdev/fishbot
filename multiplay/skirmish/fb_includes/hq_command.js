@@ -32,8 +32,28 @@ class CommandCenter {
 			This constructor is intended to contain *all* FishBot parameters which change how it behaves.
 		*/
 
+		// Strategic parameters
 		this.OIL_DOMINANCE_PERCENTAGE = 60;
+		this.TARGET_SEARCH_RADIUS = 25;
+		this.FORCE_IMMEDIATE_RADIUS = 16;
 
+		// Production logistics parameters
+		this.MAX_TRUCKS = 6;
+
+		this.FISHBOT_BRIGADE_COMPOSITION = {
+			'MAX_HEAVY_CAVALRY': 8,
+			'MAX_LIGHT_CAVALRY': 3,
+			'MAX_MORTAR': 6,
+			'MAX_ADA': 2,
+			'MAX_SENSOR': 1,
+			'MAX_INFANTRY': 6
+		}
+		this.TOTAL_UNITS_PER_BRIGADE = Object.values(this.FISHBOT_BRIGADE_COMPOSITION).reduce((a, b) => a + b, 0);
+
+		this.NUMBER_OF_BRIGADES = 2;
+		this.BRIGADE_DESIGNATIONS = [DIVISION.FIRST_BCT, DIVISION.SECOND_BCT, DIVISION.THIRD_BCT, DIVISION.FOURTH_BCT, DIVISION.FIFTH_BCT].slice(0, this.NUMBER_OF_BRIGADES);
+
+		
 		// Task scheduling parameters
 		// Add regular, high priority, high computational load tasks to the start of the list.
 		// The naming convention is important as this allows the handlers in _run.js to run the correct function.
@@ -207,14 +227,28 @@ class CommandCenter {
 			
 			case 'intel_getNearbyGroundTargets':
 
-				// Update location(s) & composition(s) of active combat force(s) -- TEMPORARY IMPLEMENTATION
-				const mainForceLocation = groundForces.getForceMedianLocation(0);
-				this.toc.setForceLocation(state, mainForceLocation);
+				// Update location(s) & composition(s) of active combat force(s)
+				const forceLocations = [];
 
-				if (defined(state.forceLocation)) {
-					const nearbyGroundTargets = intelligence.proposeTargetsInRadius2(state, state.forceLocation, 20, 16);		
-					hq.toc.setNearbyGroundTargets(state, nearbyGroundTargets);
-				}
+				this.BRIGADE_DESIGNATIONS.forEach(brigadeID => {
+					forceLocations.push({
+						'brigadeID': brigadeID,
+						'location': groundForces.getForceMedianLocation(brigadeID)
+					});
+				});
+				this.toc.setForceLocations(state, forceLocations);
+
+				const nearbyGroundTargets = [];
+				state.forceLocations.forEach(fLoc => {
+					const targetInfo = {
+						'brigadeID': fLoc['brigadeID'],
+						'targets' : intelligence.proposeTargetsInRadius2(state, fLoc['location'], this.TARGET_SEARCH_RADIUS, this.FORCE_IMMEDIATE_RADIUS)
+					};
+
+					nearbyGroundTargets.push(targetInfo);						
+				});
+
+				hq.toc.setNearbyGroundTargets(state, nearbyGroundTargets);
 				break;
 			
 			case 'intel_checkCampaignStatus':
@@ -253,7 +287,7 @@ class CommandCenter {
 			"directFireTarget": undefined, 
 			"fireSupportTarget": undefined,
 			"adaTarget": undefined, 
-			"casTargets": undefined,
+			"casTargets": [],
 			"targetsInImmediateRadius": 0
 		};
 
@@ -339,7 +373,7 @@ class CommandCenter {
 		}
 
 		// CAS
-		output["casTargets"] = [...targetInfo["enemyIndirectFire"], ...targetInfo["enemyArmor"]];
+		output["casTargets"].push(...targetInfo["enemyIndirectFire"], ...targetInfo["enemyArmor"]);
 
 		// FIRE SUPPORT
 		const EFFECTIVE_SQ_FS_RADIUS = 12 ** 2;
@@ -446,7 +480,7 @@ class CommandCenter {
 	/**
 	 * 
 	 * @param {worldState} state 
-	 * @param {*} groupPosition 
+	 * @param {*} groupPositions 
 	 * @param {*} nearbyTargetCount 
 	 * @param {*} airRaidTargets 
 	 * @param {*} casTargets 
@@ -454,14 +488,19 @@ class CommandCenter {
 	 * @param {*} adaTargets 
 	 * @returns {Array}
 	 */
-	#prioritiseAviationTargets(state, groupPosition, nearbyTargetCount, airRaidTargets, casTargets, industrialTargets, adaTargets) {
-		const adaThreat = state.fields.adaThreat;
+	#prioritiseAviationTargets(state, groupPositions, nearbyTargetCount, airRaidTargets, casTargets, industrialTargets, adaTargets) {
 
+		const aviationTargets = [];
+		
+		const adaThreat = state.fields.adaThreat;
 		const cellSize = state.grid.cellSize;
 		const IS_OIL_DOMINANT = state.oilDominance;
-		const NUM_AIRCRAFT = state.playerInfo[me].numAirUnits;		// TODO: formalise if this is an expected access pattern
+		const NUM_AIRCRAFT = state.playerInfo[me].numAirUnits;	
 		const AIR_UNIT_DOMINANCE = NUM_AIRCRAFT >= 10;
 		const AIR_UNIT_SHORTAGE = NUM_AIRCRAFT === 1;
+
+		const GROUP_POSITIONS = [];
+		groupPositions.forEach(p => GROUP_POSITIONS.push(p['location']));
 
 		let targetCandidates = [];
 
@@ -471,7 +510,6 @@ class CommandCenter {
 
 		// TEMPORARY IMPLEMENTATION
 		const prioritiseCasTargets = (nearbyTargetCount >= 4 && !IS_OIL_DOMINANT) || (IS_OIL_DOMINANT && nearbyTargetCount >= 5);
-		// debug(`nearbyTargetCount ${nearbyTargetCount}, prioritiseCAS: ${prioritiseCasTargets}`);
 		const prioritiseRaidTargets = !IS_OIL_DOMINANT;
 		const prioritiseIndustrialTargets = IS_OIL_DOMINANT;
 		const SATURATION_RAID = prioritiseIndustrialTargets && AIR_UNIT_DOMINANCE;		// Saturation raid = an attack designed to overwhelm defenses
@@ -518,6 +556,11 @@ class CommandCenter {
 			targetCandidates = [...casTargets, ...airRaidTargets];		// same as CAS
 		}
 
+		if (targetCandidates.length === 0) {
+			// debug(`${gameTime}: no target candidates; (CAS/RAID/IND = ${prioritiseIndustrialTargets}, ${prioritiseCasTargets}, ${prioritiseRaidTargets})`);
+			return aviationTargets;
+		} 
+
 		// Terminate current missions which are TWO PRIORITY LEVELS below e.g.
 		// If new URGENT task -> cancel HIGH missions 
 		const OFFENSIVE_MISSION_TYPES = [MISSION_TYPE.CAS_STRIKE, MISSION_TYPE.AIR_RAID, MISSION_TYPE.DAS_STRIKE];
@@ -525,23 +568,20 @@ class CommandCenter {
 										filter(m => OFFENSIVE_MISSION_TYPES.includes(m.missionType));
 
 		let activeTargetIDs = [];
-		const CAS_RADIUS = 25;
-		const threatThreshold = 2;		// Set no-fly regions
+		const threatThreshold = IS_OIL_DOMINANT ? 2 : 1;		// Set no-fly regions
 
-		const medPriorityMissions = [MISSION_TYPE.AIR_RAID, MISSION_TYPE.DAS_STRIKE];
+		const MED_PRIORITY_MISSION_TYPES = [MISSION_TYPE.AIR_RAID, MISSION_TYPE.DAS_STRIKE];
 
-		// debug(`activeMissionIDs`);
 		for (let i=0; i<activeMissions.length; i++) {
 			let c = activeMissions[i];
 			activeTargetIDs.push(c.target.id);
-			// debug(`	${c.target.id} ${c.target.name}`);
-			
+
 			const currObj = getObject(c.target.type, c.target.player, c.target.id);
-			if (!defined(currObj) || !defined(groupPosition)) {
+			if (!defined(currObj)) {
 				continue;
 			}
 
-			if (prioritiseCasTargets && medPriorityMissions.includes(c.missionType)) {
+			if (prioritiseCasTargets && MED_PRIORITY_MISSION_TYPES.includes(c.missionType)) {
 				// debug(`removed DAS / RAID mission to make room for CAS`);
 				c.missionStatus = MISSION_STATUS.ABORT;
 				continue;
@@ -557,8 +597,10 @@ class CommandCenter {
 				}
 			}
 
+			const nearPosition = (gameObj, groupPos) => {return distSq(gameObj.x, groupPos.x, gameObj.y, groupPos.y) <= this.TARGET_SEARCH_RADIUS ** 2};
+
 			if (c.missionType === MISSION_TYPE.CAS_STRIKE) {
-				if (distSq(currObj.x, groupPosition.x, currObj.y, groupPosition.y) >= CAS_RADIUS ** 2) {
+				if (!GROUP_POSITIONS.some(p => nearPosition(currObj, p))) {
 					// debug(`aborted CAS_STRIKE: ${c.target.name} @ ${gameTime}, too far away`);
 					c.missionStatus = MISSION_STATUS.ABORT;					
 					continue;
@@ -571,10 +613,6 @@ class CommandCenter {
 		let newAviationTargets = [], existingAviationTargets = [];
 
 		for (let i=0; i<targetCandidates.length; i++) {
-			if (prioritiseCasTargets && medPriorityMissions.includes(targetCandidates[i].missionType)) {
-				continue;
-			}
-
 			const c = getObject(targetCandidates[i].type, targetCandidates[i].player, targetCandidates[i].id);
 			if (!defined(c)) {
 				continue;
@@ -596,10 +634,10 @@ class CommandCenter {
 			}
 		}
 
-		let aviationTargets = newAviationTargets;
-		if (newAviationTargets.length <= Math.floor(NUM_AIRCRAFT / 2)) {
+		aviationTargets.push(...newAviationTargets);
+		const TOO_MANY_AIRCRAFT = newAviationTargets.length <= Math.floor(NUM_AIRCRAFT / 2);
+		if (TOO_MANY_AIRCRAFT) {
 			aviationTargets.push(...existingAviationTargets);
-			// debug(`added existing targets`);
 		}
 
 		return aviationTargets;
@@ -611,8 +649,10 @@ class CommandCenter {
 	 */
 	runCombatOperations(state) {
 
+		// Gather prepared information from intelligence
 		const nearbyGroundTargets = state.nearbyGroundTargets;
-		const forceLocation = state.forceLocation;
+		const forceLocations = state.forceLocations;
+
 		const raidTargets = state.aviationTargets['raidTargets'];
 		const productionTargets = state.aviationTargets['productionTargets'];
 		const adaTargets = state.aviationTargets['adaTargets'];
@@ -625,25 +665,34 @@ class CommandCenter {
 
 		if (readyToAttack) {
 			// Prioritise & assign targets
-			const groundTargets = this.#prioritiseLandForceTargets(nearbyGroundTargets, forceLocation);
+			this.BRIGADE_DESIGNATIONS.forEach((brigadeID, i) => {
+				const brigadeTargets = nearbyGroundTargets[i]['targets'];
+				const brigadeLocation = forceLocations[i]['location'];
 
-			// Attack ground targets; HACK: directly calls tactical level function
-			groundForceAttack({
-				"state": state, 
-				"directFireTarget": groundTargets["directFireTarget"], 
-				"fireSupportTarget": groundTargets["fireSupportTarget"],
-				"adaTarget": groundTargets["adaTarget"]
-			});
+				const groundTargets = this.#prioritiseLandForceTargets(brigadeTargets, brigadeLocation);
+				// hackMarkTiles();
+				
+				// TODO: use mission management system once this mission can be conducted independently on brigade-level
+				moveBrigadeToAttack(
+					state, 
+					brigadeID, 
+					brigadeLocation,
+					groundTargets["directFireTarget"], 
+					groundTargets["fireSupportTarget"], 
+					groundTargets["adaTarget"]
+				);
 
-			// Extract further information for aviation missions
-			if (defined(groundTargets["casTargets"])) {
+				// Extract further information for aviation missions
 				casTargets.push(...groundTargets["casTargets"]);
-			}
-			numTargetsInImmediateRadius = groundTargets["targetsInImmediateRadius"];
+
+				// Temporary: get max targets to decide if CAS should be prioritised for all brigades
+				numTargetsInImmediateRadius = Math.max(groundTargets["targetsInImmediateRadius"], numTargetsInImmediateRadius);
+					
+			});
 		}
 
 		const aviationTargets = this.#prioritiseAviationTargets(state, 
-			forceLocation, 
+			forceLocations, 
 			numTargetsInImmediateRadius, 
 			raidTargets, 
 			casTargets, 
@@ -855,10 +904,96 @@ class CommandCenter {
 		return vehicleCategories;
     }
 
-	/**
-	 * 
-	 * @param {worldState} state 
-	 */
+	#printDebugResupply(state) {
+
+		const getReserveUnitsOfType = (groupID) => state.g.enumGroup(groupID);
+
+		const HEAVY_CAV_RESERVE = getReserveUnitsOfType(DIVISION.HEAVY_CAV_RESERVE);
+		const LIGHT_CAV_RESERVE = getReserveUnitsOfType(DIVISION.LIGHT_CAV_RESERVE);
+		const INFANTRY_RESERVE = getReserveUnitsOfType(DIVISION.INFANTRY_RESERVE);
+		const SHORT_RANGE_FIRE_SUPPORT_RESERVE = getReserveUnitsOfType(DIVISION.SHORT_RANGE_FIRE_SUPPORT_RESERVE);
+		const SENSOR_RESERVE = getReserveUnitsOfType(DIVISION.SENSOR_RESERVE);
+		const AIR_DEFENCE_RESERVE = getReserveUnitsOfType(DIVISION.AIR_DEFENCE_RESERVE);
+
+		let printedTitle = false;
+
+		this.BRIGADE_DESIGNATIONS.forEach(brigadeID => {
+			const deficit = supply.getBrigadeUnitDeficit2(state, brigadeID, this.FISHBOT_BRIGADE_COMPOSITION);
+
+			const brigadeStrength = Math.floor(deficit['totalLandUnits'] / deficit['targetTotalLandUnits'] * 100);
+			if (brigadeStrength !== 0) {
+				if (!printedTitle) {					
+					debug(`==${getOrdinal(me)} DIVISION @ ${gameTime}==`);
+					debug(`\tRESERVE:\t hc: ${HEAVY_CAV_RESERVE.length}, lc: ${LIGHT_CAV_RESERVE.length}, inf: ${INFANTRY_RESERVE.length}, mort: ${SHORT_RANGE_FIRE_SUPPORT_RESERVE.length}, sens: ${SENSOR_RESERVE.length}, ada: ${AIR_DEFENCE_RESERVE.length}`)
+					printedTitle = true;
+				}
+				debug(`\tBrigade ${brigadeID}: ${brigadeStrength} % (${deficit['totalLandUnits']} / ${this.TOTAL_UNITS_PER_BRIGADE} units)`);
+			}
+		});
+
+	}
+
+	runResupplyLogistics(state) {
+		// This function assigns reserve units to active brigade combat teams
+		const getReserveUnitsOfType = (groupID) => state.g.enumGroup(groupID);
+
+		const RECOMBINATION_THRESHOLD = 50;
+		const OVERSTRENGTH_THRESHOLD = 100;
+		const brigadesForRecombination = [];
+		const overstrengthBrigades = [];
+
+		for (let i=0; i<this.BRIGADE_DESIGNATIONS.length; i++) {
+
+			const brigadeID = this.BRIGADE_DESIGNATIONS[i];
+
+  			const deficit = supply.getBrigadeUnitDeficit2(state, brigadeID, this.FISHBOT_BRIGADE_COMPOSITION);
+			
+			// Check brigade strength as percentage
+			const brigadeStrength = Math.floor(deficit['totalLandUnits'] / deficit['targetTotalLandUnits'] * 100);
+
+			// Earmark for dissolution if understrength
+			if (brigadeStrength < RECOMBINATION_THRESHOLD) {
+				brigadesForRecombination.push(brigadeID);
+			}
+
+			// Ignore if overstrength
+			if (brigadeStrength > OVERSTRENGTH_THRESHOLD) {
+				overstrengthBrigades.push(brigadeID);
+			}	
+
+			// Else, check reserves & assign reinforcements
+			// TODO - FIND MORE EFFICIENT WAY TO RECALCULATE REMAINING RESERVE QTY
+			const HEAVY_CAV_RESERVE = getReserveUnitsOfType(DIVISION.HEAVY_CAV_RESERVE);
+			const LIGHT_CAV_RESERVE = getReserveUnitsOfType(DIVISION.LIGHT_CAV_RESERVE);
+			const INFANTRY_RESERVE = getReserveUnitsOfType(DIVISION.INFANTRY_RESERVE);
+			const SHORT_RANGE_FIRE_SUPPORT_RESERVE = getReserveUnitsOfType(DIVISION.SHORT_RANGE_FIRE_SUPPORT_RESERVE);
+			const SENSOR_RESERVE = getReserveUnitsOfType(DIVISION.SENSOR_RESERVE);
+			const AIR_DEFENCE_RESERVE = getReserveUnitsOfType(DIVISION.AIR_DEFENCE_RESERVE);
+
+			const getReinforcementUnits = (reserveType, reserveID, reserveUnitList) => {
+				return {
+					'category': reserveID,
+					'unitList': reserveUnitList.slice(0, deficit[reserveType]['abs'])
+				};
+			};
+
+			const resupplyUnits = [
+				getReinforcementUnits('heavyCavalry', DIVISION.HEAVY_CAV_RESERVE, HEAVY_CAV_RESERVE),
+				getReinforcementUnits('lightCavalry', DIVISION.LIGHT_CAV_RESERVE, LIGHT_CAV_RESERVE),
+				getReinforcementUnits('infantry', DIVISION.INFANTRY_RESERVE, INFANTRY_RESERVE),
+				getReinforcementUnits('shortRangeArtillery', DIVISION.SHORT_RANGE_FIRE_SUPPORT_RESERVE, SHORT_RANGE_FIRE_SUPPORT_RESERVE),
+				getReinforcementUnits('ADA', DIVISION.AIR_DEFENCE_RESERVE, AIR_DEFENCE_RESERVE),
+				getReinforcementUnits('sensor', DIVISION.SENSOR_RESERVE, SENSOR_RESERVE),
+			];
+
+			this.toc.assignUnitsToBrigade(state, resupplyUnits, brigadeID);
+
+		}
+
+		// this.#printDebugResupply(state);
+
+	}
+
 	runProductionLogistics(state) {
 		/**
 		 * Debug print of idle factories.
@@ -890,27 +1025,60 @@ class CommandCenter {
 			return;
 		}
 
-		// Define hard limits
-		const MAX_TRUCKS = 6;
-		const FB_BRIGADE_SIZE = 29;
-
+		// Define unit limits
 		const TRUCK_HARD_LIMIT = getDroidLimit(me, DROID_CONSTRUCT);
-		const COMBAT_UNIT_HARD_LIMIT = getDroidLimit(me, DROID_WEAPON) - Math.min(TRUCK_HARD_LIMIT, MAX_TRUCKS);
-		const LAND_COMBAT_UNIT_LIMIT = Math.min(COMBAT_UNIT_HARD_LIMIT, FB_BRIGADE_SIZE * 4);
+		const TRUCK_SOFT_LIMIT = Math.min(TRUCK_HARD_LIMIT, this.MAX_TRUCKS);
 
+		const COMBAT_UNIT_HARD_LIMIT = getDroidLimit(me, DROID_WEAPON) - TRUCK_SOFT_LIMIT;
+		// Future: this.NUMBER_OF_BRIGADES should be matched to hard limit
+		const INFANTRY_UNIT_SOFT_LIMIT = this.FISHBOT_BRIGADE_COMPOSITION['MAX_INFANTRY'] * this.NUMBER_OF_BRIGADES;
+		const LAND_VEHICLE_SOFT_LIMIT = (this.TOTAL_UNITS_PER_BRIGADE - this.FISHBOT_BRIGADE_COMPOSITION['MAX_INFANTRY']) * this.NUMBER_OF_BRIGADES;
+		const VTOL_UNIT_HARD_LIMIT = COMBAT_UNIT_HARD_LIMIT - LAND_VEHICLE_SOFT_LIMIT - INFANTRY_UNIT_SOFT_LIMIT;
+
+		// Get player data
+		const HQ_IS_CONSTRUCTED = state.playerInfo[me]["numConstructedHQs"] > 0;
+		const CYBORG_CONSTRUCTOR_AVAILABLE = cyborgFactories.length > 0;
+		const MY_TRUCK_COUNT = state.playerInfo[me]["numTrucks"];
+		const MY_INFANTRY_COUNT = state.playerInfo[me]["numInfantryUnits"];
+		const MY_LAND_VEHICLE_COUNT = (state.playerInfo[me]["numArmourUnits"] + state.playerInfo[me]["numADAUnits"] + 
+									   state.playerInfo[me]["numShortRangeIndirectUnits"] + state.playerInfo[me]["numLongRangeIndirectUnits"]);
+			// todo: add sensor to land vehicle count
+		const MY_VTOL_COUNT = state.playerInfo[me]["numAirUnits"];
+
+		// Compare to limits
+		const HIT_TRUCK_LIMIT = MY_TRUCK_COUNT >= TRUCK_SOFT_LIMIT;
+		const HIT_INFANTRY_LIMIT = MY_INFANTRY_COUNT >= INFANTRY_UNIT_SOFT_LIMIT;
+		const HIT_LAND_VEHICLE_LIMIT = MY_LAND_VEHICLE_COUNT >= LAND_VEHICLE_SOFT_LIMIT;
+		const HIT_AIR_UNIT_LIMIT = MY_VTOL_COUNT >= VTOL_UNIT_HARD_LIMIT;
+
+		if (false) {
+			debug(`==${gameTime}: (FishBot ${me}) PRODUCTION LIMITS==`);
+			debug(`  HIT_TRUCK_LIMIT: ${MY_TRUCK_COUNT} >= ${TRUCK_SOFT_LIMIT}?`);
+			debug(`  HIT_INFANTRY_LIMIT: ${MY_INFANTRY_COUNT} >= ${INFANTRY_UNIT_SOFT_LIMIT}?`);
+			debug(`  HIT_LAND_VEHICLE_LIMIT: ${MY_LAND_VEHICLE_COUNT} >= ${LAND_VEHICLE_SOFT_LIMIT}?`);
+			debug(`  HIT_AIR_UNIT_LIMIT: ${MY_VTOL_COUNT} >= ${VTOL_UNIT_HARD_LIMIT}?`);
+		}
+		
 		// Get unit deficits
-		const combatBrigadeDeficit = supply.getBrigadeUnitDeficit(state);
+		let deficit = supply.getBrigadeUnitDeficit2(state, this.BRIGADE_DESIGNATIONS[0], this.FISHBOT_BRIGADE_COMPOSITION);
+		for (let i=1; i<this.BRIGADE_DESIGNATIONS.length; i++) {
+			// Test the previous one
+			const brigadeStrength = Math.floor(deficit['totalLandUnits'] / deficit['targetTotalLandUnits'] * 100);
+			if (brigadeStrength < 100) {
+				break;
+			}
+			deficit = supply.getBrigadeUnitDeficit2(state, this.BRIGADE_DESIGNATIONS[i], this.FISHBOT_BRIGADE_COMPOSITION);
+		}
+		const combatBrigadeDeficit = deficit;
 
 		// Decide on whether or not to produce combat units
 		// Note: FishBot will not build combat vehicles before it can design them, on any difficulty.	
-		const CAN_DESIGN_COMBAT_UNITS = state.playerInfo[me]["numConstructedHQs"] > 0;
-		const SHOULD_PRODUCE_COMBAT_UNITS = combatBrigadeDeficit['totalLandUnits'] + combatBrigadeDeficit['totalAirUnits'] < COMBAT_UNIT_HARD_LIMIT;
-		const SHOULD_PRODUCE_LAND_COMBAT_UNITS = combatBrigadeDeficit['totalLandUnits'] < LAND_COMBAT_UNIT_LIMIT;
+		const CAN_DESIGN_COMBAT_UNITS = HQ_IS_CONSTRUCTED;
 
-		const SHOULD_PRODUCE_INFANTRY = SHOULD_PRODUCE_LAND_COMBAT_UNITS && combatBrigadeDeficit['infantry']['absolute'] > 0;
-		const SHOULD_PRODUCE_VTOLS = CAN_DESIGN_COMBAT_UNITS && SHOULD_PRODUCE_COMBAT_UNITS;
-		const SHOULD_PRODUCE_LAND_VEHICLES = SHOULD_PRODUCE_LAND_COMBAT_UNITS && CAN_DESIGN_COMBAT_UNITS;
-
+		const SHOULD_PRODUCE_LAND_VEHICLES = CAN_DESIGN_COMBAT_UNITS && !HIT_LAND_VEHICLE_LIMIT;
+		const SHOULD_PRODUCE_INFANTRY = !HIT_INFANTRY_LIMIT;
+		const SHOULD_PRODUCE_VTOLS = CAN_DESIGN_COMBAT_UNITS && !HIT_AIR_UNIT_LIMIT;
+		
 		// Decide on which category of land combat vehicle to produce (basic greedy algorithm)
 		let landVehicleCategory = "heavyCavalry";
 		if (SHOULD_PRODUCE_LAND_VEHICLES && idleFactories.length > 0) {
@@ -921,12 +1089,8 @@ class CommandCenter {
 		}
 
 		// Decide on whether or not to produce trucks
-		const myTruckCount = state.playerInfo[me]["numTrucks"];
-		const CYBORG_CONSTRUCTOR_AVAILABLE = cyborgFactories.length > 0;
-
-		const SHOULD_PRODUCE_TRUCKS = MAX_TRUCKS - myTruckCount > 0 && myTruckCount < TRUCK_HARD_LIMIT;
-		
-		const SINGLE_TRUCK_ONLY = CAN_DESIGN_COMBAT_UNITS;
+		const SHOULD_PRODUCE_TRUCKS = !HIT_TRUCK_LIMIT;
+		const SINGLE_TRUCK_THIS_TICK = CAN_DESIGN_COMBAT_UNITS;
 		let producedTruckThisTick = false;
 
 		// Run production
@@ -939,7 +1103,7 @@ class CommandCenter {
 			if (SHOULD_PRODUCE_TRUCKS && CYBORG_CONSTRUCTOR_AVAILABLE && !producedTruckThisTick) {
 				if (DEBUG_PRODUCTION) debug(`	${gameTime}: produced Combat Engineer`);
 				produceCombatEngineer(f);
-				if (SINGLE_TRUCK_ONLY) {
+				if (SINGLE_TRUCK_THIS_TICK) {
 					producedTruckThisTick = true;
 				}
 				continue;
@@ -968,7 +1132,7 @@ class CommandCenter {
 			if (SHOULD_PRODUCE_TRUCKS && !CYBORG_CONSTRUCTOR_AVAILABLE && !producedTruckThisTick) {
 				if (DEBUG_PRODUCTION) debug(`	${gameTime}: produced Hover Truck`);
 				produceTruck(factory);
-				if (SINGLE_TRUCK_ONLY) {
+				if (SINGLE_TRUCK_THIS_TICK) {
 					producedTruckThisTick = true;
 				}
 				continue;
@@ -985,6 +1149,7 @@ class CommandCenter {
 				break;
 			}
 		}
+
 	}
 
 	/**

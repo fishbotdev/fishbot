@@ -104,24 +104,57 @@ function retreatToBase(generalReserve, infantryReserve, fireSupportReserve, airD
 }
 
 /*
-    TAC SOP: ATTACK SPECIFIED TARGETS
+    TAC SOP: MOVE A BRIGADE COMBAT TEAM (BCT) TO ATTACK A TARGET
 */
-function groundForceAttack({state, directFireTarget, fireSupportTarget, adaTarget}) {
+function moveBrigadeToAttack(state, brigadeID, brigadeLocation, directFireTarget, fireSupportTarget, adaTarget) {
 
-	const forceLocation = state.forceLocation;
+	const forceLocation = brigadeLocation;
+
+	const ARMOUR_UNITS = [];
+	const INFANTRY_UNITS = [];
+	const SHORT_RANGE_FIRE_SUPPORT = [];
+	const AA_UNITS = [];
+	const SENSOR_UNITS = [];
 
 	const getUnitsIn = (groupID) => state.g.enumGroup(groupID);
+	const brigadeUnits = getUnitsIn(brigadeID);		
+	brigadeUnits.forEach(droid => {
+		const category = getDroidFbGroupClassification(droid);
+		switch(category) {
+			case DIVISION.HEAVY_CAV_RESERVE:
+			case DIVISION.LIGHT_CAV_RESERVE:
+				ARMOUR_UNITS.push(droid);
+				break;
+			case DIVISION.INFANTRY_RESERVE:
+				INFANTRY_UNITS.push(droid);
+				break;
+			case DIVISION.SHORT_RANGE_FIRE_SUPPORT_RESERVE:
+				SHORT_RANGE_FIRE_SUPPORT.push(droid);
+				break;
+			case DIVISION.SENSOR_RESERVE:
+				SENSOR_UNITS.push(droid);
+				break;
+			case DIVISION.AIR_DEFENCE_RESERVE:
+				AA_UNITS.push(droid);
+				break;
+			default:
+				debug(`tac_com_ground -> brigadeUnit classifier failed for ${droid.name} (${droid.id})`);
+				break;
+		}
+	});
 
-	const ARMOUR_UNITS = [...getUnitsIn(DIVISION.HEAVY_CAV_RESERVE), ...getUnitsIn(DIVISION.LIGHT_CAV_RESERVE), ...getUnitsIn(DIVISION.GENERAL_RESERVE)];
-	const INFANTRY_UNITS = getUnitsIn(DIVISION.INFANTRY_RESERVE);
-	const SHORT_RANGE_FIRE_SUPPORT = getUnitsIn(DIVISION.SHORT_RANGE_FIRE_SUPPORT_RESERVE);		// TODO: add long range fire support
-	const AA_UNITS = getUnitsIn(DIVISION.AIR_DEFENCE_RESERVE);
-	const SENSOR_UNITS = getUnitsIn(DIVISION.SENSOR_RESERVE);		
+	if (false) {
+		debug(`ARMOUR_UNITS: ${ARMOUR_UNITS.length}`);
+		debug(`INFANTRY_UNITS: ${INFANTRY_UNITS.length}`);
+		debug(`SHORT_RANGE_FIRE_SUPPORT: ${SHORT_RANGE_FIRE_SUPPORT.length}`);
+		debug(`AA_UNITS: ${AA_UNITS.length}`);
+	}
 
 	const rtb = () => retreatToBase(ARMOUR_UNITS, INFANTRY_UNITS, SHORT_RANGE_FIRE_SUPPORT, AA_UNITS, SENSOR_UNITS);
+	const moveToClosestDroid = (droid) => orderDroidLoc(droid, DORDER_MOVE, closestDroidToTarget.x, closestDroidToTarget.y);
 
 	if (ARMOUR_UNITS.length === 0) {
-		// rtb();		
+		rtb();		
 		return;
 	}
 
@@ -139,6 +172,7 @@ function groundForceAttack({state, directFireTarget, fireSupportTarget, adaTarge
 	}
 
 	const _distSqToClosestDroid = (droid) => distSq(droid.x, closestDroidToTarget.x, droid.y, closestDroidToTarget.y);
+
 		
 	// MAIN ASSAULT UNITS
 	for (let i=0; i<ARMOUR_UNITS.length; i++) {
@@ -166,7 +200,7 @@ function groundForceAttack({state, directFireTarget, fireSupportTarget, adaTarge
 		if (_distSqToClosestDroid(droid) < 6 ** 2) {
 			attackTarget(droid, currDirectFireTarget);
 		} else {
-			orderDroidLoc(droid, DORDER_MOVE, closestDroidToTarget.x, closestDroidToTarget.y);
+			moveToClosestDroid(droid);
 		}
 	}
 
@@ -176,16 +210,16 @@ function groundForceAttack({state, directFireTarget, fireSupportTarget, adaTarge
 		if (_distSqToClosestDroid(droid) <= 6 ** 2) {
 			attackTarget(droid, currDirectFireTarget);
 		} else {
-			orderDroidLoc(droid, DORDER_MOVE, closestDroidToTarget.x, closestDroidToTarget.y);
+			moveToClosestDroid(droid);
 		}
 	}
 
-	// Hack: Sensor units
+	// SENSOR UNITS
 	SENSOR_UNITS.forEach((droid) => {
 		if (_distSqToClosestDroid(droid) > 5 ** 2) {
-			orderDroidLoc(droid, DORDER_MOVE, closestDroidToTarget.x, closestDroidToTarget.y);
+			moveToClosestDroid(droid);
 		} else {
-			orderDroid(droid, DORDER_STOP);
+			orderDroidLoc(droid, DORDER_MOVE, baseLocation.x, baseLocation.y);
 		}
 	});
 
@@ -200,7 +234,7 @@ function groundForceAttack({state, directFireTarget, fireSupportTarget, adaTarge
 			attackTarget(droid, currAdaTarget);		
 		} else {
 			if (_distSqToClosestDroid(droid) > 5 ** 2) {
-				orderDroidLoc(droid, DORDER_MOVE, closestDroidToTarget.x, closestDroidToTarget.y);
+				moveToClosestDroid(droid);
 			} else {
 				orderDroidLoc(droid, DORDER_MOVE, baseLocation.x, baseLocation.y);
 			}
@@ -212,21 +246,27 @@ function groundForceAttack({state, directFireTarget, fireSupportTarget, adaTarge
 	if (defined(fireSupportTarget)) {
 		currFireSupportTarget = getObject(fireSupportTarget.type, fireSupportTarget.player, fireSupportTarget.id);
 	}
-	 
-	SHORT_RANGE_FIRE_SUPPORT.forEach((droid) => {
-		const distSqToDirectFireTarget = distSq(droid.x, currDirectFireTarget.x, droid.y, currDirectFireTarget.y);
-		
-		if (distSqToDirectFireTarget <= 7 ** 2 || (_distSqToClosestDroid(currDirectFireTarget) > 12 ** 2 && distSqToDirectFireTarget < 12 ** 2)) {
-			// Fire support units should fall back if they find themselves on the front line
-			orderDroidLoc(droid, DORDER_MOVE, baseLocation.x, baseLocation.y);
-		} else {
-			if (_distSqToClosestDroid(droid) > 8 ** 2 || !defined(currFireSupportTarget)) {
-				orderDroidLoc(droid, DORDER_MOVE, closestDroidToTarget.x, closestDroidToTarget.y);
+
+	if (!defined(currFireSupportTarget)) {			
+		SHORT_RANGE_FIRE_SUPPORT.forEach(moveToClosestDroid);
+	} else {
+
+		const closestDroidDistSqToBase = _distSqToClosestDroid(baseLocation);
+		const fsTargetDistSqToBase = distSq(currFireSupportTarget.x, baseLocation.x, currFireSupportTarget.y, baseLocation.y);
+
+		SHORT_RANGE_FIRE_SUPPORT.forEach((droid) => {
+			const droidDistSqToBase = distSq(droid.x, baseLocation.x, droid.y, baseLocation.y);
+
+			const MORTAR_CLOSEST_TO_BASE = droidDistSqToBase < closestDroidDistSqToBase && droidDistSqToBase < fsTargetDistSqToBase;
+			const ENEMY_CLOSEST_TO_BASE = fsTargetDistSqToBase < droidDistSqToBase && fsTargetDistSqToBase < closestDroidDistSqToBase;
+
+			if (MORTAR_CLOSEST_TO_BASE || ENEMY_CLOSEST_TO_BASE) {
+				attackTarget(droid, currFireSupportTarget);	
 			} else {
-				attackTarget(droid, currFireSupportTarget);
-			}			
-		}
-	});
+				moveToClosestDroid(droid);
+			}
+		});
+	}
 
 	if (false) {
 		hackMarkTiles();
