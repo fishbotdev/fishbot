@@ -560,12 +560,6 @@ class CommandCenter {
 			// debug(`${gameTime}: no target candidates; (CAS/RAID/IND = ${prioritiseIndustrialTargets}, ${prioritiseCasTargets}, ${prioritiseRaidTargets})`);
 			return aviationTargets;
 		} 
-		
-		if (false) {
-			if (targetCandidates.length >= 5) {
-				debug(`${gameTime}: >= 5 	| ind: ${industrialTargets.length}\t| ada: ${adaTargets.length}\t| cas: ${casTargets.length}\t| raid ${airRaidTargets.length}\t`);
-			}
-		}
 
 		// Terminate current missions which are TWO PRIORITY LEVELS below e.g.
 		// If new URGENT task -> cancel HIGH missions 
@@ -607,7 +601,7 @@ class CommandCenter {
 
 			if (c.missionType === MISSION_TYPE.CAS_STRIKE) {
 				if (!GROUP_POSITIONS.some(p => nearPosition(currObj, p))) {
-					debug(`aborted CAS_STRIKE: ${c.target.name} @ ${gameTime}, too far away`);
+					// debug(`aborted CAS_STRIKE: ${c.target.name} @ ${gameTime}, too far away`);
 					c.missionStatus = MISSION_STATUS.ABORT;					
 					continue;
 				}
