@@ -50,7 +50,7 @@ class CommandCenter {
 		}
 		this.TOTAL_UNITS_PER_BRIGADE = Object.values(this.FISHBOT_BRIGADE_COMPOSITION).reduce((a, b) => a + b, 0);
 
-		this.NUMBER_OF_BRIGADES = 3;
+		this.NUMBER_OF_BRIGADES = 2;
 		this.BRIGADE_DESIGNATIONS = [DIVISION.FIRST_BCT, DIVISION.SECOND_BCT, DIVISION.THIRD_BCT, DIVISION.FOURTH_BCT, DIVISION.FIFTH_BCT].slice(0, this.NUMBER_OF_BRIGADES);
 
 		
@@ -240,15 +240,6 @@ class CommandCenter {
 
 				const nearbyGroundTargets = [];
 				state.forceLocations.forEach(fLoc => {
-
-					// Check for already-computed entries
-					// const index = nearbyGroundTargets.indexOf(l => l.x === fLoc['location'].x && l.y === fLoc['location'].y);
-					// if (index >= 0) {
-					// 	debug(`Reused previously computed target list for ${fLoc['brigadeID']}.`);
-					// } else {
-						
-					// }					
-
 					const targetInfo = {
 						'brigadeID': fLoc['brigadeID'],
 						'targets' : intelligence.proposeTargetsInRadius2(state, fLoc['location'], this.TARGET_SEARCH_RADIUS, this.FORCE_IMMEDIATE_RADIUS)
@@ -505,7 +496,7 @@ class CommandCenter {
 		const adaThreat = state.fields.adaThreat;
 		const cellSize = state.grid.cellSize;
 		const IS_OIL_DOMINANT = state.oilDominance;
-		const NUM_AIRCRAFT = state.playerInfo[me].numAirUnits;		// TODO: formalise if this is an expected access pattern
+		const NUM_AIRCRAFT = state.playerInfo[me].numAirUnits;	
 		const AIR_UNIT_DOMINANCE = NUM_AIRCRAFT >= 10;
 		const AIR_UNIT_SHORTAGE = NUM_AIRCRAFT === 1;
 
@@ -659,8 +650,10 @@ class CommandCenter {
 	 */
 	runCombatOperations(state) {
 
+		// Gather prepared information from intelligence
 		const nearbyGroundTargets = state.nearbyGroundTargets;
 		const forceLocations = state.forceLocations;
+
 		const raidTargets = state.aviationTargets['raidTargets'];
 		const productionTargets = state.aviationTargets['productionTargets'];
 		const adaTargets = state.aviationTargets['adaTargets'];
