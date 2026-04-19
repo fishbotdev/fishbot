@@ -174,8 +174,9 @@ def show_hard_cobra_results():
     # test_1 = getcwd() + rf"\process_results/v3/" + "29ceeb0,hard,463" + ".txt"                    # v3 dev: 4.6.3, [63/86 wins] long term test
     # test_1 = getcwd() + rf"\process_results/v4/" + "021d39e,hard,cobra,100g" + ".txt"             #  79 / 100 -> v0.3.1 release candidate (reverted removal of median location)
     # test_1 = getcwd() + rf"\process_results/v4/" + "4d60e4f,hard,cobra,100g" + ".txt"               # v0.3.2 release -- 94 / 100 won (refined production & research after migration)
-    test_1 = getcwd() + rf"\process_results/v4/" + "b6c85a5,hard,cobra,50g" + ".txt"                # v0.3.3 release -- 48 / 50 won (research collision patch)
-    test_2 = getcwd() + rf"\process_results/v4/" + "83bf457,hard,cobra,100g" + ".txt"                # v0.3.4 dev -- 92 / 100 won (brigade system dev)
+    # test_1 = getcwd() + rf"\process_results/v4/" + "b6c85a5,hard,cobra,50g" + ".txt"                # v0.3.3 release -- 48 / 50 won (research collision patch)
+    test_1 = getcwd() + rf"\process_results/v4/" + "83bf457,hard,cobra,100g" + ".txt"                # v0.3.4 dev -- 92 / 100 won (brigade system dev)
+    test_2 = getcwd() + rf"\process_results/v4/" + "727b189,hard,cobra,99g" + ".txt"                # v0.3.4 dev -- 88 / 99 won (after brigade system merge)
 
     commit1 = test_1.split(rf"v4/")[1].split(",")[0]
     commit2 = test_2.split(rf"v4/")[1].split(",")[0]

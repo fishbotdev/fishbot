@@ -255,7 +255,8 @@ NEW TEST DATA
 # path1 = rf"{cwd()}\process_results\v4_perfdata\\" + "006d007,hard,cobra,100g" + ".log"        
 # path1 = rf"{cwd()}\process_results\v4_perfdata\\" + "e293c48,hard,cobra,100g" + ".log"        
 path1 = rf"{cwd()}\process_results\v4_perfdata\\" + "c4a1769,hard,cobra,100g" + ".log"        
-path2 = rf"{cwd()}\process_results\v4_perfdata\\" + "83bf457,hard,cobra,100g" + ".log"          # v0.3.4 development after splitting into brigades
+# path1 = rf"{cwd()}\process_results\v4_perfdata\\" + "83bf457,hard,cobra,100g" + ".log"          # v0.3.4 development after splitting into brigades
+path2 = rf"{cwd()}\process_results\v4_perfdata\\" + "727b189,hard,cobra,99g" + ".log"          # v0.3.4 development after brigade-dev merge (no regression)
 
 
 if True:
