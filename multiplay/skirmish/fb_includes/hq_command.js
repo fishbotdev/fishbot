@@ -489,16 +489,18 @@ class CommandCenter {
 	 * @returns {Array}
 	 */
 	#prioritiseAviationTargets(state, groupPositions, nearbyTargetCount, airRaidTargets, casTargets, industrialTargets, adaTargets) {
-		
-		// const GROUP_POSITIONS = [];
-		// groupPositions.forEach(p => GROUP_POSITIONS.push(p['location']));
 
+		const aviationTargets = [];
+		
 		const adaThreat = state.fields.adaThreat;
 		const cellSize = state.grid.cellSize;
 		const IS_OIL_DOMINANT = state.oilDominance;
 		const NUM_AIRCRAFT = state.playerInfo[me].numAirUnits;	
 		const AIR_UNIT_DOMINANCE = NUM_AIRCRAFT >= 10;
 		const AIR_UNIT_SHORTAGE = NUM_AIRCRAFT === 1;
+
+		const GROUP_POSITIONS = [];
+		groupPositions.forEach(p => GROUP_POSITIONS.push(p['location']));
 
 		let targetCandidates = [];
 
@@ -508,7 +510,6 @@ class CommandCenter {
 
 		// TEMPORARY IMPLEMENTATION
 		const prioritiseCasTargets = (nearbyTargetCount >= 4 && !IS_OIL_DOMINANT) || (IS_OIL_DOMINANT && nearbyTargetCount >= 5);
-		// debug(`nearbyTargetCount ${nearbyTargetCount}, prioritiseCAS: ${prioritiseCasTargets}`);
 		const prioritiseRaidTargets = !IS_OIL_DOMINANT;
 		const prioritiseIndustrialTargets = IS_OIL_DOMINANT;
 		const SATURATION_RAID = prioritiseIndustrialTargets && AIR_UNIT_DOMINANCE;		// Saturation raid = an attack designed to overwhelm defenses
@@ -555,6 +556,17 @@ class CommandCenter {
 			targetCandidates = [...casTargets, ...airRaidTargets];		// same as CAS
 		}
 
+		if (targetCandidates.length === 0) {
+			// debug(`${gameTime}: no target candidates; (CAS/RAID/IND = ${prioritiseIndustrialTargets}, ${prioritiseCasTargets}, ${prioritiseRaidTargets})`);
+			return aviationTargets;
+		} 
+		
+		if (false) {
+			if (targetCandidates.length >= 5) {
+				debug(`${gameTime}: >= 5 	| ind: ${industrialTargets.length}\t| ada: ${adaTargets.length}\t| cas: ${casTargets.length}\t| raid ${airRaidTargets.length}\t`);
+			}
+		}
+
 		// Terminate current missions which are TWO PRIORITY LEVELS below e.g.
 		// If new URGENT task -> cancel HIGH missions 
 		const OFFENSIVE_MISSION_TYPES = [MISSION_TYPE.CAS_STRIKE, MISSION_TYPE.AIR_RAID, MISSION_TYPE.DAS_STRIKE];
@@ -562,23 +574,20 @@ class CommandCenter {
 										filter(m => OFFENSIVE_MISSION_TYPES.includes(m.missionType));
 
 		let activeTargetIDs = [];
-		const threatThreshold = 2;		// Set no-fly regions
+		const threatThreshold = IS_OIL_DOMINANT ? 2 : 1;		// Set no-fly regions
 
-		const medPriorityMissions = [MISSION_TYPE.AIR_RAID, MISSION_TYPE.DAS_STRIKE];
-
-		// debug(`activeMissionIDs`);
+		const MED_PRIORITY_MISSION_TYPES = [MISSION_TYPE.AIR_RAID, MISSION_TYPE.DAS_STRIKE];
 
 		for (let i=0; i<activeMissions.length; i++) {
 			let c = activeMissions[i];
 			activeTargetIDs.push(c.target.id);
-			// debug(`	${c.target.id} ${c.target.name}`);
-			
+
 			const currObj = getObject(c.target.type, c.target.player, c.target.id);
 			if (!defined(currObj)) {
 				continue;
 			}
 
-			if (prioritiseCasTargets && medPriorityMissions.includes(c.missionType)) {
+			if (prioritiseCasTargets && MED_PRIORITY_MISSION_TYPES.includes(c.missionType)) {
 				// debug(`removed DAS / RAID mission to make room for CAS`);
 				c.missionStatus = MISSION_STATUS.ABORT;
 				continue;
@@ -594,15 +603,15 @@ class CommandCenter {
 				}
 			}
 
-			// const nearPosition = (gameObj, groupPos) => {return distSq(gameObj.x, groupPos.x, gameObj.y, groupPos.y) <= this.TARGET_SEARCH_RADIUS ** 2};
+			const nearPosition = (gameObj, groupPos) => {return distSq(gameObj.x, groupPos.x, gameObj.y, groupPos.y) <= this.TARGET_SEARCH_RADIUS ** 2};
 
-			// if (c.missionType === MISSION_TYPE.CAS_STRIKE) {
-			// 	if (!GROUP_POSITIONS.some(p => nearPosition(currObj, p))) {
-			// 		// debug(`aborted CAS_STRIKE: ${c.target.name} @ ${gameTime}, too far away`);
-			// 		c.missionStatus = MISSION_STATUS.ABORT;					
-			// 		continue;
-			// 	}
-			// }
+			if (c.missionType === MISSION_TYPE.CAS_STRIKE) {
+				if (!GROUP_POSITIONS.some(p => nearPosition(currObj, p))) {
+					debug(`aborted CAS_STRIKE: ${c.target.name} @ ${gameTime}, too far away`);
+					c.missionStatus = MISSION_STATUS.ABORT;					
+					continue;
+				}
+			}
 		}
 		
 		// Remove already active missions (inefficient, loops through the list again)
@@ -610,10 +619,6 @@ class CommandCenter {
 		let newAviationTargets = [], existingAviationTargets = [];
 
 		for (let i=0; i<targetCandidates.length; i++) {
-			if (prioritiseCasTargets && medPriorityMissions.includes(targetCandidates[i].missionType)) {
-				continue;
-			}
-
 			const c = getObject(targetCandidates[i].type, targetCandidates[i].player, targetCandidates[i].id);
 			if (!defined(c)) {
 				continue;
@@ -635,10 +640,10 @@ class CommandCenter {
 			}
 		}
 
-		let aviationTargets = newAviationTargets;
-		if (newAviationTargets.length <= Math.floor(NUM_AIRCRAFT / 2)) {
+		aviationTargets.push(...newAviationTargets);
+		const TOO_MANY_AIRCRAFT = newAviationTargets.length <= Math.floor(NUM_AIRCRAFT / 2);
+		if (TOO_MANY_AIRCRAFT) {
 			aviationTargets.push(...existingAviationTargets);
-			// debug(`added existing targets`);
 		}
 
 		return aviationTargets;
