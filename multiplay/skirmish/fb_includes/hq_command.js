@@ -577,7 +577,7 @@ class CommandCenter {
 										filter(m => OFFENSIVE_MISSION_TYPES.includes(m.missionType));
 
 		let activeTargetIDs = [];
-		const threatThreshold = IS_OIL_DOMINANT ? 2 : 1;		// Set no-fly regions
+		const threatThreshold = IS_OIL_DOMINANT ? 1 : 0;		// Set no-fly regions; 0 = avoids all anti-air defences
 
 		const MED_PRIORITY_MISSION_TYPES = [MISSION_TYPE.AIR_RAID, MISSION_TYPE.DAS_STRIKE];
 
@@ -599,7 +599,7 @@ class CommandCenter {
 			if (!SATURATION_RAID) {
 				const gx = Math.floor(currObj.x / cellSize); 
 				const gy = Math.floor(currObj.y / cellSize);
-				if (adaThreat[gx][gy] >= threatThreshold) {
+				if (adaThreat[gx][gy] > threatThreshold) {
 					// debug(`	removed ACTIVE: ${currObj.name} (${c.missionType}) @ grid (${currObj.x} ${currObj.y})`);
 					c.missionStatus = MISSION_STATUS.ABORT;		
 					continue;
@@ -630,7 +630,7 @@ class CommandCenter {
 			if (!SATURATION_RAID) {
 				const gx = Math.floor(c.x / cellSize); 
 				const gy = Math.floor(c.y / cellSize);
-				if (adaThreat[gx][gy] >= threatThreshold) {
+				if (adaThreat[gx][gy] > threatThreshold) {
 					// debug(`	removed CANDIDATE, adaThreat: ${c.name} @ grid (${c.x} ${c.y})`);
 					continue;
 				}
