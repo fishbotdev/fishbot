@@ -260,7 +260,13 @@ class CommandCenter {
 
 				const raidTargets = intelligence.getTargetsNearDerricks(state);
 				const baseTargets = intelligence.getBaseTargets(state);
-				hq.toc.setAviationTargets(state, raidTargets, baseTargets['productionTargets'], baseTargets['adaTargets']);
+				hq.toc.setAviationTargets(state, 
+					raidTargets, 
+					baseTargets['productionTargets'], 
+					baseTargets['adaTargets'],
+					baseTargets['indirectFireTargets'],
+					baseTargets['defensiveStructureTargets']
+				);
 
 				break;
 
@@ -488,7 +494,7 @@ class CommandCenter {
 	 * @param {*} adaTargets 
 	 * @returns {Array}
 	 */
-	#prioritiseAviationTargets(state, groupPositions, nearbyTargetCount, airRaidTargets, casTargets, industrialTargets, adaTargets) {
+	#prioritiseAviationTargets(state, groupPositions, nearbyTargetCount, airRaidTargets, casTargets, industrialTargets, adaTargets, indirectFireTargets, defensiveStructureTargets) {
 
 		const aviationTargets = [];
 		
@@ -541,19 +547,22 @@ class CommandCenter {
 			t.minAircraft = 3;
 		});
 
+		const casPriorityTargets = [...casTargets, ...airRaidTargets];
+		const raidPriorityTargets = [...airRaidTargets, ...casTargets];
 
 		if(prioritiseIndustrialTargets) {
+
 			if (SATURATION_RAID) {
-				targetCandidates = [...industrialTargets, ...adaTargets, ...casTargets, ...airRaidTargets];
+				targetCandidates = [...industrialTargets, ...adaTargets, ...indirectFireTargets, ...defensiveStructureTargets, ...casPriorityTargets];
 			} else {
-				targetCandidates = [...industrialTargets, ...airRaidTargets, ...casTargets, ...adaTargets];			
+				targetCandidates = [...indirectFireTargets, ...defensiveStructureTargets, ...casPriorityTargets,  ...industrialTargets, ...adaTargets];			
 			}
 		} else if (prioritiseCasTargets) {
-			targetCandidates = [...casTargets, ...airRaidTargets];
+			targetCandidates = casPriorityTargets;
 		} else if (prioritiseRaidTargets) {
-			targetCandidates = [...airRaidTargets, ...casTargets];
+			targetCandidates = raidPriorityTargets;
 		} else {
-			targetCandidates = [...casTargets, ...airRaidTargets];		// same as CAS
+			targetCandidates = casPriorityTargets;
 		}
 
 		if (targetCandidates.length === 0) {
@@ -656,6 +665,8 @@ class CommandCenter {
 		const raidTargets = state.aviationTargets['raidTargets'];
 		const productionTargets = state.aviationTargets['productionTargets'];
 		const adaTargets = state.aviationTargets['adaTargets'];
+		const indirectFireTargets = state.aviationTargets['indirectFireTargets'];
+		const defensiveStructureTargets = state.aviationTargets['defensiveStructureTargets'];
 
 		const campaignStatus = this.#getCampaignStatus();
 		const readyToAttack = campaignStatus === CAMPAIGN_STATUS.MAIN_ASSAULT || campaignStatus === CAMPAIGN_STATUS.STAGING;
@@ -698,6 +709,8 @@ class CommandCenter {
 			casTargets, 
 			productionTargets,
 			adaTargets,
+			indirectFireTargets,
+			defensiveStructureTargets,
 		);
 
 		this.toc.assignAviationMissions(state, aviationTargets);					

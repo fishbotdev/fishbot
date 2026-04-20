@@ -222,8 +222,12 @@ class worldState {
         this.aviationTargets = {
             'raidTargets': [],
             'casTargets': [],
+
+            // 4 types of targets around enemy bases
             'productionTargets': [],
-            'adaTargets': []
+            'adaTargets': [],
+            'indirectFireTargets': [],
+            'defensiveStructureTargets': []
         }; 
 
         // Mission management system

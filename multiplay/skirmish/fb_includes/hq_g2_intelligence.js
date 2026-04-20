@@ -360,6 +360,8 @@ class armyIntelligence {
 		let result = {
 			'productionTargets': [],
 			'adaTargets': [],
+			'indirectFireTargets': [],
+			'defensiveStructureTargets': [],
 		}
 
 		if (enemyPlayerIDs.length === 0) {
@@ -383,16 +385,29 @@ class armyIntelligence {
 					result.productionTargets.push(t['targetStructures'][j]);
 					continue;
 				}
+				if (t['targetStructures'][j].flags & OBJ_FLAGS.INDIRECT_FIRE) {
+					result.indirectFireTargets.push(t['targetStructures'][j]);
+					continue;
+				}
+				if (t['targetStructures'][j].flags & OBJ_FLAGS.DEFENSIVE_STRUCTURE) {
+					result.defensiveStructureTargets.push(t['targetStructures'][j]);
+					continue;
+				}
 			}
 
 			for (let j=0; j<t['targetUnits'].length; j++) {
 				if (t['targetUnits'][j].flags & OBJ_FLAGS.ADA) {
 					result.adaTargets.push(t['targetUnits'][j]);
+					continue;
 				}
 				if (t['targetUnits'][j].flags & OBJ_FLAGS.CONSTRUCTOR) {
 					result.productionTargets.push(t['targetUnits'][j]);
+					continue;
 				}
-
+				if (t['targetUnits'][j].flags & OBJ_FLAGS.INDIRECT_FIRE) {
+					result.indirectFireTargets.push(t['targetUnits'][j]);
+					continue;
+				}
 			}
 		}	
 

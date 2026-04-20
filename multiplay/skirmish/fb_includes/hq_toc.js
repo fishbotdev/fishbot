@@ -608,10 +608,12 @@ class TacticalOperationsCenter {
 	 * @param {Object} productionTargets 
 	 * @param {Object} adaTargets 
 	 */
-	setAviationTargets(state, raidTargets, productionTargets, adaTargets) {
+	setAviationTargets(state, raidTargets, productionTargets, adaTargets, indirectFireTargets, defensiveStructureTargets) {
 		state.aviationTargets['raidTargets'] = raidTargets;
 		state.aviationTargets['productionTargets'] = productionTargets;
 		state.aviationTargets['adaTargets'] = adaTargets;
+		state.aviationTargets['indirectFireTargets'] = indirectFireTargets;
+		state.aviationTargets['defensiveStructureTargets'] = defensiveStructureTargets;
 	}
 
 	/**
