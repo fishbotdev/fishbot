@@ -555,7 +555,7 @@ class CommandCenter {
 			if (SATURATION_RAID) {
 				targetCandidates = [...industrialTargets, ...adaTargets, ...indirectFireTargets, ...defensiveStructureTargets, ...casPriorityTargets];
 			} else {
-				targetCandidates = [...adaTargets, ...indirectFireTargets, ...defensiveStructureTargets, ...casPriorityTargets, ...industrialTargets];			
+				targetCandidates = [...adaTargets, ...indirectFireTargets, ...industrialTargets, ...defensiveStructureTargets, ...casPriorityTargets];			
 			}
 		} else if (prioritiseCasTargets) {
 			targetCandidates = casPriorityTargets;
