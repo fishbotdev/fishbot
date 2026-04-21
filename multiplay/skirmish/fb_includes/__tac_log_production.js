@@ -459,11 +459,11 @@ function produceLandUnitCategory(category, factory) {
 			factoryInProduction = factoryInProduction || produceLightCavalry(factory);
 			break;
 		case 'shortRangeArtillery':
-			if (r <= 1) {
-				factoryInProduction = factoryInProduction || produceLandAPFireSupport(factory);
-			} else {
+			// if (r <= 1) {
+			// 	factoryInProduction = factoryInProduction || produceLandAPFireSupport(factory);
+			// } else {
 				factoryInProduction = factoryInProduction || produceLandFireSupportGeneric(factory);
-			}
+			// }
 			break;
 		case 'ADA':
 			if (r === 0) {
