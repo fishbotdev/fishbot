@@ -288,7 +288,7 @@ class armyIntelligence {
 	}
 
 	/**
-	 * 
+	 * Gets targets around all derricks (including friendly derricks).
 	 * @param {worldState} state 
 	 * @returns 
 	 */
@@ -333,7 +333,7 @@ class armyIntelligence {
 			});
 
 			t['targetUnits'].forEach(target => {
-				if (target.flags & OBJ_FLAGS.CONSTRUCTOR) {
+				if (target.flags & OBJ_FLAGS.CONSTRUCTOR && !(target.flags & OBJ_FLAGS.CYBORG_PROPULSION)) {
 					trucks.push(target);
 				}
 			});
@@ -348,7 +348,7 @@ class armyIntelligence {
 	}
 
 	/**
-	 * 
+	 * Gets targets around all enemy bases. Currently (FishBot v0.4.0) used for VTOL targeting only.
 	 * @param {worldState} state 
 	 * @returns 
 	 */
@@ -400,11 +400,13 @@ class armyIntelligence {
 					result.adaTargets.push(t['targetUnits'][j]);
 					continue;
 				}
-				if (t['targetUnits'][j].flags & OBJ_FLAGS.CONSTRUCTOR) {
+				if (t['targetUnits'][j].flags & OBJ_FLAGS.CONSTRUCTOR && !(t['targetUnits'][j].flags & OBJ_FLAGS.CYBORG_PROPULSION)) {
+					// Cyborg propulsion is omitted because FishBot 0.4.0 does not use anti-cyborg VTOL weapons
 					result.productionTargets.push(t['targetUnits'][j]);
 					continue;
 				}
-				if (t['targetUnits'][j].flags & OBJ_FLAGS.INDIRECT_FIRE) {
+				if (t['targetUnits'][j].flags & OBJ_FLAGS.INDIRECT_FIRE && !(t['targetUnits'][j].flags & OBJ_FLAGS.CYBORG_PROPULSION)) {
+					// Cyborg propulsion is omitted because FishBot 0.4.0 does not use anti-cyborg VTOL weapons (e.g. will falsely attack grenadiers)
 					result.indirectFireTargets.push(t['targetUnits'][j]);
 					continue;
 				}
