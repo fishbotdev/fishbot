@@ -553,7 +553,7 @@ class CommandCenter {
 		if(prioritiseIndustrialTargets) {
 
 			if (SATURATION_RAID) {
-				targetCandidates = [...industrialTargets, ...adaTargets, ...indirectFireTargets, ...defensiveStructureTargets, ...casPriorityTargets];
+				targetCandidates = [...adaTargets, ...industrialTargets, ...indirectFireTargets, ...defensiveStructureTargets, ...casPriorityTargets];
 			} else {
 				targetCandidates = [...adaTargets, ...indirectFireTargets, ...industrialTargets, ...defensiveStructureTargets, ...casPriorityTargets];			
 			}
@@ -581,10 +581,10 @@ class CommandCenter {
 		/*
 			Set no-fly regions; 
 				0 = avoids all anti-air defences, 
-				0.34 > 0.33 = allow 1 tile over from a single air defence. 
+				0.69 > 0.33 * 2 = allow 1 tile over from a single air defence. 
 			Modify value to match "hq_toc/updateSpatialFields" filter.
 		*/
-		const threatThreshold = IS_OIL_DOMINANT ? 0.34 : 0;		
+		const threatThreshold = IS_OIL_DOMINANT ? 0.69 : 0;		
 
 
 		const MED_PRIORITY_MISSION_TYPES = [MISSION_TYPE.AIR_RAID, MISSION_TYPE.DAS_STRIKE];
