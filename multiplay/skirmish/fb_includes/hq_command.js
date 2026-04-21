@@ -577,10 +577,18 @@ class CommandCenter {
 										filter(m => OFFENSIVE_MISSION_TYPES.includes(m.missionType));
 
 		let activeTargetIDs = [];
-		const threatThreshold = IS_OIL_DOMINANT ? 1 : 0;		// Set no-fly regions; 0 = avoids all anti-air defences
+
+		/*
+			Set no-fly regions; 
+				0 = avoids all anti-air defences, 
+				0.34 > 0.33 = allow 1 tile over from a single air defence. 
+			Modify value to match "hq_toc/updateSpatialFields" filter.
+		*/
+		const threatThreshold = IS_OIL_DOMINANT ? 0.34 : 0;		
+
 
 		const MED_PRIORITY_MISSION_TYPES = [MISSION_TYPE.AIR_RAID, MISSION_TYPE.DAS_STRIKE];
-
+		
 		for (let i=0; i<activeMissions.length; i++) {
 			let c = activeMissions[i];
 			activeTargetIDs.push(c.target.id);
