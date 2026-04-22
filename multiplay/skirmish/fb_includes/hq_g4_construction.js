@@ -415,16 +415,43 @@ class armyEngineering {
 			// Placeholder VTOL rearming pads
 			STRUCTURES["VTOL Rearming Pad"],
 			STRUCTURES["VTOL Rearming Pad"],
+
+			STRUCTURES["Factory"],
+			STRUCTURES["Factory Module"],
+			STRUCTURES["Factory Module"],
+
+			STRUCTURES["VTOL Rearming Pad"],
+			STRUCTURES["VTOL Rearming Pad"],
+
+			STRUCTURES["Power Generator"],
+			STRUCTURES["Power Module"],
+
+			STRUCTURES["Factory"],
+			STRUCTURES["Factory Module"],
+			STRUCTURES["Factory Module"],
+
+			STRUCTURES["Cyborg Factory"],
+
+			STRUCTURES["VTOL Rearming Pad"],
+			STRUCTURES["VTOL Rearming Pad"],
+
+			STRUCTURES["Power Generator"],
+			STRUCTURES["Power Module"],
+
 			STRUCTURES["VTOL Rearming Pad"],
 			STRUCTURES["VTOL Rearming Pad"],
 			STRUCTURES["VTOL Rearming Pad"],
 			STRUCTURES["VTOL Rearming Pad"],
 			STRUCTURES["VTOL Rearming Pad"],
 			STRUCTURES["VTOL Rearming Pad"],
-			STRUCTURES["VTOL Rearming Pad"],
-			STRUCTURES["VTOL Rearming Pad"],
-			STRUCTURES["VTOL Rearming Pad"],
-			STRUCTURES["VTOL Rearming Pad"],
+
+			STRUCTURES["Cyborg Factory"],
+
+			STRUCTURES["Power Generator"],
+			STRUCTURES["Power Module"],
+
+			STRUCTURES["Power Generator"],
+			STRUCTURES["Power Module"],
 		];
 
 		// Put each task into an appropriate format for approval ("buildTask", which is internal to g4_construction)
