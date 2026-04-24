@@ -487,6 +487,26 @@ class armyEngineering {
 				continue;
 			}
 
+			// Part 3: Check custom rules; suppose that we should only build factory modules if Cobra is available.
+			const shouldBuildFactoryModules = () => {
+				// Step 1: Find "Cobra" in FISHBOT_BODIES
+				// TODO: unimplemented
+				// Step 2: Extract FISHBOT_BODIES[cobraIdx].id
+				// TODO: unimplemented
+				// Step 3: Determine if Cobra is available
+				// TODO: following line will not work because FISHBOT_BODIES is an array (integer indexed & not string-indexed)
+				const COBRA_BODY_IS_AVAILABLE = componentAvailable(FISHBOT_BODIES["Cobra"].id);	// example only: actually need to search for it in FISHBOT_BODIES
+				
+				if (COBRA_BODY_IS_AVAILABLE) {
+					return true;
+				} else {
+					return false;
+				}
+			};
+			if (currStructureData.name === "Factory Module" && !shouldBuildFactoryModules()) {
+				continue;
+			}
+
 			// Else, schedule a new task
 			const buildRequest = this.translateIntoBuildRequest({
 				missionType: MISSION_TYPE.CONSTRUCT_AUTO_DETECT_BY_STRUCTURE, 

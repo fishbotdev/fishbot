@@ -406,7 +406,7 @@ For each body e.g. FISHBOT_BODIES["Python"], the parameters are:
 -   id              | "Body11ABT"           | (int) same as Id (added by FishBot)  
 */
 
-const FISHBOT_BODY_LIST_ORDERED = ["Viper", "Cobra", "Python", "Mantis", "Leopard", "Panther", "Tiger", "Retaliation", "Retribution", "Vengeance"];       // this is ordered in order of technological sophistication (used in production)
+const FISHBOT_BODY_LIST_ORDERED = ["Viper", "Leopard", "Panther", "Tiger", "Retaliation", "Retribution", "Vengeance"];       // this is ordered in order of technological sophistication (used in production)
 FISHBOT_BODY_LIST_ORDERED.forEach((bodyName) => {
     const bodyObj = {...Stats.Body[bodyName], ...{'name': bodyName, 'id': Stats.Body[bodyName].Id}};       // adds user-friendly 'name' & id
     FISHBOT_BODIES.push(bodyObj);
