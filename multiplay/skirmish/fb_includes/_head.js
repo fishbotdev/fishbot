@@ -121,7 +121,7 @@ const OBJ_FLAGS = {
     // structures
     PRODUCTION:   				1 << 24,
 	RESEARCH: 					1 << 25,
-	ENERGY:						1 << 26,
+	POWER_GENERATOR:			1 << 26,
     RESOURCE_EXTRACTOR:       	1 << 27,
     DEFENSIVE_STRUCTURE:      	1 << 28,
 	IS_BUILT:					1 << 29,

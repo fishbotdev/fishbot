@@ -171,6 +171,11 @@ function classifyGameObject(obj) {
             return flags;					
         }
 
+        if (obj.stattype === POWER_GEN) {
+            flags |= OBJ_FLAGS.POWER_GENERATOR;
+            return flags;
+        }
+
         if (obj.stattype === RESOURCE_EXTRACTOR) {
             flags |= OBJ_FLAGS.RESOURCE_EXTRACTOR;
             return flags;
