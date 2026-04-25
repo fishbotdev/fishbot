@@ -958,7 +958,7 @@ class CommandCenter {
 		// This function assigns reserve units to active brigade combat teams
 		const getReserveUnitsOfType = (groupID) => state.g.enumGroup(groupID);
 
-		const RECOMBINATION_THRESHOLD = 50;
+		const RECOMBINATION_THRESHOLD = 25;
 		const OVERSTRENGTH_THRESHOLD = 100;
 		const brigadesForRecombination = [];
 		const overstrengthBrigades = [];
@@ -1006,6 +1006,16 @@ class CommandCenter {
 				getReinforcementUnits('ADA', DIVISION.AIR_DEFENCE_RESERVE, AIR_DEFENCE_RESERVE),
 				getReinforcementUnits('sensor', DIVISION.SENSOR_RESERVE, SENSOR_RESERVE),
 			];
+
+			const heavyCavReinforcementCount = resupplyUnits[0]['unitList'].length;
+
+			const NO_HEAVY_CAV_REINFORCEMENTS = heavyCavReinforcementCount === 0;
+			const BRIGADE_HAS_NO_HEAVY_CAV = deficit['heavyCavalry']['abs'] === this.FISHBOT_BRIGADE_COMPOSITION.MAX_HEAVY_CAVALRY;
+			const BRIGADE_IS_WEAK_AND_NOT_FIRST_BCT = brigadesForRecombination.includes(brigadeID) && brigadeID !== DIVISION.FIRST_BCT;
+
+			if (BRIGADE_IS_WEAK_AND_NOT_FIRST_BCT && BRIGADE_HAS_NO_HEAVY_CAV && NO_HEAVY_CAV_REINFORCEMENTS) {
+				continue;
+			}
 
 			this.toc.assignUnitsToBrigade(state, resupplyUnits, brigadeID);
 
