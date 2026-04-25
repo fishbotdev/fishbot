@@ -430,9 +430,14 @@ class armyIntelligence {
 	 * @param {number} immediateRadius
 	 * @returns {Object}
 	 */
-	proposeTargetsInRadius2(state, loc, searchRadius, immediateRadius) {
+	proposeTargetsInRadius2(state, loc, height, searchRadius, immediateRadius) {
 
 		const allTargets = state.allTargets;
+
+		const GROUP_LOCATION = loc;
+		const GROUP_HEIGHT = height;
+		const SEARCH_RADIUS = searchRadius;
+		const IMMEDIATE_RADIUS = immediateRadius;
 
 		let proposedTargets = {
 			'enemyArmor': [], 
@@ -449,17 +454,20 @@ class armyIntelligence {
 			'targetsInImmediateRadius': 0
 		};		
 
-		if (!defined(loc)) {
-			debug(`WARNING:	proposeTargetsInRadius2(): 'loc' was undefined.`);
+		if (!defined(GROUP_LOCATION) || !defined(GROUP_HEIGHT)) {
+			debug(`WARNING:	proposeTargetsInRadius2(): 'loc' or 'height' was undefined.`);
 			return proposedTargets;
 		}
 
-		const t = state.grid.enumRange(loc.x, loc.y, searchRadius); 
+		const t = state.grid.enumRange(GROUP_LOCATION.x, GROUP_LOCATION.y, SEARCH_RADIUS); 
 
 		let targetList = [...t['targetUnits'], ...t['targetStructures']];
 		// debug(`t ${targetList.length} (d ${t['droids'].length}, s ${t['structs'].length}), allT ${allTargets.length}`);
 
 		if (targetList.length === 0) {
+			// TODO: Check what this means for multi-group
+			// E.g. in the worst case this could mean that allTargets (same list) is processed "N" times for "N" groups.
+			// Consider building in the group system for this function for performance reasons.
 			targetList = allTargets;			
 		}
 
@@ -483,10 +491,14 @@ class armyIntelligence {
 			// Update closestDroid (excludes VTOLs)
 			if (!(t.flags & OBJ_FLAGS.AVIATION)) {
 
-				const distSquaredToLoc = distSq(obj.x, loc.x, obj.y, loc.y);
+				const distSquaredToLoc = distSq3D(
+					obj.x, GROUP_LOCATION.x, 
+					obj.y, GROUP_LOCATION.y, 
+					MapTiles[obj.y][obj.x], GROUP_HEIGHT
+				);
 
 				// Add closestObjects (should be called closestTargets)
-				if (distSquaredToLoc <= immediateRadius ** 2) {
+				if (distSquaredToLoc <= IMMEDIATE_RADIUS ** 2) {
 					proposedTargets["closestObjects"].push(t);
 					proposedTargets["targetsInImmediateRadius"] += 1;
 				}
@@ -494,7 +506,7 @@ class armyIntelligence {
 				// Update closestObject (should be called closestTarget)
 				if (!defined(closestObject)) {
 					closestObject = t;
-					closestDistSq = distSq(obj.x, loc.x, obj.y, loc.y);
+					closestDistSq = distSquaredToLoc;
 				} else {
 					if (distSquaredToLoc < closestDistSq) {
 						closestObject = t;

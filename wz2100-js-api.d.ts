@@ -34,6 +34,15 @@ declare const mapWidth: number;
 declare const mapHeight: number;
 
 /**
+```MapTiles``` A two-dimensional array of static information about the map tiles in a game. Each item in MapTiles[y][x] is an object containing the following variables:
+- ```terrainType``` tile type of a given map tile, such as ```TER_WATER``` for water tiles or ```TER_CLIFFFACE``` for cliffs. Tile types regulate which units may pass through this tile. (3.2+ only)
+- ```height``` the height at the top left of the tile
+- ```hoverContinent``` (For hover type propulsions)
+- ```limitedContinent``` (For land or sea limited propulsion types)
+ */
+declare const MapTiles: any;
+
+/**
  * ```gameTime``` The current game time. Updated before every invokation of a script.
  */
 declare const gameTime: number;

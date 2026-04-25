@@ -456,6 +456,22 @@ class worldStateBuilder {
         return p;
     }
 
+    #initialiseMapTiles() {
+        const yMap = generateRange(mapHeight);
+        const xMap = generateRange(mapWidth);
+
+        yMap.forEach(y => {
+            const mapRow = [];
+
+            xMap.forEach(x => {
+                // mapRow.push(MapTiles[y][x].height);      // height
+                // mapRow.push(MapTiles[y][x].terrainType);    // different terrain type
+            });
+
+            // debug(`"${mapRow}",`);      // python script processes list of comma-delimited strings
+        });
+    }
+
     /**
      * Initialises `state` with the FishBot grouping system, default POIs and basic player information.
      * @param {worldState} state 
@@ -463,6 +479,8 @@ class worldStateBuilder {
      */
     initialise(state) {
         state.g = this.#createFbGroupingSystem();
+
+        this.#initialiseMapTiles();
 
         state.poi.derricks = this.#initialiseDerrickLocs(state);    // this function also modifies each grid cell
         state.poi.bases = this.#initialiseBaseLocs(state);          // this function also modifies each grid cell

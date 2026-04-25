@@ -99,6 +99,20 @@ function distSq(x1, x2, y1, y2) {
 	return (x1-x2)**2 + (y1-y2)**2;
 }
 
+/** 
+ * This variant of `distSq()` is used for direct fire targeting.
+ * @param {number} x1 
+ * @param {number} x2 
+ * @param {number} y1 
+ * @param {number} y2 
+ * @param {number} z1
+ * @param {number} z2
+ * @returns {number}
+ */
+function distSq3D(x1, x2, y1, y2, z1, z2) {
+	return (x1-x2)**2 + (y1-y2)**2 + (z1 - z2)**2;
+}
+
 /**
  * Converts a number `n` to its binary string representation (to 20 bits).
  * @param {number} n integer

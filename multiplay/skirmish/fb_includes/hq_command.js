@@ -228,12 +228,15 @@ class CommandCenter {
 			case 'intel_getNearbyGroundTargets':
 
 				// Update location(s) & composition(s) of active combat force(s)
+				// Note: "height" was added to address group movement oscillations due to impassable obstacles.
 				const forceLocations = [];
 
 				this.BRIGADE_DESIGNATIONS.forEach(brigadeID => {
+					const forceLocation = groundForces.getForceMedianLocation(brigadeID);
 					forceLocations.push({
 						'brigadeID': brigadeID,
-						'location': groundForces.getForceMedianLocation(brigadeID)
+						'location': forceLocation,
+						'height': MapTiles[forceLocation.y][forceLocation.x].height				
 					});
 				});
 				this.toc.setForceLocations(state, forceLocations);
@@ -242,7 +245,7 @@ class CommandCenter {
 				state.forceLocations.forEach(fLoc => {
 					const targetInfo = {
 						'brigadeID': fLoc['brigadeID'],
-						'targets' : intelligence.proposeTargetsInRadius2(state, fLoc['location'], this.TARGET_SEARCH_RADIUS, this.FORCE_IMMEDIATE_RADIUS)
+						'targets' : intelligence.proposeTargetsInRadius2(state, fLoc['location'], fLoc['height'], this.TARGET_SEARCH_RADIUS, this.FORCE_IMMEDIATE_RADIUS)
 					};
 
 					nearbyGroundTargets.push(targetInfo);						

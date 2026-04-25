@@ -268,7 +268,7 @@ function moveBrigadeToAttack(state, brigadeID, brigadeLocation, directFireTarget
 		});
 	}
 
-	if (false) {
+	if (true) {
 		hackMarkTiles();
 		if (defined(currDirectFireTarget)) {
 			addBeacon(currDirectFireTarget.x, currDirectFireTarget.y, 0);
