@@ -372,16 +372,16 @@ class armyEngineering {
 			STRUCTURES["Cyborg Factory"],		
 			STRUCTURES["Cyborg Factory"],		
 			STRUCTURES["VTOL Factory"],
-			STRUCTURES["VTOL Rearming Pad"],
-			STRUCTURES["VTOL Rearming Pad"],
-
 			STRUCTURES["Power Module"],				// The script will automatically find the position to place this power module
 			STRUCTURES["Research Facility"],
 			STRUCTURES["Power Module"],
+			STRUCTURES["VTOL Rearming Pad"],
+			STRUCTURES["VTOL Rearming Pad"],
 			STRUCTURES["Power Module"],
+			STRUCTURES["Factory Module"],
+			STRUCTURES["Factory Module"],
 
-			STRUCTURES["Factory Module"],
-			STRUCTURES["Factory Module"],
+			STRUCTURES["Repair Facility"],
 
 			STRUCTURES["Factory Module"],
 			STRUCTURES["Factory Module"],
