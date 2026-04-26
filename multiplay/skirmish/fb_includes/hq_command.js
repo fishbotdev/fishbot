@@ -1269,6 +1269,8 @@ class CommandCenter {
 			"R-Wpn-Mortar-Damage", 	
 			"R-Vehicle-Metals",
 			"R-Wpn-Cannon-ROF", 
+			RESEARCHES["Advanced Engineering"].id,
+			RESEARCHES["Advanced Repair Facility"].id,
 			"R-Struc-Research-Upgrade",
 			"R-Cyborg-Metals",
 			RESEARCHES["Heavy Body - Tiger"].id,
