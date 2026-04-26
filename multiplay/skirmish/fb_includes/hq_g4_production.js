@@ -22,7 +22,7 @@ class armySupply {
 	}
 
     /**
-	 * Returns the number of units remaining for the specified FishBot brigade to be at full strength.
+	 * Returns the number of units remaining for the specified FishBot brigade to be at full strength, and the number and type of units needing repair.
      * @param {worldState} state
      * @returns Object with numeric deficits of the following categories: 
      *  - `heavyCavalry`
@@ -36,7 +36,7 @@ class armySupply {
      *  - `totalLandUnits`
      *  - `targetTotalLandUnits`
 	 */
-	getBrigadeUnitDeficit2(state, brigadeID, brigadeComposition) {
+	getBrigadeSupplyStatus(state, brigadeID, brigadeComposition, repairThreshold) {
 
         const brigadeUnits = state.g.enumGroup(brigadeID);
 
@@ -54,27 +54,68 @@ class armySupply {
         let airDefenceCount = 0;
         let sensorCount = 0;
 
+        const damagedHeavyCavalry = [];
+        const damagedLightCavalry = [];
+        const damagedInfantry = [];
+        const damagedShortRangeFireSupport = [];
+        const damagedAirDefence = [];
+        const damagedSensor = [];
+
+        const VEHICLE_UNIT_TYPES = [DIVISION.HEAVY_CAV_RESERVE, DIVISION.LIGHT_CAV_RESERVE, DIVISION.SHORT_RANGE_FIRE_SUPPORT_RESERVE, DIVISION.AIR_DEFENCE_RESERVE];
+        const needsRepair = (unit, category) => {
+            if (VEHICLE_UNIT_TYPES.includes(category)) {
+                if (unit.health < repairThreshold) {
+                    return true;
+                }
+            } else if (category === DIVISION.INFANTRY_RESERVE) {
+                if (unit.health < repairThreshold) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
         for (let i=0; i<brigadeUnits.length; i++) {
-            const category = getDroidFbGroupClassification(brigadeUnits[i]);
+            const unit = brigadeUnits[i];
+
+            const category = getDroidFbGroupClassification(unit);
 
             switch (category) {
                 case DIVISION.HEAVY_CAV_RESERVE:
                     heavyCavalryCount++;
+                    if (needsRepair(unit, category)) {
+                        damagedHeavyCavalry.push(unit);
+                    }
                     break;
                 case DIVISION.LIGHT_CAV_RESERVE:
                     lightCavalryCount++;
+                    if (needsRepair(unit, category)) {
+                        damagedLightCavalry.push(unit);
+                    }
                     break;
                 case DIVISION.INFANTRY_RESERVE:
                     infantryCount++;
+                    if (needsRepair(unit, category)) {
+                        damagedInfantry.push(unit);
+                    }
                     break;
                 case DIVISION.SHORT_RANGE_FIRE_SUPPORT_RESERVE:
                     shortRangeFireSupportCount++;
+                    if (needsRepair(unit, category)) {
+                        damagedShortRangeFireSupport.push(unit);
+                    }
                     break;
                 case DIVISION.AIR_DEFENCE_RESERVE:
                     airDefenceCount++;
+                    if (needsRepair(unit, category)) {
+                        damagedAirDefence.push(unit);
+                    }
                     break;
                 case DIVISION.SENSOR_RESERVE:
                     sensorCount++;
+                    if (needsRepair(unit, category)) {
+                        damagedSensor.push(unit);
+                    }
                     break;
                 default:
                     debug(`WARNING: ${brigadeUnits[i].name} was unclassified! Classifying as heavy cav.`);
@@ -82,7 +123,7 @@ class armySupply {
             }
         }
 
-        const computeDeficit = (category, maxVal, currCount) => {
+        const getSupplyStatus = (category, maxVal, currCount, damagedUnitList) => {
             let deficit = maxVal - currCount;
             let norm = 0.0;
             if (maxVal > 0) {
@@ -92,6 +133,9 @@ class armySupply {
                 'category': category,
                 'abs': deficit,
                 'norm': norm,
+
+                'damagedUnitCount': damagedUnitList.length,
+                'damagedUnitList': damagedUnitList
             }
         }
 
@@ -99,12 +143,12 @@ class armySupply {
             'totalLandUnits': heavyCavalryCount + lightCavalryCount + infantryCount + shortRangeFireSupportCount + airDefenceCount + sensorCount,
             'targetTotalLandUnits': MAX_HEAVY_CAVALRY + MAX_LIGHT_CAVALRY + MAX_INFANTRY + MAX_MORTAR + MAX_ADA + MAX_SENSOR, 
 
-            'heavyCavalry': computeDeficit(DIVISION.HEAVY_CAV_RESERVE, MAX_HEAVY_CAVALRY, heavyCavalryCount),
-            'lightCavalry': computeDeficit(DIVISION.LIGHT_CAV_RESERVE, MAX_LIGHT_CAVALRY, lightCavalryCount),
-            'infantry': computeDeficit(DIVISION.INFANTRY_RESERVE, MAX_INFANTRY, infantryCount),
-            'shortRangeArtillery': computeDeficit(DIVISION.SHORT_RANGE_FIRE_SUPPORT_RESERVE, MAX_MORTAR, shortRangeFireSupportCount),
-            'ADA': computeDeficit(DIVISION.AIR_DEFENCE_RESERVE, MAX_ADA, airDefenceCount),
-            'sensor': computeDeficit(DIVISION.SENSOR_RESERVE, MAX_SENSOR, sensorCount),
+            'heavyCavalry': getSupplyStatus(DIVISION.HEAVY_CAV_RESERVE, MAX_HEAVY_CAVALRY, heavyCavalryCount, damagedHeavyCavalry),
+            'lightCavalry': getSupplyStatus(DIVISION.LIGHT_CAV_RESERVE, MAX_LIGHT_CAVALRY, lightCavalryCount, damagedLightCavalry),
+            'infantry': getSupplyStatus(DIVISION.INFANTRY_RESERVE, MAX_INFANTRY, infantryCount, damagedInfantry),
+            'shortRangeArtillery': getSupplyStatus(DIVISION.SHORT_RANGE_FIRE_SUPPORT_RESERVE, MAX_MORTAR, shortRangeFireSupportCount, damagedShortRangeFireSupport),
+            'ADA': getSupplyStatus(DIVISION.AIR_DEFENCE_RESERVE, MAX_ADA, airDefenceCount, damagedAirDefence),
+            'sensor': getSupplyStatus(DIVISION.SENSOR_RESERVE, MAX_SENSOR, sensorCount, damagedSensor),
 		}
 	}
 

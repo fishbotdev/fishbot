@@ -217,6 +217,11 @@ class TacticalOperationsCenter {
 				break;		// handled in the mission manager
 
 			/*
+				INTELLIGENCE MISSIONS
+			*/
+
+
+			/*
 				AVIATION MISSIONS
 			*/
 			case MISSION_TYPE.VTOL_STAGING_MISSION:
@@ -242,9 +247,11 @@ class TacticalOperationsCenter {
 				break;
 
 			/*
-				INTELLIGENCE MISSIONS
+				GROUND MISSIONS
 			*/
-
+			case MISSION_TYPE.RETURN_FOR_REPAIR:
+				md = groundForces.createReturnForRepairMission();
+				break;
 
 			/*
 				CONSTRUCTION MISSIONS
@@ -623,9 +630,13 @@ class TacticalOperationsCenter {
      * @param {DroidObject} droid 
      * @returns {void}
      */
-    setNewDroidGroup(state, droid) {
+    setNewDroidGroup(state, droid, groupIdToRemove=undefined) {
 
 		const groupID = getDroidFbGroupClassification(droid);
+
+		if (defined(groupIdToRemove)) {
+			state.g.removeDroidFromGroup({groupID: groupIdToRemove, droidID: droid.id});
+		}
 
 		state.g.addDroidToGroup({groupID: groupID, droidID: droid.id});
 	}
@@ -646,6 +657,15 @@ class TacticalOperationsCenter {
 				state.g.removeDroidFromGroup({groupID: u['category'], droidID: droid.id});
 				state.g.addDroidToGroup({groupID: brigadeID, droidID: droid.id});
 			});
+		}
+	}
+
+	assignUnitsForRepair(state, unitRoster, brigadeID) {
+	
+		for (let i=0; i<unitRoster.length; i++) {
+			const droid = unitRoster[i];
+			state.g.removeDroidFromGroup({groupID: brigadeID, droidID: droid.id});
+			state.g.addDroidToGroup({groupID: DIVISION.RETURNING_FOR_REPAIR, droidID: droid.id});
 		}
 	}
 }

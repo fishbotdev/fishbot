@@ -53,6 +53,7 @@ class CommandCenter {
 		this.NUMBER_OF_BRIGADES = 2;
 		this.BRIGADE_DESIGNATIONS = [DIVISION.FIRST_BCT, DIVISION.SECOND_BCT, DIVISION.THIRD_BCT, DIVISION.FOURTH_BCT, DIVISION.FIFTH_BCT].slice(0, this.NUMBER_OF_BRIGADES);
 
+		this.BRIGADE_REPAIR_THRESHOLD = 30;
 		
 		// Task scheduling parameters
 		// Add regular, high priority, high computational load tasks to the start of the list.
@@ -87,8 +88,11 @@ class CommandCenter {
 
 		// Construction - helping construct around base
 		const md2 = this.toc.createNewMission({missionType: MISSION_TYPE.HELP_CONSTRUCT, priority: MISSION_PRIORITY.LOW});
+		
+		// Ground forces - return for repair
+		const md3 = this.toc.createNewMission({missionType: MISSION_TYPE.RETURN_FOR_REPAIR, priority: MISSION_PRIORITY.LOW});		
 
-		state.activeMissions.push(md1, md2);
+		state.activeMissions.push(md1, md2, md3);
 	}
 
 	/**
@@ -935,27 +939,53 @@ class CommandCenter {
 		const SHORT_RANGE_FIRE_SUPPORT_RESERVE = getReserveUnitsOfType(DIVISION.SHORT_RANGE_FIRE_SUPPORT_RESERVE);
 		const SENSOR_RESERVE = getReserveUnitsOfType(DIVISION.SENSOR_RESERVE);
 		const AIR_DEFENCE_RESERVE = getReserveUnitsOfType(DIVISION.AIR_DEFENCE_RESERVE);
+		
+		const RETURNING_FOR_REPAIR = getReserveUnitsOfType(DIVISION.RETURNING_FOR_REPAIR);
 
 		let printedTitle = false;
 
 		this.BRIGADE_DESIGNATIONS.forEach(brigadeID => {
-			const deficit = supply.getBrigadeUnitDeficit2(state, brigadeID, this.FISHBOT_BRIGADE_COMPOSITION);
+			const deficit = supply.getBrigadeSupplyStatus(state, brigadeID, this.FISHBOT_BRIGADE_COMPOSITION, this.BRIGADE_REPAIR_THRESHOLD);
 
 			const brigadeStrength = Math.floor(deficit['totalLandUnits'] / deficit['targetTotalLandUnits'] * 100);
+			const actualBrigadeUnitCount = state.g.enumGroup(brigadeID).length;
 			if (brigadeStrength !== 0) {
 				if (!printedTitle) {					
 					debug(`==${getOrdinal(me)} DIVISION @ ${gameTime}==`);
-					debug(`\tRESERVE:\t hc: ${HEAVY_CAV_RESERVE.length}, lc: ${LIGHT_CAV_RESERVE.length}, inf: ${INFANTRY_RESERVE.length}, mort: ${SHORT_RANGE_FIRE_SUPPORT_RESERVE.length}, sens: ${SENSOR_RESERVE.length}, ada: ${AIR_DEFENCE_RESERVE.length}`)
+					debug(`\tRESERVE:\t hc: ${HEAVY_CAV_RESERVE.length}, lc: ${LIGHT_CAV_RESERVE.length}, inf: ${INFANTRY_RESERVE.length}, mort: ${SHORT_RANGE_FIRE_SUPPORT_RESERVE.length}, sens: ${SENSOR_RESERVE.length}, ada: ${AIR_DEFENCE_RESERVE.length}, repair: ${RETURNING_FOR_REPAIR.length}`)
 					printedTitle = true;
 				}
-				debug(`\tBrigade ${brigadeID}: ${brigadeStrength} % (${deficit['totalLandUnits']} / ${this.TOTAL_UNITS_PER_BRIGADE} units)`);
+				debug(`\tBrigade ${brigadeID}: ${brigadeStrength} % (${deficit['totalLandUnits']} / ${this.TOTAL_UNITS_PER_BRIGADE} units) (actual: ${actualBrigadeUnitCount})`);
 			}
 		});
 
 	}
 
+	#recoverRepairedUnits(state) {
+		const repairedUnits = state.g.enumGroup(DIVISION.RETURNING_FOR_REPAIR);
+		const REPAIRED_AT_HEALTH = 99;
+
+		repairedUnits.forEach(droid => {
+			if (droid.health < REPAIRED_AT_HEALTH) {
+				return;
+			}
+
+			this.toc.setNewDroidGroup(state, droid, DIVISION.RETURNING_FOR_REPAIR); 	// this sets the new group & removes from "RETURN_FOR_REPAIR"
+		})
+	}
+
+	/**
+	 * This function:
+	 * 	- returns repaired units to active duty 
+	 * 	- assigns reserve units to active brigade combat teams
+	 * @param {worldState} state 
+	 */
 	runResupplyLogistics(state) {
-		// This function assigns reserve units to active brigade combat teams
+
+		// Return repaired units back into the reserve force
+		this.#recoverRepairedUnits(state);
+		
+		// Assign reserves into active brigade combat teams
 		const getReserveUnitsOfType = (groupID) => state.g.enumGroup(groupID);
 
 		const RECOMBINATION_THRESHOLD = 25;
@@ -967,7 +997,7 @@ class CommandCenter {
 
 			const brigadeID = this.BRIGADE_DESIGNATIONS[i];
 
-  			const deficit = supply.getBrigadeUnitDeficit2(state, brigadeID, this.FISHBOT_BRIGADE_COMPOSITION);
+  			const deficit = supply.getBrigadeSupplyStatus(state, brigadeID, this.FISHBOT_BRIGADE_COMPOSITION, this.BRIGADE_REPAIR_THRESHOLD);
 			
 			// Check brigade strength as percentage
 			const brigadeStrength = Math.floor(deficit['totalLandUnits'] / deficit['targetTotalLandUnits'] * 100);
@@ -994,7 +1024,8 @@ class CommandCenter {
 			const getReinforcementUnits = (reserveType, reserveID, reserveUnitList) => {
 				return {
 					'category': reserveID,
-					'unitList': reserveUnitList.slice(0, deficit[reserveType]['abs'])
+					'unitList': reserveUnitList.slice(0, deficit[reserveType]['abs'] + deficit[reserveType]['damagedUnitCount']),
+					'damagedUnitList': deficit[reserveType]['damagedUnitList']
 				};
 			};
 
@@ -1013,12 +1044,25 @@ class CommandCenter {
 			const BRIGADE_HAS_NO_HEAVY_CAV = deficit['heavyCavalry']['abs'] === this.FISHBOT_BRIGADE_COMPOSITION.MAX_HEAVY_CAVALRY;
 			const BRIGADE_IS_WEAK_AND_NOT_FIRST_BCT = brigadesForRecombination.includes(brigadeID) && brigadeID !== DIVISION.FIRST_BCT;
 
-			if (BRIGADE_IS_WEAK_AND_NOT_FIRST_BCT && BRIGADE_HAS_NO_HEAVY_CAV && NO_HEAVY_CAV_REINFORCEMENTS) {
-				continue;
+			
+			// Check which units should be repaired
+			if (brigadesForRecombination.includes(brigadeID)) {
+				// do nothing
+			} else {
+				const unitsToBeRepaired = [];
+				resupplyUnits.forEach(r => {
+					unitsToBeRepaired.push(...r['damagedUnitList'].slice(r['unitList'].length))		// equal replacements
+				})
+
+				this.toc.assignUnitsForRepair(state, unitsToBeRepaired, brigadeID);
 			}
 
-			this.toc.assignUnitsToBrigade(state, resupplyUnits, brigadeID);
-
+			if (BRIGADE_IS_WEAK_AND_NOT_FIRST_BCT && BRIGADE_HAS_NO_HEAVY_CAV && NO_HEAVY_CAV_REINFORCEMENTS) {
+				// do nothing
+			} else {
+				this.toc.assignUnitsToBrigade(state, resupplyUnits, brigadeID);
+			}		
+			
 		}
 
 		// this.#printDebugResupply(state);
@@ -1091,14 +1135,14 @@ class CommandCenter {
 		}
 		
 		// Get unit deficits
-		let deficit = supply.getBrigadeUnitDeficit2(state, this.BRIGADE_DESIGNATIONS[0], this.FISHBOT_BRIGADE_COMPOSITION);
+		let deficit = supply.getBrigadeSupplyStatus(state, this.BRIGADE_DESIGNATIONS[0], this.FISHBOT_BRIGADE_COMPOSITION, this.BRIGADE_REPAIR_THRESHOLD);
 		for (let i=1; i<this.BRIGADE_DESIGNATIONS.length; i++) {
 			// Test the previous one
 			const brigadeStrength = Math.floor(deficit['totalLandUnits'] / deficit['targetTotalLandUnits'] * 100);
 			if (brigadeStrength < 100) {
 				break;
 			}
-			deficit = supply.getBrigadeUnitDeficit2(state, this.BRIGADE_DESIGNATIONS[i], this.FISHBOT_BRIGADE_COMPOSITION);
+			deficit = supply.getBrigadeSupplyStatus(state, this.BRIGADE_DESIGNATIONS[i], this.FISHBOT_BRIGADE_COMPOSITION, this.BRIGADE_REPAIR_THRESHOLD);
 		}
 		const combatBrigadeDeficit = deficit;
 
