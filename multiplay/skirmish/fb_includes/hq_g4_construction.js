@@ -382,21 +382,23 @@ class armyEngineering {
 
 			STRUCTURES["Factory Module"],
 			STRUCTURES["Factory Module"],
-			// STRUCTURES["Repair Facility"],
+
 			STRUCTURES["Factory Module"],
 			STRUCTURES["Factory Module"],
 			STRUCTURES["Research Facility"],
 			STRUCTURES["Research Module"],
 
-			STRUCTURES["VTOL Rearming Pad"],
-			STRUCTURES["VTOL Rearming Pad"],
+			STRUCTURES["Repair Facility"],
+
 			STRUCTURES["Factory Module"],
 			STRUCTURES["Factory Module"],
+			STRUCTURES["VTOL Rearming Pad"],
 			STRUCTURES["Power Generator"],
 			STRUCTURES["Power Module"],
 			STRUCTURES["Research Module"],
 			STRUCTURES["Research Facility"],
 			STRUCTURES["Research Module"],
+			STRUCTURES["VTOL Rearming Pad"],
 			STRUCTURES["Research Facility"],
 			STRUCTURES["Research Module"],
 			STRUCTURES["VTOL Rearming Pad"],
