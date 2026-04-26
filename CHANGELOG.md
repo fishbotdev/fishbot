@@ -1,6 +1,15 @@
 # Changelog
 This file is used to record the changes to FishBot between each version.
 
+## Fishbot v0.4.0
+### Changes in v0.4.0
+- Combat
+    - FishBot now divides its army into two main battle groups ('brigades') and a reserve group. Each group is controlled independently. With this change, FishBot becomes markedly more effective in high unit count games.
+- Production
+    - Factories now only produce the most-needed unit in active combat brigades (production is now intentional and no longer random).
+    - Rebalanced production quantities for high-unit count games (VTOLs and trucks are now reliably produced). 
+    - `Incendiary Mortar` is removed as a primary fire support weapon.
+
 ## Fishbot v0.3.3
 ### Changes in v0.3.3
 - Fixes:
