@@ -46,6 +46,108 @@
  *  If the core state management happens in one place, this makes it much easier to reason about, modify, and debug.
  */
 
+
+/**
+	fbGroup: FISHBOT v3 CUSTOM GROUPING SYSTEM
+
+	Fishbot custom implementation of inbuilt "groups"
+	Fishbot requires transient, one-to-many labelling to support its ability to maneuver & control multiple groups of units at once.
+    Construction and aviation use this capability extensively.
+	As of Warzone 2100 v4.6.1, neither the built-in groups, nor labels, are suitable for transient, one-to-many labelling.
+*/
+class fbGroup {
+
+	constructor() {
+		this.groupTemplate = {'groupMemberIDs': [], 'groupMembers': [], "groupSize": 0};
+		this.groups = new Map();
+		this.MAX_GROUP_SIZE = 256;
+	}
+
+	#lazyUpdateGroup(groupID) {
+		// Lazy update, only updates if one of the functions is called & only for that group ID
+		if (this.groups.has(groupID)) {
+			// Update members
+			let c = this.groups.get(groupID);
+
+			// niceDebug("lazyUpdateGroup/groupMember data -- before filter", c["groupMemberIDs"], c["groupMembers"]);
+
+			c["groupMemberIDs"] = c["groupMemberIDs"].filter((id) => getObject(DROID, me, id) !== null);
+
+			// niceDebug("lazyUpdateGroup/groupMember data -- after filter", c["groupMemberIDs"], c["groupMembers"]);
+
+			c["groupMembers"] = c["groupMemberIDs"].map((id) => {return getObject(DROID, me, id);});
+
+			// niceDebug("lazyUpdateGroup/groupMember data -- after getObject map", c["groupMemberIDs"], c["groupMembers"]);
+
+			c["groupSize"] = c["groupMembers"].length;
+		}
+	}
+
+	createGroup(groupID) {
+		this.groups.set(groupID, {
+			...this.groupTemplate,
+			'groupMemberIDs': [...this.groupTemplate.groupMemberIDs],
+			'groupMembers': [...this.groupTemplate.groupMembers]
+		});
+	}
+
+	deleteGroup(groupID) {
+		if (this.groups.has(groupID))
+			this.groups.delete(groupID);
+	}
+
+	enumGroup(groupID) {
+		if (!this.groups.has(groupID)) {
+			debug("no such groupID", groupID);
+			return [];
+		}
+
+		// niceDebug("ids before enum group update; ", this.groups.get(groupID)["groupMemberIDs"])
+		this.#lazyUpdateGroup(groupID);
+
+		return this.groups.get(groupID)["groupMembers"];
+	}
+	
+	groupSize(groupID) {
+		if (!this.groups.has(groupID))
+			return undefined;
+
+		this.#lazyUpdateGroup(groupID);
+
+		return this.groups.get(groupID)["groupSize"];
+	}
+
+	addDroidToGroup({groupID, droidID}) {
+		if (!this.groups.has(groupID)) {
+			// niceDebug("Created a new group", groupID);
+			this.createGroup(groupID);
+		}
+
+		this.#lazyUpdateGroup(groupID);
+		let currGroup = this.groups.get(groupID);
+		
+		if (currGroup["groupSize"] >= this.MAX_GROUP_SIZE) {
+			debug(`addDroidToGroup failed: Cannot add more than ${this.MAX_GROUP_SIZE} members to the group.`);
+			return;
+		}
+		
+		currGroup["groupMemberIDs"] = currGroup["groupMemberIDs"].concat(droidID);
+		// niceDebug("groupMemberIDs", currGroup["groupMemberIDs"]);
+
+	}
+
+	removeDroidFromGroup({groupID, droidID}) {
+		if (!this.groups.has(groupID)) {
+			return;
+		}
+
+		this.#lazyUpdateGroup(groupID);
+
+		let c = this.groups.get(groupID)["groupMemberIDs"].concat();	// shallow copy
+		this.groups.get(groupID)["groupMemberIDs"] = c.filter((id) => id !== droidID);
+	}
+}
+
 class fbGrid {
     constructor() {
         this.cellSize = 10;     // in game tiles
