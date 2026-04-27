@@ -4,9 +4,10 @@ It is designed for Tech Level 2, No-Base starts on the supported maps below.
 
 ## Most recent updates
 # **v0.4.0** -- *released ** May 2026***
-    * FishBot now divides its army into two main battle groups ('brigades') and a reserve group.
-    * Further improvements to VTOL & indirect fire handling.
-    * More factories and VTOL rearming pads are built for longer-running games.
+    * FishBot now divides its army into 2 main groups ('brigades') with 1 reserve group.
+    * FishBot now uses repair facilities and forward-builds these near active combat brigades.
+    * Improved VTOL & indirect fire handling.
+    * For longer-running games, builds more factories and VTOL rearming pads.
 
 * **v0.3.3** -- *released **07 Apr 2026***
     * Fixed research collisions: FishBot will now try to research other technologies if they are already being researched by an ally.

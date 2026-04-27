@@ -5,6 +5,7 @@ This file is used to record the changes to FishBot between each version.
 ### Changes in v0.4.0
 - Combat
     - FishBot now divides its army into two main battle groups ('brigades') and a reserve group. Each group is controlled independently. With this change, FishBot becomes markedly more effective in high unit count games.
+    - FishBot now uses repair facilities & forward builds these as the combat groups move around the map.
 - Production
     - Factories now only produce the most-needed unit in active combat brigades (production is now intentional and no longer random).
     - Rebalanced production quantities for high-unit count games (VTOLs and trucks are now reliably produced). 
