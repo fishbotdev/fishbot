@@ -254,10 +254,10 @@ NEW TEST DATA
 # path2 = rf"{cwd()}\process_results\v4_perfdata\\" + "021d39e,med_hard_cobra" + ".log"        
 # path1 = rf"{cwd()}\process_results\v4_perfdata\\" + "006d007,hard,cobra,100g" + ".log"        
 # path1 = rf"{cwd()}\process_results\v4_perfdata\\" + "e293c48,hard,cobra,100g" + ".log"        
-path1 = rf"{cwd()}\process_results\v4_perfdata\\" + "c4a1769,hard,cobra,100g" + ".log"        
+# path1 = rf"{cwd()}\process_results\v4_perfdata\\" + "c4a1769,hard,cobra,100g" + ".log"        
 # path1 = rf"{cwd()}\process_results\v4_perfdata\\" + "83bf457,hard,cobra,100g" + ".log"          # v0.3.4 development after splitting into brigades
-path2 = rf"{cwd()}\process_results\v4_perfdata\\" + "727b189,hard,cobra,99g" + ".log"          # v0.3.4 development after brigade-dev merge (no regression)
-
+path1 = rf"{cwd()}\process_results\v4_perfdata\\" + "727b189,hard,cobra,99g" + ".log"          # v0.3.4 development after brigade-dev merge (no regression)
+path2 = rf"{cwd()}\process_results\v4_perfdata\\" + "4f7f8e8,repairFacil2" + ".log"          # v0.4.0 before repair facil merge; regression in all, need fixing
 
 if True:
     ########
