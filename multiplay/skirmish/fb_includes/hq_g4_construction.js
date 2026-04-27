@@ -1057,7 +1057,7 @@ class armyEngineering {
 		});		
 
 		// Assign orders for conducting & ceasing operations
-		if (true) debug(`Mission creation for: CONSTRUCT_REPAIR_CENTER -> (${preferredLoc.x}, ${preferredLoc.y}) `);			
+		if (false) debug(`Mission creation for: CONSTRUCT_REPAIR_CENTER -> (${preferredLoc.x}, ${preferredLoc.y}) `);			
 
 		// Can use the same driver as 'buildNearbyDefences' (same logic)
 		md.orders = () => this.#mcb(buildNearbyDefences, md.taskForceID, buildTask.structureID, preferredLoc.x, preferredLoc.y);		
@@ -1105,7 +1105,7 @@ class armyEngineering {
 		});		
 
 		// Assign orders for conducting & ceasing operations
-		if (true) debug(`Mission creation for: DEMOLISH_REPAIR_CENTER -> (${loc.x}, ${loc.y}) `);			
+		if (false) debug(`Mission creation for: DEMOLISH_REPAIR_CENTER -> (${loc.x}, ${loc.y}) `);			
 
 		// Can use the same driver as 'buildNearbyDefences' (same logic)
 		md.orders = () => this.#mcb(demolishStructure, md.taskForceID, buildTask.structureID, loc.x, loc.y);		

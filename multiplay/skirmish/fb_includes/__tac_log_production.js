@@ -447,7 +447,7 @@ function produceInfantry(factory) {
 function produceLandUnitCategory(category, factory) {
 	let factoryInProduction = false;   
 
-	let r = Math.floor(Math.random() * 4);		// this should be one of the few random calls in FishBot.
+	let r = Math.floor(Math.random() * 4);		// this should be one of the few (if any) Math.random() calls in FishBot.
 	
 	switch (category) {
 		case 'heavyCavalry':

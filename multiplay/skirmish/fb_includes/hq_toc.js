@@ -211,8 +211,8 @@ class TacticalOperationsCenter {
 	 * This function returns either:
 	 * - `missionID`, if mission was created successfully
 	 * - `undefined`, if mission was not created
-	 * @param {*} param0 
-	 * @param  {...any} args 
+	 * @param {*} missionData object containing `missionType: number` and `priority: number`.
+	 * @param  {...any} args arguments containing mission information & administrative data (e.g. `tickUID` is used to differentiate the same type of mission started on the same decision tick).
 	 * @returns 
 	 */
 	createNewMission({missionType, priority=MISSION_PRIORITY.LOW}, ...args) {
@@ -221,10 +221,6 @@ class TacticalOperationsCenter {
 		switch (missionType) {
 			case MISSION_TYPE.ABORT_MISSION:
 				break;		// handled in the mission manager
-
-			/*
-				INTELLIGENCE MISSIONS
-			*/
 
 
 			/*
@@ -673,12 +669,16 @@ class TacticalOperationsCenter {
 		}
 	}
 
-	assignUnitsForRepair(state, unitRoster, brigadeID) {
-	
-		for (let i=0; i<unitRoster.length; i++) {
-			const droid = unitRoster[i];
+	/**
+	 * Assigns units to the `RETURNING_FOR_REPAIR` group (these units will immediately head towards base / the nearest repair facility).
+	 * @param {worldState} state 
+	 * @param {DroidObject[]} unitList 
+	 * @param {number} brigadeID 
+	 */
+	assignUnitsForRepair(state, unitList, brigadeID) {
+		unitList.forEach(droid => {
 			state.g.removeDroidFromGroup({groupID: brigadeID, droidID: droid.id});
 			state.g.addDroidToGroup({groupID: DIVISION.RETURNING_FOR_REPAIR, droidID: droid.id});
-		}
+		});
 	}
 }
