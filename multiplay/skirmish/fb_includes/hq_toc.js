@@ -640,6 +640,7 @@ class TacticalOperationsCenter {
 	 * Called directly by the `eventDroidBuilt` handler.
 	 * @param {worldState} state
      * @param {DroidObject} droid 
+	 * @param {number | undefined} groupIdToRemove
      * @returns {void}
      */
     setNewDroidGroup(state, droid, groupIdToRemove=undefined) {

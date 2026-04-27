@@ -248,11 +248,10 @@ class CommandCenter {
 						'brigadeID': fLoc['brigadeID'],
 						'targets' : intelligence.proposeTargetsInRadius2(state, fLoc['location'], this.TARGET_SEARCH_RADIUS, this.FORCE_IMMEDIATE_RADIUS)
 					};
-
 					nearbyGroundTargets.push(targetInfo);						
 				});
-
 				hq.toc.setNearbyGroundTargets(state, nearbyGroundTargets);
+
 				break;
 			
 			case 'intel_checkCampaignStatus':
@@ -1008,9 +1007,8 @@ class CommandCenter {
 			if (droid.health < REPAIRED_AT_HEALTH) {
 				return;
 			}
-
 			this.toc.setNewDroidGroup(state, droid, DIVISION.RETURNING_FOR_REPAIR); 	// this sets the new group & removes from "RETURN_FOR_REPAIR"
-		})
+		});
 	}
 
 	/**
