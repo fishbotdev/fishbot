@@ -354,21 +354,65 @@ class armyEngineering {
 	/**
 	 * 
 	 * @param {worldState} state  
-	 * @returns {BaseObject[]}
+	 * @returns 
 	 */
-	generateRemoteServiceCenterConstructionOptions(state) {
+	generateRemoteServiceCenterConstructionOptions(state, myRepairFacilities) {
 		const forceLocations = state.forceLocations;		
-		
+
 		const potentialRepairCenterLocations = [];
+		const potentialDemolitionLocations = [];
 
-		const SEARCH_RADIUS = 20;
+		const options = {
+			'newFacilityLocations': potentialRepairCenterLocations,
+			'demolitionLocations': potentialDemolitionLocations
+		}
 
+		const SEARCH_RADIUS = 25;
+
+		// PART 1: FIND DEMOLITION LOCATIONS
+		myRepairFacilities.forEach(f => {
+			const repairFacility = getObject(f.type, f.player, f.id);
+			if (!defined(repairFacility)) {
+				return;
+			}
+
+			const FACILITY_INSIDE_BASE_RADIUS = distSq(repairFacility.x, baseLocation.x, repairFacility.y, baseLocation.y) <= SEARCH_RADIUS ** 2;
+			if (FACILITY_INSIDE_BASE_RADIUS) {
+				// debug(`${gameTime}: repair facility @ ${repairFacility.x}, ${repairFacility.y} - ignored`);
+				return;
+			}
+
+			const FACILITY_NEAR_SOME_GROUP = forceLocations.some(fLoc => {
+				const brigadeLoc = fLoc["location"];
+				if (distSq(brigadeLoc.x, f.x, brigadeLoc.y, f.y) <= SEARCH_RADIUS ** 2) {
+					return true;
+				}
+				return false;
+			});
+			if (FACILITY_NEAR_SOME_GROUP) {
+				return;
+			}
+
+			const buildRequest = this.translateIntoBuildRequest({
+				missionType: MISSION_TYPE.DEMOLISH_REPAIR_CENTER, 
+				structureData: STRUCTURES["Repair Facility"],
+				payload: repairFacility
+			});
+
+			potentialDemolitionLocations.push(buildRequest);
+		});
+
+		// Sort closest to furthest from base (simplistic assumption: combat units are the furthest away from base; improve later with groupPosition knowledge).
+		potentialDemolitionLocations.sort((a,b) => 
+			distSq(a.payload.x, baseLocation.x, a.payload.y, baseLocation.y) - distSq(b.payload.x, baseLocation.x, b.payload.y, baseLocation.y));
+
+		// PART 2: FIND CONSTRUCTION LOCATIONS
 		forceLocations.forEach(brigadeLoc => {
 
 			const BRIGADE_ID = brigadeLoc["brigadeID"];
 			const LOCATION = brigadeLoc["location"];
 
-			if (distSq(LOCATION.x, baseLocation.x, LOCATION.y, baseLocation.y) < SEARCH_RADIUS ** 2) {
+			if (distSq(LOCATION.x, baseLocation.x, LOCATION.y, baseLocation.y) <= SEARCH_RADIUS ** 2) {
 				// Too close to the base (prevents doubling-up on the repair facility in the base build order)
 				return;
 			}
@@ -380,7 +424,7 @@ class armyEngineering {
 				// Nearby repair facility already
 				return;
 			}
-			// debug(`\t\t${gameTime}: repair center not within ${SEARCH_RADIUS} tiles of ${BRIGADE_ID}`);
+			// debug(`\t\t${gameTime}: repair center not within ${SEARCH_RADIUS} tiles of ${BRIGADE_ID} (${LOCATION.x} ${LOCATION.y})`);
 
 			// Else, schedule a new task
 			const buildRequest = this.translateIntoBuildRequest({
@@ -392,7 +436,7 @@ class armyEngineering {
 			potentialRepairCenterLocations.push(buildRequest);
 		});
 
-		return potentialRepairCenterLocations;
+		return options;
 	}
 
 	/**
@@ -548,14 +592,11 @@ class armyEngineering {
 	*/
 
 	#createBuildRequest({missionType, structureData, payload}) {
-		let buildRequestTemplate = 
-		{
+		return {
 			missionType: missionType,
 			structureID: structureData.id,
 			payload: payload,
-		}
-
-		return buildRequestTemplate;
+		};
 	}
 
 	translateIntoBuildRequest({missionType, structureData, payload}) {
@@ -586,7 +627,10 @@ class armyEngineering {
 				break;
 			case MISSION_TYPE.CONSTRUCT_REPAIR_CENTER:
 				buildRequest = this.#createBuildRequest({missionType: missionType, structureData: structureData, payload: payload});
-				break;				
+				break;
+			case MISSION_TYPE.DEMOLISH_REPAIR_CENTER:
+				buildRequest = this.#createBuildRequest({missionType: missionType, structureData: structureData, payload: payload});
+				break;
 			default:
 				debug(`WARNING: hq_g4_construction/translateIntoBuildRequest(): Unrecognised missionType: ${missionType}`);
 				// do nothing for now
@@ -1013,10 +1057,58 @@ class armyEngineering {
 		});		
 
 		// Assign orders for conducting & ceasing operations
-		if (false) debug(`Mission creation for: CONSTRUCT_REPAIR_CENTER -> (${preferredLoc.x}, ${preferredLoc.y}) `);			
+		if (true) debug(`Mission creation for: CONSTRUCT_REPAIR_CENTER -> (${preferredLoc.x}, ${preferredLoc.y}) `);			
 
 		// Can use the same driver as 'buildNearbyDefences' (same logic)
 		md.orders = () => this.#mcb(buildNearbyDefences, md.taskForceID, buildTask.structureID, preferredLoc.x, preferredLoc.y);		
+		md.ceaseOrders = () => this.#mcb(this.#finaliseConstruction, md);
+
+		return md;
+	}
+
+	/**
+	 * Creates task to demolish one repair facility at a specified location.
+	 * @param {Object} buildTask build information (payload object: requires the `.x`, `.y` properties)
+	 * @param {number} tickUID used to differentiate missions created in the same FishBot tick
+	 * @returns `missionData` object, if mission successfully created, else `undefined`
+	 */
+	createDemolishRepairCenterTask({buildTask, tickUID}) {
+		const cellSize = state.grid.cellSize;
+
+		const MINIMUM_TRUCKS = 1;
+		
+		let engineeringReserve = state.g.enumGroup(ENGINEERING.ENGINEERING_RESERVE);
+		if (engineeringReserve.length < MINIMUM_TRUCKS) {
+			// debug(`#createBuildRepairCenterTask(): No trucks available.`);
+			return undefined;
+		}
+
+		// Select closest trucks to new location
+		const loc = buildTask.payload;
+		engineeringReserve.sort((a,b) => distSq(a.x, loc.x, a.y, loc.y) - distSq(b.x, loc.x, b.y, loc.y));
+		const taskForceUnits = engineeringReserve.slice(0, MINIMUM_TRUCKS); 
+
+		let md = this.#createMissionOrders();
+
+		// Create mission details
+		const id = getCurrGameTime() + "_DEMOLISH_REPAIR_CENTER_" + tickUID;
+		md.id = id;
+		md.taskForceID = id;
+
+		md.sectorID = loc.id;			
+		md.gx = Math.floor(loc.x / cellSize);
+		md.gy = Math.floor(loc.y / cellSize);
+		
+		taskForceUnits.forEach((droid) => {
+			state.g.addDroidToGroup({groupID: md.taskForceID, droidID: droid.id});
+			state.g.removeDroidFromGroup({groupID: ENGINEERING.ENGINEERING_RESERVE, droidID: droid.id});
+		});		
+
+		// Assign orders for conducting & ceasing operations
+		if (true) debug(`Mission creation for: DEMOLISH_REPAIR_CENTER -> (${loc.x}, ${loc.y}) `);			
+
+		// Can use the same driver as 'buildNearbyDefences' (same logic)
+		md.orders = () => this.#mcb(demolishStructure, md.taskForceID, buildTask.structureID, loc.x, loc.y);		
 		md.ceaseOrders = () => this.#mcb(this.#finaliseConstruction, md);
 
 		return md;

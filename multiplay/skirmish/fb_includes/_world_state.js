@@ -316,6 +316,7 @@ class worldState {
 
         // Player statistics
         this.playerInfo = [];
+        this.REPAIR_FACILITY_HARD_CAP = 4; // getStructureLimit(STRUCTURES["Repair Facility"].id);      // TODO: Fix this when this function is fixed.
 
         // Combat targeting
         this.allTargets = [];
@@ -377,12 +378,12 @@ class worldState {
             'numConstructedHQs': 0,
             'numRepairFacilities': 0,
 
-            // Intended to be used for getting idle structures for Production & Research reasons
+            // Intended to be used for getting idle structures for Production & Research, and for demolishing Repair Facilities
             'normalFactoryFbObjects': [],           
             'cyborgFactoryFbObjects': [],
             'vtolFactoryFbObjects': [],
             'researchFacilityFbObjects': [],
-            
+            'repairFacilityFbObjects': []
 		};
     }
 

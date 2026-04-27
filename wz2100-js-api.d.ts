@@ -673,6 +673,13 @@ the general droid limit (eg for commanders and construction droids). (3.2+ only)
 declare function getDroidLimit(player?: number, droidType?: droidTypeType): number;
 
 /**
+ * ## getStructureLimit(structureName[, player])
+ * 
+ * Returns build limits for a structure.
+ */
+declare function getStructureLimit(structureName: string, player?: number): number;
+
+/**
 ## buildDroid(factory, templateName, body, propulsion, reserved, reserved, turrets...)
 
 Start factory production of new droid with the given name, body, propulsion and turrets.

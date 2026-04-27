@@ -347,6 +347,9 @@ function buildNearbyDefences(taskForceID, structureID, x, y) {
 	// Check if similar structures have been built nearby 
 	let otherStructureOnTile = false;
 	let struct = enumRange(x, y, 5, ALL_PLAYERS, false).filter(obj => {		// -> 5-tile radius => within a 7x7 box with x,y at the center (radial distance of corners is 3*sqrt(2) = 4.24)
+		if (obj.type !== STRUCTURE) {
+			return false;
+		}
 		if (obj.x === x && obj.y === y && obj.player !== me) {
 			otherStructureOnTile = true;		// fix for trucks freezing
 			return false;			
@@ -391,4 +394,42 @@ function buildNearbyDefences(taskForceID, structureID, x, y) {
 	}
 	return {status: MISSION_STATUS.IN_PROGRESS};
 }
-		
+
+/*
+	TAC SOP: DEMOLISH STRUCTURE AT X, Y
+*/
+function demolishStructure(taskForceID, structureID, x, y) {
+
+	const trucks = state.g.enumGroup(taskForceID);
+	if (trucks.length === 0) {
+		// debug(`demolishStructure(): failed, no trucks`);
+		return {status: MISSION_STATUS.FAILED};
+	}
+
+	let otherStructureOnTile = false;
+	let struct = enumRange(x, y, 2, ALL_PLAYERS, false).filter(obj => {		
+		if (obj.type !== STRUCTURE) {
+			return false;
+		}
+		if (obj.x === x && obj.y === y && obj.player !== me) {
+			otherStructureOnTile = true;		// fix for trucks freezing
+			return false;			
+		}
+		const lookup = STRUCTURES[obj.name];
+		if (lookup !== undefined) {
+			if (lookup.id === structureID && obj.player === me) {		
+				return true;
+			}
+		}
+		return false;
+	});
+
+	// Case 1: No structure, matching structure or other structure on the tile === SUCCEEDED.
+	if (struct.length === 0 || otherStructureOnTile) {
+		return {status: MISSION_STATUS.SUCCEEDED};
+	}
+
+	// Case 2: Continue to demolish.
+	trucks.forEach((truck) => orderDroidObj(truck, DORDER_DEMOLISH, struct[0]));
+	return {status: MISSION_STATUS.IN_PROGRESS};
+}

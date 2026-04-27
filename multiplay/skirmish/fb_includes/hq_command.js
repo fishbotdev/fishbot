@@ -777,15 +777,6 @@ class CommandCenter {
 	runConstructionLogistics(state) {
 
 		// Command re-evaluates existing construction tasks
-		const OIL_CAPTURE_MISSION_TYPES = [
-			MISSION_TYPE.CONSTRUCT_ALL_DERRICKS_IN_SECTOR, 
-			MISSION_TYPE.CONSTRUCT_OIL_DERRICK
-		];
-		const BASE_BUILD_MISSION_TYPES = [
-			MISSION_TYPE.CONSTRUCT_BASE_STRUCTURE, 
-			MISSION_TYPE.CONSTRUCT_SINGLE_MODULE
-		];
-
 		let activeOilCapTaskIDs = [];
 		let activeBaseBuildTasks = []; 
 		let activeDefenceBuildTaskIDs = [];
@@ -793,17 +784,27 @@ class CommandCenter {
 		let activeRemoteMissions = [];
 
 		this.toc.getActiveConstructionMissions(state).forEach(missionData => {
-			if (OIL_CAPTURE_MISSION_TYPES.includes(missionData.missionType)) {
-				activeOilCapTaskIDs.push(missionData.sectorID);	
-				activeRemoteMissions.push(missionData);	
-			} else if (BASE_BUILD_MISSION_TYPES.includes(missionData.missionType)) {
-				activeBaseBuildTasks.push(missionData);	
-			} else if (missionData.missionType === MISSION_TYPE.CONSTRUCT_NEARBY_DEFENCE) {
-				activeDefenceBuildTaskIDs.push(missionData.sectorID);	
-				activeRemoteMissions.push(missionData);	
-			} else if (missionData.missionType === MISSION_TYPE.CONSTRUCT_REPAIR_CENTER) {
-				activeRepairCenterBuildTaskIDs.push(missionData.sectorID);
-				// activeRemoteMissions.push(missionData);	// building near friendly troops; don't want to be cancelled prematurely
+			switch(missionData.missionType) {
+				case MISSION_TYPE.CONSTRUCT_ALL_DERRICKS_IN_SECTOR:
+				case MISSION_TYPE.CONSTRUCT_OIL_DERRICK:
+					activeOilCapTaskIDs.push(missionData.sectorID);	
+					activeRemoteMissions.push(missionData);	
+					break;
+				case MISSION_TYPE.CONSTRUCT_BASE_STRUCTURE:
+				case MISSION_TYPE.CONSTRUCT_SINGLE_MODULE:
+					activeBaseBuildTasks.push(missionData);	
+					break;
+				case MISSION_TYPE.CONSTRUCT_NEARBY_DEFENCE:
+					activeDefenceBuildTaskIDs.push(missionData.sectorID);	
+					activeRemoteMissions.push(missionData);
+					break;
+				case MISSION_TYPE.CONSTRUCT_REPAIR_CENTER:
+				case MISSION_TYPE.DEMOLISH_REPAIR_CENTER:
+					activeRepairCenterBuildTaskIDs.push(missionData.sectorID);
+					// activeRemoteMissions.push(missionData);	// building near friendly troops; don't want to be cancelled prematurely
+					break;
+				default:
+					// Do nothing / ignore missions like default mission "HELP_CONSTRUCT"
 			}
 		});
 		
@@ -849,11 +850,32 @@ class CommandCenter {
 		// LOCAL REPAIR CENTERS	
 		const MAX_CONCURRENT_REPAIR_CENTER_BUILDS = 1;
 		const ACTIVE_REPAIR_CENTER_TASKS = activeRepairCenterBuildTaskIDs.length;
-		const repairCentersToBeConstructed = MAX_CONCURRENT_REPAIR_CENTER_BUILDS - ACTIVE_REPAIR_CENTER_TASKS;
-		if (repairCentersToBeConstructed > 0) {
-			const serviceCenterConstructionOptions = engineering.generateRemoteServiceCenterConstructionOptions(state);
-			const approvedRepairCenterConstructionTasks = serviceCenterConstructionOptions.slice(0, repairCentersToBeConstructed);
-			approvedConstructionTasks.push(...approvedRepairCenterConstructionTasks);
+		const repairCenterTaskSlotAvailable = MAX_CONCURRENT_REPAIR_CENTER_BUILDS - ACTIVE_REPAIR_CENTER_TASKS;
+
+		if (repairCenterTaskSlotAvailable > 0) {
+
+			const myRepairFacilities = state.playerInfo[me]["repairFacilityFbObjects"];
+
+			const options = engineering.generateRemoteServiceCenterConstructionOptions(state, myRepairFacilities);
+			const newFacilityLocations = options["newFacilityLocations"];
+			const demolitionLocations = options["demolitionLocations"];
+
+			const BELOW_REPAIR_FACILITY_HARD_CAP = myRepairFacilities.length < state.REPAIR_FACILITY_HARD_CAP;
+
+			const NEW_FACILITY_REQUESTED = newFacilityLocations.length !== 0;
+
+			// debug(`	${gameTime}: BELOW_REPAIR_FACILITY_HARD_CAP: ${BELOW_REPAIR_FACILITY_HARD_CAP} (${myRepairFacilities.length} / ${state.REPAIR_FACILITY_HARD_CAP}), NEW_FACILITY_REQUESTED: ${NEW_FACILITY_REQUESTED}`);
+
+			if (NEW_FACILITY_REQUESTED) {
+				if (BELOW_REPAIR_FACILITY_HARD_CAP) {
+					const approvedRepairCenterConstructionTasks = newFacilityLocations.slice(0, repairCenterTaskSlotAvailable);
+					approvedConstructionTasks.push(...approvedRepairCenterConstructionTasks);
+				} else {
+					const approvedDemolitionTasks = demolitionLocations.slice(0, 1);		// Note: this only takes 1 task (1 demolition at a time)
+					// debug(`Demolition approved @ ${approvedDemolitionTasks[0].payload.x} ${approvedDemolitionTasks[0].payload.y}`);
+					approvedConstructionTasks.push(...approvedDemolitionTasks);
+				}
+			}
 		}
 
 		// Command delegates assignment 

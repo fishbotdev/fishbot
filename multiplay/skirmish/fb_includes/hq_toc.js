@@ -202,7 +202,7 @@ class TacticalOperationsCenter {
 			const missionData = this.createNewMission({missionType: task.missionType, priority: PRIORITY}, task, i);		
 			if (defined(missionData)) {
 				state.activeMissions.push(missionData);
-				if (false) this.#printConstructionDebugOutput(task, missionData.id, [MISSION_TYPE.CONSTRUCT_REPAIR_CENTER]);
+				if (false) this.#printConstructionDebugOutput(task, missionData.id, [MISSION_TYPE.CONSTRUCT_REPAIR_CENTER, MISSION_TYPE.DEMOLISH_REPAIR_CENTER]);
 			} 
 		});
 	}
@@ -281,7 +281,11 @@ class TacticalOperationsCenter {
 				md = engineering.createBuildAllDerricksInSectorTask({buildTask: args[0], tickUID: args[1]});
 				break;
 			case MISSION_TYPE.CONSTRUCT_REPAIR_CENTER:
-				md = engineering.createBuildRepairCenterTask({buildTask: args[0], tickUID: args[1]})			
+				md = engineering.createBuildRepairCenterTask({buildTask: args[0], tickUID: args[1]});		
+				break;
+			case MISSION_TYPE.DEMOLISH_REPAIR_CENTER:
+				md = engineering.createDemolishRepairCenterTask({buildTask: args[0], tickUID: args[1]})		
+				break;	
 			default:	
 				// Do nothing
 		}

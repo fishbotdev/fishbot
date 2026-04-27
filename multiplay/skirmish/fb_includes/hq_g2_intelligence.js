@@ -260,8 +260,10 @@ class armyIntelligence {
 					p['numConstructedHQs']++;
 				}
 				
-				if (flags & OBJ_FLAGS.REPAIR) {
+				const builtRepairFacilities = OBJ_FLAGS.REPAIR | OBJ_FLAGS.IS_BUILT;
+				if ((flags & builtRepairFacilities) === builtRepairFacilities) {
 					p['numRepairFacilities']++;
+					p["repairFacilityFbObjects"].push(newObj);
 				}
 
 				if (IS_TARGET) {
