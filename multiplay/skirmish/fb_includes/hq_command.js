@@ -789,6 +789,7 @@ class CommandCenter {
 		let activeOilCapTaskIDs = [];
 		let activeBaseBuildTasks = []; 
 		let activeDefenceBuildTaskIDs = [];
+		let activeRepairCenterBuildTaskIDs = [];
 		let activeRemoteMissions = [];
 
 		this.toc.getActiveConstructionMissions(state).forEach(missionData => {
@@ -800,6 +801,9 @@ class CommandCenter {
 			} else if (missionData.missionType === MISSION_TYPE.CONSTRUCT_NEARBY_DEFENCE) {
 				activeDefenceBuildTaskIDs.push(missionData.sectorID);	
 				activeRemoteMissions.push(missionData);	
+			} else if (missionData.missionType === MISSION_TYPE.CONSTRUCT_REPAIR_CENTER) {
+				activeRepairCenterBuildTaskIDs.push(missionData.sectorID);
+				// activeRemoteMissions.push(missionData);	// building near friendly troops; don't want to be cancelled prematurely
 			}
 		});
 		
@@ -833,10 +837,23 @@ class CommandCenter {
 	
 		// DERRICK DEFENCES
 		const MAX_CONCURRENT_FORTIFICATION_TASKS = (gameTime < 180000) ? 1 : 2;		// hack; tuned for Gamma
-		const fortificationDeficit = MAX_CONCURRENT_FORTIFICATION_TASKS - activeDefenceBuildTaskIDs.length;
+		const ACTIVE_FORTIFICATION_TASKS = activeDefenceBuildTaskIDs.length;
+		const fortificationDeficit = MAX_CONCURRENT_FORTIFICATION_TASKS - ACTIVE_FORTIFICATION_TASKS;
+
 		if (fortificationDeficit > 0) {
 			const sectorDefenceTasks = engineering.generateOilDefenceConstructionOptions(state, activeDefenceBuildTaskIDs);
-			approvedConstructionTasks.push(...sectorDefenceTasks.slice(0, fortificationDeficit));
+			const approvedSectorDefenceTasks = sectorDefenceTasks.slice(0, fortificationDeficit);
+			approvedConstructionTasks.push(...approvedSectorDefenceTasks);
+		}
+
+		// LOCAL REPAIR CENTERS	
+		const MAX_CONCURRENT_REPAIR_CENTER_BUILDS = 1;
+		const ACTIVE_REPAIR_CENTER_TASKS = activeRepairCenterBuildTaskIDs.length;
+		const repairCentersToBeConstructed = MAX_CONCURRENT_REPAIR_CENTER_BUILDS - ACTIVE_REPAIR_CENTER_TASKS;
+		if (repairCentersToBeConstructed > 0) {
+			const serviceCenterConstructionOptions = engineering.generateRemoteServiceCenterConstructionOptions(state);
+			const approvedRepairCenterConstructionTasks = serviceCenterConstructionOptions.slice(0, repairCentersToBeConstructed);
+			approvedConstructionTasks.push(...approvedRepairCenterConstructionTasks);
 		}
 
 		// Command delegates assignment 

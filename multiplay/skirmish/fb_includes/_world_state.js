@@ -319,7 +319,7 @@ class worldState {
 
         // Combat targeting
         this.allTargets = [];
-        this.forceLocations = [];           // forceLocations {'x', 'y'}; ordered by brigade designation
+        this.forceLocations = [];           // list of brigade locations: [{brigadeID: '', location: {'x': 0, 'y': 0}}]
         this.nearbyGroundTargets = [];      // nearbyTargets (list); ordered by brigade designation
         this.aviationTargets = {
             'raidTargets': [],

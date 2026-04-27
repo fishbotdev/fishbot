@@ -171,6 +171,12 @@ class TacticalOperationsCenter {
 		}
 	}
 
+	/**
+	 * Prints out a newly assigned construction task, where `task.missionType` matches any one of the search terms in `missionFilter`.
+	 * @param {*} task 
+	 * @param {string} missionID 
+	 * @param {number[]} missionFilter 
+	 */
 	#printConstructionDebugOutput(task, missionID, missionFilter) {
 		let sectorID = '', structureID = '';
 		if (defined(task.payload)) {
@@ -196,7 +202,7 @@ class TacticalOperationsCenter {
 			const missionData = this.createNewMission({missionType: task.missionType, priority: PRIORITY}, task, i);		
 			if (defined(missionData)) {
 				state.activeMissions.push(missionData);
-				if (false) this.#printConstructionDebugOutput(task, missionData.id, [MISSION_TYPE.CONSTRUCT_NEARBY_DEFENCE]);
+				if (false) this.#printConstructionDebugOutput(task, missionData.id, [MISSION_TYPE.CONSTRUCT_REPAIR_CENTER]);
 			} 
 		});
 	}
@@ -273,7 +279,9 @@ class TacticalOperationsCenter {
 				break;
 			case MISSION_TYPE.CONSTRUCT_ALL_DERRICKS_IN_SECTOR:
 				md = engineering.createBuildAllDerricksInSectorTask({buildTask: args[0], tickUID: args[1]});
-				break;			
+				break;
+			case MISSION_TYPE.CONSTRUCT_REPAIR_CENTER:
+				md = engineering.createBuildRepairCenterTask({buildTask: args[0], tickUID: args[1]})			
 			default:	
 				// Do nothing
 		}
