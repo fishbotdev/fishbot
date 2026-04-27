@@ -22,13 +22,17 @@ function returnForRepair(taskForceID) {
 
 	const unitsToRepair = state.g.enumGroup(taskForceID);
 	
-	const weHaveRepair = (enumStruct(me, REPAIR_FACILITY).length > 0);			// todo: rework to make more intelligent
-	if (weHaveRepair) {
-		unitsToRepair.forEach(droid => orderDroid(droid, DORDER_RTR));
-	} else {
-		unitsToRepair.forEach(droid => orderDroid(droid, DORDER_RTB));			// assuming mobile repair units will be at base
-	}
-	return {status: MISSION_STATUS.IN_PROGRESS};
+	const HAVE_REPAIR = state.playerInfo[me]["numRepairFacilities"] > 0;
+
+	unitsToRepair.forEach(droid => {
+		if (HAVE_REPAIR) {
+			orderDroid(droid, DORDER_RTR);
+		} else {
+			orderDroid(droid, DORDER_RTB);		// assuming mobile repair units will be at base
+		}
+	});
+	
+	return {status: MISSION_STATUS.IN_PROGRESS};		// Note: this is a default behaviour; another function will remove these units from the group.
 }
 
 /*
