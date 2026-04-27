@@ -258,7 +258,11 @@ class armyIntelligence {
 				if (obj.stattype === HQ && obj.status === BUILT) {
 					// manual classification (outside of `classifyObject`) -> not required to track HQs
 					p['numConstructedHQs']++;
-				}			
+				}
+				
+				if (flags & OBJ_FLAGS.REPAIR) {
+					p['numRepairFacilities']++;
+				}
 
 				if (IS_TARGET) {
 					result.allTargets.push(newObj);		

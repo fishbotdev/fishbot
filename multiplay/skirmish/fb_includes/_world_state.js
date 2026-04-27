@@ -375,6 +375,7 @@ class worldState {
             'numFactories': 0,
 			'numDerricks': 0, 
             'numConstructedHQs': 0,
+            'numRepairFacilities': 0,
 
             // Intended to be used for getting idle structures for Production & Research reasons
             'normalFactoryFbObjects': [],           
