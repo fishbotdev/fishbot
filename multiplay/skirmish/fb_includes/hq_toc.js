@@ -174,7 +174,7 @@ class TacticalOperationsCenter {
 	/**
 	 * Prints out a newly assigned construction task, where `task.missionType` matches any one of the search terms in `missionFilter`.
 	 * @param {*} task 
-	 * @param {string} missionID 
+	 * @param {*} missionID 
 	 * @param {number[]} missionFilter 
 	 */
 	#printConstructionDebugOutput(task, missionID, missionFilter) {
@@ -200,9 +200,9 @@ class TacticalOperationsCenter {
 
 		buildTasks.forEach((task, i) => {	
 			const missionData = this.createNewMission({missionType: task.missionType, priority: PRIORITY}, task, i);		
-			if (defined(missionData)) {
+			if (missionData !== undefined) {
 				state.activeMissions.push(missionData);
-				if (false) this.#printConstructionDebugOutput(task, missionData.id, [MISSION_TYPE.CONSTRUCT_REPAIR_CENTER, MISSION_TYPE.DEMOLISH_REPAIR_CENTER]);
+				// this.#printConstructionDebugOutput(task, missionData.id, [MISSION_TYPE.CONSTRUCT_REPAIR_CENTER, MISSION_TYPE.DEMOLISH_REPAIR_CENTER]);
 			} 
 		});
 	}
@@ -286,7 +286,7 @@ class TacticalOperationsCenter {
 				// Do nothing
 		}
 
-		if (defined(md)) {
+		if (md !== undefined) {
 			// If mission is valid, mission data (md) is defined
 			md.missionStatus = MISSION_STATUS.NOT_STARTED;
 			md.missionType = missionType;
