@@ -602,12 +602,6 @@ class armyEngineering {
 		let buildRequest = undefined;
 
 		switch (missionType) {
-			case MISSION_TYPE.CONSTRUCT_OIL_DERRICK:
-				buildRequest = this.#createBuildRequest({missionType: missionType, structureData: structureData, payload: payload});
-				break;
-			case MISSION_TYPE.CONSTRUCT_ALL_DERRICKS_IN_SECTOR:
-				buildRequest = this.#createBuildRequest({missionType: missionType, structureData: structureData, payload: payload});
-				break;
 			case MISSION_TYPE.CONSTRUCT_AUTO_DETECT_BY_STRUCTURE:
 				let mt = undefined;
 				switch(structureData.id) {
@@ -621,12 +615,10 @@ class armyEngineering {
 				}
 				buildRequest = this.#createBuildRequest({missionType: mt, structureData: structureData, payload: payload});
 				break;
+			case MISSION_TYPE.CONSTRUCT_OIL_DERRICK:
+			case MISSION_TYPE.CONSTRUCT_ALL_DERRICKS_IN_SECTOR:
 			case MISSION_TYPE.CONSTRUCT_NEARBY_DEFENCE:
-				buildRequest = this.#createBuildRequest({missionType: missionType, structureData: structureData, payload: payload});
-				break;
 			case MISSION_TYPE.CONSTRUCT_REPAIR_CENTER:
-				buildRequest = this.#createBuildRequest({missionType: missionType, structureData: structureData, payload: payload});
-				break;
 			case MISSION_TYPE.DEMOLISH_REPAIR_CENTER:
 				buildRequest = this.#createBuildRequest({missionType: missionType, structureData: structureData, payload: payload});
 				break;
