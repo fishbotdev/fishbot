@@ -50,17 +50,21 @@ Further support for other technology levels might be added in a future version.
 However, at the moment I feel like Cobra already fills the gap in the other technology levels very well.
 In particular, I think Cobra performs excellently on T1 in Warzone 2100 v4.6.3+. Even as a human player, I think I would struggle to win against T1 Cobra (Warzone 2100 v4.6.3+) without decidedly human strategies (e.g. walls and heavy-MG guard towers in chokepoints during army build-up).
 
-## List of supported maps
-As of the most current version **v0.3.1**, FishBot works best on large, standard "low-oil" game maps with up to ~10 derricks per player. 
+## List of supported maps (Warzone2100 4.7.0)
+As of the most current version **v0.4.0**, FishBot works best on large, standard "low-oil" game maps with up to ~10 derricks per player. 
 It currently only has been tested with scavengers disabled.
 
 ### 2 player
-* `Roughness`
-* `Vision`
+* ~~`Sk-Startup`~~  -- bankrupts itself (rigid build order)
+* ~~`Sk-UrbanChasm`~~ -- bankrupts itself (rigid build order)
+* ~~`Sk-HighGround`~~ -- bankrupts itself (rigid build order)
+* ~~`Roughness`~~ -- trucks get stuck; construction stops (destroyable features)
+* `Vision` -- compatible
+* `DustyMaze (2P)` -- compatible
 
 ### 3 player
-* `Monocot`
-* `Gamma` (FishBot has been optimised for this map)
+* `Monocot` -- compatible
+* `Gamma` -- compatible (FishBot has been optimised for this map)
 
 The current method for determining whether or not a map is "supported" is:
 * For 2P & 3P maps, FishBot can win against a single Cobra @ Medium difficulty on that map
