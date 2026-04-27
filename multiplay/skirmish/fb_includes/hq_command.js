@@ -38,7 +38,7 @@ class CommandCenter {
 		this.FORCE_IMMEDIATE_RADIUS = 16;
 
 		// Production logistics parameters
-		this.MAX_TRUCKS = 12;
+		this.MAX_TRUCKS = 8;
 
 		this.FISHBOT_BRIGADE_COMPOSITION = {
 			'MAX_HEAVY_CAVALRY': 8,

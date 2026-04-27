@@ -316,7 +316,7 @@ class worldState {
 
         // Player statistics
         this.playerInfo = [];
-        this.REPAIR_FACILITY_HARD_CAP = 4; // getStructureLimit(STRUCTURES["Repair Facility"].id);      // TODO: Fix this when this function is fixed.
+        this.REPAIR_FACILITY_HARD_CAP = 3; // getStructureLimit(STRUCTURES["Repair Facility"].id);      // TODO: Fix this when this function is fixed.
 
         // Combat targeting
         this.allTargets = [];
