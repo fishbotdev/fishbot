@@ -1100,10 +1100,7 @@ class CommandCenter {
 			// 	 1. assign units to reach base / core strength, 
 			//   2. then return any residual units for repair 
 			for (const [category, units] of Object.entries(reserveUnitsByCategory)) {
-				if (units.length === 0) {
-					continue;
-				}
-
+				
 				if (category === 'heavyCavalry') {
 					heavyCavReinforcementCount = units.length;		// used later to determine if a new brigade should be created
 				}
