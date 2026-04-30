@@ -36,7 +36,7 @@ class armySupply {
      *  - `totalLandUnits`
      *  - `targetTotalLandUnits`
 	 */
-	getBrigadeSupplyStatus(state, brigadeID, brigadeComposition, repairThreshold) {
+	getBrigadeSupplyStatus(state, brigadeID, brigadeComposition, totalUnitsPerBrigade, repairThreshold) {
 
         const brigadeUnits = state.g.enumGroup(brigadeID);
 
@@ -131,17 +131,19 @@ class armySupply {
             }
             return {
                 'category': category,
-                'abs': deficit,
-                'norm': norm,
+                'absBaseDeficit': deficit,
+                'normBaseDeficit': norm,
 
                 'damagedUnitCount': damagedUnitList.length,
                 'damagedUnitList': damagedUnitList
             }
         }
 
+        const totalLandUnits = heavyCavalryCount + lightCavalryCount + infantryCount + shortRangeFireSupportCount + airDefenceCount + sensorCount;
+
 		return {
-            'totalLandUnits': heavyCavalryCount + lightCavalryCount + infantryCount + shortRangeFireSupportCount + airDefenceCount + sensorCount,
-            'targetTotalLandUnits': MAX_HEAVY_CAVALRY + MAX_LIGHT_CAVALRY + MAX_INFANTRY + MAX_MORTAR + MAX_ADA + MAX_SENSOR, 
+            'totalLandUnits': totalLandUnits,
+            'brigadeStrength': Math.floor(totalLandUnits / totalUnitsPerBrigade * 100),
 
             'heavyCavalry': getSupplyStatus(DIVISION.HEAVY_CAV_RESERVE, MAX_HEAVY_CAVALRY, heavyCavalryCount, damagedHeavyCavalry),
             'lightCavalry': getSupplyStatus(DIVISION.LIGHT_CAV_RESERVE, MAX_LIGHT_CAVALRY, lightCavalryCount, damagedLightCavalry),

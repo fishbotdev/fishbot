@@ -653,17 +653,15 @@ class TacticalOperationsCenter {
 	/**
 	 * Assigns units to a brigade.
 	 * @param {worldState} state 
-	 * @param {*} unitRoster 
+	 * @param {*} reinforcements 
 	 * @param {number} brigadeID 
 	 * @returns {void}
 	 */
-	assignUnitsToBrigade(state, unitRoster, brigadeID) {
+	assignUnitsToBrigade(state, reinforcements, brigadeID) {
 		
-		for (let i=0; i<unitRoster.length; i++) {
-			const u = unitRoster[i];
-
-			u['unitList'].forEach(droid => {
-				state.g.removeDroidFromGroup({groupID: u['category'], droidID: droid.id});
+		for (const c of Object.values(reinforcements)) {
+			c['unitList'].forEach(droid => {
+				state.g.removeDroidFromGroup({groupID: c['category'], droidID: droid.id});
 				state.g.addDroidToGroup({groupID: brigadeID, droidID: droid.id});
 			});
 		}
