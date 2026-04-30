@@ -1071,7 +1071,7 @@ class CommandCenter {
 		const overstrengthBrigades = [];
 
 		const RECOMBINATION_THRESHOLD = 25;
-		const UNDERSTRENGTH_THRESHOLD = 50;
+		const UNDERSTRENGTH_THRESHOLD = 25;
 		const OVERSTRENGTH_THRESHOLD = 100;
 
 		for (let i=0; i<this.BRIGADE_DESIGNATIONS.length; i++) {
