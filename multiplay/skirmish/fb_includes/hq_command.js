@@ -1119,12 +1119,6 @@ class CommandCenter {
 
 				const requiredReplacementCount = supplyStatus[category]['damagedUnitCount'];
 				for (let i=0; i<requiredReplacementCount; i++) {
-					if (units.length === 0) {
-						break;
-					}
-					const reserveUnit = units.shift();
-					reinforcements[category]['unitList'].push(reserveUnit);
-
 					const unitForRepair = supplyStatus[category]['damagedUnitList'].shift();
 					unitsToBeReturnedForRepair.push(unitForRepair);
 				}
