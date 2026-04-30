@@ -1061,7 +1061,7 @@ class CommandCenter {
 			}
 		}
 		if (SHOULD_RUN_RESUPPLY_LOGISTICS) {
-			debug(`	${gameTime}: running runResupplyLogistics()`);
+			// debug(`	${gameTime}: running runResupplyLogistics()`);
 		} else {
 			return;
 		}
