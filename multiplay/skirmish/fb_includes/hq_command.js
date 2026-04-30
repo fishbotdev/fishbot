@@ -1100,7 +1100,7 @@ class CommandCenter {
 			// 	 1. assign units to reach base / core strength, 
 			//   2. then return any residual units for repair 
 			for (const [category, units] of Object.entries(reserveUnitsByCategory)) {
-				
+
 				if (category === 'heavyCavalry') {
 					heavyCavReinforcementCount = units.length;		// used later to determine if a new brigade should be created
 				}
@@ -1118,6 +1118,12 @@ class CommandCenter {
 				for (let i=0; i<requiredReplacementCount; i++) {
 					const unitForRepair = supplyStatus[category]['damagedUnitList'].shift();
 					unitsToBeReturnedForRepair.push(unitForRepair);
+
+					if (units.length > 0) {
+						// Replace with fresh units if they are readily available.
+						const reserveUnit = units.shift();
+						reinforcements[category]['unitList'].push(reserveUnit);
+					}
 				}
 			}
 
