@@ -175,18 +175,22 @@ class TacticalOperationsCenter {
 	 * Prints out a newly assigned construction task, where `task.missionType` matches any one of the search terms in `missionFilter`.
 	 * @param {*} task 
 	 * @param {*} missionID 
-	 * @param {number[]} missionFilter 
+	 * @param {number[]?} missionFilter optional array for mission IDs e.g. [MISSION_TYPE.CONSTRUCT_OIL_DERRICK, MISSION_TYPE.CONSTRUCT_BASE_STRUCTURE]
 	 */
-	#printConstructionDebugOutput(task, missionID, missionFilter) {
+	#printConstructionDebugOutput(task, missionID, missionFilter=null) {
 		let sectorID = '', structureID = '';
 		if (defined(task.payload)) {
 			sectorID = `@ ${task.payload.id}`;
 			structureID = `-- ${task.structureID}`
 		}
 
-		if (missionFilter.includes(task.missionType)) {
+		if (missionFilter == null) {
 			debug(`Scheduled BUILD (${task.missionType}) for: ${missionID} ${sectorID} ${structureID} ${sectorID}`);
-		}
+		} else {
+			if (missionFilter.includes(task.missionType)) {
+				debug(`Scheduled BUILD (${task.missionType}) for: ${missionID} ${sectorID} ${structureID} ${sectorID}`);
+			}
+		}		
 	};
 
 	/**
@@ -202,7 +206,7 @@ class TacticalOperationsCenter {
 			const missionData = this.createNewMission({missionType: task.missionType, priority: PRIORITY}, task, i);		
 			if (missionData !== undefined) {
 				state.activeMissions.push(missionData);
-				// this.#printConstructionDebugOutput(task, missionData.id, [MISSION_TYPE.CONSTRUCT_REPAIR_CENTER, MISSION_TYPE.DEMOLISH_REPAIR_CENTER]);
+				// this.#printConstructionDebugOutput(task, missionData.id);
 			} 
 		});
 	}
