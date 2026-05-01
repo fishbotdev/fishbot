@@ -3,13 +3,20 @@ This file is used to record the changes to FishBot between each version.
 
 ## Fishbot v0.4.0
 ### Changes in v0.4.0
-- Combat
+- Combat improvements
     - FishBot now divides its army into two main battle groups ('brigades') and a reserve group. Each group is controlled independently. With this change, FishBot becomes markedly more effective in high unit count games.
-    - FishBot now uses repair facilities intelligently based on brigade strength & forward builds these as the combat groups move around the map.
-- Production
+    - FishBot now uses repair facilities intelligently based on brigade strength & forward-builds repair facilities as the combat groups move around the map.
+- Production improvements
     - Factories now only produce the most-needed unit in active combat brigades (production is now intentional and no longer random).
     - Rebalanced production quantities for high-unit count games (VTOLs and trucks are now reliably produced). 
     - `Incendiary Mortar` is removed as a fire support weapon.
+- Construction fixes 
+    - Fixed too many trucks being assigned to capture sector derricks.
+    - Fixed occasional early termination of structure builds (should resolve barely started structures).
+    - Fixed attempting to build structures in locations which cannot be accessed by wheeled vehicles (this breaks compatibility with maps with water obstacles).
+    - For structures next to cliffs/impassable terrain, FishBot now prefers to build defences at the same elevation as the structure it is defending.
+    - Improved algorithm for finding structure locations to account for reachability by wheeled vehicles, to attempt to match requested z-height, and to be more computationally efficient.
+    - For longer running games, FishBot now builds more factories and VTOL rearming pads.
 
 ## Fishbot v0.3.3
 ### Changes in v0.3.3

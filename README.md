@@ -3,11 +3,10 @@ FishBot is a Warzone 2100 AI bot compatible with Warzone 2100 **v4.6.1+**.
 It is designed for Tech Level 2, No-Base starts on the supported maps below.
 
 ## Most recent updates
-* **v0.4.0** -- *released ** May 2026***
+* **v0.4.0** -- *released **May 2026***
     * FishBot now divides its army into 2 main groups ('brigades') with 1 reserve group.
-    * FishBot now uses repair facilities and forward-builds these near active combat brigades.
-    * Improvements in VTOL & indirect fire handling.
-    * For longer running games, FishBot now builds more factories and VTOL rearming pads.
+    * FishBot now uses repair facilities, and forward-builds these near active combat brigades.
+    * Various construction fixes and improvements.
 
 * **v0.3.3** -- *released **07 Apr 2026***
     * Fixed research collisions: FishBot will now try to research other technologies if they are already being researched by an ally.
