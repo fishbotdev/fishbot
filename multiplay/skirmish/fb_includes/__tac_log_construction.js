@@ -90,10 +90,6 @@ function pickStructLocation3({structureID, x, y}) {
 		const tX = standardConstructionSearchGrid[i][0] + x;
 		const tY = standardConstructionSearchGrid[i][1] + y;
 
-		if (!structureCanFit(structureID, tX, tY)) {
-			continue;
-		}
-
 		if (Math.abs(MapTiles[tY][tX].height - specifiedHeight) > HEIGHT_TOLERANCE) {
 			// debug(`	${gameTime}: psl2 rejected: (${tX}, ${tY}); height (${MapTiles[tY][tX].height} !== ${specifiedHeight})`);
 			continue;
@@ -101,6 +97,10 @@ function pickStructLocation3({structureID, x, y}) {
 
 		if (!isReachable[tX][tY]) {
 			// debug(`	${gameTime}: psl2 rejected: (${tX}, ${tY}); not reachable`);
+			continue;
+		}
+
+		if (!structureCanFit(structureID, tX, tY)) {
 			continue;
 		}
 
