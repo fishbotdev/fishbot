@@ -247,6 +247,10 @@ class armyEngineering {
 				continue;
 			}
 
+			if (!isReachable[d.x][d.y]) {		// this checks if the location is reachable wheeled trucks
+				continue;
+			}
+
 			// Intent: enumRange is used as this offers better granularity compared to directly accessing the grid
 			const s = state.grid.enumRange(d.x, d.y, PROXIMITY_RADIUS);
 			
@@ -411,6 +415,10 @@ class armyEngineering {
 
 			const BRIGADE_ID = brigadeLoc["brigadeID"];
 			const LOCATION = brigadeLoc["location"];
+
+			if (!isReachable[LOCATION.x][LOCATION.y]) {		// this checks if the location is reachable with wheeled trucks
+				return;
+			}
 
 			if (distSq(LOCATION.x, baseLocation.x, LOCATION.y, baseLocation.y) <= SEARCH_RADIUS ** 2) {
 				// Too close to the base (prevents doubling-up on the repair facility in the base build order)
