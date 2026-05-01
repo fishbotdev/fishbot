@@ -297,8 +297,6 @@ function produceHeavyCavalry(factory) {
 }
 
 function produceLandAPFireSupport(factory) {
-	// Part of the combined arms strategy
-
 	// Order these by tech level if you want the most technologically advanced weapon to be used
 	const fireSupportWeapons = [
 		WEAPONS["Mortar"],
@@ -449,7 +447,7 @@ function produceInfantry(factory) {
 function produceLandUnitCategory(category, factory) {
 	let factoryInProduction = false;   
 
-	let r = Math.floor(Math.random() * 4);
+	let r = Math.floor(Math.random() * 4);		// this should be one of the few (if any) Math.random() calls in FishBot.
 	
 	switch (category) {
 		case 'heavyCavalry':
@@ -459,11 +457,7 @@ function produceLandUnitCategory(category, factory) {
 			factoryInProduction = factoryInProduction || produceLightCavalry(factory);
 			break;
 		case 'shortRangeArtillery':
-			// if (r <= 1) {
-			// 	factoryInProduction = factoryInProduction || produceLandAPFireSupport(factory);
-			// } else {
-				factoryInProduction = factoryInProduction || produceLandFireSupportGeneric(factory);
-			// }
+			factoryInProduction = factoryInProduction || produceLandFireSupportGeneric(factory);
 			break;
 		case 'ADA':
 			if (r === 0) {

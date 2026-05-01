@@ -16,15 +16,23 @@
 */
 
 /*
-	Driver for using a repair facility
+	Driver for using a repair facility at base
 */
+function returnForRepair(taskForceID) {
 
-function returnForRepair(droid) {
-	// const REPAIR_AT_PERCENT = 1;
-	const weHaveRepair = (enumStruct(me, REPAIR_FACILITY).length > 0);
-	if (weHaveRepair) {
-		orderDroid(droid, DORDER_RTR);
-	}
+	const unitsToRepair = state.g.enumGroup(taskForceID);
+	
+	const HAVE_REPAIR = state.playerInfo[me]["numRepairFacilities"] > 0;
+
+	unitsToRepair.forEach(droid => {
+		if (HAVE_REPAIR) {
+			orderDroid(droid, DORDER_RTR);
+		} else {
+			orderDroid(droid, DORDER_RTB);		// assuming mobile repair units will be at base
+		}
+	});
+	
+	return {status: MISSION_STATUS.IN_PROGRESS};		// Note: this is a default behaviour; another function will remove these units from the group.
 }
 
 /*
@@ -177,20 +185,6 @@ function moveBrigadeToAttack(state, brigadeID, brigadeLocation, directFireTarget
 	// MAIN ASSAULT UNITS
 	for (let i=0; i<ARMOUR_UNITS.length; i++) {
 		let droid = ARMOUR_UNITS[i];
-
-		/*
-		// basic implementation of repair facility, only for front line units
-		if (droid.health < 45 && generalReserve.length > 12) {
-			// debug(`${droid.name} RTR @ ${droid.health}`);
-			returnForRepair(droid);
-			continue;
-		}
-
-		if (droid.order === DORDER_RTR) {
-			// debug(`skipped RTR ${droid.name} ${droid.health}`);
-			continue;
-		}
-		*/
 
 		if (distSq(droid.x, forceLocation.x, droid.y, forceLocation.y) > 10 ** 2) {
 			orderDroidLoc(droid, DORDER_MOVE, forceLocation.x, forceLocation.y);

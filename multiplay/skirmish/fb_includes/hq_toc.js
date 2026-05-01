@@ -171,6 +171,12 @@ class TacticalOperationsCenter {
 		}
 	}
 
+	/**
+	 * Prints out a newly assigned construction task, where `task.missionType` matches any one of the search terms in `missionFilter`.
+	 * @param {*} task 
+	 * @param {*} missionID 
+	 * @param {number[]} missionFilter 
+	 */
 	#printConstructionDebugOutput(task, missionID, missionFilter) {
 		let sectorID = '', structureID = '';
 		if (defined(task.payload)) {
@@ -194,9 +200,9 @@ class TacticalOperationsCenter {
 
 		buildTasks.forEach((task, i) => {	
 			const missionData = this.createNewMission({missionType: task.missionType, priority: PRIORITY}, task, i);		
-			if (defined(missionData)) {
+			if (missionData !== undefined) {
 				state.activeMissions.push(missionData);
-				if (false) this.#printConstructionDebugOutput(task, missionData.id, [MISSION_TYPE.CONSTRUCT_NEARBY_DEFENCE]);
+				// this.#printConstructionDebugOutput(task, missionData.id, [MISSION_TYPE.CONSTRUCT_REPAIR_CENTER, MISSION_TYPE.DEMOLISH_REPAIR_CENTER]);
 			} 
 		});
 	}
@@ -205,8 +211,8 @@ class TacticalOperationsCenter {
 	 * This function returns either:
 	 * - `missionID`, if mission was created successfully
 	 * - `undefined`, if mission was not created
-	 * @param {*} param0 
-	 * @param  {...any} args 
+	 * @param {*} missionData object containing `missionType: number` and `priority: number`.
+	 * @param  {...any} args arguments containing mission information & administrative data (e.g. `tickUID` is used to differentiate the same type of mission started on the same decision tick).
 	 * @returns 
 	 */
 	createNewMission({missionType, priority=MISSION_PRIORITY.LOW}, ...args) {
@@ -215,6 +221,7 @@ class TacticalOperationsCenter {
 		switch (missionType) {
 			case MISSION_TYPE.ABORT_MISSION:
 				break;		// handled in the mission manager
+
 
 			/*
 				AVIATION MISSIONS
@@ -242,9 +249,11 @@ class TacticalOperationsCenter {
 				break;
 
 			/*
-				INTELLIGENCE MISSIONS
+				GROUND MISSIONS
 			*/
-
+			case MISSION_TYPE.RETURN_FOR_REPAIR:
+				md = groundForces.createReturnForRepairMission();
+				break;
 
 			/*
 				CONSTRUCTION MISSIONS
@@ -266,12 +275,18 @@ class TacticalOperationsCenter {
 				break;
 			case MISSION_TYPE.CONSTRUCT_ALL_DERRICKS_IN_SECTOR:
 				md = engineering.createBuildAllDerricksInSectorTask({buildTask: args[0], tickUID: args[1]});
-				break;			
+				break;
+			case MISSION_TYPE.CONSTRUCT_REPAIR_CENTER:
+				md = engineering.createBuildRepairCenterTask({buildTask: args[0], tickUID: args[1]});		
+				break;
+			case MISSION_TYPE.DEMOLISH_REPAIR_CENTER:
+				md = engineering.createDemolishRepairCenterTask({buildTask: args[0], tickUID: args[1]})		
+				break;	
 			default:	
 				// Do nothing
 		}
 
-		if (defined(md)) {
+		if (md !== undefined) {
 			// If mission is valid, mission data (md) is defined
 			md.missionStatus = MISSION_STATUS.NOT_STARTED;
 			md.missionType = missionType;
@@ -621,11 +636,16 @@ class TacticalOperationsCenter {
 	 * Called directly by the `eventDroidBuilt` handler.
 	 * @param {worldState} state
      * @param {DroidObject} droid 
+	 * @param {number | undefined} groupIdToRemove
      * @returns {void}
      */
-    setNewDroidGroup(state, droid) {
+    setNewDroidGroup(state, droid, groupIdToRemove=undefined) {
 
 		const groupID = getDroidFbGroupClassification(droid);
+
+		if (defined(groupIdToRemove)) {
+			state.g.removeDroidFromGroup({groupID: groupIdToRemove, droidID: droid.id});
+		}
 
 		state.g.addDroidToGroup({groupID: groupID, droidID: droid.id});
 	}
@@ -633,19 +653,30 @@ class TacticalOperationsCenter {
 	/**
 	 * Assigns units to a brigade.
 	 * @param {worldState} state 
-	 * @param {*} unitRoster 
+	 * @param {*} reinforcements 
 	 * @param {number} brigadeID 
 	 * @returns {void}
 	 */
-	assignUnitsToBrigade(state, unitRoster, brigadeID) {
+	assignUnitsToBrigade(state, reinforcements, brigadeID) {
 		
-		for (let i=0; i<unitRoster.length; i++) {
-			const u = unitRoster[i];
-
-			u['unitList'].forEach(droid => {
-				state.g.removeDroidFromGroup({groupID: u['category'], droidID: droid.id});
+		for (const c of Object.values(reinforcements)) {
+			c['unitList'].forEach(droid => {
+				state.g.removeDroidFromGroup({groupID: c['category'], droidID: droid.id});
 				state.g.addDroidToGroup({groupID: brigadeID, droidID: droid.id});
 			});
 		}
+	}
+
+	/**
+	 * Assigns units to the `RETURNING_FOR_REPAIR` group (these units will immediately head towards base / the nearest repair facility).
+	 * @param {worldState} state 
+	 * @param {DroidObject[]} unitList 
+	 * @param {number} brigadeID 
+	 */
+	assignUnitsForRepair(state, unitList, brigadeID) {
+		unitList.forEach(droid => {
+			state.g.removeDroidFromGroup({groupID: brigadeID, droidID: droid.id});
+			state.g.addDroidToGroup({groupID: DIVISION.RETURNING_FOR_REPAIR, droidID: droid.id});
+		});
 	}
 }

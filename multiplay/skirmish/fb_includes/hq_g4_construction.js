@@ -247,6 +247,10 @@ class armyEngineering {
 				continue;
 			}
 
+			if (!isReachable[d.x][d.y]) {		// this checks if the location is reachable wheeled trucks
+				continue;
+			}
+
 			// Intent: enumRange is used as this offers better granularity compared to directly accessing the grid
 			const s = state.grid.enumRange(d.x, d.y, PROXIMITY_RADIUS);
 			
@@ -353,6 +357,98 @@ class armyEngineering {
 
 	/**
 	 * 
+	 * @param {worldState} state  
+	 * @returns 
+	 */
+	generateRemoteServiceCenterConstructionOptions(state, myRepairFacilities) {
+		const forceLocations = state.forceLocations;		
+
+		const potentialRepairCenterLocations = [];
+		const potentialDemolitionLocations = [];
+
+		const options = {
+			'newFacilityLocations': potentialRepairCenterLocations,
+			'demolitionLocations': potentialDemolitionLocations
+		}
+
+		const SEARCH_RADIUS = 25;
+
+		// PART 1: FIND DEMOLITION LOCATIONS
+		myRepairFacilities.forEach(f => {
+			const repairFacility = getObject(f.type, f.player, f.id);
+			if (!defined(repairFacility)) {
+				return;
+			}
+
+			const FACILITY_INSIDE_BASE_RADIUS = distSq(repairFacility.x, baseLocation.x, repairFacility.y, baseLocation.y) <= SEARCH_RADIUS ** 2;
+			if (FACILITY_INSIDE_BASE_RADIUS) {
+				// debug(`${gameTime}: repair facility @ ${repairFacility.x}, ${repairFacility.y} - ignored`);
+				return;
+			}
+
+			const FACILITY_NEAR_SOME_GROUP = forceLocations.some(fLoc => {
+				const brigadeLoc = fLoc["location"];
+				if (distSq(brigadeLoc.x, f.x, brigadeLoc.y, f.y) <= SEARCH_RADIUS ** 2) {
+					return true;
+				}
+				return false;
+			});
+			if (FACILITY_NEAR_SOME_GROUP) {
+				return;
+			}
+
+			const buildRequest = this.translateIntoBuildRequest({
+				missionType: MISSION_TYPE.DEMOLISH_REPAIR_CENTER, 
+				structureData: STRUCTURES["Repair Facility"],
+				payload: repairFacility
+			});
+
+			potentialDemolitionLocations.push(buildRequest);
+		});
+
+		// Sort closest to furthest from base (simplistic assumption: combat units are the furthest away from base; improve later with groupPosition knowledge).
+		potentialDemolitionLocations.sort((a,b) => 
+			distSq(a.payload.x, baseLocation.x, a.payload.y, baseLocation.y) - distSq(b.payload.x, baseLocation.x, b.payload.y, baseLocation.y));
+
+		// PART 2: FIND CONSTRUCTION LOCATIONS
+		forceLocations.forEach(brigadeLoc => {
+
+			const BRIGADE_ID = brigadeLoc["brigadeID"];
+			const LOCATION = brigadeLoc["location"];
+
+			if (!isReachable[LOCATION.x][LOCATION.y]) {		// this checks if the location is reachable with wheeled trucks
+				return;
+			}
+
+			if (distSq(LOCATION.x, baseLocation.x, LOCATION.y, baseLocation.y) <= SEARCH_RADIUS ** 2) {
+				// Too close to the base (prevents doubling-up on the repair facility in the base build order)
+				return;
+			}
+
+			const nearby = state.grid.enumRange(LOCATION.x, LOCATION.y, SEARCH_RADIUS);
+			const friendlyRepairCenterCount = nearby['friendlyStructures'].filter(s => (s.flags & OBJ_FLAGS.REPAIR)).length;
+			
+			if (friendlyRepairCenterCount > 0) {
+				// Nearby repair facility already
+				return;
+			}
+			// debug(`\t\t${gameTime}: repair center not within ${SEARCH_RADIUS} tiles of ${BRIGADE_ID} (${LOCATION.x} ${LOCATION.y})`);
+
+			// Else, schedule a new task
+			const buildRequest = this.translateIntoBuildRequest({
+				missionType: MISSION_TYPE.CONSTRUCT_REPAIR_CENTER, 
+				structureData: STRUCTURES["Repair Facility"],
+				payload: LOCATION
+			});
+
+			potentialRepairCenterLocations.push(buildRequest);
+		});
+
+		return options;
+	}
+
+	/**
+	 * 
 	 * @param {worldState} state 
 	 * @returns 
 	 */
@@ -372,31 +468,30 @@ class armyEngineering {
 			STRUCTURES["Cyborg Factory"],		
 			STRUCTURES["Cyborg Factory"],		
 			STRUCTURES["VTOL Factory"],
-			STRUCTURES["VTOL Rearming Pad"],
-			STRUCTURES["VTOL Rearming Pad"],
-
 			STRUCTURES["Power Module"],				// The script will automatically find the position to place this power module
+			STRUCTURES["VTOL Rearming Pad"],
 			STRUCTURES["Research Facility"],
 			STRUCTURES["Power Module"],
 			STRUCTURES["Power Module"],
+			STRUCTURES["Repair Facility"],
+			STRUCTURES["VTOL Rearming Pad"],
+			STRUCTURES["Factory Module"],
+			STRUCTURES["Factory Module"],
 
-			STRUCTURES["Factory Module"],
-			STRUCTURES["Factory Module"],
-			// STRUCTURES["Repair Facility"],
 			STRUCTURES["Factory Module"],
 			STRUCTURES["Factory Module"],
 			STRUCTURES["Research Facility"],
 			STRUCTURES["Research Module"],
 
-			STRUCTURES["VTOL Rearming Pad"],
-			STRUCTURES["VTOL Rearming Pad"],
 			STRUCTURES["Factory Module"],
 			STRUCTURES["Factory Module"],
+			STRUCTURES["VTOL Rearming Pad"],
 			STRUCTURES["Power Generator"],
 			STRUCTURES["Power Module"],
 			STRUCTURES["Research Module"],
 			STRUCTURES["Research Facility"],
 			STRUCTURES["Research Module"],
+			STRUCTURES["VTOL Rearming Pad"],
 			STRUCTURES["Research Facility"],
 			STRUCTURES["Research Module"],
 			STRUCTURES["VTOL Rearming Pad"],
@@ -412,7 +507,6 @@ class armyEngineering {
 			STRUCTURES["VTOL Rearming Pad"],
 			STRUCTURES["Cyborg Factory"],
 			
-			// Placeholder VTOL rearming pads
 			STRUCTURES["VTOL Rearming Pad"],
 			STRUCTURES["VTOL Rearming Pad"],
 
@@ -494,7 +588,7 @@ class armyEngineering {
 				payload: undefined
 			});
 			buildTasks.push(buildRequest);
-			break;
+			break;		// Note: this means that only the first available will be selected.
 		}
 		
 		return buildTasks;
@@ -505,26 +599,17 @@ class armyEngineering {
 	*/
 
 	#createBuildRequest({missionType, structureData, payload}) {
-		let buildRequestTemplate = 
-		{
+		return {
 			missionType: missionType,
 			structureID: structureData.id,
 			payload: payload,
-		}
-
-		return buildRequestTemplate;
+		};
 	}
 
 	translateIntoBuildRequest({missionType, structureData, payload}) {
 		let buildRequest = undefined;
 
 		switch (missionType) {
-			case MISSION_TYPE.CONSTRUCT_OIL_DERRICK:
-				buildRequest = this.#createBuildRequest({missionType: missionType, structureData: structureData, payload: payload});
-				break;
-			case MISSION_TYPE.CONSTRUCT_ALL_DERRICKS_IN_SECTOR:
-				buildRequest = this.#createBuildRequest({missionType: missionType, structureData: structureData, payload: payload});
-				break;
 			case MISSION_TYPE.CONSTRUCT_AUTO_DETECT_BY_STRUCTURE:
 				let mt = undefined;
 				switch(structureData.id) {
@@ -538,12 +623,13 @@ class armyEngineering {
 				}
 				buildRequest = this.#createBuildRequest({missionType: mt, structureData: structureData, payload: payload});
 				break;
+			case MISSION_TYPE.CONSTRUCT_OIL_DERRICK:
+			case MISSION_TYPE.CONSTRUCT_ALL_DERRICKS_IN_SECTOR:
 			case MISSION_TYPE.CONSTRUCT_NEARBY_DEFENCE:
+			case MISSION_TYPE.CONSTRUCT_REPAIR_CENTER:
+			case MISSION_TYPE.DEMOLISH_REPAIR_CENTER:
 				buildRequest = this.#createBuildRequest({missionType: missionType, structureData: structureData, payload: payload});
 				break;
-			case MISSION_TYPE.CONSTRUCT_STRUCTURE_NEARBY:
-				buildRequest = this.#createBuildRequest({missionType: missionType, structureData: structureData, payload: payload});
-				break;				
 			default:
 				debug(`WARNING: hq_g4_construction/translateIntoBuildRequest(): Unrecognised missionType: ${missionType}`);
 				// do nothing for now
@@ -553,8 +639,24 @@ class armyEngineering {
 	}
 
 	/**
-	 * Creates standard mission orders;
-	 * @returns {Object | void} `missionData` with the following parameters: 
+	 * @typedef {Object} missionData
+	 * @property {string | undefined} id Unique ID to designate this particular mission
+	 * @property {number | undefined} missionType
+	 * @property {number | undefined} missionStatus
+	 * @property {number | undefined} priority
+	 * @property {number | string | undefined} taskForceID
+	 * @property {function | undefined} orders
+	 * @property {function | undefined} ceaseOrders
+	 * @property {number | undefined} timeStarted
+	 * @property {number | undefined} timeCompleted
+	 * @property {string | undefined} sectorID
+	 * @property {number | undefined} gx
+	 * @property {number | undefined} gy
+	 */
+
+	/**
+	 * Creates standard mission orders.
+	 * @returns {missionData} `missionData` with the following parameters: 
 	 * 		- `id`				: Unique ID to designate this particular mission (set here)
 			- `missionType`		: Integer to denote mission type (determined in OPS)
 			- `missionStatus`	: Integer to denote mission status (this function sets it to FAILED_CREATION)
@@ -571,7 +673,7 @@ class armyEngineering {
 			- `gy`				: grid y coordinate (v0.4.0 sector system)
 	 */
 	#createMissionOrders() {
-		let missionDataTemplate = {
+		return {
 			'id': undefined, 
 			'missionType': undefined, 
 			'missionStatus': MISSION_STATUS.FAILED_CREATION, 
@@ -587,8 +689,6 @@ class armyEngineering {
 			'gx': -1,				// v0.4.0 grid system
 			'gy': -1,				// v0.4.0 grid system
 		};
-
-		return missionDataTemplate;
 	}
 
 	#mcb(callback, ...args) {
@@ -611,12 +711,17 @@ class armyEngineering {
 		md.timeCompleted = getCurrGameTime();
 	}
 
-	createHelpConstructTask() {
-		// this is the default behaviour of all trucks
+	/**
+	 * @typedef {Object} MissionParams
+	 * @property {Object} buildTask Build task details (standard format generated by `translateIntoBuildRequest()`).
+	 * @property {number} tickUID Number used by mission planning to differentiate tasks assigned in the same decision tick.
+	 */
 
-		// it returns either:
-		// 	- missionData object (according to missionDataTemplate), if mission successfully created, OR
-		//	- undefined, if mission was not able to be created	
+	/**
+	 * Defines the default behaviour of all trucks.
+	 * @returns {missionData} Returns `missionData` which is used by the mission manager to continuously execute the default mission.
+	 */
+	createHelpConstructTask() {
 		let md = this.#createMissionOrders();
 
 		// Create mission details		
@@ -630,12 +735,13 @@ class armyEngineering {
 
 		return md;
 	}
-	
-	createBuildBaseStructureTask({buildTask, tickUID}) {
-		// it returns either:
-		// 	- missionData object (according to missionDataTemplate), if mission successfully created, OR
-		//	- undefined, if mission was not able to be created	
 
+	/**
+	 * Creates a task to build a single base structure.
+	 * @param {MissionParams} params 
+	 * @returns {missionData | undefined} Returns `missionData` if mission was successfully created (all conditions satisfied), else `undefined`.
+	 */
+	createBuildBaseStructureTask({buildTask, tickUID}) {
 		const cellSize = state.grid.cellSize;
 		
 		let engineeringReserve = state.g.enumGroup(ENGINEERING.ENGINEERING_RESERVE);
@@ -683,10 +789,9 @@ class armyEngineering {
 	}
 
 	/**
-	 * Creates task to build a single derrick.
-	 * @param {Object} buildTask build information (payload = `derrick` object: requires the `.x`, `.y` properties)
-	 * @param {number} tickUID used to differentiate missions created in the same FishBot tick
-	 * @returns `missionData` object, if mission successfully created, else `undefined`
+	 * Creates a task to build a single derrick.
+	 * @param {MissionParams} params Build information. Note: `buildTask.payload` requires the `.x` and `.y` properties.
+	 * @returns {missionData | undefined} Returns `missionData` if mission was successfully created (all conditions satisfied), else `undefined`.
 	 */
 	createBuildDerrickTask({buildTask, tickUID}) {		
 		const cellSize = state.grid.cellSize;
@@ -733,10 +838,9 @@ class armyEngineering {
 	}
 
 	/**
-	 * Creates task to build all derricks in a grid cell.
-	 * @param {Object} buildTask build information (payload = `gridCell` object: requires the `.derricks` property)
-	 * @param {number} tickUID used to differentiate missions created in the same FishBot tick
-	 * @returns `missionData` object, if mission successfully created, else `undefined`
+	 * Creates a task to build all derricks in a grid cell.
+	 * @param {MissionParams} params Build information. Note: `buildTask.payload` requires the `.derricks` property (e.g. `gridCell` contains `.derricks`).
+	 * @returns {missionData | undefined} Returns `missionData` if mission was successfully created (all conditions satisfied), else `undefined`.
 	 */
 	createBuildAllDerricksInSectorTask({buildTask, tickUID}) {				
 		const sector = buildTask.payload;
@@ -783,10 +887,9 @@ class armyEngineering {
 	}
 
 	/**
-	 * Creates task to build *one* additional module extension on an upgradeable structure.
-	 * @param {Object} buildTask build information (no payload)
-	 * @param {number} tickUID used to differentiate missions created in the same FishBot tick
-	 * @returns `missionData` object, if mission successfully created, else `undefined`
+	 * Creates a task to build *one* additional module extension on an upgradeable structure.
+	 * @param {MissionParams} params Build information. Note: `buildTask.payload` is not required.
+	 * @returns {missionData | undefined} Returns `missionData` if mission was successfully created (all conditions satisfied), else `undefined`.
 	 */
 	createBuildSingleModuleTask({buildTask, tickUID}) {
 
@@ -864,10 +967,9 @@ class armyEngineering {
 	}
 
 	/**
-	 * Creates task to build one defensive structure near a specified location.
-	 * @param {Object} buildTask build information (payload = `derrick` object: requires the `.x`, `.y` properties)
-	 * @param {number} tickUID used to differentiate missions created in the same FishBot tick
-	 * @returns `missionData` object, if mission successfully created, else `undefined`
+	 * Creates a task to build one defensive structure near a specified location.
+	 * @param {MissionParams} params Build information. Note: `buildTask.payload` requires the `.x` and `.y` properties.
+	 * @returns {missionData | undefined} Returns `missionData` if mission was successfully created (all conditions satisfied), else `undefined`.
 	 */
 	createBuildNearbyDefenceTask({buildTask, tickUID}) {
 		const cellSize = state.grid.cellSize;
@@ -890,9 +992,9 @@ class armyEngineering {
 			return undefined;
 		}
 
-		let preferredLoc = pickStructLocation2({structureID: buildTask.structureID, x: currDerrick.x, y: currDerrick.y});
-		if (!defined(preferredLoc)) {
-			debug(`createBuildNearbyDefenceTask(): pickStructLocation2() could not find a valid location`);
+		let preferredLoc = pickStructLocation3({structureID: buildTask.structureID, x: currDerrick.x, y: currDerrick.y});
+		if (preferredLoc === undefined) {
+			debug(`createBuildNearbyDefenceTask(): pickStructLocation3() could not find a valid location`);
 			return undefined;
 		}
 
@@ -913,8 +1015,114 @@ class armyEngineering {
 		});		
 
 		// Assign orders for conducting & ceasing operations
-		if (false) debug(`Mission creation for: _CONSTRUCT_NEARBY_DEFENCE_ -> (${preferredLoc.x}, ${preferredLoc.y}) `);			
 		md.orders = () => this.#mcb(buildNearbyDefences, md.taskForceID, buildTask.structureID, preferredLoc.x, preferredLoc.y);		// lambda is necessary otherwise md.orders is not interpreted as a function
+		md.ceaseOrders = () => this.#mcb(this.#finaliseConstruction, md);
+
+		// debug(`Mission creation for: _CONSTRUCT_NEARBY_DEFENCE_ -> (${preferredLoc.x}, ${preferredLoc.y}) `);			
+
+		return md;
+	}
+
+	/**
+	 * Creates a task to build one repair facility near a specified location.
+	 * @param {MissionParams} params Build information. Note: `buildTask.payload` requires the `.x` and `.y` properties.
+	 * @returns {missionData | undefined} Returns `missionData` if mission was successfully created (all conditions satisfied), else `undefined`.
+	 */
+	createBuildRepairCenterTask({buildTask, tickUID}) {
+		const cellSize = state.grid.cellSize;
+
+		const MINIMUM_TRUCKS = 2;
+		
+		let engineeringReserve = state.g.enumGroup(ENGINEERING.ENGINEERING_RESERVE);
+		if (engineeringReserve.length < MINIMUM_TRUCKS) {
+			// debug(`#createBuildRepairCenterTask(): No trucks available.`);
+			return undefined;
+		}
+
+		// Select closest trucks to new location
+		const loc = buildTask.payload;
+		engineeringReserve.sort((a,b) => distSq(a.x, loc.x, a.y, loc.y) - distSq(b.x, loc.x, b.y, loc.y));
+		const taskForceUnits = engineeringReserve.slice(0, MINIMUM_TRUCKS); 
+
+		if (!isStructureAvailable(buildTask.structureID, me)) {
+			debug(`#createBuildRepairCenterTask(): Structure not available: ${buildTask.structureID}`);
+			return undefined;
+		}
+
+		let preferredLoc = pickStructLocation3({structureID: buildTask.structureID, x: loc.x, y: loc.y});
+		if (preferredLoc === undefined) {
+			debug(`createBuildRepairCenterTask(): pickStructLocation3() could not find a valid location`);
+			return undefined;
+		}
+
+		let md = this.#createMissionOrders();
+
+		// Create mission details
+		const id = getCurrGameTime() + "_CONSTRUCT_REPAIR_CENTER_" + tickUID;
+		md.id = id;
+		md.taskForceID = id;
+
+		md.sectorID = loc.id;			// TODO: CHECK IF "SECTORID" is the correct abstraction even though this is derrick ID (position ID?)
+		md.gx = Math.floor(preferredLoc.x / cellSize);
+		md.gy = Math.floor(preferredLoc.y / cellSize);
+		
+		taskForceUnits.forEach((droid) => {
+			state.g.addDroidToGroup({groupID: md.taskForceID, droidID: droid.id});
+			state.g.removeDroidFromGroup({groupID: ENGINEERING.ENGINEERING_RESERVE, droidID: droid.id});
+		});		
+
+		// Assign orders for conducting & ceasing operations
+		// Can use the same driver as 'buildNearbyDefences' (same logic)
+		md.orders = () => this.#mcb(buildNearbyDefences, md.taskForceID, buildTask.structureID, preferredLoc.x, preferredLoc.y);		
+		md.ceaseOrders = () => this.#mcb(this.#finaliseConstruction, md);
+
+		// debug(`Mission creation for: CONSTRUCT_REPAIR_CENTER -> (${preferredLoc.x}, ${preferredLoc.y}) `);		
+
+		return md;
+	}
+
+	/**
+	 * Creates a task to demolish one repair facility at a specified location.
+	 * @param {MissionParams} params Build information. Note: `buildTask.payload` requires the `.x` and `.y` properties.
+	 * @returns {missionData | undefined} Returns `missionData` if mission was successfully created (all conditions satisfied), else `undefined`.
+	 */
+	createDemolishRepairCenterTask({buildTask, tickUID}) {
+		const cellSize = state.grid.cellSize;
+
+		const MINIMUM_TRUCKS = 1;
+		
+		let engineeringReserve = state.g.enumGroup(ENGINEERING.ENGINEERING_RESERVE);
+		if (engineeringReserve.length < MINIMUM_TRUCKS) {
+			// debug(`#createBuildRepairCenterTask(): No trucks available.`);
+			return undefined;
+		}
+
+		// Select closest trucks to new location
+		const loc = buildTask.payload;
+		engineeringReserve.sort((a,b) => distSq(a.x, loc.x, a.y, loc.y) - distSq(b.x, loc.x, b.y, loc.y));
+		const taskForceUnits = engineeringReserve.slice(0, MINIMUM_TRUCKS); 
+
+		let md = this.#createMissionOrders();
+
+		// Create mission details
+		const id = getCurrGameTime() + "_DEMOLISH_REPAIR_CENTER_" + tickUID;
+		md.id = id;
+		md.taskForceID = id;
+
+		md.sectorID = loc.id;			
+		md.gx = Math.floor(loc.x / cellSize);
+		md.gy = Math.floor(loc.y / cellSize);
+		
+		taskForceUnits.forEach((droid) => {
+			state.g.addDroidToGroup({groupID: md.taskForceID, droidID: droid.id});
+			state.g.removeDroidFromGroup({groupID: ENGINEERING.ENGINEERING_RESERVE, droidID: droid.id});
+		});		
+
+		// Assign orders for conducting & ceasing operations
+		if (false) debug(`Mission creation for: DEMOLISH_REPAIR_CENTER -> (${loc.x}, ${loc.y}) `);			
+
+		// Can use the same driver as 'buildNearbyDefences' (same logic)
+		md.orders = () => this.#mcb(demolishStructure, md.taskForceID, buildTask.structureID, loc.x, loc.y);		
 		md.ceaseOrders = () => this.#mcb(this.#finaliseConstruction, md);
 
 		return md;

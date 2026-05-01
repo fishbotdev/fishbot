@@ -175,8 +175,10 @@ def show_hard_cobra_results():
     # test_1 = getcwd() + rf"\process_results/v4/" + "021d39e,hard,cobra,100g" + ".txt"             #  79 / 100 -> v0.3.1 release candidate (reverted removal of median location)
     # test_1 = getcwd() + rf"\process_results/v4/" + "4d60e4f,hard,cobra,100g" + ".txt"               # v0.3.2 release -- 94 / 100 won (refined production & research after migration)
     # test_1 = getcwd() + rf"\process_results/v4/" + "b6c85a5,hard,cobra,50g" + ".txt"                # v0.3.3 release -- 48 / 50 won (research collision patch)
-    test_1 = getcwd() + rf"\process_results/v4/" + "83bf457,hard,cobra,100g" + ".txt"                # v0.3.4 dev -- 92 / 100 won (brigade system dev)
-    test_2 = getcwd() + rf"\process_results/v4/" + "727b189,hard,cobra,99g" + ".txt"                # v0.3.4 dev -- 88 / 99 won (after brigade system merge)
+    # test_1 = getcwd() + rf"\process_results/v4/" + "83bf457,hard,cobra,100g" + ".txt"                # v0.3.4 dev -- 92 / 100 won (brigade system dev)
+    # test_1 = getcwd() + rf"\process_results/v4/" + "727b189,hard,cobra,99g" + ".txt"                # v0.3.4 dev -- 88 / 99 won (after brigade system merge)
+    test_1 = getcwd() + rf"\process_results/v4/" + "4f7f8e8,hard,cobra,100g" + ".txt"                # v0.4.0 dev -- 94 / 100 won (just before repair facility merge)
+    test_2 = getcwd() + rf"\process_results/v4/" + "d114112,hard,cobra,100g" + ".txt"                # v0.4.0 dev -- 97 / 100 won (after repair facility optimisations)
 
     commit1 = test_1.split(rf"v4/")[1].split(",")[0]
     commit2 = test_2.split(rf"v4/")[1].split(",")[0]
@@ -191,8 +193,11 @@ def show_insane_diff_results():
     # test_1 = getcwd() + rf"\process_results/v4/" + "1df2117,hardins,1v2" + ".txt"           # v4 dev: v3 skrush 1x hard, 1x insane nexus, after perf optimisations [42 / 50 wins]
     # test_1 = getcwd() + rf"\process_results/v4/" + "c7d8eb7,hardins,1v2,targoptim" + ".txt"           # v4 dev: v3 skrush 1x hard, 1x ins nexus, targeting optimisations - cancelVtol [33 / 50 wins]
     # test_1 = getcwd() + rf"\process_results/v4/" + "4aee90e,hardins,1v2,vtolfix" + ".txt"           # v4 dev: v3 skrush 1x hard, 1x ins nexus, fixed vtol usage [38 / 50 wins]
-    test_1 = getcwd() + rf"\process_results/v4/" + "e8c65ad,hardins,1v2" + ".txt"           # v4 dev: mid-grid system migration [55% wr]
-    test_2 = getcwd() + rf"\process_results/v4/" + "4d60e4f,ins,cobra,100g" + ".txt"           #  (v0.3.2 release) [8% wr; 1v1 vs Cobra Insane]
+    # test_1 = getcwd() + rf"\process_results/v4/" + "e8c65ad,hardins,1v2" + ".txt"           # v4 dev: mid-grid system migration [55% wr]
+    # test_1 = getcwd() + rf"\process_results/v4/" + "4d60e4f,ins,cobra,100g" + ".txt"           #  (v0.3.2 release) [8% wr; 1v1 vs Cobra Insane]
+    test_1 = getcwd() + rf"\process_results/v4/" + "4f7f8e8,insane,cobra,50g" + ".txt"           #  (v0.4.0-dev) 27/50 = 54% wr (just before repair facility merge)
+    # test_2 = getcwd() + rf"\process_results/v4/" + "4f7f8e8,1v3,nexushard" + ".txt"           #  (v0.4.0-dev) 26/50 = 52% wr (just before repair facility merge)
+    test_2 = getcwd() + rf"\process_results/v4/" + "d114112,ins,cobra,50g" + ".txt"           #  (v0.4.0-dev) 24/50 = 48% wr (after performance optimisations)
     
     commit1 = test_1.split(rf"v4/")[1].split(",")[0]
     commit2 = test_2.split(rf"v4/")[1].split(",")[0]

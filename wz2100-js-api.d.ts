@@ -24,14 +24,23 @@ declare const startPositions: BaseObject[];
 declare const me: number;
 
 /**
-* ```mapWidth``` Width of map in tiles. 
+* ```mapWidth``` Width of map in tiles (x). 
 */
 declare const mapWidth: number;
 
 /**
-* ```mapHeight``` Height of map in tiles.
+* ```mapHeight``` Height of map in tiles (y).
 */
 declare const mapHeight: number;
+
+/**
+```MapTiles``` A two-dimensional array of static information about the map tiles in a game. Each item in MapTiles[y][x] is an object containing the following variables:
+- ```terrainType``` tile type of a given map tile, such as ```TER_WATER``` for water tiles or ```TER_CLIFFFACE``` for cliffs. Tile types regulate which units may pass through this tile. (3.2+ only)
+- ```height``` the height at the top left of the tile
+- ```hoverContinent``` (For hover type propulsions)
+- ```limitedContinent``` (For land or sea limited propulsion types)
+ */
+declare const MapTiles: any;
 
 /**
  * ```gameTime``` The current game time. Updated before every invokation of a script.
@@ -553,6 +562,14 @@ FishBot note: not sure how to use ```direction```.
 declare function structureCanFit(structureName: string, x: number, y: number, direction?: number): boolean;
 
 /**
+## propulsionCanReach(propulsionName, x1, y1, x2, y2)
+
+Return true if a droid with a given propulsion is able to travel from (x1, y1) to (x2, y2).
+Does not take player built blockades into account. (3.2+ only)
+*/
+declare function propulsionCanReach(propulsionName: string, x1: number, y1: number, x2: number, y2: number): boolean;
+
+/**
 ## orderDroidBuild(droid, order, structureName, x, y[, direction])
 
 Give a droid an order to build something at the given position. Returns true if allowed.
@@ -671,6 +688,13 @@ is passed, the limit for this droid type is returned, which may be different fro
 the general droid limit (eg for commanders and construction droids). (3.2+ only)
  */
 declare function getDroidLimit(player?: number, droidType?: droidTypeType): number;
+
+/**
+ * ## getStructureLimit(structureName[, player])
+ * 
+ * Returns build limits for a structure.
+ */
+declare function getStructureLimit(structureName: string, player?: number): number;
 
 /**
 ## buildDroid(factory, templateName, body, propulsion, reserved, reserved, turrets...)

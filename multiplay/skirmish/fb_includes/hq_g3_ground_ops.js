@@ -22,6 +22,50 @@ class armyGroundOperations {
 		
 	}
 
+	#createMissionOrders() {
+		let missionDataTemplate = {
+			'id': undefined, 
+			'missionType': undefined, 
+			'missionStatus': MISSION_STATUS.FAILED_CREATION, 
+			'priority': MISSION_PRIORITY.LOW, 
+			'taskForceID': undefined, 
+			'orders': undefined, 
+			'ceaseOrders': undefined,
+			'timeStarted': -2,
+			'timeCompleted': -1,
+			
+			'target': undefined,
+		};
+
+		return missionDataTemplate;
+	}
+
+	#mcb(callback, ...args) {
+		// This function is here so we can schedule execution of the callback function at some later point
+		return callback(...args);	//...args is important otherwise all remaining args will be interpreted as a single array of parameters
+	}
+
+	createReturnForRepairMission() {
+		// this is the default behaviour of all RETURN_FOR_REPAIR vehicles.
+		// Units are moved out of the 'repair' group by resupplyLogisitics; which will move the droid into its appropriate reserve group
+
+		// it returns either:
+		// 	- missionData object (according to missionDataTemplate), if mission successfully created, OR
+		//	- undefined, if mission was not able to be created	
+
+		let md = this.#createMissionOrders();
+
+		// Create mission details
+		md.id = "MISSION_TYPE.RETURN_FOR_REPAIR";
+		md.taskForceID = DIVISION.RETURNING_FOR_REPAIR;			// breaks the normal pattern: id === reserveGroup for a default action
+
+		// Assign orders for conducting & ceasing operations			
+		md.orders = () => this.#mcb(returnForRepair, md.taskForceID);		
+		md.ceaseOrders = () => {return;};	// doesn't do anything
+
+		return md;
+	}
+
 	/**
 	 * 
 	 * @param {worldState} state 
