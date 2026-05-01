@@ -56,8 +56,8 @@ function precalculateConstructionSearchGrid() {
 
 	// const MAX_X = makeItEven(Math.floor(mapWidth/2));
 	// const MAX_Y = makeItEven(Math.floor(mapHeight/2));
-	const MAX_X = 10;
-	const MAX_Y = 10;
+	const MAX_X = 8;
+	const MAX_Y = 8;
 	const HALF_MAX_X = MAX_X/2;
 	const HALF_MAX_Y = MAX_Y/2;
 
@@ -82,18 +82,15 @@ function pickStructLocation3({structureID, x, y}) {
 	const HEIGHT_TOLERANCE = 33;
 	
 	if (!isReachable[x][y]) {
-		debug(` ${gameTime}: pickStructLocation3() failed: (${x} ${y}) for "${structureID}" is not reachable with wheels. Check caller function.`);
+		// debug(` ${gameTime}: pickStructLocation3() failed: (${x} ${y}) for "${structureID}" is not reachable with wheels. Check caller function.`);
 		return undefined;
 	}
+
+	const outsideOfHeightTolerance = [];
 
 	for (let i=0; i<standardConstructionSearchGrid.length; i++) {
 		const tX = standardConstructionSearchGrid[i][0] + x;
 		const tY = standardConstructionSearchGrid[i][1] + y;
-
-		if (Math.abs(MapTiles[tY][tX].height - specifiedHeight) > HEIGHT_TOLERANCE) {
-			// debug(`	${gameTime}: psl2 rejected: (${tX}, ${tY}); height (${MapTiles[tY][tX].height} !== ${specifiedHeight})`);
-			continue;
-		}
 
 		if (!isReachable[tX][tY]) {
 			// debug(`	${gameTime}: psl2 rejected: (${tX}, ${tY}); not reachable`);
@@ -109,10 +106,23 @@ function pickStructLocation3({structureID, x, y}) {
 			continue;
 		}
 
-		return {'x': tX, 'y': tY};	
+		const loc = {'x': tX, 'y': tY};
+
+		if (Math.abs(MapTiles[tY][tX].height - specifiedHeight) > HEIGHT_TOLERANCE) {
+			// debug(`	${gameTime}: psl2 rejected: (${tX}, ${tY}); height (${MapTiles[tY][tX].height} !== ${specifiedHeight})`);
+			outsideOfHeightTolerance.push(loc);
+			continue;
+		}
+
+		return loc;	
 	}
 
-	debug(` ${gameTime}: pickStructLocation3() failed: could not find appropriate (${x} ${y}) for "${structureID}"`);
+	for (let i=0; i<outsideOfHeightTolerance.length; i++) {
+		// For loop is used to ignore the cases in which the array is empty
+		return outsideOfHeightTolerance[i];		
+	}
+
+	// debug(` ${gameTime}: pickStructLocation3() failed: could not find appropriate (${x} ${y}) for "${structureID}"`);
 	return undefined;
 
 }
