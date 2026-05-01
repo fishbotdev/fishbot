@@ -81,6 +81,11 @@ function pickStructLocation3({structureID, x, y}) {
 	const specifiedHeight = MapTiles[y][x].height;		// Uses this to try the match the height.
 	const HEIGHT_TOLERANCE = 33;
 	
+	if (!isReachable[x][y]) {
+		debug(` ${gameTime}: pickStructLocation3() failed: (${x} ${y}) for "${structureID}" is not reachable with wheels. Check caller function.`);
+		return undefined;
+	}
+
 	for (let i=0; i<standardConstructionSearchGrid.length; i++) {
 		const tX = standardConstructionSearchGrid[i][0] + x;
 		const tY = standardConstructionSearchGrid[i][1] + y;
@@ -90,12 +95,12 @@ function pickStructLocation3({structureID, x, y}) {
 		}
 
 		if (Math.abs(MapTiles[tY][tX].height - specifiedHeight) > HEIGHT_TOLERANCE) {
-			debug(`	${gameTime}: psl2 rejected: (${tX}, ${tY}); height (${MapTiles[tY][tX].height} !== ${specifiedHeight})`);
+			// debug(`	${gameTime}: psl2 rejected: (${tX}, ${tY}); height (${MapTiles[tY][tX].height} !== ${specifiedHeight})`);
 			continue;
 		}
 
 		if (!isReachable[tX][tY]) {
-			debug(`	${gameTime}: psl2 rejected: (${tX}, ${tY}); not reachable`);
+			// debug(`	${gameTime}: psl2 rejected: (${tX}, ${tY}); not reachable`);
 			continue;
 		}
 
@@ -105,10 +110,11 @@ function pickStructLocation3({structureID, x, y}) {
 		}
 
 		return {'x': tX, 'y': tY};	
-	}	
+	}
 
-	debug(`pickStructLocation3(): could not find appropriate x,y to fit structure (computationally expensive - check why it failed)`);
+	debug(` ${gameTime}: pickStructLocation3() failed: could not find appropriate (${x} ${y}) for "${structureID}"`);
 	return undefined;
+
 }
 
 /*
