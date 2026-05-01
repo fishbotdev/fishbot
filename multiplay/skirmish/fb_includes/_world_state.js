@@ -148,11 +148,27 @@ class fbGroup {
 	}
 }
 
+/**
+ * To comprehend the game world, FishBot divides up the game world into grid cells.
+ * The grid cell system helps FishBot to be spatially aware and thus make more intelligent decisions.
+ */
 class fbGrid {
-    constructor() {
-        this.cellSize = 10;     // in game tiles
-        this.numXCells = Math.ceil(mapWidth / this.cellSize);
-        this.numYCells = Math.ceil(mapHeight / this.cellSize);
+
+    /**
+     * Constructor for `fbGrid`. Both `numXCells` and `numYCells` are optional arguments; they both have to specified if you want a custom grid size.
+     * @param {number?} numXCells 
+     * @param {number?} numYCells 
+     */
+    constructor(numXCells=null, numYCells=null) {
+
+        if (numXCells == undefined || numYCells == undefined) {
+            this.cellSize = 10;     // in game tiles
+            this.numXCells = Math.ceil(mapWidth / this.cellSize);
+            this.numYCells = Math.ceil(mapHeight / this.cellSize);
+        } else {
+            this.numXCells = numXCells;
+            this.numYCells = numYCells;
+        }
 
         const createStandardGridCell = (gx, gy) => this.createNewFbGridCell(gx, gy);
         this.grid = create2DGrid(this.numXCells, this.numYCells, createStandardGridCell);        
@@ -560,6 +576,22 @@ class worldStateBuilder {
         return p;
     }
 
+    #initialiseMapTiles() {
+        const yMap = generateRange(mapHeight);
+        const xMap = generateRange(mapWidth);
+
+        yMap.forEach(y => {
+            const mapRow = [];
+
+            xMap.forEach(x => {
+                mapRow.push(MapTiles[y][x].height);      // height
+                // mapRow.push(MapTiles[y][x].terrainType);    // different terrain type
+            });
+
+            debug(`"${mapRow}",`);      // python script processes list of comma-delimited strings
+        });
+    }
+
     /**
      * Initialises `state` with the FishBot grouping system, default POIs and basic player information.
      * @param {worldState} state 
@@ -567,6 +599,8 @@ class worldStateBuilder {
      */
     initialise(state) {
         state.g = this.#createFbGroupingSystem();
+
+        // this.#initialiseMapTiles();
 
         state.poi.derricks = this.#initialiseDerrickLocs(state);    // this function also modifies each grid cell
         state.poi.bases = this.#initialiseBaseLocs(state);          // this function also modifies each grid cell

@@ -207,7 +207,7 @@ function breadthFirstSearch(grid, bgx, bgy, objectiveFunc) {
 
 		// Process & push to result
 		const gx = next[0], gy = next[1];
-		const result = objFunc(grid, gx, gy)
+		const result = objFunc(grid, gx, gy);
 		orderedResult.push(result);
 		gridResult[gx][gy] = {'idx': iters, 'result': result};
 
@@ -256,7 +256,7 @@ function breadthFirstSearch(grid, bgx, bgy, objectiveFunc) {
 	}
 
 	if (false) {
-		debug(`requestOilCapture2 (BFS)`);
+		debug(`BFS result:`);
 		orderedResult.forEach(coord => debug(`\t${coord[0]} ${coord[1]}`));
 	}
 
