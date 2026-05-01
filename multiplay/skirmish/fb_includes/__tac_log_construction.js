@@ -415,6 +415,7 @@ function buildNearbyDefences(taskForceID, structureID, x, y) {
 			return false;
 		}
 		if (obj.x === x && obj.y === y && obj.player !== me) {
+			// debug(`	${obj.name}: (${obj.x}, ${obj.y}) - ${obj.player} ${obj.born}, built: ${obj.status}`);
 			otherStructureOnTile = true;		// fix for trucks freezing
 			return false;			
 		}
@@ -430,7 +431,7 @@ function buildNearbyDefences(taskForceID, structureID, x, y) {
 	// Case 1: Nothing exists yet -> build
 	if (struct.length === 0) {
 		// If the structure cannot be built at x,y anymore, cancel it.
-		if (!structureCanFit(structureID, x, y) || otherStructureOnTile) {		// Note: structureCanFit appears to only work on .status === BUILT structures.
+		if (otherStructureOnTile) {		// Note: `!structureCanFit(structureID, x, y)` occasionally conflicts with enumRange so it has been removed.
 			// debug(`buildNearbyDefences(): failed, something on ${x}, ${y} already`);
 			return {status: MISSION_STATUS.FAILED};		
 		}
