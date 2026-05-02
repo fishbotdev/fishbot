@@ -11,12 +11,18 @@ This file is used to record the changes to FishBot between each version.
     - Rebalanced production quantities for high-unit count games (VTOLs and trucks are now reliably produced). 
     - `Incendiary Mortar` is removed as a fire support weapon.
 - Construction fixes 
+    - For longer running games, FishBot now builds more factories and VTOL rearming pads.
     - Fixed too many trucks being assigned to capture sector derricks.
     - Fixed occasional early termination of structure builds (should resolve barely started structures).
     - Fixed attempting to build structures in locations which cannot be accessed by wheeled vehicles (this breaks compatibility with maps with water obstacles).
     - For structures next to cliffs/impassable terrain, FishBot now prefers to build defences at the same elevation as the structure it is defending.
-    - Improved algorithm for finding structure locations to account for reachability by wheeled vehicles, to attempt to match requested z-height, and to be more computationally efficient.
-    - For longer running games, FishBot now builds more factories and VTOL rearming pads.
+    - Improved algorithm for finding structure locations to account for reachability by wheeled vehicles, to match requested z-heights, and to find the result with less computation.
+
+#### Test results (Warzone 2100 v4.7.0)
+FishBot `v0.4.0` (commit `4e03988`) was automatically tested on: `Gamma 3P T2` 1v1. 
+- 49 / 50 = **98%** win rate: FishBot-v0.4.0 Medium vs Cobra **Medium** 
+- 94 / 100 = **94%** win rate: FishBot-v0.4.0 Medium vs Cobra **Hard** 
+- 24 / 50 = **48%** win rate: FishBot-v0.4.0 Medium vs Cobra **Insane** 
 
 ## Fishbot v0.3.3
 ### Changes in v0.3.3

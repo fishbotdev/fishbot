@@ -6,7 +6,8 @@ It is designed for Tech Level 2, No-Base starts on the supported maps below.
 * **v0.4.0** -- *released **May 2026***
     * FishBot now divides its army into 2 main groups ('brigades') with 1 reserve group.
     * FishBot now uses repair facilities, and forward-builds these near active combat brigades.
-    * Various construction fixes and improvements.
+    * Production is no longer randomised (and depends on brigade demands instead).
+    * Various construction fixes and improvements (please see [`CHANGELOG.md`](CHANGELOG.md) for a full list of changes).
 
 * **v0.3.3** -- *released **07 Apr 2026***
     * Fixed research collisions: FishBot will now try to research other technologies if they are already being researched by an ally.
@@ -54,26 +55,27 @@ In particular, I think Cobra performs excellently on T1 in Warzone 2100 v4.6.3+.
 As of the most current version **v0.4.0**, FishBot works best on large, standard "low-oil" game maps with up to ~10 derricks per player. 
 It currently only has been tested with scavengers disabled.
 
-### 2 player
-* ~~`Sk-Startup`~~  -- bankrupts itself (rigid build order)
+The current method for determining whether or not a map is *supported* is:
+* For 2P & 3P maps, FishBot can win against a single Cobra @ Medium difficulty on that map without bankrupting itself
+* For higher player-count maps, it can win in a team with other FishBots (I'd like to know if it can be a good teammate for the player)
+
+Maps marked with [0] indicate that the defence building function has some prioritisation issues.
+
+### 2 player (T2)
+* `Sk-Startup` -- compatible [0]
 * ~~`Sk-UrbanChasm`~~ -- bankrupts itself (rigid build order)
 * ~~`Sk-HighGround`~~ -- bankrupts itself (rigid build order)
-* ~~`Roughness`~~ -- trucks get stuck; construction stops (destroyable features)
-* `Vision` -- compatible
-* `DustyMaze (2P)` -- compatible
+* ~~`Roughness`~~ -- loses all trucks; construction stops
+* `Vision` -- compatible [0]
+* `DustyMaze (2P)` -- compatible [0]
 
-### 3 player
+### 3 player (T2)
 * `Monocot` -- compatible
 * `Gamma` -- compatible (FishBot has been optimised for this map)
 
-The current method for determining whether or not a map is "supported" is:
-* For 2P & 3P maps, FishBot can win against a single Cobra @ Medium difficulty on that map
-* For higher player-count maps, it can win in a team with other FishBots (I'd like to know if it can be a good teammate for the player)
-
 Official support for other maps will be included in future versions. The current limitations are:
 * On very small maps with very low oil, FishBot runs out of power (and gets stuck) due to a fixed rigid build order. It can also get stuck if it doesn't claim enough derricks in the early game.
-* There may be some performance issues (lag spikes) on high-player-count games with lots of game objects; these are being worked on in the background to deliver a smoother player experience.
-* On maps where derricks are not easily accessible, trucks may get stuck trying to path to the derricks, or when building defences around the derricks.
+* FishBot attempts to build forward-defences around derricks which are too dangerous to go and capture.
 
 ## How to load the mod into Warzone 2100 v4.6.1+
 1. Download the source code as .zip from GitHub: <https://github.com/fishbotdev/fishbot>.

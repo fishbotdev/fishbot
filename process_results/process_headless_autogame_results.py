@@ -161,8 +161,9 @@ def show_medium_cobra_results():
     # test_1 = getcwd() + rf"\process_results/v3/" + "29ceeb0,med,463" + ".txt"               # v3 dev: [143 / 150 wins]
     # test_1 = getcwd() + rf"\process_results/v4/" + "a2e13b4,med,cobra_v3_release" + ".txt"    # v3 release: retesting [98 / 100 wins]
     # test_1 = getcwd() + rf"\process_results/v4/" + "021d39e,med,cobra,100g" + ".txt"                # 97 / 100 won (v0.3.1 release)
-    test_1 = getcwd() + rf"\process_results/v4/" + "4d60e4f,med,cobra,100g" + ".txt"                # 100 / 100 won (v0.3.2 release)
-    test_2 = getcwd() + rf"\process_results/v4/" + "b6c85a5,med,cobra,50g" + ".txt"                # 50 / 50 won (v0.3.3 release)
+    # test_1 = getcwd() + rf"\process_results/v4/" + "4d60e4f,med,cobra,100g" + ".txt"                # 100 / 100 won (v0.3.2 release)
+    test_1 = getcwd() + rf"\process_results/v4/" + "b6c85a5,med,cobra,50g" + ".txt"                # 50 / 50 won (v0.3.3 release)
+    test_2 = getcwd() + rf"\process_results/v4/" + "4e03988,med,cobra,50g" + ".txt"                # 49 / 50 won (v0.4.0 release; wins a lot slower)
     
     commit1 = test_1.split(rf"v4/")[1].split(",")[0]
     commit2 = test_2.split(rf"v4/")[1].split(",")[0]
@@ -208,8 +209,8 @@ def show_insane_diff_results():
     show_stats(*get_stats(test_2), title=f"{commit2} (newer)", legend=[commit1, commit2], figNum=3)    
 
 
-# show_medium_cobra_results()
-show_hard_cobra_results()
+show_medium_cobra_results()
+# show_hard_cobra_results()
 # show_insane_diff_results()
 
 import matplotlib.pyplot as plt
