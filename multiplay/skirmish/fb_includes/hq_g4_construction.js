@@ -376,6 +376,7 @@ class armyEngineering {
 		}
 
 		const SEARCH_RADIUS = 25;
+		const ENEMY_NEARBY_RADIUS = 16;
 
 		// PART 1: FIND DEMOLITION LOCATIONS
 		myRepairFacilities.forEach(f => {
@@ -437,6 +438,22 @@ class armyEngineering {
 				return;
 			}
 			// debug(`\t\t${gameTime}: repair center not within ${SEARCH_RADIUS} tiles of ${BRIGADE_ID} (${LOCATION.x} ${LOCATION.y})`);
+
+			const closestTargets = [nearby['closestTargetUnit'], nearby['closestTargetStructure']];
+			let isTooCloseToEnemy = false;
+			for (let i=0; i<closestTargets.length; i++) {
+				const ct = closestTargets[i];
+				if (ct == undefined) {
+					continue;
+				}
+				if (distSq(ct.x, LOCATION.x, ct.y, LOCATION.y) < ENEMY_NEARBY_RADIUS ** 2) {
+					isTooCloseToEnemy = true;
+				}
+			}
+			if (isTooCloseToEnemy) {
+				// debug(`\t\t${gameTime}: repair center too close to enemy @ (${LOCATION.x} ${LOCATION.y})`);
+				return;
+			}
 
 			// Else, schedule a new task
 			const buildRequest = this.translateIntoBuildRequest({
