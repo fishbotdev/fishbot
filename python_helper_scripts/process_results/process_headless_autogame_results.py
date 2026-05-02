@@ -204,8 +204,9 @@ def show_insane_diff_results():
     # test_1 = V4_RESULTS_DIR + "4f7f8e8,insane,cobra,50g" + TFE           #  (v0.4.0-dev) 27/50 = 54% wr (just before repair facility merge)
     # test_2 = V4_RESULTS_DIR + "4f7f8e8,1v3,nexushard" + TFE           #  (v0.4.0-dev) 26/50 = 52% wr (just before repair facility merge)
     # test_2 = V4_RESULTS_DIR + "d114112,ins,cobra,50g" + TFE           #  (v0.4.0-dev) 24/50 = 48% wr (after performance optimisations)
-    test_1 = V4_RESULTS_DIR + "4e03988,insane,cobra,50g" + TFE           #  (v0.4.0 release) 26/50 = 48% wr 
-    test_2 = V4_RESULTS_DIR + "ed7f401,insane,cobra,50g,incend" + TFE           #  (v0.4.1-dev) 30/50 = 48% wr (trialled incend mortar only)
+    # test_1 = V4_RESULTS_DIR + "4e03988,insane,cobra,50g" + TFE           #  (v0.4.0 release) 26/50 = 48% wr 
+    test_1 = V4_RESULTS_DIR + "ed7f401,insane,cobra,50g,incend" + TFE           #  (v0.4.1-dev) 30/50 = 48% wr (incend mortar, light body only)
+    test_2 = V4_RESULTS_DIR + "4bfcf83,insane,cobra,50g,ppt" + TFE           #  (v0.4.1-dev) 29/50 = 48% wr (pepperpot, light body only)
     
     commit1 = extract_commit(test_1)
     commit2 = extract_commit(test_2)
