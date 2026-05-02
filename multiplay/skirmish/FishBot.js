@@ -66,7 +66,7 @@ const DEBUG_MODE_ON = false;
 7. Update LOC above.
 8. Update `README.md` with summary of changes.
 9. Update `CHANGELOG.md`.
-10. Commit all changes to be the latest commit on the `vx.y.z-development` branch.
+10. Commit all changes as the latest commit on the `vx.y.z-development` branch.
 10. Open a PR on GitHub (titled 'FishBot vx.y.z Release') & merge into `main`.
 11. On the main branch, add tag: `fishbot-vx.y.z` and push to origin.
 12. .zip the completed mod files as: `fishbot-vx.y.z/multiplay/skirmish/[bot-files-here]` and move this .zip file to the `.\releases` folder.

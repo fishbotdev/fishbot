@@ -251,7 +251,7 @@ class armyEngineering {
 				continue;
 			}
 
-			if (!isReachable[d.x][d.y]) {		// this checks if the location is reachable wheeled trucks
+			if (!isReachable[d.x][d.y]) {		// this checks if the location is reachable with wheeled trucks
 				continue;
 			}
 
@@ -360,7 +360,8 @@ class armyEngineering {
 	}
 
 	/**
-	 * 
+	 * Generates locations for construction and demolition of repair facilities.
+	 * Demolition is required because there is a hard cap on the number of repair facilities you can build.
 	 * @param {worldState} state  
 	 * @returns 
 	 */
@@ -411,7 +412,7 @@ class armyEngineering {
 			potentialDemolitionLocations.push(buildRequest);
 		});
 
-		// Sort closest to furthest from base (simplistic assumption: combat units are the furthest away from base; improve later with groupPosition knowledge).
+		// Sort closest to furthest from base (simplistic assumption). TODO: find loc with largest combined distance from active BCTs
 		potentialDemolitionLocations.sort((a,b) => 
 			distSq(a.payload.x, baseLocation.x, a.payload.y, baseLocation.y) - distSq(b.payload.x, baseLocation.x, b.payload.y, baseLocation.y));
 

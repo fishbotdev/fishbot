@@ -45,7 +45,7 @@ function precalculateWheeledReachableTiles() {
 const isReachable = precalculateWheeledReachableTiles();
 
 
-function precalculateConstructionSearchGrid() {
+function precalculateConstructionSearchPattern() {
 	const makeItEven = (n) => {
 		if (n % 2 === 0) {
 			return n;
@@ -69,7 +69,7 @@ function precalculateConstructionSearchGrid() {
 }
 
 
-const standardConstructionSearchGrid = precalculateConstructionSearchGrid();
+const constructionSearchPattern = precalculateConstructionSearchPattern();
 
 
 /* 
@@ -88,9 +88,9 @@ function pickStructLocation3({structureID, x, y}) {
 
 	const outsideOfHeightTolerance = [];
 
-	for (let i=0; i<standardConstructionSearchGrid.length; i++) {
-		const tX = standardConstructionSearchGrid[i][0] + x;
-		const tY = standardConstructionSearchGrid[i][1] + y;
+	for (let i=0; i<constructionSearchPattern.length; i++) {
+		const tX = constructionSearchPattern[i][0] + x;
+		const tY = constructionSearchPattern[i][1] + y;
 
 		if (!isReachable[tX][tY]) {
 			// debug(`	${gameTime}: psl2 rejected: (${tX}, ${tY}); not reachable`);

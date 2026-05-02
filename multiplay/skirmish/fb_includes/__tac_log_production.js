@@ -477,8 +477,8 @@ function produceLandUnitCategory(category, factory) {
 
 /**
  * Returns the FishBot group classification for a specified droid.
- * FishBot grouping is distinct from droid properties / flags; FishBot groups are used to control the behaviour of droids.
- * Many different objects may have different properties but have the same desired behaviour.
+ * FishBot groups are distinct from droid properties / flags; these groups are used to control the 
+ * overall behaviour of a team of units (e.g. "Brigade Combat Team") working together to achieve the same goal.
  * @param {DroidObject} droid  
  * @returns {number} Classified group ID
  */

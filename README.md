@@ -3,7 +3,7 @@ FishBot is a Warzone 2100 AI bot compatible with Warzone 2100 **v4.6.1+**.
 It is designed for Tech Level 2, No-Base starts on the supported maps below.
 
 ## Most recent updates
-* **v0.4.0** -- *released **May 2026***
+* **v0.4.0** -- *released **02 May 2026***
     * FishBot now divides its army into 2 main groups ('brigades') with 1 reserve group.
     * FishBot now uses repair facilities, and forward-builds these near active combat brigades.
     * Production is no longer randomised (and depends on brigade demands instead).
@@ -28,9 +28,8 @@ Please see [`CHANGELOG.md`](CHANGELOG.md) for a detailed list of changes.
 
 ## Roadmap for upcoming features
 * **v0.4.1** -- *release date TBA*
-    * Improve combat unit pathing.
-    * Increase number of compatible maps.
-    * Fix trucks getting stuck on maps with destroyable features.
+    * Make FishBot aware of pathfinding cost (e.g. fix to ground target bounce, truck luring, VTOLs flying in overly dangerous airspace, etc.).
+    * Improve spatial awareness (e.g. prioritisation of defence construction).
 
 ## Background and Goals
 FishBot was initially forked from NullBot v3. I acknowledge and appreciate the work of the NullBot team in creating the foundation for this body of work. As of v0.4.0, not much of the original code remains, but I am grateful for the structural and spiritual influence of the original work.

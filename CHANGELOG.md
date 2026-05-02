@@ -6,17 +6,20 @@ This file is used to record the changes to FishBot between each version.
 - Combat improvements
     - FishBot now divides its army into two main battle groups ('brigades') and a reserve group. Each group is controlled independently. With this change, FishBot becomes markedly more effective in high unit count games.
     - FishBot now uses repair facilities intelligently based on brigade strength & forward-builds repair facilities as the combat groups move around the map.
+    - Slight improvements in mortar unit movement (more intelligent retreating).
+    - Slight improvements in VTOL targeting (CAS prioritised & cannon VTOLs will no longer attack cyborgs).
 - Production improvements
     - Factories now only produce the most-needed unit in active combat brigades (production is now intentional and no longer random).
     - Rebalanced production quantities for high-unit count games (VTOLs and trucks are now reliably produced). 
     - `Incendiary Mortar` is removed as a fire support weapon.
 - Construction fixes 
-    - For longer running games, FishBot now builds more factories and VTOL rearming pads.
+    - Increased the priority of the first F3 factory in the build order.
+    - Added more factories and VTOL rearming pads for longer running games.
     - Fixed too many trucks being assigned to capture sector derricks.
     - Fixed occasional early termination of structure builds (should resolve barely started structures).
     - Fixed attempting to build structures in locations which cannot be accessed by wheeled vehicles (this breaks compatibility with maps with water obstacles).
     - For structures next to cliffs/impassable terrain, FishBot now prefers to build defences at the same elevation as the structure it is defending.
-    - Improved algorithm for finding structure locations to account for reachability by wheeled vehicles, to match requested z-heights, and to find the result with less computation.
+    - Improved structure-placing algorithm to account for reachability by wheeled vehicles, to match requested z-heights, and to find the result with less computation.
 
 #### Test results (Warzone 2100 v4.7.0)
 FishBot `v0.4.0` (commit `4e03988`) was automatically tested on: `Gamma 3P T2` 1v1. 

@@ -855,9 +855,9 @@ class CommandCenter {
 		// LOCAL REPAIR CENTERS	
 		const MAX_CONCURRENT_REPAIR_CENTER_BUILDS = 1;
 		const ACTIVE_REPAIR_CENTER_TASKS = activeRepairCenterBuildTaskIDs.length;
-		const repairCenterTaskSlotAvailable = MAX_CONCURRENT_REPAIR_CENTER_BUILDS - ACTIVE_REPAIR_CENTER_TASKS;
+		const repairCenterEmptyTaskSlots = MAX_CONCURRENT_REPAIR_CENTER_BUILDS - ACTIVE_REPAIR_CENTER_TASKS;
 
-		if (repairCenterTaskSlotAvailable > 0) {
+		if (repairCenterEmptyTaskSlots > 0) {
 
 			const myRepairFacilities = state.playerInfo[me]["repairFacilityFbObjects"];
 
@@ -873,7 +873,7 @@ class CommandCenter {
 
 			if (NEW_FACILITY_REQUESTED) {
 				if (BELOW_REPAIR_FACILITY_HARD_CAP) {
-					const approvedRepairCenterConstructionTasks = newFacilityLocations.slice(0, repairCenterTaskSlotAvailable);
+					const approvedRepairCenterConstructionTasks = newFacilityLocations.slice(0, repairCenterEmptyTaskSlots);
 					approvedConstructionTasks.push(...approvedRepairCenterConstructionTasks);
 				} else {
 					const approvedDemolitionTasks = demolitionLocations.slice(0, 1);		// Note: this only takes 1 task (1 demolition at a time)
@@ -1104,7 +1104,7 @@ class CommandCenter {
 
 			// By battalion, 
 			// 	 1. assign units to reach base / core strength, 
-			//   2. then return any residual units for repair 
+			//   2. then return any residual units for repair, sending reinforcements if available
 			for (const [category, units] of Object.entries(reserveUnitsByCategory)) {
 
 				if (category === 'heavyCavalry') {
