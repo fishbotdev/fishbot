@@ -260,7 +260,7 @@ path1 = rf"{cwd()}\process_results\v4_perfdata\\" + "727b189,hard,cobra,99g" + "
 # path1 = rf"{cwd()}\process_results\v4_perfdata\\" + "4f7f8e8,repairFacil2" + ".log"           # v0.4.0 before repair facil merge; regression in all, need fixing
 # path2 = rf"{cwd()}\process_results\v4_perfdata\\" + "4f7f8e8,1v3,nexushard" + ".log"          # v0.4.0 before repair facil merge; bloat 1v3
 # path1 = rf"{cwd()}\process_results\v4_perfdata\\" + "d114112" + ".log"                          # v0.4.0 after repair facil merge perf-improvement
-path2 = rf"{cwd()}\process_results\v4_perfdata\\" + "d114112" + ".log"                          # v0.4.0 after repair facil merge perf-improvement
+path2 = rf"{cwd()}\process_results\v4_perfdata\\" + "4e03988" + ".log"                          # v0.4.0 after constr. fixes
 
 if True:
     ########
