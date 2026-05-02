@@ -189,7 +189,7 @@ def plot_comparative_histograms(
 
 
 # ---- usage ----
-from os import getcwd as cwd
+from os import getcwd
 
 """
 OLD TEST DATA
@@ -222,48 +222,17 @@ if False:
     )
     plt.show()
 
-"""
-NEW TEST DATA
-"""
+#####################################################################################################################
 
-# path1 = rf"{cwd()}\process_results\v4_perfdata\\" + rf"e464479_4timer_same_25g.log"
-# path2 = rf"{cwd()}\process_results\v4_perfdata\\" + rf"fd8ab67_4timer_37ms_25g.log"
-# path1 = rf"{cwd()}\process_results\v4_perfdata\\" + rf"2167472,med.cobra,50g.log"
-# path1 = rf"{cwd()}\process_results\v4_perfdata\\" + rf"1df2117,hardins,1v2.log"
-# path1 = rf"{cwd()}\process_results\v4_perfdata\\" + rf"c7d8eb7,hardins,1v2,targoptim.log"
-# path2 = rf"{cwd()}\process_results\v4_perfdata\\" + rf"4aee90e,hardins,1v2,vtolfix.log"
-# path1 = rf"{cwd()}\process_results\v4_perfdata\\" + rf"f9d0fd4,med,cobra,50g.log"
-# path1 = rf"{cwd()}\process_results\v4_perfdata\\" + rf"e18c4c4,hard,cobra,50g.log"
-# path1 = rf"{cwd()}\process_results\v4_perfdata\\" + rf"83ebcd1,hard,cobra,50g.log"
-# path1 = rf"{cwd()}\process_results\v4_perfdata\\" + rf"fd4692d,hard,cobra,50g.log"
-# path2 = rf"{cwd()}\process_results\v4_perfdata\\" + rf"45635e6,med,cobra,100g.log"
-# path1 = rf"{cwd()}\process_results\v4_perfdata\\" + rf"603cca0,hard,cobra,50g.log"          ## can be compared with 06f67d5
-# path1 = rf"{cwd()}\process_results\v4_perfdata\\" + rf"fbf5655,hard,cobra,50g.log"
-# path1 = rf"{cwd()}\process_results\v4_perfdata\\" + rf"e0f8c66,hard,cobra,100g.log"
-# path1 = rf"{cwd()}\process_results\v4_perfdata\\" + rf"29bb952,hard,cobra,100g.log"
-# path1 = rf"{cwd()}\process_results\v4_perfdata\\" + rf"4fb16f4,hard,cobra,100g.log"
-# path1 = rf"{cwd()}\process_results\v4_perfdata\\" + rf"7ee8c56,med,cobra,100g.log"
-# path1 = rf"{cwd()}\process_results\v4_perfdata\\" + rf"6730392,hard,cobra,100g.log"
-# path2 = rf"{cwd()}\process_results\v4_perfdata\\" + rf"df4a549,med,cobra,100g.log"
-# path1 = rf"{cwd()}\process_results\v4_perfdata\\" + rf"a686079,hard,cobra,100g.log"
-# path1 = rf"{cwd()}\process_results\v4_perfdata\\" + rf"f6b053f,hard,cobra,100g.log"
-# path1 = rf"{cwd()}\process_results\v4_perfdata\\" + "edb40f7,hard,cobra,100g" + ".log"
-# path2 = rf"{cwd()}\process_results\v4_perfdata\\" + "06f67d5,hard,cobra,50g" + ".log"       ## all subsequent be compared to 603cca0
-# path2 = rf"{cwd()}\process_results\v4_perfdata\\" + "770de51,hard,cobra,100g" + ".log"       
-# path1 = rf"{cwd()}\process_results\v4_perfdata\\" + "cf7b597,hard,cobra,100g" + ".log"        
-# path2 = rf"{cwd()}\process_results\v4_perfdata\\" + "021d39e,med_hard_cobra" + ".log"        
-# path1 = rf"{cwd()}\process_results\v4_perfdata\\" + "006d007,hard,cobra,100g" + ".log"        
-# path1 = rf"{cwd()}\process_results\v4_perfdata\\" + "e293c48,hard,cobra,100g" + ".log"        
-# path1 = rf"{cwd()}\process_results\v4_perfdata\\" + "c4a1769,hard,cobra,100g" + ".log"        
-# path1 = rf"{cwd()}\process_results\v4_perfdata\\" + "83bf457,hard,cobra,100g" + ".log"          # v0.3.4 development after splitting into brigades
-path1 = rf"{cwd()}\process_results\v4_perfdata\\" + "727b189,hard,cobra,99g" + ".log"           # v0.3.4 development after brigade-dev merge (no regression)
-# path1 = rf"{cwd()}\process_results\v4_perfdata\\" + "4f7f8e8,repairFacil2" + ".log"           # v0.4.0 before repair facil merge; regression in all, need fixing
-# path2 = rf"{cwd()}\process_results\v4_perfdata\\" + "4f7f8e8,1v3,nexushard" + ".log"          # v0.4.0 before repair facil merge; bloat 1v3
-# path1 = rf"{cwd()}\process_results\v4_perfdata\\" + "d114112" + ".log"                          # v0.4.0 after repair facil merge perf-improvement
-path2 = rf"{cwd()}\process_results\v4_perfdata\\" + "4e03988" + ".log"                          # v0.4.0 after constr. fixes
+PROCESS_RESULTS_DIR = rf"{getcwd()}\python_helper_scripts\process_results\v4_perfdata\\"
+LFE = ".log"
+
+path1 = PROCESS_RESULTS_DIR + rf"603cca0,hard,cobra,50g" + LFE               # can be compared with 06f67d5
+path2 = PROCESS_RESULTS_DIR + rf"4e03988" + LFE                              # v0.4.0 after constr. fixes
+
+#####################################################################################################################
 
 if True:
-    ########
     func1 = "runC2"
     func2 = "runMissionManager"
     func3 = "runIntelligence"
