@@ -553,13 +553,19 @@ class CommandCenter {
 		const casPriorityTargets = [...casTargets, ...airRaidTargets];
 		const raidPriorityTargets = [...airRaidTargets, ...casTargets];
 
-		if(prioritiseIndustrialTargets) {
+		if (prioritiseIndustrialTargets) {
 
-			if (SATURATION_RAID) {
-				targetCandidates = [...adaTargets, ...industrialTargets, ...indirectFireTargets, ...defensiveStructureTargets, ...casPriorityTargets];
+			if (prioritiseCasTargets) {
+				targetCandidates = [...casTargets, ...adaTargets, ...indirectFireTargets, ...defensiveStructureTargets, ...industrialTargets, ...airRaidTargets];
 			} else {
-				targetCandidates = [...adaTargets, ...indirectFireTargets, ...industrialTargets, ...defensiveStructureTargets, ...casPriorityTargets];			
+				// Pure industrial strike
+				if (SATURATION_RAID) {
+					targetCandidates = [...adaTargets, ...industrialTargets, ...indirectFireTargets, ...defensiveStructureTargets, ...casPriorityTargets];
+				} else {
+					targetCandidates = [...industrialTargets, ...indirectFireTargets, ...adaTargets, ...defensiveStructureTargets, ...casPriorityTargets];			
+				}
 			}
+
 		} else if (prioritiseCasTargets) {
 			targetCandidates = casPriorityTargets;
 		} else if (prioritiseRaidTargets) {
