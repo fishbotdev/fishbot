@@ -1,10 +1,8 @@
 Warzone 2100/
-process_results/v3/
-process_results/v4/
 *.odp
 *.odp#
 releases/
-map_analysis/*.json
+
 python_helper_scripts/map_analysis/*.json
 python_helper_scripts/process_results/v3/
 python_helper_scripts/process_results/v4/
