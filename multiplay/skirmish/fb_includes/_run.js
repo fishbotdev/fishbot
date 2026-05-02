@@ -24,12 +24,12 @@ function runGameEndedWatchdog() {
 	const gameIsFinished = state.gameHasEnded();
 
 	if (gameIsFinished && state.botIsActive) {
-		debug(`FishBot ${me}: gameHasEnded, stopping all function`);
+		debug(`${gameTime}\t FishBot ${me}: gameHasEnded, stopping all function`);
 		state.botIsActive = false;
 	}
 
 	if (!gameIsFinished && !state.botIsActive) {
-		debug(`FishBot ${me}: is alive, resuming function`);
+		debug(`${gameTime}\t FishBot ${me}: is alive, resuming function`);
 		state.botIsActive = true;
 	}
 }
