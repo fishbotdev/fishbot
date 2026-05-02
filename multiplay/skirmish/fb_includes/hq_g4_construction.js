@@ -375,8 +375,7 @@ class armyEngineering {
 			'demolitionLocations': potentialDemolitionLocations
 		}
 
-		const BASE_PROXIMITY_RADIUS = 25;
-		const SERVICE_RADIUS = 35;
+		const SEARCH_RADIUS = 25;
 
 		// PART 1: FIND DEMOLITION LOCATIONS
 		myRepairFacilities.forEach(f => {
@@ -385,7 +384,7 @@ class armyEngineering {
 				return;
 			}
 
-			const FACILITY_INSIDE_BASE_RADIUS = distSq(repairFacility.x, baseLocation.x, repairFacility.y, baseLocation.y) <= BASE_PROXIMITY_RADIUS ** 2;
+			const FACILITY_INSIDE_BASE_RADIUS = distSq(repairFacility.x, baseLocation.x, repairFacility.y, baseLocation.y) <= SEARCH_RADIUS ** 2;
 			if (FACILITY_INSIDE_BASE_RADIUS) {
 				// debug(`${gameTime}: repair facility @ ${repairFacility.x}, ${repairFacility.y} - ignored`);
 				return;
@@ -393,7 +392,7 @@ class armyEngineering {
 
 			const FACILITY_NEAR_SOME_GROUP = forceLocations.some(fLoc => {
 				const brigadeLoc = fLoc["location"];
-				if (distSq(brigadeLoc.x, f.x, brigadeLoc.y, f.y) <= SERVICE_RADIUS ** 2) {
+				if (distSq(brigadeLoc.x, f.x, brigadeLoc.y, f.y) <= SEARCH_RADIUS ** 2) {
 					return true;
 				}
 				return false;
@@ -425,12 +424,12 @@ class armyEngineering {
 				return;
 			}
 
-			if (distSq(LOCATION.x, baseLocation.x, LOCATION.y, baseLocation.y) <= BASE_PROXIMITY_RADIUS ** 2) {
+			if (distSq(LOCATION.x, baseLocation.x, LOCATION.y, baseLocation.y) <= SEARCH_RADIUS ** 2) {
 				// Too close to the base (prevents doubling-up on the repair facility in the base build order)
 				return;
 			}
 
-			const nearby = state.grid.enumRange(LOCATION.x, LOCATION.y, SERVICE_RADIUS);
+			const nearby = state.grid.enumRange(LOCATION.x, LOCATION.y, SEARCH_RADIUS);
 			const friendlyRepairCenterCount = nearby['friendlyStructures'].filter(s => (s.flags & OBJ_FLAGS.REPAIR)).length;
 			
 			if (friendlyRepairCenterCount > 0) {
