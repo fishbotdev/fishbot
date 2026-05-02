@@ -26,7 +26,8 @@ const WZ2100_TILERANGE_SCALING_FACTOR = 1 / 128;
 /*
     RESEARCH INFORMATION
 */
-let RESEARCHES = {};
+const RESEARCHES = {};
+const RESEARCHES_BY_ID = {};
 
 /*
 For each structure, e.g. RESEARCHES["Twin Assault Cannon"] the parameters are:
@@ -81,6 +82,7 @@ for (const key in Stats.Research) {
 
     // Add to RESEARCHES global
     RESEARCHES[key] = r;
+    RESEARCHES_BY_ID[r.Id] = r;
 
     const checkForKeywords = (inputID, searchKeywords, excludeKeywords=[]) => searchKeywords.some(keyword => inputID.includes(keyword)) && !excludeKeywords.some(keyword => inputID.includes(keyword));
     
