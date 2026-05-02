@@ -6,7 +6,7 @@ It is designed for Tech Level 2, No-Base starts on the supported maps below.
 * **v0.4.0** -- *released **02 May 2026***
     * FishBot now divides its army into 2 main groups ('brigades') with 1 reserve group.
     * FishBot now uses repair facilities, and forward-builds these near active combat brigades.
-    * Production is no longer randomised (and depends on brigade demands instead).
+    * Production is no longer randomised (now depends on current brigade demand).
     * Various construction fixes and improvements (please see [`CHANGELOG.md`](CHANGELOG.md) for a full list of changes).
 
 * **v0.3.3** -- *released **07 Apr 2026***
@@ -18,13 +18,7 @@ It is designed for Tech Level 2, No-Base starts on the supported maps below.
     * Changed primary fire support & AA weapons.
     * Temporarily removed `Sk-Startup` from the list of supported maps.
 
-* **v0.3.1** -- *released **29 Mar 2026***
-    * Significantly fewer lag spikes (performance improvements).
-    * Made it easier to import FishBot into your mods folder.
-    * Added list of currently supported maps in `README.md` (this file).
-    * Improvements to VTOL danger avoidance & ground unit targeting.
-
-Please see [`CHANGELOG.md`](CHANGELOG.md) for a detailed list of changes.
+Please see [`CHANGELOG.md`](CHANGELOG.md) for a detailed list of past changes.
 
 ## Roadmap for upcoming features
 * **v0.4.1** -- *release date TBA*
@@ -58,15 +52,13 @@ The current method for determining whether or not a map is *supported* is:
 * For 2P & 3P maps, FishBot can win against a single Cobra @ Medium difficulty on that map without bankrupting itself
 * For higher player-count maps, it can win in a team with other FishBots (I'd like to know if it can be a good teammate for the player)
 
-Maps marked with [0] indicate that the defence building function has some prioritisation issues.
-
 ### 2 player (T2)
-* `Sk-Startup` -- compatible [0]
+* `Sk-Startup` -- compatible
 * ~~`Sk-UrbanChasm`~~ -- bankrupts itself (rigid build order)
 * ~~`Sk-HighGround`~~ -- bankrupts itself (rigid build order)
 * ~~`Roughness`~~ -- loses all trucks; construction stops
-* `Vision` -- compatible [0]
-* `DustyMaze (2P)` -- compatible [0]
+* `Vision` -- compatible
+* `DustyMaze (2P)` -- compatible
 
 ### 3 player (T2)
 * `Monocot` -- compatible
@@ -79,11 +71,11 @@ Official support for other maps will be included in future versions. The current
 ## How to load the mod into Warzone 2100 v4.6.1+
 1. Download the source code as .zip from GitHub: <https://github.com/fishbotdev/fishbot>.
 2. Unzip the .zip file.
-3. Place the unzipped folder contents into: **`%MY_WARZONE2100_CONFIG_DIRECTORY_PATH% \ mods \ 4.6.x \ autoload \ fishbot`**
+3. Place the unzipped folder contents into: **`%MY_WARZONE2100_CONFIG_DIRECTORY_PATH% \ mods \ 4.7.x \ autoload \ fishbot`**
 
 To check if the path is correct, you should be able to find `FishBot.js` in this location:
 
-**`%MY_WARZONE2100_CONFIG_DIRECTORY_PATH% \ mods \ 4.6.x \ autoload \ fishbot \ multiplay \ skirmish \ FishBot.js`**
+**`%MY_WARZONE2100_CONFIG_DIRECTORY_PATH% \ mods \ 4.7.x \ autoload \ fishbot \ multiplay \ skirmish \ FishBot.js`**
 
 If you can find `Fishbot.js` here, FishBot should automatically load on the next startup of Warzone 2100. It will then be available to select as an AI bot.
 
