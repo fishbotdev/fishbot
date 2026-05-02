@@ -4,3 +4,4 @@ process_results/v4/
 *.odp
 *.odp#
 releases/
+map_analysis/*.json
