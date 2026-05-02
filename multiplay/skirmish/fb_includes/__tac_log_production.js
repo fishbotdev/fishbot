@@ -32,15 +32,6 @@ function buildDroidWrapper(factory, droidName, bodies, propulsions, weapon) {
 	}
 }
 
-function iCanDesign() {
-	// FishBot will not build units before it can design them, on any difficulty.
-	const hqIsBuilt = (enumStruct(me, HQ).filter(hq => hq.status === BUILT).length > 0);
-	if (hqIsBuilt)
-		return true;
-	else
-		return false;
-}
-
 function chooseVehicleBody({bodies=[], factory=undefined, maxFactoryModules=undefined}) {
 	const DEBUG_MODE = false;
 	
@@ -306,8 +297,6 @@ function produceHeavyCavalry(factory) {
 }
 
 function produceLandAPFireSupport(factory) {
-	// Part of the combined arms strategy
-
 	// Order these by tech level if you want the most technologically advanced weapon to be used
 	const fireSupportWeapons = [
 		WEAPONS["Mortar"],
@@ -458,7 +447,7 @@ function produceInfantry(factory) {
 function produceLandUnitCategory(category, factory) {
 	let factoryInProduction = false;   
 
-	let r = Math.floor(Math.random() * 4);
+	let r = Math.floor(Math.random() * 4);		// this should be one of the few (if any) Math.random() calls in FishBot.
 	
 	switch (category) {
 		case 'heavyCavalry':
@@ -468,11 +457,7 @@ function produceLandUnitCategory(category, factory) {
 			factoryInProduction = factoryInProduction || produceLightCavalry(factory);
 			break;
 		case 'shortRangeArtillery':
-			if (r <= 1) {
-				factoryInProduction = factoryInProduction || produceLandAPFireSupport(factory);
-			} else {
-				factoryInProduction = factoryInProduction || produceLandFireSupportGeneric(factory);
-			}
+			factoryInProduction = factoryInProduction || produceLandFireSupportGeneric(factory);
 			break;
 		case 'ADA':
 			if (r === 0) {
@@ -488,4 +473,58 @@ function produceLandUnitCategory(category, factory) {
 			factoryInProduction = factoryInProduction || produceLightCavalry(factory);
 	}
 
+}
+
+/**
+ * Returns the FishBot group classification for a specified droid.
+ * FishBot groups are distinct from droid properties / flags; these groups are used to control the 
+ * overall behaviour of a team of units (e.g. "Brigade Combat Team") working together to achieve the same goal.
+ * @param {DroidObject} droid  
+ * @returns {number} Classified group ID
+ */
+function getDroidFbGroupClassification(droid) {
+
+	const flags = classifyGameObject(droid);
+
+	if (flags & OBJ_FLAGS.CONSTRUCTOR) {
+		return ENGINEERING.ENGINEERING_RESERVE;
+	}
+
+	// AVIATION
+	// Air units should be sorted early as AVIATION units could have conflicting flags with LAND FORCES e.g. "OBJ_FLAGS.CANNON_WEAPON"
+	if (flags & OBJ_FLAGS.AVIATION) {
+		return DIVISION.AIR_RESERVE;
+	}
+
+	// LAND FORCES
+	if (flags & (OBJ_FLAGS.INFANTRY)) {
+		return DIVISION.INFANTRY_RESERVE;
+	}
+	
+	if (flags & (OBJ_FLAGS.CANNON_WEAPON)) {        // TODO: future support for other weapon types
+		return DIVISION.HEAVY_CAV_RESERVE;
+	}
+
+	if (flags & (OBJ_FLAGS.MACHINEGUN_WEAPON | OBJ_FLAGS.LASER_WEAPON)) {
+		return DIVISION.LIGHT_CAV_RESERVE;
+	}
+
+	if (flags & OBJ_FLAGS.SHORT_RANGE_ARTILLERY_WEP) {
+		return DIVISION.SHORT_RANGE_FIRE_SUPPORT_RESERVE;
+	}
+
+	if (flags & OBJ_FLAGS.LONG_RANGE_ARTILLERY_WEP) {
+		return DIVISION.LONG_RANGE_FIRE_SUPPORT_RESERVE;
+	}
+
+	if (flags & (OBJ_FLAGS.AA_DIRECT_FIRE_WEAPON | OBJ_FLAGS.AA_ROCKET_WEAPON)) {
+		return DIVISION.AIR_DEFENCE_RESERVE;
+	}
+
+	if (droid.droidType === DROID_SENSOR) {
+		// manually accessing the DroidObject properties as I have run out of bits in OBJ_FLAGS.
+		return DIVISION.SENSOR_RESERVE;		
+	}
+
+	return DIVISION.GENERAL_RESERVE;
 }

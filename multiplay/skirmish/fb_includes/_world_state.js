@@ -46,11 +46,129 @@
  *  If the core state management happens in one place, this makes it much easier to reason about, modify, and debug.
  */
 
+
+/**
+	fbGroup: FISHBOT v3 CUSTOM GROUPING SYSTEM
+
+	Fishbot custom implementation of inbuilt "groups"
+	Fishbot requires transient, one-to-many labelling to support its ability to maneuver & control multiple groups of units at once.
+    Construction and aviation use this capability extensively.
+	As of Warzone 2100 v4.6.1, neither the built-in groups, nor labels, are suitable for transient, one-to-many labelling.
+*/
+class fbGroup {
+
+	constructor() {
+		this.groupTemplate = {'groupMemberIDs': [], 'groupMembers': [], "groupSize": 0};
+		this.groups = new Map();
+		this.MAX_GROUP_SIZE = 256;
+	}
+
+	#lazyUpdateGroup(groupID) {
+		// Lazy update, only updates if one of the functions is called & only for that group ID
+		if (this.groups.has(groupID)) {
+			// Update members
+			let c = this.groups.get(groupID);
+
+			// niceDebug("lazyUpdateGroup/groupMember data -- before filter", c["groupMemberIDs"], c["groupMembers"]);
+
+			c["groupMemberIDs"] = c["groupMemberIDs"].filter((id) => getObject(DROID, me, id) !== null);
+
+			// niceDebug("lazyUpdateGroup/groupMember data -- after filter", c["groupMemberIDs"], c["groupMembers"]);
+
+			c["groupMembers"] = c["groupMemberIDs"].map((id) => {return getObject(DROID, me, id);});
+
+			// niceDebug("lazyUpdateGroup/groupMember data -- after getObject map", c["groupMemberIDs"], c["groupMembers"]);
+
+			c["groupSize"] = c["groupMembers"].length;
+		}
+	}
+
+	createGroup(groupID) {
+		this.groups.set(groupID, {
+			...this.groupTemplate,
+			'groupMemberIDs': [...this.groupTemplate.groupMemberIDs],
+			'groupMembers': [...this.groupTemplate.groupMembers]
+		});
+	}
+
+	deleteGroup(groupID) {
+		if (this.groups.has(groupID))
+			this.groups.delete(groupID);
+	}
+
+	enumGroup(groupID) {
+		if (!this.groups.has(groupID)) {
+			debug("no such groupID", groupID);
+			return [];
+		}
+
+		// niceDebug("ids before enum group update; ", this.groups.get(groupID)["groupMemberIDs"])
+		this.#lazyUpdateGroup(groupID);
+
+		return this.groups.get(groupID)["groupMembers"];
+	}
+	
+	groupSize(groupID) {
+		if (!this.groups.has(groupID))
+			return undefined;
+
+		this.#lazyUpdateGroup(groupID);
+
+		return this.groups.get(groupID)["groupSize"];
+	}
+
+	addDroidToGroup({groupID, droidID}) {
+		if (!this.groups.has(groupID)) {
+			// niceDebug("Created a new group", groupID);
+			this.createGroup(groupID);
+		}
+
+		this.#lazyUpdateGroup(groupID);
+		let currGroup = this.groups.get(groupID);
+		
+		if (currGroup["groupSize"] >= this.MAX_GROUP_SIZE) {
+			debug(`addDroidToGroup failed: Cannot add more than ${this.MAX_GROUP_SIZE} members to the group.`);
+			return;
+		}
+		
+		currGroup["groupMemberIDs"] = currGroup["groupMemberIDs"].concat(droidID);
+		// niceDebug("groupMemberIDs", currGroup["groupMemberIDs"]);
+
+	}
+
+	removeDroidFromGroup({groupID, droidID}) {
+		if (!this.groups.has(groupID)) {
+			return;
+		}
+
+		this.#lazyUpdateGroup(groupID);
+
+		let c = this.groups.get(groupID)["groupMemberIDs"].concat();	// shallow copy
+		this.groups.get(groupID)["groupMemberIDs"] = c.filter((id) => id !== droidID);
+	}
+}
+
+/**
+ * To comprehend the game world, FishBot divides up the game world into grid cells.
+ * The grid cell system helps FishBot to be spatially aware and thus make more intelligent decisions.
+ */
 class fbGrid {
-    constructor() {
-        this.cellSize = 10;     // in game tiles
-        this.numXCells = Math.ceil(mapWidth / this.cellSize);
-        this.numYCells = Math.ceil(mapHeight / this.cellSize);
+
+    /**
+     * Constructor for `fbGrid`. Both `numXCells` and `numYCells` are optional arguments; they both have to specified if you want a custom grid size.
+     * @param {number?} numXCells 
+     * @param {number?} numYCells 
+     */
+    constructor(numXCells=null, numYCells=null) {
+
+        if (numXCells == undefined || numYCells == undefined) {
+            this.cellSize = 10;     // in game tiles
+            this.numXCells = Math.ceil(mapWidth / this.cellSize);
+            this.numYCells = Math.ceil(mapHeight / this.cellSize);
+        } else {
+            this.numXCells = numXCells;
+            this.numYCells = numYCells;
+        }
 
         const createStandardGridCell = (gx, gy) => this.createNewFbGridCell(gx, gy);
         this.grid = create2DGrid(this.numXCells, this.numYCells, createStandardGridCell);        
@@ -214,16 +332,21 @@ class worldState {
 
         // Player statistics
         this.playerInfo = [];
+        this.REPAIR_FACILITY_HARD_CAP = 3; // getStructureLimit(STRUCTURES["Repair Facility"].id);      // TODO: Fix this when this function is fixed.
 
         // Combat targeting
         this.allTargets = [];
-        this.forceLocation = undefined;
-        this.nearbyGroundTargets = undefined;
+        this.forceLocations = [];           // list of brigade locations: [{brigadeID: '', location: {'x': 0, 'y': 0}}]
+        this.nearbyGroundTargets = [];      // nearbyTargets (list); ordered by brigade designation
         this.aviationTargets = {
             'raidTargets': [],
             'casTargets': [],
+
+            // 4 types of targets around enemy bases
             'productionTargets': [],
-            'adaTargets': []
+            'adaTargets': [],
+            'indirectFireTargets': [],
+            'defensiveStructureTargets': []
         }; 
 
         // Mission management system
@@ -269,13 +392,14 @@ class worldState {
             'numFactories': 0,
 			'numDerricks': 0, 
             'numConstructedHQs': 0,
+            'numRepairFacilities': 0,
 
-            // Intended to be used for getting idle structures for Production & Research reasons
+            // Intended to be used for getting idle structures for Production & Research, and for demolishing Repair Facilities
             'normalFactoryFbObjects': [],           
             'cyborgFactoryFbObjects': [],
             'vtolFactoryFbObjects': [],
             'researchFacilityFbObjects': [],
-            
+            'repairFacilityFbObjects': []
 		};
     }
 
@@ -452,6 +576,22 @@ class worldStateBuilder {
         return p;
     }
 
+    #initialiseMapTiles() {
+        const yMap = generateRange(mapHeight);
+        const xMap = generateRange(mapWidth);
+
+        yMap.forEach(y => {
+            const mapRow = [];
+
+            xMap.forEach(x => {
+                mapRow.push(MapTiles[y][x].height);      // height
+                // mapRow.push(MapTiles[y][x].terrainType);    // different terrain type
+            });
+
+            debug(`"${mapRow}",`);      // python script processes list of comma-delimited strings
+        });
+    }
+
     /**
      * Initialises `state` with the FishBot grouping system, default POIs and basic player information.
      * @param {worldState} state 
@@ -459,6 +599,8 @@ class worldStateBuilder {
      */
     initialise(state) {
         state.g = this.#createFbGroupingSystem();
+
+        // this.#initialiseMapTiles();
 
         state.poi.derricks = this.#initialiseDerrickLocs(state);    // this function also modifies each grid cell
         state.poi.bases = this.#initialiseBaseLocs(state);          // this function also modifies each grid cell

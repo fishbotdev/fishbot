@@ -258,7 +258,12 @@ class armyIntelligence {
 				if (obj.stattype === HQ && obj.status === BUILT) {
 					// manual classification (outside of `classifyObject`) -> not required to track HQs
 					p['numConstructedHQs']++;
-				}			
+				}
+				
+				if (flags & OBJ_FLAGS.REPAIR) {
+					p['numRepairFacilities']++;
+					p["repairFacilityFbObjects"].push(newObj);
+				}
 
 				if (IS_TARGET) {
 					result.allTargets.push(newObj);		
@@ -288,7 +293,7 @@ class armyIntelligence {
 	}
 
 	/**
-	 * 
+	 * Gets targets around all derricks (including friendly derricks).
 	 * @param {worldState} state 
 	 * @returns 
 	 */
@@ -333,7 +338,7 @@ class armyIntelligence {
 			});
 
 			t['targetUnits'].forEach(target => {
-				if (target.flags & OBJ_FLAGS.CONSTRUCTOR) {
+				if (target.flags & OBJ_FLAGS.CONSTRUCTOR && !(target.flags & OBJ_FLAGS.CYBORG_PROPULSION)) {
 					trucks.push(target);
 				}
 			});
@@ -348,7 +353,7 @@ class armyIntelligence {
 	}
 
 	/**
-	 * 
+	 * Gets targets around all enemy bases. Currently (FishBot v0.4.0) used for VTOL targeting only.
 	 * @param {worldState} state 
 	 * @returns 
 	 */
@@ -360,6 +365,8 @@ class armyIntelligence {
 		let result = {
 			'productionTargets': [],
 			'adaTargets': [],
+			'indirectFireTargets': [],
+			'defensiveStructureTargets': [],
 		}
 
 		if (enemyPlayerIDs.length === 0) {
@@ -383,16 +390,31 @@ class armyIntelligence {
 					result.productionTargets.push(t['targetStructures'][j]);
 					continue;
 				}
+				if (t['targetStructures'][j].flags & OBJ_FLAGS.INDIRECT_FIRE) {
+					result.indirectFireTargets.push(t['targetStructures'][j]);
+					continue;
+				}
+				if (t['targetStructures'][j].flags & OBJ_FLAGS.DEFENSIVE_STRUCTURE) {
+					result.defensiveStructureTargets.push(t['targetStructures'][j]);
+					continue;
+				}
 			}
 
 			for (let j=0; j<t['targetUnits'].length; j++) {
 				if (t['targetUnits'][j].flags & OBJ_FLAGS.ADA) {
 					result.adaTargets.push(t['targetUnits'][j]);
+					continue;
 				}
-				if (t['targetUnits'][j].flags & OBJ_FLAGS.CONSTRUCTOR) {
+				if (t['targetUnits'][j].flags & OBJ_FLAGS.CONSTRUCTOR && !(t['targetUnits'][j].flags & OBJ_FLAGS.CYBORG_PROPULSION)) {
+					// Cyborg propulsion is omitted because FishBot 0.4.0 does not use anti-cyborg VTOL weapons
 					result.productionTargets.push(t['targetUnits'][j]);
+					continue;
 				}
-
+				if (t['targetUnits'][j].flags & OBJ_FLAGS.INDIRECT_FIRE && !(t['targetUnits'][j].flags & OBJ_FLAGS.CYBORG_PROPULSION)) {
+					// Cyborg propulsion is omitted because FishBot 0.4.0 does not use anti-cyborg VTOL weapons (e.g. will falsely attack grenadiers)
+					result.indirectFireTargets.push(t['targetUnits'][j]);
+					continue;
+				}
 			}
 		}	
 

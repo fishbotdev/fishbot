@@ -15,52 +15,116 @@
 	If not, see <https://www.gnu.org/licenses/>.
 */
 
-function pickStructLocation2({structureID, x, y, maxOffset=undefined}) {
-	/* 
-		pickStructLocation2: Intention is that this function is a deterministic & will reliably try to pick the same location. 
-	*/
-	const mapCenter = {'x': mapWidth/2, 'y': mapWidth/2};
 
-	let positiveXOffset = true, positiveYOffset = true;
-	if (mapCenter.x < x) {
-		positiveXOffset = false;
-	}
-	if (mapCenter.y < y) {
-		positiveYOffset = false;
+function precalculateWheeledReachableTiles() {
+	const wheeledDroidCanReach = (x, y) => propulsionCanReach(PROPULSIONS["Wheels"].id, baseLocation.x, baseLocation.y, x, y);
+	const isReachable = create2DGrid(mapWidth + 1, mapHeight + 1, wheeledDroidCanReach);
+
+	if (false) {
+		debug(`x-max?: ${mapWidth}, y-max?: ${mapHeight}`);
+
+		// Note: `create2DGrid` uses a [x][y] construction, so each printed line (printed row) is actually a column (iterate along x, get the columns).
+		// This means that the map will appear sideways in the debug view.
+
+		isReachable.forEach(col => {
+			let row = '';
+			col.forEach(c => {
+				if (c === true) {
+					row += `1 `;
+				} else {
+					row += `0 `;
+				}
+			});
+			debug(row);
+		});
 	}
 
-	let MAX_DEVIATION = Math.min(Math.floor(mapWidth/2), Math.floor(mapHeight/2));
-	if (defined(maxOffset)) {
-		MAX_DEVIATION = maxOffset;
+	return isReachable;
+}
+
+const isReachable = precalculateWheeledReachableTiles();
+
+
+function precalculateConstructionSearchPattern() {
+	const makeItEven = (n) => {
+		if (n % 2 === 0) {
+			return n;
+		} else {
+			return n + 1;
+		}
 	}
+
+	// const MAX_X = makeItEven(Math.floor(mapWidth/2));
+	// const MAX_Y = makeItEven(Math.floor(mapHeight/2));
+	const MAX_X = 8;
+	const MAX_Y = 8;
+	const HALF_MAX_X = MAX_X/2;
+	const HALF_MAX_Y = MAX_Y/2;
+
+	const csg = new fbGrid(MAX_X, MAX_Y);
+	const objFunc = (grid, gx, gy) => {return [gx - HALF_MAX_X, gy - HALF_MAX_Y];};
+
+	const standardConstructionSearchGrid = breadthFirstSearch(csg, HALF_MAX_X, HALF_MAX_Y, objFunc);
+	return standardConstructionSearchGrid['ordered'];
+}
+
+
+const constructionSearchPattern = precalculateConstructionSearchPattern();
+
+
+/* 
+	pickStructLocation3: Intention is that this function is a deterministic & will reliably try to pick the same location. 
+	Searches nearby tiles based on Manhattan distance.
+*/
+function pickStructLocation3({structureID, x, y}) {
+
+	const specifiedHeight = MapTiles[y][x].height;		// Uses this to try the match the height.
+	const HEIGHT_TOLERANCE = 33;
 	
-	for (let ix=1; ix<MAX_DEVIATION; ix++) {
-		for (let iy=1; iy<MAX_DEVIATION; iy++) {
-
-			let tX = x+ix;
-			if (!positiveXOffset) {
-				tX = x-ix;	
-			}
-
-			let tY = y+iy;
-			if (!positiveYOffset) {
-				tY = y-iy;
-			}
-			
-			if (!structureCanFit(structureID, tX, tY)) {
-				continue;
-			}
-
-			const enemyUnits = enumRange(tX, tY, 1, ENEMIES, true).filter(obj => obj.type === DROID && isEnemy(obj.player));
-			if (enemyUnits.length > 0) {
-				continue;
-			}
-
-			return {'x': tX, 'y': tY};	
-		}	
+	if (!isReachable[x][y]) {
+		// debug(` ${gameTime}: pickStructLocation3() failed: (${x} ${y}) for "${structureID}" is not reachable with wheels. Check caller function.`);
+		return undefined;
 	}
-	debug(`pickStructLocation2(): could not find appropriate x,y to fit structure (computationally expensive - check why it failed)`);
+
+	const outsideOfHeightTolerance = [];
+
+	for (let i=0; i<constructionSearchPattern.length; i++) {
+		const tX = constructionSearchPattern[i][0] + x;
+		const tY = constructionSearchPattern[i][1] + y;
+
+		if (!isReachable[tX][tY]) {
+			// debug(`	${gameTime}: psl2 rejected: (${tX}, ${tY}); not reachable`);
+			continue;
+		}
+
+		if (!structureCanFit(structureID, tX, tY)) {
+			continue;
+		}
+
+		const enemyUnits = enumRange(tX, tY, 1, ENEMIES, true).filter(obj => obj.type === DROID && isEnemy(obj.player));
+		if (enemyUnits.length > 0) {
+			continue;
+		}
+
+		const loc = {'x': tX, 'y': tY};
+
+		if (Math.abs(MapTiles[tY][tX].height - specifiedHeight) > HEIGHT_TOLERANCE) {
+			// debug(`	${gameTime}: psl2 rejected: (${tX}, ${tY}); height (${MapTiles[tY][tX].height} !== ${specifiedHeight})`);
+			outsideOfHeightTolerance.push(loc);
+			continue;
+		}
+
+		return loc;	
+	}
+
+	for (let i=0; i<outsideOfHeightTolerance.length; i++) {
+		// For loop is used to ignore the cases in which the array is empty
+		return outsideOfHeightTolerance[i];		
+	}
+
+	// debug(` ${gameTime}: pickStructLocation3() failed: could not find appropriate (${x} ${y}) for "${structureID}"`);
 	return undefined;
+
 }
 
 /*
@@ -76,7 +140,7 @@ function helpConstructAroundBase(taskForceID) {
 
 	const MAX_HELP_RADIUS = Math.floor(1.42 * Math.min(mapHeight/3, mapWidth/3));		// 1.42 ~ sqrt(2)
 	const baseStructuresBeingBuilt = enumStruct(me).filter(struct => struct.status === BEING_BUILT).
-													filter(struct => distance(struct, baseLocation) < MAX_HELP_RADIUS);	
+													filter(struct => distSq(struct.x, baseLocation.x, struct.y, baseLocation.y) < MAX_HELP_RADIUS ** 2);	
 
 	for (let i=0; i<baseStructuresBeingBuilt.length; i++) {
 		const struct = baseStructuresBeingBuilt[i];
@@ -347,7 +411,11 @@ function buildNearbyDefences(taskForceID, structureID, x, y) {
 	// Check if similar structures have been built nearby 
 	let otherStructureOnTile = false;
 	let struct = enumRange(x, y, 5, ALL_PLAYERS, false).filter(obj => {		// -> 5-tile radius => within a 7x7 box with x,y at the center (radial distance of corners is 3*sqrt(2) = 4.24)
+		if (obj.type !== STRUCTURE) {
+			return false;
+		}
 		if (obj.x === x && obj.y === y && obj.player !== me) {
+			// debug(`	${obj.name}: (${obj.x}, ${obj.y}) - ${obj.player} ${obj.born}, built: ${obj.status}`);
 			otherStructureOnTile = true;		// fix for trucks freezing
 			return false;			
 		}
@@ -363,7 +431,7 @@ function buildNearbyDefences(taskForceID, structureID, x, y) {
 	// Case 1: Nothing exists yet -> build
 	if (struct.length === 0) {
 		// If the structure cannot be built at x,y anymore, cancel it.
-		if (!structureCanFit(structureID, x, y) || otherStructureOnTile) {		// Note: structureCanFit appears to only work on .status === BUILT structures.
+		if (otherStructureOnTile) {		// Note: `!structureCanFit(structureID, x, y)` occasionally conflicts with enumRange so it has been removed.
 			// debug(`buildNearbyDefences(): failed, something on ${x}, ${y} already`);
 			return {status: MISSION_STATUS.FAILED};		
 		}
@@ -391,4 +459,42 @@ function buildNearbyDefences(taskForceID, structureID, x, y) {
 	}
 	return {status: MISSION_STATUS.IN_PROGRESS};
 }
-		
+
+/*
+	TAC SOP: DEMOLISH STRUCTURE AT X, Y
+*/
+function demolishStructure(taskForceID, structureID, x, y) {
+
+	const trucks = state.g.enumGroup(taskForceID);
+	if (trucks.length === 0) {
+		// debug(`demolishStructure(): failed, no trucks`);
+		return {status: MISSION_STATUS.FAILED};
+	}
+
+	let otherStructureOnTile = false;
+	let struct = enumRange(x, y, 2, ALL_PLAYERS, false).filter(obj => {		
+		if (obj.type !== STRUCTURE) {
+			return false;
+		}
+		if (obj.x === x && obj.y === y && obj.player !== me) {
+			otherStructureOnTile = true;		// fix for trucks freezing
+			return false;			
+		}
+		const lookup = STRUCTURES[obj.name];
+		if (lookup !== undefined) {
+			if (lookup.id === structureID && obj.player === me) {		
+				return true;
+			}
+		}
+		return false;
+	});
+
+	// Case 1: No structure, matching structure or other structure on the tile === SUCCEEDED.
+	if (struct.length === 0 || otherStructureOnTile) {
+		return {status: MISSION_STATUS.SUCCEEDED};
+	}
+
+	// Case 2: Continue to demolish.
+	trucks.forEach((truck) => orderDroidObj(truck, DORDER_DEMOLISH, struct[0]));
+	return {status: MISSION_STATUS.IN_PROGRESS};
+}

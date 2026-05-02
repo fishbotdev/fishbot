@@ -139,7 +139,7 @@ function classifyGameObject(obj) {
             } else if (LASER_WEAPONS.some(w => w.id === weapon.id)) {
                 flags |= OBJ_FLAGS.LASER_WEAPON;
             } else if (FLAMER_WEAPONS.some(w => w.id === weapon.id)) {
-                flags | OBJ_FLAGS.FLAMER_WEAPON;
+                flags |= OBJ_FLAGS.FLAMER_WEAPON;
             } else {
                 flags |= OBJ_FLAGS.UNCLASSIFIED_WEAPON_TYPE;
             }
@@ -169,6 +169,11 @@ function classifyGameObject(obj) {
         if (INDUSTRIAL_TARGETS.includes(obj.stattype)) {
             flags |= OBJ_FLAGS.PRODUCTION;
             return flags;					
+        }
+
+        if (obj.stattype === POWER_GEN) {
+            flags |= OBJ_FLAGS.POWER_GENERATOR;
+            return flags;
         }
 
         if (obj.stattype === RESOURCE_EXTRACTOR) {

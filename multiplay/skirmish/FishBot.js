@@ -37,10 +37,11 @@
 	- 3845 JS @ 30 Mar 2026: v0.3.1 release (commit `0565344`)
 	- 4420 JS @ 04 Apr 2026: v0.3.2 release (commit `69c4754`)
 	- 4437 JS @ 07 Apr 2026: v0.3.3 release (commit `b6c85a5`)
+	- 5097 JS @ 02 May 2026: v0.4.0 release (commit `2c79f5f`)
 */
 
 
-const FISHBOT_VERSION = "0.3.3";
+const FISHBOT_VERSION = "0.4.0";
 
 //	This file connects all remaining pieces of AI code together. It shouldn't contain any code itself.
 //	NOTE: order matters!
@@ -56,16 +57,16 @@ const DEBUG_MODE_ON = false;
 
 /*
 -- RELEASE CHECKLIST --
-1. Update FISHBOT_VERSION to latest version tag.
-2. Disable all beacons / hackMarkTiles() used for debugging.
+1. Update FISHBOT_VERSION to latest version tag. Also update the version number in the "name" property in `FishBot.json`.
+2. Disable all beacons / hackMarkTiles() used for debugging (currently just in `__tac_com_ground.js`).
 3. Run 100 automated tests against both Cobra Medium and Cobra Hard on Gamma 3P 1v1. Pass if no regression in either win-rate or performance profiler. 
 4. Update `CHANGELOG.md` with the test results.
-5. Test all supported maps in `README.md` once, against Cobra @ Medium. Pass if it can win a single game in 2 tries or less.
-6. Set `DEBUG_MODE_ON` = `false`.
+5. Set `DEBUG_MODE_ON` = `false`.
+6. Test all supported maps in `README.md` once, against Cobra @ Medium. Pass if it can win a single game in 2 tries or less.
 7. Update LOC above.
 8. Update `README.md` with summary of changes.
 9. Update `CHANGELOG.md`.
-10. Commit all changes to the top of the `vx.y.z-development` branch.
+10. Commit all changes as the latest commit on the `vx.y.z-development` branch.
 10. Open a PR on GitHub (titled 'FishBot vx.y.z Release') & merge into `main`.
 11. On the main branch, add tag: `fishbot-vx.y.z` and push to origin.
 12. .zip the completed mod files as: `fishbot-vx.y.z/multiplay/skirmish/[bot-files-here]` and move this .zip file to the `.\releases` folder.
@@ -82,7 +83,8 @@ const DEBUG_MODE_ON = false;
  	
 		The primary purpose of these files is to gather information from the WZ2100 game engine.
 	*/
-	include(FB_INCLUDES + "_wz_head.js");
+	include(FB_INCLUDES + "__wz_head.js");
+	include(FB_INCLUDES + "_head.js");	
 	include(FB_INCLUDES + "_utils.js");
 
 	/*
@@ -91,7 +93,7 @@ const DEBUG_MODE_ON = false;
 		The purpose of these files is to direct the tactical level functions e.g. "how to produce a standard FishBot droid".
 		These can be considered as WZ2100-specific drivers.
 	*/
-	include(FB_INCLUDES + "__head.js");	
+
 
 	// world_state stores persistent parameters that FishBot uses to make decisions. Its access and mutation is strictly controlled.
 	include(FB_INCLUDES + "_world_state.js");

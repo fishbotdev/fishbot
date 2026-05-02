@@ -109,6 +109,25 @@ function toBinary20(n) {
 }
 
 /**
+ * Converts a number into its ordinal string representation (e.g. 1 to "1st").
+ *
+ * @param {number} n positive integer
+ * @returns {string} The number appended with the correct ordinal suffix (`st`, `nd`, `rd`, or `th`).
+ * 
+ * @example
+ * getOrdinal(1);	// returns "1st"
+ * getOrdinal(22);	// returns "22nd"
+ * getOrdinal(3);	// returns "3rd"
+ * getOrdinal(13);	// returns "13th"
+ */
+function getOrdinal(n) {
+	const s = ["th", "st", "nd", "rd"];
+	const v = n % 100;
+	return n + (s[(v - 20) % 10] || s[v] || s[0]);
+};
+
+
+/**
  * Returns `true` if `variable` is either `null` or `undefined`, otherwise, returns `false`.
  * @param {any} variable 
  * @returns {boolean} 
@@ -188,7 +207,7 @@ function breadthFirstSearch(grid, bgx, bgy, objectiveFunc) {
 
 		// Process & push to result
 		const gx = next[0], gy = next[1];
-		const result = objFunc(grid, gx, gy)
+		const result = objFunc(grid, gx, gy);
 		orderedResult.push(result);
 		gridResult[gx][gy] = {'idx': iters, 'result': result};
 
@@ -237,7 +256,7 @@ function breadthFirstSearch(grid, bgx, bgy, objectiveFunc) {
 	}
 
 	if (false) {
-		debug(`requestOilCapture2 (BFS)`);
+		debug(`BFS result:`);
 		orderedResult.forEach(coord => debug(`\t${coord[0]} ${coord[1]}`));
 	}
 
@@ -287,115 +306,9 @@ function getCurrGameTime() {
 	return currGameTime;
 }
 
-function myPower() {
-	return playerPower(me) - queuedPower(me);
-}
-
 function isEnemy(playerID) {
 	if (!defined(playerID)) {
 		debug("isEnemy(): playerID is undefined. Check the calling function.");
 	}
 	return !allianceExistsBetween(me, playerID);
 }
-
-/**
-	fbGroup: FISHBOT v3 CUSTOM GROUPING SYSTEM
-
-	Fishbot custom implementation of groups
-	Fishbot requires highly-temporary, one-to-many labelling to support its ability to maneuver troops.
-	As of Warzone 2100 v4.6.1, neither the built-in groups, nor labels, are suitable for transient, one-to-many labelling.
-*/
-
-class fbGroup {
-
-	constructor() {
-		this.groupTemplate = {'groupMemberIDs': [], 'groupMembers': [], "groupSize": 0};
-		this.groups = new Map();
-		this.MAX_GROUP_SIZE = 256;
-	}
-
-	#lazyUpdateGroup(groupID) {
-		// Lazy update, only updates if one of the functions is called & only for that group ID
-		if (this.groups.has(groupID)) {
-			// Update members
-			let c = this.groups.get(groupID);
-
-			// niceDebug("lazyUpdateGroup/groupMember data -- before filter", c["groupMemberIDs"], c["groupMembers"]);
-
-			c["groupMemberIDs"] = c["groupMemberIDs"].filter((id) => getObject(DROID, me, id) !== null);
-
-			// niceDebug("lazyUpdateGroup/groupMember data -- after filter", c["groupMemberIDs"], c["groupMembers"]);
-
-			c["groupMembers"] = c["groupMemberIDs"].map((id) => {return getObject(DROID, me, id);});
-
-			// niceDebug("lazyUpdateGroup/groupMember data -- after getObject map", c["groupMemberIDs"], c["groupMembers"]);
-
-			c["groupSize"] = c["groupMembers"].length;
-		}
-	}
-
-	createGroup(groupID) {
-		this.groups.set(groupID, {
-			...this.groupTemplate,
-			'groupMemberIDs': [...this.groupTemplate.groupMemberIDs],
-			'groupMembers': [...this.groupTemplate.groupMembers]
-		});
-	}
-
-	deleteGroup(groupID) {
-		if (this.groups.has(groupID))
-			this.groups.delete(groupID);
-	}
-
-	enumGroup(groupID) {
-		if (!this.groups.has(groupID)) {
-			debug("no such groupID", groupID);
-			return [];
-		}
-
-		// niceDebug("ids before enum group update; ", this.groups.get(groupID)["groupMemberIDs"])
-		this.#lazyUpdateGroup(groupID);
-
-		return this.groups.get(groupID)["groupMembers"];
-	}
-	
-	groupSize(groupID) {
-		if (!this.groups.has(groupID))
-			return undefined;
-
-		this.#lazyUpdateGroup(groupID);
-
-		return this.groups.get(groupID)["groupSize"];
-	}
-
-	addDroidToGroup({groupID, droidID}) {
-		if (!this.groups.has(groupID)) {
-			// niceDebug("Created a new group", groupID);
-			this.createGroup(groupID);
-		}
-
-		this.#lazyUpdateGroup(groupID);
-		let currGroup = this.groups.get(groupID);
-		
-		if (currGroup["groupSize"] >= this.MAX_GROUP_SIZE) {
-			debug(`addDroidToGroup failed: Cannot add more than ${this.MAX_GROUP_SIZE} members to the group.`);
-			return;
-		}
-		
-		currGroup["groupMemberIDs"] = currGroup["groupMemberIDs"].concat(droidID);
-		// niceDebug("groupMemberIDs", currGroup["groupMemberIDs"]);
-
-	}
-
-	removeDroidFromGroup({groupID, droidID}) {
-		if (!this.groups.has(groupID)) {
-			return;
-		}
-
-		this.#lazyUpdateGroup(groupID);
-
-		let c = this.groups.get(groupID)["groupMemberIDs"].concat();	// shallow copy
-		this.groups.get(groupID)["groupMemberIDs"] = c.filter((id) => id !== droidID);
-	}
-}
-
