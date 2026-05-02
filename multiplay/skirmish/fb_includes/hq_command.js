@@ -806,7 +806,7 @@ class CommandCenter {
 				case MISSION_TYPE.CONSTRUCT_REPAIR_CENTER:
 				case MISSION_TYPE.DEMOLISH_REPAIR_CENTER:
 					activeRepairCenterBuildTaskIDs.push(missionData.sectorID);
-					// activeRemoteMissions.push(missionData);	// building near friendly troops; don't want to be cancelled prematurely
+					activeRemoteMissions.push(missionData);	// building near friendly troops; don't want to be cancelled prematurely
 					break;
 				default:
 					// Do nothing / ignore missions like default mission "HELP_CONSTRUCT"

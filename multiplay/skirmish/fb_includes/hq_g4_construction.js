@@ -377,7 +377,7 @@ class armyEngineering {
 		}
 
 		const SEARCH_RADIUS = 25;
-		const ENEMY_NEARBY_RADIUS = 16;
+		const ENEMY_NEARBY_RADIUS = 10;
 
 		// PART 1: FIND DEMOLITION LOCATIONS
 		myRepairFacilities.forEach(f => {
