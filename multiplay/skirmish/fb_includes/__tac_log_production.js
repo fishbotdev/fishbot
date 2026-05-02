@@ -341,7 +341,7 @@ function produceLandFireSupportGeneric(factory) {
 		factory: factory, 
 		weaponList: fireSupportWeapons, 
 		propulsionList: fireSupportPropulsions, 
-		maxBodyWeight: BODY_WEIGHT.MEDIUM
+		maxBodyWeight: BODY_WEIGHT.LIGHT
 	});
 }
 
@@ -457,7 +457,7 @@ function produceLandUnitCategory(category, factory) {
 			factoryInProduction = factoryInProduction || produceLightCavalry(factory);
 			break;
 		case 'shortRangeArtillery':
-			factoryInProduction = factoryInProduction || produceLandAPFireSupport(factory);
+			factoryInProduction = factoryInProduction || produceLandFireSupportGeneric(factory);
 			break;
 		case 'ADA':
 			if (r === 0) {
