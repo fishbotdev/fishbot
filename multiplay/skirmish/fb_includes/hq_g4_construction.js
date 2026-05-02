@@ -97,8 +97,8 @@ class armyEngineering {
 					const d = derricksInCell[i];
 
 					// Check for existing mission
-					if (activeOilCapTaskIDs.indexOf(d.id) !== -1) continue; 				// found 'CONSTRUCT_OIL_DERRICK' task
-					if (activeOilCapTaskIDs.indexOf(grid[gx][gy].id) !== -1) break;			// found 'CONSTRUCT_SECTOR_DERRICKS' task
+					if (activeOilCapTaskIDs.indexOf(d.id) !== -1) continue; 									// found 'CONSTRUCT_OIL_DERRICK' task
+					if (activeOilCapTaskIDs.filter(id => id === grid[gx][gy].id).length >= 2) break;			// found at least 2 'CONSTRUCT_SECTOR_DERRICKS' tasks
 
 					// if (tileIsBurning(d.x, d.y)) continue;		// seems to be worse
 
