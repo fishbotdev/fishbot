@@ -24,6 +24,7 @@ Please see [`CHANGELOG.md`](CHANGELOG.md) for a detailed list of past changes.
 * **v0.4.1** -- *release date TBA*
     * Make FishBot aware of pathfinding cost (e.g. fix to ground target bounce, truck luring, VTOLs flying in overly dangerous airspace, etc.).
     * Improve spatial awareness (e.g. prioritisation of defence construction).
+    * Make FishBot play more conservatively at the start (take less unnecessary risks vs Insane difficulty bots / passive players).
 
 ## Background and Goals
 FishBot was initially forked from NullBot v3. I acknowledge and appreciate the work of the NullBot team in creating the foundation for this body of work. As of v0.4.0, not much of the original code remains, but I am grateful for the structural and spiritual influence of the original work.
