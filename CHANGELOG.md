@@ -6,14 +6,15 @@ This file is used to record the changes to FishBot between each version.
 - Construction improvements
     - Increased the likelihood of repair faciltiies meeting the conditions for being forward-built.
 - Research improvements
-    - Research order improved for longer running games.
-- 
+    - T2+ research order improved for longer running games.
+- Production
+    - Mortar units decreased to light bodies to increase mobility.
 
 #### Test results (Warzone 2100 v4.7.0)
 FishBot `v0.4.1` (commit `1`) was automatically tested on: `Gamma 3P T2` 1v1. 
--  / 50 = **98%** win rate: FishBot-v0.4.0 Medium vs Cobra **Medium** 
--  / 100 = **94%** win rate: FishBot-v0.4.0 Medium vs Cobra **Hard** 
--  / 50 = **48%** win rate: FishBot-v0.4.0 Medium vs Cobra **Insane** 
+-  / 50 = **%** win rate: FishBot-v0.4.0 Medium vs Cobra **Medium** 
+-  / 100 = **%** win rate: FishBot-v0.4.0 Medium vs Cobra **Hard** 
+-  / 50 = **%** win rate: FishBot-v0.4.0 Medium vs Cobra **Insane** 
 
 ## Fishbot v0.4.0
 ### Changes in v0.4.0
