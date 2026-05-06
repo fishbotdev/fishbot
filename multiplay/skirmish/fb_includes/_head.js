@@ -102,11 +102,11 @@
  * @property {number} numRepairFacilities
  * 
  * // Intended to be used for getting idle structures for Production & Research, and for demolishing Repair Facilities
- * @property {StructureObject[]} normalFactoryFbObjects
- * @property {StructureObject[]} cyborgFactoryFbObjects
- * @property {StructureObject[]} vtolFactoryFbObjects
- * @property {StructureObject[]} researchFacilityFbObjects
- * @property {StructureObject[]} repairFacilityFbObjects
+ * @property {TargetObject[]} normalFactoryFbObjects
+ * @property {TargetObject[]} cyborgFactoryFbObjects
+ * @property {TargetObject[]} vtolFactoryFbObjects
+ * @property {TargetObject[]} researchFacilityFbObjects
+ * @property {TargetObject[]} repairFacilityFbObjects
  * 
  */
 

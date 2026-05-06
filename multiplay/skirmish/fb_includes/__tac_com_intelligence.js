@@ -20,13 +20,14 @@ function getDroidsAndStructsByPlayer(playerIdList=undefined) {
 
     const createPlayerBucket = (id, droids, structs) => {return {'playerID': id, 'droids': droids, 'structs': structs}};  
 
-    let objectsByPlayer = [];
+    const objectsByPlayer = [];
 
-    if (!defined(playerIdList)) {
-        playerIdList = generateRange(maxPlayers);       // will create 0-indexed playerIDs from 0, 1, 2, ..., maxPlayers - 1
+    let PLAYER_ID_LIST = generateRange(maxPlayers);       // will create 0-indexed playerIDs from 0, 1, 2, ..., maxPlayers - 1
+    if (playerIdList) {
+        PLAYER_ID_LIST = playerIdList;
     }
 
-    playerIdList.forEach(id => {
+    PLAYER_ID_LIST.forEach(id => {
         const p = createPlayerBucket(id, enumDroid(id), enumStruct(id));
         objectsByPlayer.push(p);
     });

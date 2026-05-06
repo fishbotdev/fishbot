@@ -174,19 +174,31 @@ class fbGrid {
         this.grid = create2DGrid(this.numXCells, this.numYCells, createStandardGridCell);        
     }
 
+    /**
+     * Default factory function to create a new `fbGrid` grid cell.
+     * @param {number} gx 
+     * @param {number} gy 
+     * @returns 
+     */
     createNewFbGridCell(gx, gy) {
         return {
             'id': `${gx}_${gy}`,    
             'gx': gx,
             'gy': gy,    
 
+            /** @type {TargetObject[]} */
             'targetUnits': [],
+            /** @type {TargetObject[]} */
             'targetStructures': [],
 
+            /** @type {TargetObject[]} */
             'friendlyUnits': [],
+            /** @type {TargetObject[]} */
             'friendlyStructures': [],
 
+            /** @type {DerrickObject[]} */
             'derricks': [],
+            /** @type {PlayerHomeBaseObject[]} */
             'bases': []
         }
     }
