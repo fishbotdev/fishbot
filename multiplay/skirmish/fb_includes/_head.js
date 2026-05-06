@@ -16,6 +16,121 @@
 */
 
 /*
+ * This file contains important type definitions & constants that are used throughout the code.
+ * As it uses `baseLocation`, it should be included after `__wz_head.js`, but it precede inclusion of all other files.
+ */
+
+
+/*
+	TYPE DEFINITIONS
+*/
+
+/**
+ * @typedef {Object} TargetObject
+ * `TargetObject` is FishBot's implementation of a generic game object (naming could be better).
+ * @property {string} name
+ * @property {number} type
+ * @property {number} player
+ * @property {number} id
+ * @property {number} flags
+ * @property {number} gx
+ * @property {number} gy
+ * @property {number} priority
+ */
+
+/**
+ * @typedef {Object} PositionInfo
+ * Generic FishBot 'Position' object.
+ * @property {number} x 
+ * @property {number} y
+ * @property {number} z map height at (x,y), obtained from `MapTiles[y][x].height`.
+ */
+
+/**
+ * Type definitions for `worldState.poi.derricks`.
+ * @typedef {Object} DerrickObject
+ * @property {string} id
+ * @property {number} x
+ * @property {number} y
+ * @property {number} gx
+ * @property {number} gy
+ * @property {boolean} isClaimed
+ * @property {number | undefined} playerID
+ */
+
+/**
+ * Type definitions for `worldState.poi.bases`.
+ * @typedef {Object} PlayerHomeBaseObject
+ * @property {string} id
+ * @property {number} x
+ * @property {number} y
+ * @property {number} gx
+ * @property {number} gy
+ * @property {boolean} isEnemy
+ * @property {number | undefined} playerID
+ */
+
+/**
+ * Type definition for `worldState.playerInfo`.
+ * @typedef {Object} PlayerStatsObject
+ * @property {number} playerID
+ * @property {boolean} isFriendly
+ * 
+ * // Unit types
+ * @property {number} numTotalUnits
+ * @property {number} numInfantryUnits
+ * @property {number} numArmourUnits
+ * @property {number} numAirUnits air units (e.g. VTOL)
+ * 
+ * // Weapons
+ * @property {number} numRocketUnits anti-personnel units (e.g. MG)
+ * @property {number} numCannonUnits general-purpose (e.g. cannon)
+ * @property {number} numMGUnits
+ * @property {number} numShortRangeIndirectUnits short range indirect fires (e.g. mortar)
+ * @property {number} numLongRangeIndirectUnits
+ * @property {number} numVTOLBombUnits 
+ * @property {number} numADAUnits air-defence-artillery units (e.g. flak cannon)
+ * @property {number} numLaserUnits
+ * @property {number} numFlamerUnits
+ * 
+ * // Statistics
+ * @property {number} numTrucks
+ * @property {number} numStructs
+ * @property {number} numFactories
+ * @property {number} numDerricks
+ * @property {number} numConstructedHQs
+ * @property {number} numRepairFacilities
+ * 
+ * // Intended to be used for getting idle structures for Production & Research, and for demolishing Repair Facilities
+ * @property {StructureObject[]} normalFactoryFbObjects
+ * @property {StructureObject[]} cyborgFactoryFbObjects
+ * @property {StructureObject[]} vtolFactoryFbObjects
+ * @property {StructureObject[]} researchFacilityFbObjects
+ * @property {StructureObject[]} repairFacilityFbObjects
+ * 
+ */
+
+/**
+ * Type definitions for `worldState.brigades`.
+ * @typedef {number} BrigadeIDType
+ * 
+ * @typedef {Object} TargetInfoSOA
+ * @property {string[]} name
+ * @property {Uint32Array} type
+ * @property {Uint8Array} player
+ * @property {Uint32Array} id
+ * @property {Uint32Array} flags
+ * @property {Uint32Array} gx
+ * @property {Uint32Array} gy
+ * @property {Uint8Array} priority
+ * 
+ * @typedef {Object} BrigadeInfo
+ * @property {number} id brigade ID
+ * @property {PositionInfo} position  
+ * @property {TargetInfoSOA} nearbyTargets
+ */
+
+/*
     FISHBOT PARAMETERS
 */
 

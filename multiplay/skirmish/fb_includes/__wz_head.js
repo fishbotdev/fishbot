@@ -16,7 +16,8 @@
 */
 
 /*
- *  This file contains game constants (from the Stats global) which are used throughout the code.
+ * This file contains game constants (from the Stats global) which are used throughout the code.
+ * As such, it should be included first.
 */
 
 const baseLocation = startPositions[me];

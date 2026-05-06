@@ -265,7 +265,7 @@ interface BaseObject {
   type: ObjectTypeType;
 
   /** The unique ID of this object. */
-  id: string;
+  id: number;
 
   /** X position of the object in tiles. */
   x: number;

@@ -17,9 +17,11 @@
 
 /**
 The functions in this class:
-- Have the authority to write to the global state (typically delegated to `hq_toc.js`)
+- Have the authority to write to the global state (typically delegated to (and consolidated in) `hq_toc.js`)
 - Should make decisions on what course action to take, but should handle no direct execution (this should be delegated to other functions)
-- Should be supported by proposals made by the staff functions hq_gX
+- Should be informed by potential courses of action proposed by the staff functions `hq_gX_Y`.
+
+This models how a HQ at divisional level is structured in real life. Much of the terminology in this bot is borrowed from the real world.
  */
 class CommandCenter {
 	constructor() {

@@ -190,6 +190,76 @@ function classifyGameObject(obj) {
     return flags;
 }
 
+/**
+ * Creates a new `target` object.
+ * @param {BaseObject} targetObject 
+ * @param {number} flags 
+ * @param {number} gx 
+ * @param {number} gy 
+ * @returns {TargetObject}
+ */
+function createNewTarget(targetObject, flags=0, gx=0, gy=0) {
+    return {
+        'name': targetObject.name,
+
+        // These 3 parameters allow 'getObject' to be used at a later point to retrieve up-to-date object information
+        'type': targetObject.type,
+        'player': targetObject.player,
+        'id': targetObject.id,
+
+        'flags': flags,
+        'gx': gx,
+        'gy': gy,
+
+        // This is used by the mission management system to store the priority at the time of assignment
+        'priority': MISSION_PRIORITY.LOW,
+    };
+}
+
+/**
+ * Factory function to create a new `playerInfo` object.
+ * @param {number} playerID 
+ * @returns {PlayerStatsObject}
+ */
+function createPlayerInfoEntry(playerID) {
+    return {
+        'playerID': playerID,
+        'isFriendly': !isEnemy(playerID), 
+
+        // Unit stats
+        'numTotalUnits': 0,
+        'numInfantryUnits': 0,
+        'numArmourUnits': 0,
+        'numAirUnits': 0,       // air units (e.g. vtol)        
+
+        'numRocketUnits': 0,        // anti-personnel units (e.g. MG)
+        'numCannonUnits': 0,        // general-purpose (e.g. cannon)
+        'numMGUnits': 0,
+        'numShortRangeIndirectUnits': 0,  // indirect fires (e.g. mortar)
+        'numLongRangeIndirectUnits': 0,
+        'numVTOLBombUnits': 0,
+        'numADAUnits': 0,       // air-defence-artillery units (e.g. flak cannon)
+        'numLaserUnits': 0,
+        'numFlamerUnits': 0,
+
+        'numTrucks': 0,
+
+        // Structure stats
+        'numStructs': 0,
+        'numFactories': 0,
+        'numDerricks': 0, 
+        'numConstructedHQs': 0,
+        'numRepairFacilities': 0,
+
+        // Intended to be used for getting idle structures for Production & Research, and for demolishing Repair Facilities
+        'normalFactoryFbObjects': [],           
+        'cyborgFactoryFbObjects': [],
+        'vtolFactoryFbObjects': [],
+        'researchFacilityFbObjects': [],
+        'repairFacilityFbObjects': []
+    };
+}
+
 
 /**
  * 

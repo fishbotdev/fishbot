@@ -62,23 +62,6 @@ class armyIntelligence {
 	/*
 		REAL-TIME TARGETING
 	*/
-	#createNewTarget(targetObject, flags=0, gx=0, gy=0) {
-		return {
-			'name': targetObject.name,
-
-			// These 3 parameters allow 'getObject' to be used at a later point to retrieve up-to-date object information
-			'type': targetObject.type,
-			'player': targetObject.player,
-			'id': targetObject.id,
-
-			'flags': flags,
-			'gx': gx,
-			'gy': gy,
-
-			// This is used by the mission management system to store the priority at the time of assignment
-			'priority': MISSION_PRIORITY.LOW,
-		};
-	}
 
 	/**
 	 * Prints `playerInfo` to the console.
@@ -139,7 +122,6 @@ class armyIntelligence {
 				'playerID': playerID,
 			}
 		};
-		const createPlayerInfoEntry = (...args) => state.createPlayerInfoEntry(...args);
 
 		let objectsByPlayer = getDroidsAndStructsByPlayer();		// this information is fresh
 
@@ -201,7 +183,7 @@ class armyIntelligence {
 				}
 
 				// Update target list
-				const newObj = this.#createNewTarget(obj, flags, gx, gy);
+				const newObj = createNewTarget(obj, flags, gx, gy);
 				if (IS_TARGET) {
 					result.allTargets.push(newObj);		
 					grid[gx][gy]['targetUnits'].push(newObj);
@@ -237,7 +219,7 @@ class armyIntelligence {
 				}
 
 				// Update target list
-				const newObj = this.#createNewTarget(obj, flags, gx, gy);
+				const newObj = createNewTarget(obj, flags, gx, gy);
 
 				if (flags & OBJ_FLAGS.PRODUCTION) {
 					p['numFactories']++;
