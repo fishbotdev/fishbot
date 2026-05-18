@@ -273,8 +273,8 @@ function breadthFirstSearch(grid, bgx, bgy, objectiveFunc) {
 /**
  * Converts an array of structures represented as lightweight "FishBot objects" into actual game objects.
  * This is part of the algorithm to avoid the use of 'enumStruct()' to get up to date game objects. 
- * @param {*} fbStructureList 
- * @returns array containing idle `StructureObjects`.
+ * @param {TargetObject[]} fbStructureList 
+ * @returns {StructureObject[]} array containing idle `StructureObjects`.
  */
 function getIdleStructureObjects(fbStructureList) {
 	let idleStructList = [];

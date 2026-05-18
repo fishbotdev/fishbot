@@ -32,7 +32,7 @@ class armyIntelligence {
 	}
 
 	#createMissionOrders() {
-		let missionDataTemplate = {
+		return {
 			'id': undefined, 
 			'missionType': undefined, 
 			'missionStatus': MISSION_STATUS.FAILED_CREATION, 
@@ -45,8 +45,6 @@ class armyIntelligence {
 
 			'sectorID': undefined,	
 		};
-
-		return missionDataTemplate;
 	}
 
 	#mcb(callback, ...args) {
@@ -64,232 +62,38 @@ class armyIntelligence {
 	*/
 
 	/**
-	 * Prints `playerInfo` to the console.
-	 * @param {*} p 
-	 */
-	#debugPrintPlayerInfo(p) {
-		
-		if (false) {
-			debug(`== ${p.playerID} UNIT STATS ==`);
-
-			// Print Unit stats
-			debug(`\nnumTotalUnits: ${p['numTotalUnits']}`); 
-			debug(`\tnumInfantryUnits: ${p['numInfantryUnits']}`); 
-			debug(`\tnumArmourUnits: ${p['numArmourUnits']}`); 
-            debug(`\tnumAirUnits: ${p['numAirUnits']}`);      
-			debug(``);
-            debug(`\tnumRocketUnits: ${p['numRocketUnits']}`);        
-            debug(`\tnumCannonUnits: ${p['numCannonUnits']}`);      
-            debug(`\tnumMGUnits: ${p['numMGUnits']}`);
-            debug(`\tnumShortRangeIndirectUnits: ${p['numShortRangeIndirectUnits']}`);
-            debug(`\tnumLongRangeIndirectUnits: ${p['numLongRangeIndirectUnits']}`);
-            debug(`\tnumVTOLBombUnits: ${p['numVTOLBombUnits']}`);
-            debug(`\tnumADAUnits: ${p['numADAUnits']}`); 
-            debug(`\tnumLaserUnits: ${p['numLaserUnits']}`);
-            debug(`\tnumFlamerUnits: ${p['numFlamerUnits']}`);
-		}
-	}
-
-	/**
-	`getAllObjects()`
-
-	This function performs multiple functions:
-	1. Gets all droids & structures on the map (like taking a satellite image of the whole map)
-	2. Classifies all droids & structures, populating a new `playerInfo` and a new `grid` 
-
-	@param {worldState} state
-	@returns {Object}
-	 */
-	getAllObjects(state) {
-		const numXCells = state.grid.numXCells;		// cellSize is used for computing grid coords
-		const numYCells = state.grid.numYCells;
-		const cellSize = state.grid.cellSize;
-		const createExpandedFbGridCell = (gx, gy) => {
-			let cell = state.grid.createNewFbGridCell(gx, gy);
-			// Add custom parameters
-			cell['adaCount'] = 0;					// for adaThreat      
-			cell['fixedDefenceCount'] = 0; 			// for enemyStaticDefences
-			cell['claimedDerricks'] = [];			// for updating of derrick information
-			cell['enemyDirectFireUnitCount'] = 0;	// for direct fire unit threat
-			return cell;
-		};
-		let grid = create2DGrid(numXCells, numYCells, createExpandedFbGridCell);
-
-		// Reduced version of the version in worldStateBuilder
-		const createNewClaimedDerrick = (x, y, playerID) => {       
-			return {
-				'id': `DERRICK_${x}_${y}`,				
-				'playerID': playerID,
-			}
-		};
-
-		let objectsByPlayer = getDroidsAndStructsByPlayer();		// this information is fresh
-
-		let result = {
-			'playerInfo': [],
-			'allTargets': [],
-			'grid': grid
-		}
-
-		for (let i=0; i<objectsByPlayer.length; i++) {
-			const currPlayerEntry = objectsByPlayer[i];
-
-			let p = createPlayerInfoEntry(currPlayerEntry['playerID']);
-
-			// Collate droid information
-			const IS_TARGET = !p['isFriendly'];
-
-			for (let j=0; j<currPlayerEntry['droids'].length; j++) {
-				const obj = currPlayerEntry['droids'][j];
-
-				const flags = classifyGameObject(obj);
-				const gx = Math.floor(obj.x / cellSize), gy = Math.floor(obj.y / cellSize);		
-
-				// Update player information
-				p['numTotalUnits']++;
-
-				// UNIT "BODY" (ARMOUR, CYBORGS, VTOLS)
-				const ARMOUR_FORBIDDEN_FLAGS = (OBJ_FLAGS.ADA | OBJ_FLAGS.INDIRECT_FIRE);
-
-				if (flags & OBJ_FLAGS.ARMOUR && !(flags & ARMOUR_FORBIDDEN_FLAGS)) {
-					p['numArmourUnits']++;
-				} else if (flags & OBJ_FLAGS.INFANTRY) {
-					p['numInfantryUnits']++;
-				} else if (flags & OBJ_FLAGS.AVIATION) {
-					p['numAirUnits']++;
-				}
-			
-				// UNIT "WEAPON"
-				if (flags & OBJ_FLAGS.CANNON_WEAPON) {
-					p['numCannonUnits']++;
-				} else if (flags & OBJ_FLAGS.AT_ROCKET_WEAPON) {
-					p['numRocketUnits']++;
-				} else if (flags & OBJ_FLAGS.MACHINEGUN_WEAPON) {
-					p['numMGUnits']++;
-				} else if (flags & OBJ_FLAGS.SHORT_RANGE_ARTILLERY_WEP) {
-					p['numShortRangeIndirectUnits']++;
-				} else if (flags & OBJ_FLAGS.LONG_RANGE_ARTILLERY_WEP) {
-					p['numLongRangeIndirectUnits']++;
-				} else if (flags & OBJ_FLAGS.VTOL_ARTILLERY_WEAPON) {
-					p['numVTOLBombUnits']++;
-				} else if (flags & (OBJ_FLAGS.AA_DIRECT_FIRE_WEAPON | OBJ_FLAGS.AA_ROCKET_WEAPON)) {
-					p['numADAUnits']++;
-				} else if (flags & OBJ_FLAGS.LASER_WEAPON) {
-					p['numLaserUnits']++;
-				} else if (flags & OBJ_FLAGS.FLAMER_WEAPON) {
-					p['numFlamerUnits']++;
-				} else if (flags & OBJ_FLAGS.CONSTRUCTOR) {
-					p['numTrucks']++;
-				}
-
-				// Update target list
-				const newObj = createNewTarget(obj, flags, gx, gy);
-				if (IS_TARGET) {
-					result.allTargets.push(newObj);		
-					grid[gx][gy]['targetUnits'].push(newObj);
-
-					// Further classification (TODO: consider splitting into separate function)
-					if (flags & OBJ_FLAGS.ADA) {
-						grid[gx][gy]['adaCount']++;
-					}
-
-					const DIRECT_FIRE_UNITS = OBJ_FLAGS.ARMOUR | OBJ_FLAGS.INDIRECT_FIRE | OBJ_FLAGS.INFANTRY;
-					if (flags & DIRECT_FIRE_UNITS) {
-						grid[gx][gy]['enemyDirectFireUnitCount']++;
-					}
-
-				} else {
-					grid[gx][gy]['friendlyUnits'].push(newObj);
-				}
-			}	
-
-			// Collate structure information
-			for (let j=0; j<currPlayerEntry['structs'].length; j++) {
-				const obj = currPlayerEntry['structs'][j];
-				
-				const flags = classifyGameObject(obj);
-				const gx = Math.floor(obj.x / cellSize), gy = Math.floor(obj.y / cellSize);		
-
-				// Update player information
-				p['numStructs'] += 1;
-
-				if (flags & OBJ_FLAGS.RESOURCE_EXTRACTOR) {
-					p['numDerricks']++;
-					grid[gx][gy]['claimedDerricks'].push(createNewClaimedDerrick(obj.x, obj.y, obj.player));	
-				}
-
-				// Update target list
-				const newObj = createNewTarget(obj, flags, gx, gy);
-
-				if (flags & OBJ_FLAGS.PRODUCTION) {
-					p['numFactories']++;
-
-					if (obj.stattype === FACTORY) {
-						p["normalFactoryFbObjects"].push(newObj);
-					} else if (obj.stattype === CYBORG_FACTORY) {
-						p["cyborgFactoryFbObjects"].push(newObj);
-					} else if (obj.stattype === VTOL_FACTORY) {
-						p["vtolFactoryFbObjects"].push(newObj);
-					}
-				}
-
-				if (flags & OBJ_FLAGS.RESEARCH) {
-					p["researchFacilityFbObjects"].push(newObj);
-				}
-
-				if (obj.stattype === HQ && obj.status === BUILT) {
-					// manual classification (outside of `classifyObject`) -> not required to track HQs
-					p['numConstructedHQs']++;
-				}
-				
-				if (flags & OBJ_FLAGS.REPAIR) {
-					p['numRepairFacilities']++;
-					p["repairFacilityFbObjects"].push(newObj);
-				}
-
-				if (IS_TARGET) {
-					result.allTargets.push(newObj);		
-					grid[gx][gy]['targetStructures'].push(newObj);
-					
-					// ADA defences
-					if (flags & OBJ_FLAGS.ADA) {
-						grid[gx][gy]['adaCount']++;
-					}
-
-					// Ground defences
-					const BUILT_DEFENCE = OBJ_FLAGS.DEFENSIVE_STRUCTURE | OBJ_FLAGS.IS_BUILT;
-					if ((flags & BUILT_DEFENCE) === BUILT_DEFENCE && !(flags & OBJ_FLAGS.ADA)) {
-						grid[gx][gy]['fixedDefenceCount']++;
-					}
-				} else {
-					grid[gx][gy]['friendlyStructures'].push(newObj);
-				}
-			}
-
-			this.#debugPrintPlayerInfo(p);
-			result.playerInfo.push(p);
-		}
-
-		return result;
-
-	}
-
-	/**
 	 * Gets targets around all derricks (including friendly derricks).
 	 * @param {worldState} state 
-	 * @returns 
+	 * @returns {AirStrikeMissionRequest[]}
 	 */
 	getTargetsNearDerricks(state) {
 
-		const grid = state.grid.grid;
+		const allDerricks = state.poi.derricks;
 		const cellSize = state.grid.cellSize;
 
 		const SEARCH_RADIUS = cellSize;
-		let targetsNearDerricks = [];
 
-		let seenGridCoord = [];
-		for (let i=0; i<state.poi.derricks.length; i++) {
-			const d = state.poi.derricks[i];
+		const targetsNearDerricks = [];
+		const seenGridCoord = [];
+
+		// Temporary buffers to store targeting data
+		/** @type {AirStrikeMissionRequest[]} */
+		const defences = [];
+		/** @type {AirStrikeMissionRequest[]} */
+		const trucks = [];
+		/** @type {AirStrikeMissionRequest[]} */
+		const derricks = [];
+
+		const resetTargetBuffersInPlace = () => {
+			defences.length = 0;
+			trucks.length = 0;
+			derricks.length = 0;
+		}
+
+		const createRaidRequest = (obj, priority) => aviation.translateIntoRaidRequest(obj, priority);
+
+		for (let i=0; i<allDerricks.length; i++) {
+			const d = allDerricks[i];
 			
 			let seen = false;
 			for (let j=0; j<seenGridCoord.length; j++) {
@@ -302,26 +106,38 @@ class armyIntelligence {
 				continue;
 			}
 
-			const t = state.grid.enumRange(d.x, d.y, SEARCH_RADIUS);
+			const nearby = state.grid.enumRange(d.x, d.y, SEARCH_RADIUS);
+			resetTargetBuffersInPlace();
 
-			let defences = [], trucks = [], derricks = [];
-
-			t['targetStructures'].forEach(target => {
-				if (target.flags & OBJ_FLAGS.DEFENSIVE_STRUCTURE) {
-					if (target.flags & OBJ_FLAGS.INDIRECT_FIRE) {
-						defences.unshift(target);
-					} else {
-						defences.push(target);
-					}
+			nearby['targetStructures'].forEach(t => {
+				const flags = t.flags;
+				const obj = getObject(t.type, t.player, t.id);
+				if (obj == null) {
+					return;
 				}
-				if (target.flags & OBJ_FLAGS.RESOURCE_EXTRACTOR) {
-					derricks.push(target);
+
+				if (flags & OBJ_FLAGS.DEFENSIVE_STRUCTURE) {
+					if (flags & OBJ_FLAGS.INDIRECT_FIRE) {
+						defences.unshift(createRaidRequest(obj, MISSION_PRIORITY.HIGH));
+					} else {
+						defences.push(createRaidRequest(obj, MISSION_PRIORITY.HIGH));
+					}
+					return;
+				}
+				if (flags & OBJ_FLAGS.RESOURCE_EXTRACTOR) {
+					derricks.push(createRaidRequest(obj, MISSION_PRIORITY.MEDIUM));
 				}
 			});
 
-			t['targetUnits'].forEach(target => {
-				if (target.flags & OBJ_FLAGS.CONSTRUCTOR && !(target.flags & OBJ_FLAGS.CYBORG_PROPULSION)) {
-					trucks.push(target);
+			nearby['targetUnits'].forEach(t => {			
+				const flags = t.flags;
+				const obj = getObject(t.type, t.player, t.id);
+				if (obj == null) {
+					return;
+				}
+
+				if (flags & OBJ_FLAGS.CONSTRUCTOR && !(flags & OBJ_FLAGS.CYBORG_PROPULSION)) {
+					trucks.push(createRaidRequest(obj, MISSION_PRIORITY.LOW));
 				}
 			});
 
@@ -331,29 +147,32 @@ class armyIntelligence {
 		}
 
 		return targetsNearDerricks;
-
 	}
 
 	/**
-	 * Gets targets around all enemy bases. Currently (FishBot v0.4.0) used for VTOL targeting only.
+	 * Gets targets around all enemy bases. Currently used for VTOL targeting only (FishBot v0.4.0).
 	 * @param {worldState} state 
-	 * @returns 
 	 */
 	getBaseTargets(state) {
-		// Note: trying a new pattern; extract all relevant parameters from state at the start
 		const bases = state.poi.bases;
 		const enemyPlayerIDs = state.enumLivingPlayers().filter(isEnemy); 
 
-		let result = {
+		const result = {
+			/** @type {AirStrikeMissionRequest[]} */
 			'productionTargets': [],
+			/** @type {AirStrikeMissionRequest[]} */
 			'adaTargets': [],
+			/** @type {AirStrikeMissionRequest[]} */
 			'indirectFireTargets': [],
+			/** @type {AirStrikeMissionRequest[]} */
 			'defensiveStructureTargets': [],
-		}
+		};
 
 		if (enemyPlayerIDs.length === 0) {
 			return result;
 		}
+
+		const createDASRequest = (obj, priority) => aviation.translateIntoDASRequest(obj, priority);
 
 		const SEARCH_RADIUS = 30;
 		for (let i=0; i<bases.length; i++) {
@@ -361,43 +180,55 @@ class armyIntelligence {
 				continue;
 			}
 
-			const t = state.grid.enumRange(bases[i].x, bases[i].y, SEARCH_RADIUS);		
+			const nearby = state.grid.enumRange(bases[i].x, bases[i].y, SEARCH_RADIUS);		
 
-			for (let j=0; j<t['targetStructures'].length; j++) {
-				if (t['targetStructures'][j].flags & OBJ_FLAGS.ADA) {
-					result.adaTargets.push(t['targetStructures'][j]);
-					continue;
+			nearby['targetStructures'].forEach(t => {
+				const flags = t.flags;
+				const obj = getObject(t.type, t.player, t.id);
+				if (obj == null) {
+					return;
 				}
-				if (t['targetStructures'][j].flags & OBJ_FLAGS.PRODUCTION) {
-					result.productionTargets.push(t['targetStructures'][j]);
-					continue;
-				}
-				if (t['targetStructures'][j].flags & OBJ_FLAGS.INDIRECT_FIRE) {
-					result.indirectFireTargets.push(t['targetStructures'][j]);
-					continue;
-				}
-				if (t['targetStructures'][j].flags & OBJ_FLAGS.DEFENSIVE_STRUCTURE) {
-					result.defensiveStructureTargets.push(t['targetStructures'][j]);
-					continue;
-				}
-			}
 
-			for (let j=0; j<t['targetUnits'].length; j++) {
-				if (t['targetUnits'][j].flags & OBJ_FLAGS.ADA) {
-					result.adaTargets.push(t['targetUnits'][j]);
-					continue;
+				if (flags & OBJ_FLAGS.ADA) {
+					result.adaTargets.push(createDASRequest(obj, MISSION_PRIORITY.VERY_HIGH));
+					return;
 				}
-				if (t['targetUnits'][j].flags & OBJ_FLAGS.CONSTRUCTOR && !(t['targetUnits'][j].flags & OBJ_FLAGS.CYBORG_PROPULSION)) {
+				if (flags & OBJ_FLAGS.PRODUCTION) {
+					result.productionTargets.push(createDASRequest(obj, MISSION_PRIORITY.VERY_HIGH));
+					return;
+				}
+				if (flags & OBJ_FLAGS.INDIRECT_FIRE) {
+					result.indirectFireTargets.push(createDASRequest(obj, MISSION_PRIORITY.HIGH));
+					return;
+				}
+				if (flags & OBJ_FLAGS.DEFENSIVE_STRUCTURE) {
+					result.defensiveStructureTargets.push(createDASRequest(obj, MISSION_PRIORITY.HIGH));
+					return;
+				}
+			});
+
+			nearby['targetUnits'].forEach(t => {
+				const flags = t.flags;
+				const obj = getObject(t.type, t.player, t.id);
+				if (obj == null) {
+					return;
+				}
+
+				if (flags & OBJ_FLAGS.ADA) {
+					result.adaTargets.push(createDASRequest(obj, MISSION_PRIORITY.VERY_HIGH));
+					return;
+				}
+				if (flags & OBJ_FLAGS.CONSTRUCTOR && !(flags & OBJ_FLAGS.CYBORG_PROPULSION)) {
 					// Cyborg propulsion is omitted because FishBot 0.4.0 does not use anti-cyborg VTOL weapons
-					result.productionTargets.push(t['targetUnits'][j]);
-					continue;
+					result.productionTargets.push(createDASRequest(obj, MISSION_PRIORITY.LOW));
+					return;
 				}
-				if (t['targetUnits'][j].flags & OBJ_FLAGS.INDIRECT_FIRE && !(t['targetUnits'][j].flags & OBJ_FLAGS.CYBORG_PROPULSION)) {
+				if (flags & OBJ_FLAGS.INDIRECT_FIRE && !(flags & OBJ_FLAGS.CYBORG_PROPULSION)) {
 					// Cyborg propulsion is omitted because FishBot 0.4.0 does not use anti-cyborg VTOL weapons (e.g. will falsely attack grenadiers)
-					result.indirectFireTargets.push(t['targetUnits'][j]);
-					continue;
+					result.indirectFireTargets.push(createDASRequest(obj, MISSION_PRIORITY.HIGH));
+					return;
 				}
-			}
+			});
 		}	
 
 		return result;
@@ -405,23 +236,21 @@ class armyIntelligence {
 	
 	/** 
 	 * This function performs these roles:
-	 *		- finding the closest droid
-	 *		- calculating how many targets are in the immediate radius
-	 *		- classifying each object into different, useful categories
-	 *		- compressing each gameObject for efficient storage & use
+	 *	- finding the closest droid
+	 *	- calculating how many targets are in the immediate radius
+	 *	- classifying each object into different, useful categories
+	 *	- compressing each gameObject for efficient storage & use
 	 * with O(N) algorithmic complexity. 
 	 * 
 	 * @param {worldState} state
-	 * @param {BaseObject} loc
+	 * @param {PositionInfo} loc
 	 * @param {number} searchRadius
-	 * @param {number} immediateRadius
 	 * @returns {Object}
 	 */
-	proposeTargetsInRadius2(state, loc, searchRadius, immediateRadius) {
+	proposeTargetsInRadius2(state, loc, searchRadius) {
 
-		const allTargets = state.allTargets;
-
-		let proposedTargets = {
+		/** @type {NearbyTargets} */
+		const proposedTargets = {
 			'enemyArmor': [], 
 			'enemyInfantry': [], 
 			'enemyIndirectFire': [], 
@@ -431,97 +260,67 @@ class armyIntelligence {
 			'enemyIndustrial': [], 
 			'enemyUtility': [], 
 			'enemyDefenses': [],
-			'closestObject': undefined,
-			'closestObjects': [],				// a temporary cache so this function can be executed less
 			'targetsInImmediateRadius': 0
 		};		
 
-		if (!defined(loc)) {
-			debug(`WARNING:	proposeTargetsInRadius2(): 'loc' was undefined.`);
+		const LOC_X = loc.x;
+		const LOC_Y = loc.y;
+		/**
+		 * Returns combined list containing `targetUnits` and `targetStructures`.
+		 * @param {number} x 
+		 * @param {number} y 
+		 * @param {number} searchRadius 
+		 * @returns {TargetObject[]}
+		 */
+		const getTargetsNear = (x, y, searchRadius) => {
+			const nearby = state.grid.enumRange(x, y, searchRadius); 
+			return [...nearby['targetUnits'], ...nearby['targetStructures']];
+		};
+
+		// Search `searchRadius` first, then get all objects on the map if no targets exist. TODO: modify to sequentially double radius up to mapWidth (for large maps).
+		const targetObjects = getTargetsNear(LOC_X, LOC_Y, searchRadius);
+
+		if (targetObjects.length === 0) {
 			return proposedTargets;
 		}
 
-		const t = state.grid.enumRange(loc.x, loc.y, searchRadius); 
+		// Note: `grid.enumRange` returns a fresh entry (it uses `getObject` internally), so there is no need for this function to use it too.
+		for (let i=0; i<targetObjects.length; i++) {
+			const t = targetObjects[i];
 
-		let targetList = [...t['targetUnits'], ...t['targetStructures']];
-		// debug(`t ${targetList.length} (d ${t['droids'].length}, s ${t['structs'].length}), allT ${allTargets.length}`);
-
-		if (targetList.length === 0) {
-			targetList = allTargets;			
-		}
-
-		if (targetList.length === 0) {
-			return proposedTargets;
-		}
-
-		let closestObject = undefined;
-		let closestDistSq = 0;
-
-		let enemyVtols = [];
-
-		for (let i=0; i<targetList.length; i++) {
-			const t = targetList[i];
-			const obj = getObject(t.type, t.player, t.id);
-			if (!defined(obj)) {
-				// The target could come from a stale database e.g. allTargets
-				continue;
-			}
-
-			// Update closestDroid (excludes VTOLs)
-			if (!(t.flags & OBJ_FLAGS.AVIATION)) {
-
-				const distSquaredToLoc = distSq(obj.x, loc.x, obj.y, loc.y);
-
-				// Add closestObjects (should be called closestTargets)
-				if (distSquaredToLoc <= immediateRadius ** 2) {
-					proposedTargets["closestObjects"].push(t);
-					proposedTargets["targetsInImmediateRadius"] += 1;
-				}
-
-				// Update closestObject (should be called closestTarget)
-				if (!defined(closestObject)) {
-					closestObject = t;
-					closestDistSq = distSq(obj.x, loc.x, obj.y, loc.y);
-				} else {
-					if (distSquaredToLoc < closestDistSq) {
-						closestObject = t;
-						closestDistSq = distSquaredToLoc;
-					}
-				}
-			} else {
-				enemyVtols.push(t);
-			}
+			const flags = t.flags;
+			const objectType = t.type;
 
 			// Classify the object
-			if (t.flags & OBJ_FLAGS.ADA) {
+			if (flags & OBJ_FLAGS.ADA) {
 				proposedTargets["enemyADA"].push(t);
 				continue;
 			}
 
-			if (obj.type === DROID) {
-				if (t.flags & OBJ_FLAGS.CONSTRUCTOR) {
+			if (objectType === DROID) {
+				if (flags & OBJ_FLAGS.CONSTRUCTOR) {
 					proposedTargets["enemyConstructor"].push(t);
 					continue;
 				} 
 
-				if (t.flags & OBJ_FLAGS.INFANTRY) {
+				if (flags & OBJ_FLAGS.INFANTRY) {
 					proposedTargets["enemyInfantry"].push(t);		
 					continue;
 				}
 
-				if (t.flags & OBJ_FLAGS.AVIATION) {
+				if (flags & OBJ_FLAGS.AVIATION) {
 					proposedTargets["enemyAviation"].push(t);
 					continue;
 				}
 
-				if (t.flags & OBJ_FLAGS.INDIRECT_FIRE) {
+				if (flags & OBJ_FLAGS.INDIRECT_FIRE) {
 					// cyborg indirect (e.g. grenadier) & VTOL indirect (e.g. bombs) were filtered out earlier
 					proposedTargets["enemyIndirectFire"].push(t);
 					continue;
 				}
 
 				// This leaves only direct fire land vehicles & other utility vehicles e.g. sensors / commanders
-				if (t.flags & OBJ_FLAGS.ARMOUR) {
+				if (flags & OBJ_FLAGS.ARMOUR) {
 					proposedTargets["enemyArmor"].push(t);
 					continue;		
 				}
@@ -530,18 +329,18 @@ class armyIntelligence {
 				continue;
 			}
 
-			if (obj.type === STRUCTURE) {
-				if (t.flags & OBJ_FLAGS.INDIRECT_FIRE) {
+			if (objectType === STRUCTURE) {
+				if (flags & OBJ_FLAGS.INDIRECT_FIRE) {
 					proposedTargets["enemyIndirectFire"].push(t);
 					continue;
 				}
 				
-				if (t.flags & OBJ_FLAGS.DEFENSIVE_STRUCTURE) {
+				if (flags & OBJ_FLAGS.DEFENSIVE_STRUCTURE) {
 					proposedTargets["enemyDefenses"].push(t);
 					continue;
 				}
 
-				if (t.flags & OBJ_FLAGS.PRODUCTION) {
+				if (flags & (OBJ_FLAGS.PRODUCTION | OBJ_FLAGS.RESOURCE_EXTRACTOR | OBJ_FLAGS.POWER_GENERATOR)) {
 					proposedTargets["enemyIndustrial"].push(t);
 					continue;					
 				}
@@ -551,15 +350,36 @@ class armyIntelligence {
 			}
 		}
 
-		if (defined(closestObject)) {
-			proposedTargets["closestObject"] = closestObject;
-		} else {
-			// VTOLs are only directly targeted if no other targets exist
-			proposedTargets["closestObject"] = enemyVtols[0];
-		}
-
 		return proposedTargets;
 
 	}
 	
+	/**
+	 * Returns location of the closest enemy base. If none exists, returns the local player's `baseLocation`.
+	 * @param {worldState} state 
+	 * @param {number} x 
+	 * @param {number} y 
+	 */
+	findClosestEnemyBase(state, x, y) {
+		const bases = state.poi.bases;
+		const aliveEnemyPlayers = state.enumLivingPlayers().filter(isEnemy);
+
+		/** @type {PlayerHomeBaseObject[]} */
+		const enemyBases = [];
+		bases.forEach(b => {
+			if (b.isEnemy && aliveEnemyPlayers.includes(b.playerID)) {
+				enemyBases.push(b);
+			}
+		});
+
+		enemyBases.sort((a, b) => distSq(a.x, x, a.y, y) - distSq(b.x, x, b.y, y));
+		
+		if (enemyBases.length > 0) {
+			return enemyBases[0];
+		} else {
+			// debug(`${gameTime}: WARNING: closestEnemyBase not found - returning player's home base location instead.`);
+			return state.poi.bases[me];
+		}
+	}
+
 }

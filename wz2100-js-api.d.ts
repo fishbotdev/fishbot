@@ -609,7 +609,7 @@ This type will be one of DROID, STRUCTURE, FEATURE, AREA, GROUP or POSITION.
 
 If no object is found, ```null``` is returned.
  */
-declare function getObject(type: ObjectTypeType, player: number, id: string): (DroidObject | StructureObject | FeatureObject | null);
+declare function getObject(type: ObjectTypeType, player: number, id: number): (DroidObject | StructureObject | FeatureObject | null);
 
 /**
 ## setTimer(functionName, milliseconds[, object])

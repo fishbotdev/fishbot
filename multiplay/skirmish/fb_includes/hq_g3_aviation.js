@@ -20,8 +20,59 @@ class armyAviation {
 
 	}
 
+	#createAirStrikeRequest({missionType, target, priority, numAircraft}) {
+		return {
+			missionType: missionType,
+			target: target,
+			priority: priority,
+			numAircraft: numAircraft,
+		};
+	}
+
+	/**
+	 * Creates a request for a CAS mission from a provided `targetObject`.
+	 * @param {DroidObject | StructureObject | FeatureObject} targetObject 
+	 * @returns {AirStrikeMissionRequest}
+	 */
+	translateIntoCASRequest(targetObject, priority) {
+		return this.#createAirStrikeRequest({
+			'missionType': MISSION_TYPE.CAS_STRIKE, 
+			'target': targetObject,
+			'priority': priority,
+			'numAircraft': 2		
+		});
+	}
+	
+	/**
+	 * Creates a request for an air raid mission from a provided `targetObject`.
+	 * @param {DroidObject | StructureObject | FeatureObject} targetObject 
+	 * @returns {AirStrikeMissionRequest}
+	 */
+	translateIntoRaidRequest(targetObject, priority) {
+		return this.#createAirStrikeRequest({
+			'missionType': MISSION_TYPE.AIR_RAID, 
+			'target': targetObject,
+			'priority': priority,
+			'numAircraft': 2		
+		});
+	}
+
+	/**
+	 * Creates a request for an air raid mission from a provided `targetObject`.
+	 * @param {DroidObject | StructureObject | FeatureObject} targetObject 
+	 * @returns {AirStrikeMissionRequest}
+	 */
+	translateIntoDASRequest(targetObject, priority) {
+		return this.#createAirStrikeRequest({
+			'missionType': MISSION_TYPE.DAS_STRIKE, 
+			'target': targetObject,
+			'priority': priority,
+			'numAircraft': 2		
+		});
+	}
+
 	#createMissionOrders() {
-		let missionDataTemplate = {
+		return {
 			'id': undefined, 
 			'missionType': undefined, 
 			'missionStatus': MISSION_STATUS.FAILED_CREATION, 
@@ -34,8 +85,6 @@ class armyAviation {
 			
 			'target': undefined,
 		};
-
-		return missionDataTemplate;
 	}
 
 	#mcb(callback, ...args) {

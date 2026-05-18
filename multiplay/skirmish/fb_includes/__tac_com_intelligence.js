@@ -16,8 +16,20 @@
 */
 
 
+/**
+ * Uses `enumStruct` and `enumDroid` to gather intelligence directly from the game engine (common behaviour across all bots).
+ * Bot to be reworked in future to use imperfect intelligence.
+ * @param {number[] | undefined} playerIdList numeric array of player IDs `enumDroid` and `enumStruct` will be called on.
+ * @returns {PlayerInfoBucketObject[]}
+ */
 function getDroidsAndStructsByPlayer(playerIdList=undefined) {
-
+    /**
+     * Creates player bucket
+     * @param {number} id 
+     * @param {DroidObject[]} droids 
+     * @param {StructureObject[]} structs 
+     * @returns {PlayerInfoBucketObject}
+     */
     const createPlayerBucket = (id, droids, structs) => {return {'playerID': id, 'droids': droids, 'structs': structs}};  
 
     const objectsByPlayer = [];

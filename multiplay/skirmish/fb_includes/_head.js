@@ -25,6 +25,8 @@
 	TYPE DEFINITIONS
 */
 
+///////////////////////////////////////////// INTELLIGENCE /////////////////////////////////////////////
+
 /**
  * @typedef {Object} TargetObject
  * `TargetObject` is FishBot's implementation of a generic game object (naming could be better).
@@ -36,14 +38,26 @@
  * @property {number} gx
  * @property {number} gy
  * @property {number} priority
+ * 
+ * 
+ * @typedef {Object} PlayerInfoBucketObject
+ * @property {number} playerID
+ * @property {DroidObject[]} droids
+ * @property {StructureObject[]} structs
  */
 
+///////////////////////////////////////////// WORLD STATE /////////////////////////////////////////////
+
 /**
- * @typedef {Object} PositionInfo
- * Generic FishBot 'Position' object.
- * @property {number} x 
- * @property {number} y
- * @property {number} z map height at (x,y), obtained from `MapTiles[y][x].height`.
+ * Type definitions for `worldState.fields`.
+ * @typedef {Object} SpatialFieldsObject
+ * @property {number[][]} adaThreat
+ * @property {number[][]} enemyStaticDefenceThreat
+ * @property {number[][]} enemyUnitThreat
+ * @property {number[][]} distanceFromMyBase
+ * @property {number[][]} totalDerricksInCell
+ * @property {number[][]} unclaimedDerricksInCell
+ * @property {number[][]} controlStability
  */
 
 /**
@@ -68,6 +82,20 @@
  * @property {number} gy
  * @property {boolean} isEnemy
  * @property {number | undefined} playerID
+ */
+
+/**
+ * @typedef {Object} FbGridCell
+ * FishBot grid cell definition.
+ * @property {string} id
+ * @property {number} gx
+ * @property {number} gy
+ * @property {TargetObject[]} targetUnits
+ * @property {TargetObject[]} targetStructures
+ * @property {TargetObject[]} friendlyUnits
+ * @property {TargetObject[]} friendlyStructures
+ * @property {DerrickObject[]} derricks
+ * @property {PlayerHomeBaseObject[]} bases
  */
 
 /**
@@ -111,72 +139,58 @@
  */
 
 /**
+ * @typedef {Object} PositionInfo
+ * Generic FishBot 'Position' object.
+ * @property {number} x 
+ * @property {number} y
+ * @property {number} z map height at (x,y), obtained from `MapTiles[y][x].height`.
+ */
+
+/**
+ * @typedef {Object} NearbyTargets
+ * @property {TargetObject[]} enemyArmor
+ * @property {TargetObject[]} enemyInfantry
+ * @property {TargetObject[]} enemyIndirectFire
+ * @property {TargetObject[]} enemyADA
+ * @property {TargetObject[]} enemyAviation
+ * @property {TargetObject[]} enemyConstructor
+ * @property {TargetObject[]} enemyIndustrial
+ * @property {TargetObject[]} enemyUtility
+ * @property {TargetObject[]} enemyDefenses
+ * @property {number} targetsInImmediateRadius
+ * 
+ */
+
+/**
+ * @typedef {Object} AirStrikeMissionRequest
+ * @property {number} missionType
+ * @property {DroidObject | StructureObject | FeatureObject} target
+ * @property {number} priority
+ * @property {number} numAircraft
+ */
+
+/**
  * Type definitions for `worldState.brigades`.
- * @typedef {number} BrigadeIDType
- * 
- * @typedef {Object} TargetInfoSOA
- * @property {string[]} name
- * @property {Uint32Array} type
- * @property {Uint8Array} player
- * @property {Uint32Array} id
- * @property {Uint32Array} flags
- * @property {Uint32Array} gx
- * @property {Uint32Array} gy
- * @property {Uint8Array} priority
- * 
- * @typedef {Object} BrigadeInfo
- * @property {number} id brigade ID
- * @property {PositionInfo} position  
- * @property {TargetInfoSOA} nearbyTargets
+ * @typedef {Object} BrigadeMetadata
+ * @property {number} id This is the brigade ID (duplicate of the key).
+ * @property {PositionInfo} location  
+ * @property {NearbyTargets} nearbyTargets 
+ * @property {AirStrikeMissionRequest[]} casStrikeRequests
+ *  
+ * @typedef {{ [brigadeID: number]: BrigadeMetadata }} BrigadeInfo
+ *
+ */
+
+/** 
+ * @typedef {Object} BrigadeTargets
+ * @property {(DroidObject | StructureObject | FeatureObject)[]} directFireTargets
+ * @property {(DroidObject | StructureObject | FeatureObject)[]} fireSupportTargets
+ * @property {(DroidObject | StructureObject | FeatureObject)[]} adaTargets
+ * @property {AirStrikeMissionRequest[]} casTargets
  */
 
 /*
-    FISHBOT PARAMETERS
-*/
-
-const CAMPAIGN_STATUS = {
-	DEFENCE: 1,
-	COUNTERATTACK: 2,
-    BUILDUP: 3,
-	MANEUVER: 4,
-	STAGING: 5,
-	MAIN_ASSAULT: 6,
-	PURSUIT: 7,
-};
-Object.freeze(CAMPAIGN_STATUS);
-
-
-const campaignTransitions = {
-	// currently circular
-
-	'CompletedDefence': {
-		[CAMPAIGN_STATUS.DEFENCE]: CAMPAIGN_STATUS.COUNTERATTACK
-	},
-	'CompletedCounterattack': {
-		[CAMPAIGN_STATUS.COUNTERATTACK]: CAMPAIGN_STATUS.BUILDUP
-	},
-	'CompletedBuildup': {
-		[CAMPAIGN_STATUS.BUILDUP]: CAMPAIGN_STATUS.STAGING
-	},
-	// 'CompletedManeuver': {
-	// 	[CAMPAIGN_STATUS.MANEUVER]: CAMPAIGN_STATUS.STAGING
-	// },
-	'CompletedStaging': {
-		[CAMPAIGN_STATUS.STAGING]: CAMPAIGN_STATUS.MAIN_ASSAULT
-	},
-	'CompletedMainAssault': {
-		[CAMPAIGN_STATUS.MAIN_ASSAULT]: CAMPAIGN_STATUS.PURSUIT
-	},
-	'CompletedPursuit': {
-		[CAMPAIGN_STATUS.PURSUIT]: CAMPAIGN_STATUS.BUILDUP
-	}
-
-}
-Object.freeze(campaignTransitions);
-
-
-/*
-	TOC (Tactical Operations Center) PARAMETERS
+    MISSION CONSTANTS
 */
 
 const MISSION_STATUS = {
@@ -200,48 +214,6 @@ const MISSION_PRIORITY = {
 };
 Object.freeze(MISSION_PRIORITY);
 
-
-const OBJ_FLAGS = {
-    // unit classes
-    ARMOUR:        				1 << 0,
-    INFANTRY:    				1 << 1,
-    INDIRECT_FIRE:     			1 << 2,
-    AVIATION:          			1 << 3,
-	ADA: 						1 << 4,
-
-	MACHINEGUN_WEAPON: 			1 << 5,
-	FLAMER_WEAPON:				1 << 6,
-	CANNON_WEAPON:				1 << 7,
-	AT_ROCKET_WEAPON:			1 << 8,
-	VTOL_ARTILLERY_WEAPON:		1 << 9,
-	SHORT_RANGE_ARTILLERY_WEP:	1 << 10,		
-	LONG_RANGE_ARTILLERY_WEP:	1 << 11,
-    AA_DIRECT_FIRE_WEAPON:      1 << 12,
-	AA_ROCKET_WEAPON:			1 << 13,
-	LASER_WEAPON:				1 << 14,
-	UNCLASSIFIED_WEAPON_TYPE:	1 << 15,
-
-	// propulsion
-	CYBORG_PROPULSION: 			1 << 16,
-	TRACKED_PROPULSION: 		1 << 17,
-	HALF_TRACKED_PROPULSION: 	1 << 18,
-	HOVER_PROPULSION: 			1 << 19,
-	WHEELED_PROPULSION: 		1 << 20,
-	VTOL_PROPULSION: 			1 << 21,
-
-	// capabilities
-    CONSTRUCTOR:      			1 << 22,
-	REPAIR:						1 << 23,
-
-    // structures
-    PRODUCTION:   				1 << 24,
-	RESEARCH: 					1 << 25,
-	POWER_GENERATOR:			1 << 26,
-    RESOURCE_EXTRACTOR:       	1 << 27,
-    DEFENSIVE_STRUCTURE:      	1 << 28,
-	IS_BUILT:					1 << 29,
-};
-Object.freeze(OBJ_FLAGS);
 
 const MISSION_TYPE = {
 	ABORT_MISSION: 0,
@@ -303,8 +275,9 @@ Object.freeze(MISSION_TYPE);
 Object.freeze(CONSTRUCTION_MISSION_TYPES);
 Object.freeze(AVIATION_MISSION_TYPES);
 
+
 /*
-    COMBAT FORCE PARAMETERS
+    COMBAT FORCE CONSTANTS
 */
 const DIVISION = {
 	AIR_RESERVE: 1000,
@@ -328,10 +301,54 @@ const DIVISION = {
 };
 Object.freeze(DIVISION);
 
+const BRIGADE_IDS = [DIVISION.FIRST_BCT, DIVISION.SECOND_BCT, DIVISION.THIRD_BCT, DIVISION.FOURTH_BCT, DIVISION.FIFTH_BCT];
+
 /*
-    LOGISTICS PARAMETERS
+    LOGISTICS CONSTANTS
 */
 const ENGINEERING = {
     ENGINEERING_RESERVE: 5000,
 }
 Object.freeze(ENGINEERING);
+
+const OBJ_FLAGS = {
+    // unit classes
+    ARMOUR:        				1 << 0,
+    INFANTRY:    				1 << 1,
+    INDIRECT_FIRE:     			1 << 2,
+    AVIATION:          			1 << 3,
+	ADA: 						1 << 4,
+
+	MACHINEGUN_WEAPON: 			1 << 5,
+	FLAMER_WEAPON:				1 << 6,
+	CANNON_WEAPON:				1 << 7,
+	AT_ROCKET_WEAPON:			1 << 8,
+	VTOL_ARTILLERY_WEAPON:		1 << 9,
+	SHORT_RANGE_ARTILLERY_WEP:	1 << 10,		
+	LONG_RANGE_ARTILLERY_WEP:	1 << 11,
+    AA_DIRECT_FIRE_WEAPON:      1 << 12,
+	AA_ROCKET_WEAPON:			1 << 13,
+	LASER_WEAPON:				1 << 14,
+	UNCLASSIFIED_WEAPON_TYPE:	1 << 15,
+
+	// propulsion
+	CYBORG_PROPULSION: 			1 << 16,
+	TRACKED_PROPULSION: 		1 << 17,
+	HALF_TRACKED_PROPULSION: 	1 << 18,
+	HOVER_PROPULSION: 			1 << 19,
+	WHEELED_PROPULSION: 		1 << 20,
+	VTOL_PROPULSION: 			1 << 21,
+
+	// capabilities
+    CONSTRUCTOR:      			1 << 22,
+	REPAIR:						1 << 23,
+
+    // structures
+    PRODUCTION:   				1 << 24,
+	RESEARCH: 					1 << 25,
+	POWER_GENERATOR:			1 << 26,
+    RESOURCE_EXTRACTOR:       	1 << 27,
+    DEFENSIVE_STRUCTURE:      	1 << 28,
+	IS_BUILT:					1 << 29,
+};
+Object.freeze(OBJ_FLAGS);

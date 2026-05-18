@@ -162,7 +162,7 @@ class fbGrid {
     constructor(numXCells=null, numYCells=null) {
         this.cellSize = 10;     // in game tiles
 
-        if (numXCells == undefined || numYCells == undefined) {    
+        if (numXCells == null || numYCells == null) {    
             this.numXCells = Math.ceil(mapWidth / this.cellSize);
             this.numYCells = Math.ceil(mapHeight / this.cellSize);
         } else {
@@ -170,35 +170,28 @@ class fbGrid {
             this.numYCells = numYCells;
         }
 
-        const createStandardGridCell = (gx, gy) => this.createNewFbGridCell(gx, gy);
-        this.grid = create2DGrid(this.numXCells, this.numYCells, createStandardGridCell);        
+        const createStandardFbGridCell = (gx, gy) => this.createNewFbGridCell(gx, gy);
+        /** @type {FbGridCell[][]} */
+        this.grid = create2DGrid(this.numXCells, this.numYCells, createStandardFbGridCell);        
     }
 
     /**
      * Default factory function to create a new `fbGrid` grid cell.
      * @param {number} gx 
      * @param {number} gy 
-     * @returns 
+     * @returns {FbGridCell}
      */
     createNewFbGridCell(gx, gy) {
+        /** @type {FbGridCell} */
         return {
             'id': `${gx}_${gy}`,    
             'gx': gx,
             'gy': gy,    
-
-            /** @type {TargetObject[]} */
             'targetUnits': [],
-            /** @type {TargetObject[]} */
             'targetStructures': [],
-
-            /** @type {TargetObject[]} */
             'friendlyUnits': [],
-            /** @type {TargetObject[]} */
             'friendlyStructures': [],
-
-            /** @type {DerrickObject[]} */
             'derricks': [],
-            /** @type {PlayerHomeBaseObject[]} */
             'bases': []
         }
     }
@@ -212,13 +205,16 @@ class fbGrid {
      * @returns Object containing droids[], structs[], closestDroid: DroidObject and closestStruct: StructureObject
      */
     enumRange(x, y, radius) {
-        let results = {
+        const results = {
+            /** @type {TargetObject[]} */
             'targetUnits': [],
+            /** @type {TargetObject[]} */
             'targetStructures': [],
             'closestTargetUnit': undefined,
             'closestTargetStructure': undefined,
 
             // 'friendlyUnits': [],
+            /** @type {TargetObject[]} */
             'friendlyStructures': [],
         };
 
@@ -252,7 +248,7 @@ class fbGrid {
                 // Get corresponding grid entry
                 this.grid[gx][gy]['targetUnits'].forEach(t => {
                     const obj = getObject(t.type, t.player, t.id);
-                    if (!defined(obj)) {
+                    if (obj == null) {
                         return;
                     }
                     const d = distSq(x, obj.x, y, obj.y);
@@ -260,25 +256,25 @@ class fbGrid {
                         return;
                     }
                     results['targetUnits'].push(t);
-                    
+
                     if (!(t.flags & OBJ_FLAGS.AVIATION)) {
                         if (!defined(closestDroid)) {
                             closestDroid = obj;
-                            closestDroidDistSq = d;
-                            return;
-                        }
+                        closestDroidDistSq = d;
+                        return;
+                    }
 
-                        if (d < closestDroidDistSq) {
+                    if (d < closestDroidDistSq) {
                             closestDroid = obj;
-                            closestDroidDistSq = d;
-                        }
+                        closestDroidDistSq = d;
+                    }
                     }
                 });
                 results['closestTargetUnit'] = closestDroid;
                 
                 this.grid[gx][gy]['targetStructures'].forEach(t => {
                     const obj = getObject(t.type, t.player, t.id);
-                    if (!defined(obj)) {
+                    if (obj == null) {
                         return;
                     }
                     const d = distSq(x, obj.x, y, obj.y);
@@ -297,12 +293,12 @@ class fbGrid {
                         closestStruct = obj;
                         closestStructDistSq = d;
                     }
-                });
+                });     
                 results['closestTargetStructure'] = closestStruct;     
                 
                 this.grid[gx][gy]['friendlyStructures'].forEach(t => {
                     const obj = getObject(t.type, t.player, t.id);
-                    if (!defined(obj)) {
+                    if (obj == null) {
                         return;
                     }
                     const d = distSq(x, obj.x, y, obj.y);
@@ -319,15 +315,29 @@ class fbGrid {
 }
 
 
+/**
+ *  `worldState`: this class stores the game state from FishBot's perspective.
+ *   All functions in FishBot use this class as the current ground truth.
+ */
 class worldState {
-    // State: this class stores the game state from FishBot's perspective.
-    // All functions in FishBot use this class as the current ground truth.
     constructor() {
 
-        // Grid system (new)
-        /** @type {fbGrid} */
+        ////////////////////////// SPATIAL AWARENESS //////////////////////////
+        /**
+         *  The "grid" is the core component of FishBot's spatial awareness system. 
+         *  @type {fbGrid} 
+         */
         this.grid = new fbGrid();
 
+        /**
+         *  Spatial fields, derived from the dimensions of the grid, are used for decision making.
+         *  @type {SpatialFieldsObject} 
+         */
+        this.fields;
+
+        /**
+         *  This object stores data about fixed points of interest on the game map.
+         */
         this.poi = {
             /** @type {DerrickObject[]} */
             'derricks': [], 
@@ -335,48 +345,34 @@ class worldState {
             'bases': []
         };
 
-        const createZeroCell = (...args) => {return 0;};
-        const createGridWithZeros = () => {return create2DGrid(this.grid.numXCells, this.grid.numYCells, createZeroCell);};
-        this.fields = {
-            'adaThreat': createGridWithZeros(),
-            'enemyStaticDefenceThreat': createGridWithZeros(),
-            'enemyUnitThreat': createGridWithZeros(),
-            'distanceFromMyBase': createGridWithZeros(),
-            'totalDerricksInCell': createGridWithZeros(),
-            'unclaimedDerricksInCell': createGridWithZeros(),
-            'controlStability': createGridWithZeros(),
-        };
-
-        // Player statistics / custom metadata
+        ////////////////////////// PLAYER STATISTICS / CUSTOM METADATA //////////////////////////
         /** 
          * The numeric array index is the same as the player ID, so `state.playerInfo[me].numTrucks` is a possible & accepted access pattern.
          * @type {PlayerStatsObject[]} 
          */
-        this.playerInfo = [];
+        this.playerInfo;
 
         // Game statistics
         this.REPAIR_FACILITY_HARD_CAP = 3; // getStructureLimit(STRUCTURES["Repair Facility"].id);      // TODO: Fix this when this function is fixed.
 
         // Combat targeting
-        this.allTargets = [];
-        this.forceLocations = [];           // list of brigade locations: [{brigadeID: '', location: {'x': 0, 'y': 0}}]
-        this.nearbyGroundTargets = [];      // nearbyTargets (list); ordered by brigade designation
+        /** @type {BrigadeInfo} */
+        this.brigades = {};
+
         this.aviationTargets = {
+            /** @type {AirStrikeMissionRequest[]} */
             'raidTargets': [],
-            'casTargets': [],
 
             // 4 types of targets around enemy bases
+            /** @type {AirStrikeMissionRequest[]} */
             'productionTargets': [],
+            /** @type {AirStrikeMissionRequest[]} */
             'adaTargets': [],
+            /** @type {AirStrikeMissionRequest[]} */
             'indirectFireTargets': [],
+            /** @type {AirStrikeMissionRequest[]} */
             'defensiveStructureTargets': []
         }; 
-
-        /**
-         * Buffers to store brigade combat team information (is constantly updated).
-         * @type {Object.<BrigadeIDType, BrigadeInfo>} 
-         */
-        this.brigades = {};
 
         // Mission management system
         /** @type {fbGroup} */
@@ -458,6 +454,29 @@ class worldStateBuilder {
     }
 
     /**
+     * Factory function to initialise `state.fields`. Note that `state.grid` must be initialised before this.
+     * @param {worldState} state 
+     * @returns {SpatialFieldsObject}
+     */
+    #initialiseSpatialFields(state) {
+        const numXCells = state.grid.numXCells;
+        const numYCells = state.grid.numYCells;
+
+        const createZeroCell = () => {return 0;};
+        const createGridWithZeros = () => {return create2DGrid(numXCells, numYCells, createZeroCell);};
+
+        return {
+            'adaThreat': createGridWithZeros(),
+            'enemyStaticDefenceThreat': createGridWithZeros(),
+            'enemyUnitThreat': createGridWithZeros(),
+            'distanceFromMyBase': createGridWithZeros(),
+            'totalDerricksInCell': createGridWithZeros(),
+            'unclaimedDerricksInCell': createGridWithZeros(),
+            'controlStability': createGridWithZeros(),
+        };
+    }
+
+    /**
      * Factory function to create a 'DerrickObject'.
      * @param {number} x 
      * @param {number} y 
@@ -525,7 +544,7 @@ class worldStateBuilder {
 
             'isEnemy': isEnemy(playerID),
             'playerID': playerID,
-        }
+        };
     }
 
     /**
@@ -537,6 +556,10 @@ class worldStateBuilder {
         const cellSize = state.grid.cellSize;
 
         const b = [];
+
+        if (startPositions.length !== maxPlayers) {
+            debug(`WARNING: ${startPositions.length} !== ${maxPlayers}! Weird behaviour may result: e.g. playerInfo might be unsynced with base locations.`);
+        }
 
         for (let i=0; i<startPositions.length; i++) {
             const x = startPositions[i].x;
@@ -554,7 +577,7 @@ class worldStateBuilder {
     /**
      * Factory function used to initialise `state.playerInfo`.
      * @param {worldState} state 
-     * @returns 
+     * @returns {PlayerStatsObject[]}
      */
     #initialisePlayerInfo(state) {
         const p = [];
@@ -592,51 +615,52 @@ class worldStateBuilder {
 
     /**
      * Factory function to create buffers for `state.brigades`.
-     * @returns {Object.<BrigadeIDType, BrigadeInfo>} 
+     * @param {worldState} state
+     * @returns {BrigadeInfo} 
      */
-    #initialiseBrigades() {
-        const BRIGADE_DESIGNATIONS = [DIVISION.FIRST_BCT, DIVISION.SECOND_BCT, DIVISION.THIRD_BCT, DIVISION.FOURTH_BCT, DIVISION.FIFTH_BCT];
+    #initialiseBrigades(state) {
 
-        // This is performance critical (hundreds (up to 1000 objects), updated every second or so).
-        // As such, preallocated arrays are now used (instead of a standard Array) for minimal internal memory overhead and no garbage collector.
-        // For ~7 numeric arrays & manual array of strings, memory demand (theoretical) is approximately ~40kB *per brigade*.
-        
-        const PREALLOCATED_SLOTS = 1024;        // 1kb per array if each slot is a byte (~4kb per array where each slot is a 32bit float / uint)
+        /** @returns {TargetObject[]} */
+        const createTargetObjectArray = () => [];
 
-        /**
-         * Creates a buffer to store targeting information.
-         * @returns {TargetInfoSOA} 
-         */
-        const createNewTargetArray = () => {
+        /** @returns {NearbyTargets} */
+        const createNearbyTargetsArray = () => {
             return {
-                'name': new Array(PREALLOCATED_SLOTS),                  // For debug reasons: if memory becomes an issue, please consider removing (32 characters ~32kb memory) -> comparable memory needed to store the rest of the parameters)
-                'type': new Uint32Array(PREALLOCATED_SLOTS),            // line ~66 of `warzone2100/src/basedef.h`; OBJECT_TYPE enum, assume it defaults to int
-                'player': new Uint8Array(PREALLOCATED_SLOTS),           // line ~70 of `warzone2100/src/basedef.h`
-                'id': new Uint32Array(PREALLOCATED_SLOTS),              // line ~67 of `warzone2100/src/basedef.h`
-                'flags': new Uint32Array(PREALLOCATED_SLOTS),           // 31 bits in the current implementation (~v0.4.0)
-                'gx': new Uint32Array(PREALLOCATED_SLOTS),              // Unsigned integer (can be up to global `mapWidth` if `fbGrid.cellSize` is set to 1)
-                'gy': new Uint32Array(PREALLOCATED_SLOTS),              // Unsigned integer (can be up to global `mapHeight` if `fbGrid.cellSize` is set to 1)
-                'priority': new Uint8Array(PREALLOCATED_SLOTS)          // 1 byte
-            };            
+                'enemyArmor': createTargetObjectArray(),
+                'enemyInfantry': createTargetObjectArray(), 
+                'enemyIndirectFire': createTargetObjectArray(), 
+                'enemyADA': createTargetObjectArray(), 
+                'enemyDefenses': createTargetObjectArray(),
+                'enemyConstructor': createTargetObjectArray(), 
+                'enemyIndustrial': createTargetObjectArray(), 
+                'enemyUtility': createTargetObjectArray(), 
+                'enemyAviation': createTargetObjectArray(), 
+                'targetsInImmediateRadius': 0
+            };
         };
+
+        /** @returns {AirStrikeMissionRequest[]} */
+        const createCASStrikeRequests = () => [];
 
         /**
          * Creates an empty brigade object.
          * @param {number} brigadeID 
-         * @returns {BrigadeInfo} 
+         * @returns {BrigadeMetadata} 
          */
         const createNewBrigadeObject = (brigadeID) => {
             const x = baseLocation.x, y = baseLocation.y;
             return {
                 'id': brigadeID,
-                'position': {'x': x, 'y': y, 'z': MapTiles[y][x].height},
-                'nearbyTargets': createNewTargetArray()
+                'location': {'x': x, 'y': y, 'z': MapTiles[y][x].height},
+                'nearbyTargets': createNearbyTargetsArray(),
+                'casStrikeRequests': createCASStrikeRequests(),                
             };
         };
 
+        /** @type {BrigadeInfo} */
         const brigades = {};
 
-        BRIGADE_DESIGNATIONS.forEach(id => {
+        BRIGADE_IDS.forEach(id => {
             brigades[id] = createNewBrigadeObject(id);
         });
 
@@ -657,19 +681,24 @@ class worldStateBuilder {
 
         state.g = this.#initialiseFbGroupingSystem();
 
+        state.fields = this.#initialiseSpatialFields(state);
+
         state.poi.derricks = this.#initialiseDerrickLocs(state);   
         state.poi.derricks.forEach(d => {
+            // Write the same reference to the grid.
             state.grid.grid[d.gx][d.gy].derricks.push(d);
             state.fields['totalDerricksInCell'][d.gx][d.gy]++;
         }); 
 
         state.poi.bases = this.#initialiseBaseLocs(state); 
         state.poi.bases.forEach(b => {
+            // Write the same reference to the grid.
             state.grid.grid[b.gx][b.gy].bases.push(b);
         });         
 
         state.playerInfo = this.#initialisePlayerInfo(state);
 
-        state.brigades = this.#initialiseBrigades();
+        state.brigades = this.#initialiseBrigades(state);
+
     }
 }
