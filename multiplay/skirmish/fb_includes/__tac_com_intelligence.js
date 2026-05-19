@@ -204,28 +204,30 @@ function classifyGameObject(obj) {
 }
 
 /**
- * Creates a new `target` object.
- * @param {BaseObject} targetObject 
+ * Creates a (reduced) FishBot game object.
+ * @param {BaseObject} object 
  * @param {number} flags 
+ * @param {number} x 
+ * @param {number} y 
  * @param {number} gx 
  * @param {number} gy 
- * @returns {TargetObject}
+ * @returns {FbObject}
  */
-function createNewTarget(targetObject, flags=0, gx=0, gy=0) {
+function createFbObject(object, flags, x, y, gx, gy) {
+    /** @type {FbObject} */
     return {
-        'name': targetObject.name,
+        'name': object.name,
 
         // These 3 parameters allow 'getObject' to be used at a later point to retrieve up-to-date object information
-        'type': targetObject.type,
-        'player': targetObject.player,
-        'id': targetObject.id,
+        'type': object.type,
+        'player': object.player,
+        'id': object.id,
 
         'flags': flags,
+        'x': x,
+        'y': y,
         'gx': gx,
         'gy': gy,
-
-        // This is used by the mission management system to store the priority at the time of assignment
-        'priority': MISSION_PRIORITY.LOW,
     };
 }
 

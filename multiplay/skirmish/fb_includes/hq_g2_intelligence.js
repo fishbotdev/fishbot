@@ -106,7 +106,7 @@ class armyIntelligence {
 				continue;
 			}
 
-			const nearby = state.grid.enumRange(d.x, d.y, SEARCH_RADIUS);
+			const nearby = state.grid.enumRangeLazy(d.x, d.y, SEARCH_RADIUS);
 			resetTargetBuffersInPlace();
 
 			nearby['targetStructures'].forEach(t => {
@@ -180,7 +180,7 @@ class armyIntelligence {
 				continue;
 			}
 
-			const nearby = state.grid.enumRange(bases[i].x, bases[i].y, SEARCH_RADIUS);		
+			const nearby = state.grid.enumRangeLazy(bases[i].x, bases[i].y, SEARCH_RADIUS);		
 
 			nearby['targetStructures'].forEach(t => {
 				const flags = t.flags;
@@ -235,19 +235,14 @@ class armyIntelligence {
 	}
 	
 	/** 
-	 * This function performs these roles:
-	 *	- finding the closest droid
-	 *	- calculating how many targets are in the immediate radius
-	 *	- classifying each object into different, useful categories
-	 *	- compressing each gameObject for efficient storage & use
-	 * with O(N) algorithmic complexity. 
-	 * 
+	 * This function classifies each object in `searchRadius` of (`x`, `y`) into useful categories.
+	 * It does not need to call `getObject` to get up-to-date position data as the caller function will now perform that role.
 	 * @param {worldState} state
 	 * @param {PositionInfo} loc
 	 * @param {number} searchRadius
 	 * @returns {Object}
 	 */
-	proposeTargetsInRadius2(state, loc, searchRadius) {
+	getTargetClassesInRadius(state, loc, searchRadius) {
 
 		/** @type {NearbyTargets} */
 		const proposedTargets = {
@@ -260,7 +255,6 @@ class armyIntelligence {
 			'enemyIndustrial': [], 
 			'enemyUtility': [], 
 			'enemyDefenses': [],
-			'targetsInImmediateRadius': 0
 		};		
 
 		const LOC_X = loc.x;
@@ -270,10 +264,10 @@ class armyIntelligence {
 		 * @param {number} x 
 		 * @param {number} y 
 		 * @param {number} searchRadius 
-		 * @returns {TargetObject[]}
+		 * @returns {FbObject[]}
 		 */
 		const getTargetsNear = (x, y, searchRadius) => {
-			const nearby = state.grid.enumRange(x, y, searchRadius); 
+			const nearby = state.grid.enumRangeLazy(x, y, searchRadius); 
 			return [...nearby['targetUnits'], ...nearby['targetStructures']];
 		};
 
@@ -284,7 +278,6 @@ class armyIntelligence {
 			return proposedTargets;
 		}
 
-		// Note: `grid.enumRange` returns a fresh entry (it uses `getObject` internally), so there is no need for this function to use it too.
 		for (let i=0; i<targetObjects.length; i++) {
 			const t = targetObjects[i];
 

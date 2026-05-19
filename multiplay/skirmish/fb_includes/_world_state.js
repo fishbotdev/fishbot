@@ -197,120 +197,64 @@ class fbGrid {
     }
 
     /**
-     * Custom enumRange for FishBot; this uses FishBot's grid system. 
-     * The intent is to optimise for speed.
+     * More computationally efficient `grid.enumRange`. Compared to the standard `enumRange`, the tradeoff is to sacrifice positional accuracy for speed. 
+     * The calling function must handle potentially stale outputs, particularly if the grid is not updated that often.
      * @param {number} x central x-coord (game tiles)
      * @param {number} y central y-coord (game tiles)
      * @param {number} radius radial distance, inclusive (game tiles)
-     * @returns Object containing droids[], structs[], closestDroid: DroidObject and closestStruct: StructureObject
+     * @returns {EnumRangeLazyResult}
      */
-    enumRange(x, y, radius) {
-        const results = {
-            /** @type {TargetObject[]} */
+    enumRangeLazy(x, y, radius) {
+        /** @type {EnumRangeLazyResult} */
+        const result = {
             'targetUnits': [],
-            /** @type {TargetObject[]} */
             'targetStructures': [],
-            'closestTargetUnit': undefined,
-            'closestTargetStructure': undefined,
-
-            // 'friendlyUnits': [],
-            /** @type {TargetObject[]} */
+            'friendlyUnits': [],
             'friendlyStructures': [],
         };
 
         if (!defined(this.grid)) {
             debug(`WARNING: grid.enumRange() could not read from undefined grid.`);
-            return results;
+            return result;
         }
-
-        // Initialise closest droid / struct calculation
-        let closestDroidDistSq = 0, closestStructDistSq = 0;
-        let closestDroid = undefined, closestStruct = undefined;
 
         const cx = Math.floor(x / this.cellSize);
         const cy = Math.floor(y / this.cellSize);
         const gr = Math.ceil(radius / this.cellSize);
+        
+        const RADIUS_SQ = radius ** 2;
+
+        /** @param {FbObject} obj */
+        const insideSpecifiedRadius = (obj) => {
+            const DISTANCE_SQ = distSq(x, obj.x, y, obj.y);
+            if (DISTANCE_SQ <= RADIUS_SQ) {
+                return true;
+            } else {
+                return false;
+            }
+        };
 
         for (let dx = -gr; dx <= gr; dx++) {
             for (let dy = -gr; dy <= gr; dy++) {
 
-                // Compute deviations & test validity
                 const gx = cx + dx;
-                if (gx < 0 || gx >= this.numXCells) {
+                if (gx < 0 || gx >= this.numXCells) {   // valid check is '>= this.numXCells' because of 0 indexing: [0, 1, ..., numXCells - 1] are valid
                     continue;
                 }
                 
                 const gy = cy + dy;
-                if (gy < 0 || gy >= this.numYCells) {       // >= because of 0 indexing: [0, 1, ..., numYCells - 1]
+                if (gy < 0 || gy >= this.numYCells) {       
                     continue;
                 }
 
-                // Get corresponding grid entry
-                this.grid[gx][gy]['targetUnits'].forEach(t => {
-                    const obj = getObject(t.type, t.player, t.id);
-                    if (obj == null) {
-                        return;
-                    }
-                    const d = distSq(x, obj.x, y, obj.y);
-                    if (d > radius ** 2) {
-                        return;
-                    }
-                    results['targetUnits'].push(t);
-
-                    if (!(t.flags & OBJ_FLAGS.AVIATION)) {
-                        if (!defined(closestDroid)) {
-                            closestDroid = obj;
-                        closestDroidDistSq = d;
-                        return;
-                    }
-
-                    if (d < closestDroidDistSq) {
-                            closestDroid = obj;
-                        closestDroidDistSq = d;
-                    }
-                    }
-                });
-                results['closestTargetUnit'] = closestDroid;
-                
-                this.grid[gx][gy]['targetStructures'].forEach(t => {
-                    const obj = getObject(t.type, t.player, t.id);
-                    if (obj == null) {
-                        return;
-                    }
-                    const d = distSq(x, obj.x, y, obj.y);
-                    if (d > radius ** 2) {
-                        return;
-                    }
-                    results['targetStructures'].push(t);
-
-                    if (!defined(closestStruct)) {
-                        closestStruct = obj;
-                        closestStructDistSq = d;
-                        return;
-                    }
-
-                    if (d < closestStructDistSq) {
-                        closestStruct = obj;
-                        closestStructDistSq = d;
-                    }
-                });     
-                results['closestTargetStructure'] = closestStruct;     
-                
-                this.grid[gx][gy]['friendlyStructures'].forEach(t => {
-                    const obj = getObject(t.type, t.player, t.id);
-                    if (obj == null) {
-                        return;
-                    }
-                    const d = distSq(x, obj.x, y, obj.y);
-                    if (d > radius ** 2) {
-                        return;
-                    }
-                    results['friendlyStructures'].push(t);
-                });
+                result['targetUnits'].push(...this.grid[gx][gy]['targetUnits'].filter(insideSpecifiedRadius));
+                result['targetStructures'].push(...this.grid[gx][gy]['targetStructures'].filter(insideSpecifiedRadius));
+                result['friendlyStructures'].push(...this.grid[gx][gy]['friendlyUnits'].filter(insideSpecifiedRadius));
+                result['friendlyStructures'].push(...this.grid[gx][gy]['friendlyStructures'].filter(insideSpecifiedRadius));
             }                
         }
 
-        return results;
+        return result;
     }
 }
 
@@ -620,7 +564,7 @@ class worldStateBuilder {
      */
     #initialiseBrigades(state) {
 
-        /** @returns {TargetObject[]} */
+        /** @returns {FbObject[]} */
         const createTargetObjectArray = () => [];
 
         /** @returns {NearbyTargets} */
@@ -635,7 +579,6 @@ class worldStateBuilder {
                 'enemyIndustrial': createTargetObjectArray(), 
                 'enemyUtility': createTargetObjectArray(), 
                 'enemyAviation': createTargetObjectArray(), 
-                'targetsInImmediateRadius': 0
             };
         };
 

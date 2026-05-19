@@ -28,16 +28,17 @@
 ///////////////////////////////////////////// INTELLIGENCE /////////////////////////////////////////////
 
 /**
- * @typedef {Object} TargetObject
+ * @typedef {Object} FbObject
  * `TargetObject` is FishBot's implementation of a generic game object (naming could be better).
  * @property {string} name
  * @property {number} type
  * @property {number} player
  * @property {number} id
  * @property {number} flags
- * @property {number} gx
- * @property {number} gy
- * @property {number} priority
+ * @property {number} x (stale) x coordinate
+ * @property {number} y (stale) y coordinate
+ * @property {number} gx (stale) grid x coordinate
+ * @property {number} gy (stale) grid y coordinate
  * 
  * 
  * @typedef {Object} PlayerInfoBucketObject
@@ -90,12 +91,20 @@
  * @property {string} id
  * @property {number} gx
  * @property {number} gy
- * @property {TargetObject[]} targetUnits
- * @property {TargetObject[]} targetStructures
- * @property {TargetObject[]} friendlyUnits
- * @property {TargetObject[]} friendlyStructures
+ * @property {FbObject[]} targetUnits
+ * @property {FbObject[]} targetStructures
+ * @property {FbObject[]} friendlyUnits
+ * @property {FbObject[]} friendlyStructures
  * @property {DerrickObject[]} derricks
  * @property {PlayerHomeBaseObject[]} bases
+ */
+
+/**
+ * @typedef {Object} EnumRangeLazyResult 
+ * @property {FbObject[]} targetUnits
+ * @property {FbObject[]} targetStructures
+ * @property {FbObject[]} friendlyUnits
+ * @property {FbObject[]} friendlyStructures
  */
 
 /**
@@ -130,11 +139,11 @@
  * @property {number} numRepairFacilities
  * 
  * // Intended to be used for getting idle structures for Production & Research, and for demolishing Repair Facilities
- * @property {TargetObject[]} normalFactoryFbObjects
- * @property {TargetObject[]} cyborgFactoryFbObjects
- * @property {TargetObject[]} vtolFactoryFbObjects
- * @property {TargetObject[]} researchFacilityFbObjects
- * @property {TargetObject[]} repairFacilityFbObjects
+ * @property {FbObject[]} normalFactoryFbObjects
+ * @property {FbObject[]} cyborgFactoryFbObjects
+ * @property {FbObject[]} vtolFactoryFbObjects
+ * @property {FbObject[]} researchFacilityFbObjects
+ * @property {FbObject[]} repairFacilityFbObjects
  * 
  */
 
@@ -148,16 +157,15 @@
 
 /**
  * @typedef {Object} NearbyTargets
- * @property {TargetObject[]} enemyArmor
- * @property {TargetObject[]} enemyInfantry
- * @property {TargetObject[]} enemyIndirectFire
- * @property {TargetObject[]} enemyADA
- * @property {TargetObject[]} enemyAviation
- * @property {TargetObject[]} enemyConstructor
- * @property {TargetObject[]} enemyIndustrial
- * @property {TargetObject[]} enemyUtility
- * @property {TargetObject[]} enemyDefenses
- * @property {number} targetsInImmediateRadius
+ * @property {FbObject[]} enemyArmor
+ * @property {FbObject[]} enemyInfantry
+ * @property {FbObject[]} enemyIndirectFire
+ * @property {FbObject[]} enemyADA
+ * @property {FbObject[]} enemyAviation
+ * @property {FbObject[]} enemyConstructor
+ * @property {FbObject[]} enemyIndustrial
+ * @property {FbObject[]} enemyUtility
+ * @property {FbObject[]} enemyDefenses
  * 
  */
 

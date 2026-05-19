@@ -182,7 +182,7 @@ class CommandCenter {
 					const brigadeLocation = groundForces.getForceMedianLocation(brigadeID);
 					this.toc.setBrigadeLocation(state, brigadeID, brigadeLocation);
 
-					const nearbyTargets = intelligence.proposeTargetsInRadius2(state, brigadeLocation, this.TARGET_SEARCH_RADIUS);
+					const nearbyTargets = intelligence.getTargetClassesInRadius(state, brigadeLocation, this.TARGET_SEARCH_RADIUS);
 					this.toc.addBrigadeTargets(state, brigadeID, nearbyTargets);
 				});
 				break;
@@ -248,15 +248,15 @@ class CommandCenter {
 
 		const brigadeInfo = state.brigades[brigadeID]; 
 		const POSITION = brigadeInfo['location'];
-		const TARGETS = brigadeInfo['nearbyTargets'];		// Note: this has pre-classified targets in radius!
+		const TARGETS = brigadeInfo['nearbyTargets'];		
 
 		if (this.#noTargetsAvailable(TARGETS)) {
 			return brigadeTargets;
 		}
 
 		/**
-		 * Gets a fresh object list. TODO: REMOVE GETOBJECT FROM ENUMRANGE 
-		 * @param {TargetObject[]} targetObjectList
+		 * Gets a fresh object list.
+		 * @param {FbObject[]} targetObjectList
 		 * @returns {(StructureObject | DroidObject | FeatureObject)[]}
 		 */
 		const getObjectList = (targetObjectList) => {
@@ -291,7 +291,6 @@ class CommandCenter {
 				return false;
 			}
 		}
-
 
 		// Direct Fire Targeting
 		// Intent: make it as clear as possible what the priorities are (even if the same lists are looped through multiple times)

@@ -200,14 +200,6 @@ class armyEngineering {
 			structureData: STRUCTURES["Assault Gun Hardpoint"],
 			payload: derrickObj
 		});
-		const isOwnedByEnemy = (ownerID) => {
-			if (defined(ownerID)) {
-				if (isEnemy(ownerID)) {
-					return true;
-				}
-			}
-			return false;
-		};
 
 		let highPrioOil = [], normalPrioOil = [];		
 		let seenDerricks = [];
@@ -251,56 +243,59 @@ class armyEngineering {
 			}
 
 			// Intent: enumRange is used as this offers better granularity compared to directly accessing the grid
-			const s = state.grid.enumRange(d.x, d.y, PROXIMITY_RADIUS);
+			const nearby = state.grid.enumRangeLazy(d.x, d.y, PROXIMITY_RADIUS);
 			
 			let friendlyDefencesNearby = 0, friendlyBuildSitesNearby = 0, friendlyDerricksNearby = 0;
+			nearby['friendlyStructures'].forEach(obj => {	
+				if (gameObjectNoLongerExists(obj)) return;
 
+				const flags = obj.flags;
 
-			for (let j=0; j<s['friendlyStructures'].length; j++) {
-				const f = s['friendlyStructures'][j];
-
-				if (f.flags & OBJ_FLAGS.RESOURCE_EXTRACTOR) {
+				if (flags & OBJ_FLAGS.RESOURCE_EXTRACTOR) {
 					friendlyDerricksNearby++;
-
-					if (activeDefenceBuildTaskIDs.includes(f.id)) {
+					
+					const friendlyDerrickID = obj.id;
+					if (activeDefenceBuildTaskIDs.includes(friendlyDerrickID)) {
 						previouslySeen = true;
 					}
 				}
 
-				if (f.flags & OBJ_FLAGS.DEFENSIVE_STRUCTURE && !(f.flags & OBJ_FLAGS.ADA)) {
-					if (f.flags && OBJ_FLAGS.IS_BUILT) {
+				if (flags & OBJ_FLAGS.DEFENSIVE_STRUCTURE && !(flags & OBJ_FLAGS.ADA)) {
+					if (flags && OBJ_FLAGS.IS_BUILT) {
 						friendlyDefencesNearby++;
 					} else {
 						friendlyBuildSitesNearby++;
 					}
 				}
-			}
+			});
 
 			if (previouslySeen)  {
-				// debug(`skipped ${d.id}: previouslySeen`);
 				continue;
 			}
 
 			const BUILT_DEFENCES = OBJ_FLAGS.DEFENSIVE_STRUCTURE | OBJ_FLAGS.IS_BUILT;
 
 			let enemyDefencesNearby = 0, enemyDerricksNearby = 0;
-			for (let j=0; j<s['targetStructures'].length; j++) {
-				const e = s['targetStructures'][j];
-				if (e.flags & OBJ_FLAGS.RESOURCE_EXTRACTOR) {
+			nearby['targetStructures'].forEach(obj => {	
+				if (gameObjectNoLongerExists(obj)) return;
+
+				const flags = obj.flags;
+
+				if (flags & OBJ_FLAGS.RESOURCE_EXTRACTOR) {
 					enemyDerricksNearby++;
 
-					if (activeDefenceBuildTaskIDs.includes(e.id)) {
+					const enemyDerrickID = obj.id;
+					if (activeDefenceBuildTaskIDs.includes(enemyDerrickID)) {
 						previouslySeen = true;
 					}
 				}
 
-				if ((e.flags & BUILT_DEFENCES) === BUILT_DEFENCES && !(e.flags & OBJ_FLAGS.ADA)) {
+				if ((flags & BUILT_DEFENCES) === BUILT_DEFENCES && !(flags & OBJ_FLAGS.ADA)) {
 					enemyDefencesNearby++;
 				}
-			}
+			});
 
 			if (previouslySeen)  {
-				// debug(`skipped ${d.id}: previouslySeen`)
 				continue;
 			}
 
@@ -354,7 +349,7 @@ class armyEngineering {
 	 * Generates locations for construction and demolition of repair facilities.
 	 * Demolition is required because there is a hard cap on the number of repair facilities you can build.
 	 * @param {worldState} state
-	 * @param {TargetObject[]} myRepairFacilities
+	 * @param {FbObject[]} myRepairFacilities
 	 * @param {PositionInfo[]} forceLocations
 	 * @returns 
 	 */
@@ -369,7 +364,6 @@ class armyEngineering {
 		}
 
 		const SEARCH_RADIUS = 25;
-		const ENEMY_NEARBY_RADIUS = 10;
 
 		// PART 1: FIND DEMOLITION LOCATIONS
 		myRepairFacilities.forEach(f => {
@@ -422,31 +416,23 @@ class armyEngineering {
 				return;
 			}
 
-			const nearby = state.grid.enumRange(x, y, SEARCH_RADIUS);
-			const friendlyRepairCenterCount = nearby['friendlyStructures'].filter(s => (s.flags & OBJ_FLAGS.REPAIR)).length;
+			let friendlyRepairCenterCount = 0;
+
+			const nearby = state.grid.enumRangeLazy(x, y, SEARCH_RADIUS);
+			nearby['friendlyStructures'].forEach(s => {
+				if (!(s.flags & OBJ_FLAGS.REPAIR)) {
+					return;
+				}
+				if (gameObjectNoLongerExists(s)) {
+					return;
+				}
+				friendlyRepairCenterCount++;
+			});
 			
 			if (friendlyRepairCenterCount > 0) {
-				// Nearby repair facility already
 				return;
 			}
 			// debug(`\t\t${gameTime}: repair center not within ${SEARCH_RADIUS} tiles of ${BRIGADE_ID} (${x} ${y})`);
-
-			const closestTargets = [nearby['closestTargetUnit'], nearby['closestTargetStructure']];
-
-			let isTooCloseToEnemy = false;
-			for (let i=0; i<closestTargets.length; i++) {
-				const ct = closestTargets[i];
-				if (ct == undefined) {
-					continue;
-				}
-				if (distSq(ct.x, x, ct.y, y) < ENEMY_NEARBY_RADIUS ** 2) {
-					isTooCloseToEnemy = true;
-				}
-			}
-			if (isTooCloseToEnemy) {
-				// debug(`\t\t${gameTime}: repair center too close to enemy @ (${x} ${y})`);
-				return;
-			}
 
 			// Else, schedule a new task
 			const buildRequest = this.translateIntoBuildRequest({

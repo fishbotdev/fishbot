@@ -649,6 +649,7 @@ class TacticalOperationsCenter {
 
 		resetAllGridCells();
 
+		// Write new grid cells
 		for (let i=0; i<rawObjectData.length; i++) {
 			const currPlayerEntry = rawObjectData[i];
 
@@ -663,10 +664,12 @@ class TacticalOperationsCenter {
 				const obj = currPlayerEntry['droids'][j];
 
 				const flags = classifyGameObject(obj);
-				const gx = Math.floor(obj.x / cellSize);
-				const gy = Math.floor(obj.y / cellSize);
+				const x = obj.x;
+				const y = obj.y;
+				const gx = Math.floor(x / cellSize);
+				const gy = Math.floor(y / cellSize);
 
-				const targetObject = createNewTarget(obj, flags, gx, gy);
+				const fbObject = createFbObject(obj, flags, x, y, gx, gy);
 
 				// Update player information
 				p['numTotalUnits']++;
@@ -707,7 +710,7 @@ class TacticalOperationsCenter {
 
 				if (PLAYER_IS_ENEMY) {
 					// Update grid
-					grid[gx][gy]['targetUnits'].push(targetObject);
+					grid[gx][gy]['targetUnits'].push(fbObject);
 
 					// Update spatial field
 					if (flags & OBJ_FLAGS.ADA) {
@@ -721,7 +724,7 @@ class TacticalOperationsCenter {
 
 				} else {
 					// Update grid
-					grid[gx][gy]['friendlyUnits'].push(targetObject);
+					grid[gx][gy]['friendlyUnits'].push(fbObject);
 				}
 			}	
 
@@ -730,10 +733,12 @@ class TacticalOperationsCenter {
 				const obj = currPlayerEntry['structs'][j];
 				
 				const flags = classifyGameObject(obj);
-				const gx = Math.floor(obj.x / cellSize);
-				const gy = Math.floor(obj.y / cellSize);
+				const x = obj.x;
+				const y = obj.y;
+				const gx = Math.floor(x / cellSize);
+				const gy = Math.floor(y / cellSize);
 
-				const targetObject = createNewTarget(obj, flags, gx, gy);
+				const fbObject = createFbObject(obj, flags, x, y, gx, gy);
 				
 				// Update player information
 				p['numStructs'] += 1;
@@ -750,20 +755,20 @@ class TacticalOperationsCenter {
 					if (PLAYER_IS_ME) {
 						if (obj.stattype === FACTORY) {
 							// debug(`${p.playerID}: factory ${idx} `)
-							p["normalFactoryFbObjects"].push(targetObject);
+							p["normalFactoryFbObjects"].push(fbObject);
 						} else if (obj.stattype === CYBORG_FACTORY) {
 							// debug(`${p.playerID}: cybfactory ${idx}`)
-							p["cyborgFactoryFbObjects"].push(targetObject);
+							p["cyborgFactoryFbObjects"].push(fbObject);
 						} else if (obj.stattype === VTOL_FACTORY) {
 							// debug(`${p.playerID}: vtolfactory ${idx}`)
-							p["vtolFactoryFbObjects"].push(targetObject);
+							p["vtolFactoryFbObjects"].push(fbObject);
 						}
 					}
 				}
 
 				if (flags & OBJ_FLAGS.RESEARCH) {
 					if (PLAYER_IS_ME) {
-						p["researchFacilityFbObjects"].push(targetObject);
+						p["researchFacilityFbObjects"].push(fbObject);
 					}
 				}
 
@@ -775,12 +780,12 @@ class TacticalOperationsCenter {
 				if (flags & OBJ_FLAGS.REPAIR) {
 					p['numRepairFacilities']++;
 					if (PLAYER_IS_ME) {
-						p["repairFacilityFbObjects"].push(targetObject);
+						p["repairFacilityFbObjects"].push(fbObject);
 					}
 				}
 
 				if (PLAYER_IS_ENEMY) {	
-					grid[gx][gy]['targetStructures'].push(targetObject);
+					grid[gx][gy]['targetStructures'].push(fbObject);
 					
 					// ADA defences
 					if (flags & OBJ_FLAGS.ADA) {
@@ -793,7 +798,7 @@ class TacticalOperationsCenter {
 						TEMP_GRID[gx][gy]['fixedDefenceCount']++;
 					}
 				} else {
-					grid[gx][gy]['friendlyStructures'].push(targetObject);
+					grid[gx][gy]['friendlyStructures'].push(fbObject);
 				}
 			}
 

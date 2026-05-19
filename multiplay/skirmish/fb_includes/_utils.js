@@ -271,21 +271,37 @@ function breadthFirstSearch(grid, bgx, bgy, objectiveFunc) {
 */
 
 /**
+ * Returns `true` if the game object no longer exists. 
+ * For code clarity, use this function when the actual game object is not important.
+ * @param {FbObject} obj
+ * @returns {boolean}
+ */
+const gameObjectNoLongerExists = (obj) => {
+	if (getObject(obj.type, obj.player, obj.id) == null) {
+		return true;
+	} else {
+		return false;
+	}
+};
+
+/**
  * Converts an array of structures represented as lightweight "FishBot objects" into actual game objects.
  * This is part of the algorithm to avoid the use of 'enumStruct()' to get up to date game objects. 
- * @param {TargetObject[]} fbStructureList 
+ * @param {FbObject[]} fbStructureList 
  * @returns {StructureObject[]} array containing idle `StructureObjects`.
  */
 function getIdleStructureObjects(fbStructureList) {
 	let idleStructList = [];
 	fbStructureList.forEach(structObj => {
-		if (structObj.flags & OBJ_FLAGS.IS_BUILT) {
-			const s = getObject(structObj.type, structObj.player, structObj.id);
-			if (defined(s)) {
-				if (structureIdle(s)) {
-					idleStructList.push(s);
-				}
-			}
+		if (!(structObj.flags & OBJ_FLAGS.IS_BUILT)) {
+			return;
+		}
+		const s = getObject(structObj.type, structObj.player, structObj.id);
+		if (s == null) {
+			return;
+		}
+		if (structureIdle(s)) {
+			idleStructList.push(s);
 		}
 	});
 	return idleStructList;
