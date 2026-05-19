@@ -286,13 +286,7 @@ function checkOilDominance(state, oilDominancePercentage) {
     const playerInfo = state.playerInfo;
     const totalDerricks = state.poi.derricks.length;
 
-    for (let i=0; i<playerInfo.length; i++) {
-        if (playerInfo[i]['playerID'] !== me) {
-            continue;
-        }
-        
-        const pc = playerInfo[i]['numDerricks'] / totalDerricks * 100;
-        // debug(` ${gameTime}: captured ${playerInfo[i]['numDerricks']} out of ${totalDerricks} (${pc}%)`);
-        return (pc > oilDominancePercentage);        
-    }    
+    const pc = playerInfo[me]['numDerricks'] / totalDerricks * 100;
+    // debug(` ${gameTime}: captured ${playerInfo[i]['numDerricks']} out of ${totalDerricks} (${pc}%)`);
+    return (pc > oilDominancePercentage);        
 }
