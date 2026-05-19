@@ -183,9 +183,11 @@ def show_hard_cobra_results():
     # test_1 = V4_RESULTS_DIR + "b6c85a5,hard,cobra,50g" + TFE                # v0.3.3 release -- 48 / 50 won (research collision patch)
     # test_1 = V4_RESULTS_DIR + "83bf457,hard,cobra,100g" + TFE                # v0.3.4 dev -- 92 / 100 won (brigade system dev)
     # test_1 = V4_RESULTS_DIR + "727b189,hard,cobra,99g" + TFE                # v0.3.4 dev -- 88 / 99 won (after brigade system merge)
-    test_1 = V4_RESULTS_DIR + "4f7f8e8,hard,cobra,100g" + TFE                # v0.4.0 dev -- 94 / 100 won (just before repair facility merge)
+    # test_1 = V4_RESULTS_DIR + "4f7f8e8,hard,cobra,100g" + TFE                # v0.4.0 dev -- 94 / 100 won (just before repair facility merge)
     # test_2 = V4_RESULTS_DIR + "d114112,hard,cobra,100g" + TFE                # v0.4.0 dev -- 97 / 100 won (after repair facility optimisations)
-    test_2 = V4_RESULTS_DIR + "4e03988,hard,cobra,100g" + TFE                # v0.4.0 dev -- 94 / 100 won (after further optimisations)
+    test_1 = V4_RESULTS_DIR + "4e03988,hard,cobra,100g" + TFE                # v0.4.0 dev -- 94 / 100 won (after further optimisations)
+    test_2 = V4_RESULTS_DIR + "5d83634,hard,cobra,50g" + TFE                # v0.4.0 dev -- 45 / 50 won (after performance optim)
+
 
     commit1 = extract_commit(test_1)
     commit2 = extract_commit(test_2)
@@ -216,8 +218,8 @@ def show_insane_diff_results():
 
 
 # show_medium_cobra_results()
-# show_hard_cobra_results()
-show_insane_diff_results()
+show_hard_cobra_results()
+# show_insane_diff_results()
 
 import matplotlib.pyplot as plt
 plt.show()
