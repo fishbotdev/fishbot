@@ -355,6 +355,9 @@ class armyEngineering {
 	 */
 	generateRemoteServiceCenterConstructionOptions(state, myRepairFacilities, forceLocations) {
 
+		const enemyUnitThreat = state.fields.enemyUnitThreat;
+		const cellSize = state.grid.cellSize;
+
 		const potentialRepairCenterLocations = [];
 		const potentialDemolitionLocations = [];
 
@@ -367,6 +370,10 @@ class armyEngineering {
 
 		// PART 1: FIND DEMOLITION LOCATIONS
 		myRepairFacilities.forEach(f => {
+			if (enemyUnitThreat[f.gx][f.gy] !== 0) {
+				return;
+			}
+
 			const repairFacility = getObject(f.type, f.player, f.id);
 			if (repairFacility == null) {
 				return;
@@ -403,6 +410,12 @@ class armyEngineering {
 
 		// PART 2: FIND CONSTRUCTION LOCATIONS
 		forceLocations.forEach(LOCATION => {
+			const gx = Math.floor(LOCATION.x / cellSize);
+			const gy = Math.floor(LOCATION.y / cellSize);
+
+			if (enemyUnitThreat[gx][gy] !== 0) {
+				return;
+			}
 
 			const x = LOCATION.x;
 			const y = LOCATION.y;
@@ -432,6 +445,7 @@ class armyEngineering {
 			if (friendlyRepairCenterCount > 0) {
 				return;
 			}
+			
 			// debug(`\t\t${gameTime}: repair center not within ${SEARCH_RADIUS} tiles of ${BRIGADE_ID} (${x} ${y})`);
 
 			// Else, schedule a new task
