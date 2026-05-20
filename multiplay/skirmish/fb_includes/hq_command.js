@@ -61,10 +61,11 @@ class CommandCenter {
 		this.REQUESTS_PER_MINUTE = {
 			'combat_runC2': 60,
 			'global_missionManager': 60,
-			'runLogistics': 60,
-			'intel_getNearbyGroundTargets': 60,
-			'intel_getMapIntelligence': 20,
-			'intel_getAviationTargets': 15,
+			'logistics_runConstruction': 60,
+			'intel_getNearbyGroundTargets': 20,
+			'logistics_runSupply': 15,
+			'intel_getMapIntelligence': 12,
+			'intel_getAviationTargets': 10,
 			'intel_checkOilDominance': 2,
 		};
 
