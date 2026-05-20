@@ -795,7 +795,7 @@ class CommandCenter {
 				'heavyCavalry': 1,
 				'lightCavalry': 1,
 				'shortRangeArtillery': 0.75,
-				'ADA': 0.35,
+				'ADA': 0.6,
 				'sensor': 0.2,
 			};
 		}
