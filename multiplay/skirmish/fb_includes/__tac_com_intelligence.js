@@ -277,7 +277,8 @@ function createPlayerInfoEntry(playerID) {
 
 
 /**
- * 
+ * Checks if the current player owns more than a certain percentage of derricks on the map. 
+ * O(1) complexity.
  * @param {worldState} state 
  * @param {number} oilDominancePercentage 
  * @returns {boolean}

@@ -106,7 +106,7 @@ class armyIntelligence {
 				continue;
 			}
 
-			const nearby = state.grid.enumRangeLazy(d.x, d.y, SEARCH_RADIUS);
+			const nearby = state.grid.enumRangeLazy(d.x, d.y, SEARCH_RADIUS, true, false);
 			resetTargetBuffersInPlace();
 
 			nearby['targetStructures'].forEach(t => {
@@ -180,7 +180,7 @@ class armyIntelligence {
 				continue;
 			}
 
-			const nearby = state.grid.enumRangeLazy(bases[i].x, bases[i].y, SEARCH_RADIUS);		
+			const nearby = state.grid.enumRangeLazy(bases[i].x, bases[i].y, SEARCH_RADIUS, true, false);		
 
 			nearby['targetStructures'].forEach(t => {
 				const flags = t.flags;
@@ -267,7 +267,7 @@ class armyIntelligence {
 		 * @returns {FbObject[]}
 		 */
 		const getTargetsNear = (x, y, searchRadius) => {
-			const nearby = state.grid.enumRangeLazy(x, y, searchRadius); 
+			const nearby = state.grid.enumRangeLazy(x, y, searchRadius, true, false); 
 			return [...nearby['targetUnits'], ...nearby['targetStructures']];
 		};
 

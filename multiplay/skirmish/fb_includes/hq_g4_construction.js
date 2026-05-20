@@ -243,7 +243,7 @@ class armyEngineering {
 			}
 
 			// Intent: enumRange is used as this offers better granularity compared to directly accessing the grid
-			const nearby = state.grid.enumRangeLazy(d.x, d.y, PROXIMITY_RADIUS);
+			const nearby = state.grid.enumRangeLazy(d.x, d.y, PROXIMITY_RADIUS, true, true);
 			
 			let friendlyDefencesNearby = 0, friendlyBuildSitesNearby = 0, friendlyDerricksNearby = 0;
 			nearby['friendlyStructures'].forEach(obj => {	
@@ -410,17 +410,15 @@ class armyEngineering {
 
 		// PART 2: FIND CONSTRUCTION LOCATIONS
 		forceLocations.forEach(LOCATION => {
-			const gx = Math.floor(LOCATION.x / cellSize);
-			const gy = Math.floor(LOCATION.y / cellSize);
-
-			if (enemyUnitThreat[gx][gy] !== 0) {
+			const x = LOCATION.x;
+			const y = LOCATION.y;
+			if (!isReachable[x][y]) {		// this checks if the location is reachable with wheeled trucks
 				return;
 			}
 
-			const x = LOCATION.x;
-			const y = LOCATION.y;
-
-			if (!isReachable[x][y]) {		// this checks if the location is reachable with wheeled trucks
+			const gx = Math.floor(x / cellSize);
+			const gy = Math.floor(y / cellSize);
+			if (enemyUnitThreat[gx][gy] !== 0) {
 				return;
 			}
 
@@ -431,7 +429,7 @@ class armyEngineering {
 
 			let friendlyRepairCenterCount = 0;
 
-			const nearby = state.grid.enumRangeLazy(x, y, SEARCH_RADIUS);
+			const nearby = state.grid.enumRangeLazy(x, y, SEARCH_RADIUS, false, true);
 			nearby['friendlyStructures'].forEach(s => {
 				if (!(s.flags & OBJ_FLAGS.REPAIR)) {
 					return;

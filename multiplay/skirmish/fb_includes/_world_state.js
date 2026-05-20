@@ -202,9 +202,11 @@ class fbGrid {
      * @param {number} x central x-coord (game tiles)
      * @param {number} y central y-coord (game tiles)
      * @param {number} radius radial distance, inclusive (game tiles)
+     * @param {boolean} showEnemy if `true`, populates `targetUnits` and `targetStructures`.
+     * @param {boolean} showFriendly if `true`, populates `friendlyUnits` and `friendlyStructures`.
      * @returns {EnumRangeLazyResult}
      */
-    enumRangeLazy(x, y, radius) {
+    enumRangeLazy(x, y, radius, showEnemy=true, showFriendly=true) {
         /** @type {EnumRangeLazyResult} */
         const result = {
             'targetUnits': [],
@@ -266,8 +268,13 @@ class fbGrid {
                     continue;
                 }
 
-                ENEMY_OBJECT_CLASSES.forEach(className => pushObjectsInRadiusToResult(className, gx, gy));
-                FRIENDLY_OBJECT_CLASSES.forEach(className => pushObjectsInRadiusToResult(className, gx, gy));
+                if (showEnemy) {
+                    ENEMY_OBJECT_CLASSES.forEach(className => pushObjectsInRadiusToResult(className, gx, gy));
+                }
+                if (showFriendly) {
+                    FRIENDLY_OBJECT_CLASSES.forEach(className => pushObjectsInRadiusToResult(className, gx, gy));
+                }
+                
             }                
         }
 
