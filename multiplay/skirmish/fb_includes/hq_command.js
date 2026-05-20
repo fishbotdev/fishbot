@@ -477,7 +477,8 @@ class CommandCenter {
 				0.69 > 0.33 * 2 = allow 1 tile over from a single air defence. 
 			Modify value to match "hq_toc/updateSpatialFields" filter.
 		*/
-		const threatThreshold = IS_OIL_DOMINANT ? 0.69 : 0;		
+		const STANDARD_THREAT_THRESHOLD = IS_OIL_DOMINANT ? 0.69 : 0;		
+		const URGENT_THREAT_THRESHOLD = 2;
 		
 		for (let i=0; i<activeMissions.length; i++) {
 			let c = activeMissions[i];
@@ -494,9 +495,12 @@ class CommandCenter {
 				continue;
 			}
 
-			if (!SATURATION_RAID && c.priority !== MISSION_PRIORITY.URGENT) {
+			if (!SATURATION_RAID) {
 				const gx = Math.floor(currObj.x / cellSize); 
 				const gy = Math.floor(currObj.y / cellSize);
+
+				const threatThreshold = (c.priority === MISSION_PRIORITY.URGENT) ? URGENT_THREAT_THRESHOLD : STANDARD_THREAT_THRESHOLD;
+
 				if (adaThreat[gx][gy] > threatThreshold) {
 					// debug(`	removed ACTIVE: ${currObj.name} (${c.missionType}) @ grid (${currObj.x} ${currObj.y})`);
 					c.missionStatus = MISSION_STATUS.ABORT;		
@@ -523,7 +527,9 @@ class CommandCenter {
 
 			const c = missionRequest.target;
 
-			if (!SATURATION_RAID && missionRequest.priority !== MISSION_PRIORITY.URGENT) {
+			const threatThreshold = (missionRequest.priority === MISSION_PRIORITY.URGENT) ? URGENT_THREAT_THRESHOLD : STANDARD_THREAT_THRESHOLD;
+
+			if (!SATURATION_RAID) {
 				const gx = Math.floor(c.x / cellSize); 
 				const gy = Math.floor(c.y / cellSize);
 				if (adaThreat[gx][gy] > threatThreshold) {
