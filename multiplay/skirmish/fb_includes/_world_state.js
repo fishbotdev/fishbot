@@ -234,6 +234,25 @@ class fbGrid {
             }
         };
 
+        /**
+         * 
+         * @param {string} className 
+         * @param {number} gx 
+         * @param {number} gy 
+         * @returns {void} pushes the result to the result array
+         */
+        const pushObjectsInRadiusToResult = (className, gx, gy) => {
+            const objectsInCell = this.grid[gx][gy][className];
+            objectsInCell.forEach(obj => {
+                if (insideSpecifiedRadius(obj)) {
+                   result[className].push(obj);
+                }    
+            });            
+        }
+
+        const ENEMY_OBJECT_CLASSES = ['targetUnits', 'targetStructures'];
+        const FRIENDLY_OBJECT_CLASSES = ['friendlyUnits', 'friendlyStructures'];
+
         for (let dx = -gr; dx <= gr; dx++) {
             for (let dy = -gr; dy <= gr; dy++) {
 
@@ -247,10 +266,8 @@ class fbGrid {
                     continue;
                 }
 
-                result['targetUnits'].push(...this.grid[gx][gy]['targetUnits'].filter(insideSpecifiedRadius));
-                result['targetStructures'].push(...this.grid[gx][gy]['targetStructures'].filter(insideSpecifiedRadius));
-                result['friendlyStructures'].push(...this.grid[gx][gy]['friendlyUnits'].filter(insideSpecifiedRadius));
-                result['friendlyStructures'].push(...this.grid[gx][gy]['friendlyStructures'].filter(insideSpecifiedRadius));
+                ENEMY_OBJECT_CLASSES.forEach(className => pushObjectsInRadiusToResult(className, gx, gy));
+                FRIENDLY_OBJECT_CLASSES.forEach(className => pushObjectsInRadiusToResult(className, gx, gy));
             }                
         }
 
