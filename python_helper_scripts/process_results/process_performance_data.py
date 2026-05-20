@@ -228,7 +228,9 @@ PROCESS_RESULTS_DIR = rf"{getcwd()}\python_helper_scripts\process_results\v4_per
 LFE = ".log"
 
 path1 = PROCESS_RESULTS_DIR + rf"603cca0,hard,cobra,50g" + LFE               # can be compared with 06f67d5
-path2 = PROCESS_RESULTS_DIR + rf"5d83634,hard,cobra,50g" + LFE                              # v0.4.1 after performance optim
+# path1 = PROCESS_RESULTS_DIR + rf"5d83634,hard,cobra,50g" + LFE                              # v0.4.1 after performance optim
+# path1 = PROCESS_RESULTS_DIR + rf"1565212,hard,cobra,50g" + LFE                              # v0.4.1 after enumRangeLazy; with .filter() creating
+path2 = PROCESS_RESULTS_DIR + rf"02d990f,hard,cobra,50g" + LFE                              # v0.4.1 after enumRangeLazy, .filter() optim
 
 #####################################################################################################################
 
