@@ -187,7 +187,7 @@ def show_hard_cobra_results():
     # test_2 = V4_RESULTS_DIR + "d114112,hard,cobra,100g" + TFE                # v0.4.0 dev -- 97 / 100 won (after repair facility optimisations)
     # test_1 = V4_RESULTS_DIR + "4e03988,hard,cobra,100g" + TFE                # v0.4.0 dev -- 94 / 100 won (after further optimisations)
     test_1 = V4_RESULTS_DIR + "5d83634,hard,cobra,50g" + TFE                # v0.4.0 dev -- 45 / 50 won (after performance optim)
-    test_2 = V4_RESULTS_DIR + "02d990f,hard,cobra,50g" + TFE                # v0.4.0 dev -- 46 / 50 won (after enumRangeLazy)
+    test_2 = V4_RESULTS_DIR + "fbbb931,hard,cobra,50g" + TFE                # v0.4.0 dev -- 45 / 50 won (after scheduler optim)
 
     commit1 = extract_commit(test_1)
     commit2 = extract_commit(test_2)

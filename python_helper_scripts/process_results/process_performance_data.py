@@ -227,10 +227,12 @@ if False:
 PROCESS_RESULTS_DIR = rf"{getcwd()}\python_helper_scripts\process_results\v4_perfdata\\"
 LFE = ".log"
 
-path1 = PROCESS_RESULTS_DIR + rf"603cca0,hard,cobra,50g" + LFE               # can be compared with 06f67d5
+# path1 = PROCESS_RESULTS_DIR + rf"603cca0,hard,cobra,50g" + LFE               # can be compared with 06f67d5
 # path1 = PROCESS_RESULTS_DIR + rf"5d83634,hard,cobra,50g" + LFE                              # v0.4.1 after performance optim
 # path1 = PROCESS_RESULTS_DIR + rf"1565212,hard,cobra,50g" + LFE                              # v0.4.1 after enumRangeLazy; with .filter() creating
-path2 = PROCESS_RESULTS_DIR + rf"02d990f,hard,cobra,50g" + LFE                              # v0.4.1 after enumRangeLazy, .filter() optim
+# path1 = PROCESS_RESULTS_DIR + rf"02d990f,hard,cobra,50g" + LFE                              # v0.4.1 after enumRangeLazy, .filter() optim
+path1 = PROCESS_RESULTS_DIR + rf"3674546,hard,cobra,50g" + LFE                              # v0.4.1 after enumRangeLazy, enemy / friendly filter
+path2 = PROCESS_RESULTS_DIR + rf"fbbb931,hard,cobra,50g" + LFE                              # v0.4.1 after scheduler optim
 
 #####################################################################################################################
 
@@ -238,16 +240,20 @@ if True:
     func1 = "runC2"
     func2 = "runMissionManager"
     func3 = "runIntelligence"
-    func4 = "runLogistics"
+    func4 = "runConstructionLogistics"
+    func5 = "runSupplyLogistics"
+
     df_1 = extract_runC2(path1, function_name=func1)        
     df_2 = extract_runC2(path1, function_name=func2)       
     df_3 = extract_runC2(path1, function_name=func3)
     df_4 = extract_runC2(path1, function_name=func4)
+    df_9 = extract_runC2(path1, function_name=func5) 
 
     df_5 = extract_runC2(path2, function_name=func1)        
     df_6 = extract_runC2(path2, function_name=func2)       
     df_7 = extract_runC2(path2, function_name=func3) 
     df_8 = extract_runC2(path2, function_name=func4) 
+    df_10 = extract_runC2(path2, function_name=func5) 
 
     commit_hash1 = path1.split(rf"\\")[-1].split(".log")[0]
     commit_hash2 = path2.split(rf"\\")[-1].split(".log")[0]
