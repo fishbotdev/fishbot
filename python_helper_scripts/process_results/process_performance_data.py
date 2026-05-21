@@ -262,5 +262,6 @@ if True:
     plot_comparative_histograms(df_2, df_6, label1=commit_hash1, label2=commit_hash2, suptitle=func2)
     plot_comparative_histograms(df_3, df_7, label1=commit_hash1, label2=commit_hash2, suptitle=func3)
     plot_comparative_histograms(df_4, df_8, label1=commit_hash1, label2=commit_hash2, suptitle=func4)
+    plot_comparative_histograms(df_9, df_10, label1=commit_hash1, label2=commit_hash2, suptitle=func5)
     plt.show()
 
