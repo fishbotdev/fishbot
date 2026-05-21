@@ -128,9 +128,14 @@ function returnUnitGroupsToBase(unitGroups) {
 function moveBrigadeToLocation(state, brigadeID, x, y) {
 
 	const brigadeUnits = state.g.enumGroup(brigadeID);
+	const brigadeLocation = state.brigades[brigadeID]['location'];
 
 	brigadeUnits.forEach(droid => {
-		orderDroidLoc(droid, DORDER_MOVE, x, y);	
+		if (distSq(brigadeLocation.x, droid.x, brigadeLocation.y, droid.y) < 10 ** 2) {
+			orderDroidLoc(droid, DORDER_MOVE, x, y);			
+		} else {
+			orderDroidLoc(droid, DORDER_MOVE, brigadeLocation.x, brigadeLocation.y);	
+		}
 	});
 }
 
