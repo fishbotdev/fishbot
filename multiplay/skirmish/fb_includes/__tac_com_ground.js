@@ -122,17 +122,30 @@ function returnUnitGroupsToBase(unitGroups) {
  * TAC SOP: MOVE A BRIGADE COMBAT TEAM (BCT) TO A LOCATION
  * @param {worldState} state 
  * @param {number} brigadeID 
- * @param {number} x 
- * @param {number} y 
+ * @param {number} targetX 
+ * @param {number} targetY 
  */
-function moveBrigadeToLocation(state, brigadeID, x, y) {
+function moveBrigadeToLocation(state, brigadeID, targetX, targetY) {
 
 	const brigadeUnits = state.g.enumGroup(brigadeID);
 	const brigadeLocation = state.brigades[brigadeID]['location'];
 
+	const DISTSQ_CENTER_TO_TARGET = distSq(brigadeLocation.x, targetX, brigadeLocation.y, targetY);
+
 	brigadeUnits.forEach(droid => {
-		if (distSq(brigadeLocation.x, droid.x, brigadeLocation.y, droid.y) < 10 ** 2) {
-			orderDroidLoc(droid, DORDER_MOVE, x, y);			
+		const DISTSQ_TO_CENTER = distSq(brigadeLocation.x, droid.x, brigadeLocation.y, droid.y); 
+		const DISTSQ_TO_TARGET = distSq(targetX, droid.x, targetY, droid.y);
+		
+		const TOO_FAR_AWAY_FROM_CENTER = DISTSQ_TO_CENTER > 20 ** 2;
+		const FAR_AWAY_FROM_CENTER = DISTSQ_TO_CENTER > 12 ** 2;
+		const AHEAD_OF_GROUP = DISTSQ_TO_TARGET < DISTSQ_CENTER_TO_TARGET;
+
+		if (AHEAD_OF_GROUP && TOO_FAR_AWAY_FROM_CENTER) {
+			orderDroidLoc(droid, DORDER_MOVE, brigadeLocation.x, brigadeLocation.y);	
+		} else if (AHEAD_OF_GROUP && FAR_AWAY_FROM_CENTER) {
+			orderDroid(droid, DORDER_HOLD);
+		} else if (!FAR_AWAY_FROM_CENTER) {
+			orderDroidLoc(droid, DORDER_MOVE, targetX, targetY);			
 		} else {
 			orderDroidLoc(droid, DORDER_MOVE, brigadeLocation.x, brigadeLocation.y);	
 		}
