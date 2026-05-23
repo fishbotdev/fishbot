@@ -564,20 +564,35 @@ class CommandCenter {
 		const READY_TO_ATTACK = groundForces.isReadyToAttack(state);
 
 		if (READY_TO_ATTACK) {
+
+			const brigadeLocations = [];
+
+			// Move combat brigades
 			this.BRIGADE_DESIGNATIONS.forEach((brigadeID) => {
 
 				const groundTargets = this.#prioritiseBrigadeTargets(state, brigadeID);
 				this.toc.setBrigadeCASStrikeRequests(state, brigadeID, groundTargets['casTargets']);
 
+				const loc = state.brigades[brigadeID]['location'];
+				brigadeLocations.push(loc)
+
 				if (!this.#noTargetsAvailable(groundTargets)) {
 					moveBrigadeToAttack(state, brigadeID, groundTargets);	
 				} else {
 					// Compute closest enemy base and move to that.
-					const loc = state.brigades[brigadeID]['location'];
 					const CLOSEST_ENEMY_BASE = intelligence.findClosestEnemyBase(state, loc.x, loc.y); 			
-
 					moveBrigadeToLocation(state, brigadeID, CLOSEST_ENEMY_BASE.x, CLOSEST_ENEMY_BASE.y);
 				}
+			});
+
+			// Move reserves to pre-emptively reinforce the closest brigade
+			const RESERVES = [DIVISION.HEAVY_CAV_RESERVE, DIVISION.LIGHT_CAV_RESERVE, DIVISION.INFANTRY_RESERVE, DIVISION.SHORT_RANGE_FIRE_SUPPORT_RESERVE, DIVISION.SENSOR_RESERVE, DIVISION.AIR_DEFENCE_RESERVE];
+			RESERVES.forEach(id => {
+				const reserveUnits = state.g.enumGroup(id);
+				reserveUnits.forEach(droid => {
+					// TEMP: moves to BCT 0 for now
+					orderDroidLoc(droid, DORDER_MOVE, brigadeLocations[0].x, brigadeLocations[0].y);	
+				});		
 			});
 		}
 
