@@ -25,16 +25,15 @@
 ######## PROGRAM CONFIGURATION ########
 
 FILE_NAME = rf"""
-2b7cd4f,GAMMA_INSANE_COBRA_T2,100G.jsonl
+c6bf1b5,GAMMA_INSANE_COBRA_T2,50G.jsonl
 """
 
 ######## END PROGRAM CONFIGURATION ########
-
-
+FILE_NAME = FILE_NAME.lstrip().rstrip()
 
 import pandas as pd
 
-df = pd.read_json(FILE_NAME.lstrip().rstrip(), lines=True)
+df = pd.read_json(FILE_NAME, lines=True)
 
 comparison_rows = []
 
