@@ -292,6 +292,21 @@ if __name__ == "__main__":
     NUM_TESTS = 2
     DEBUG_ON = False
 
+    """
+    Note: I cloned FishBot into a new configuration directory ('PRODCONFIG') and am running autogames from 
+        this 'production' folder (this explains the file paths for `warzone2100.exe` & `PRODCONFIG`).
+    This means I can run autogames & perform development simultaneously using the same `warzone2100.exe`, e.g. 
+    1. different config directories for dev / prod => (allows for) 
+    2. different mods directories => 
+    3. different FishBot instances
+    
+    PRODCONFIG is a clone of the devconfig folder. This means that changes to the development config directory
+        (e.g. a new `challenge.json` from the 'tests' folder) can be pulled from version control.
+        
+    The development / production environment split is not strictly necessary but it has made development + testing
+        a lot more streamlined!
+    """
+
     AUTOGAME_COMMAND = [
         rf"Warzone 2100\bin\warzone2100.exe",           # assumes WZ2100 is installed in the current working directory
         rf'--configdir="Warzone 2100\PRODCONFIG"',      # assumes that the mod is loaded in a "PRODCONFIG" subfolder of the WZ2100 install
@@ -301,6 +316,8 @@ if __name__ == "__main__":
         rf"--autogame"                                  # automatically runs the game
     ]
 
+
+    # Run the test
     print_iteration = lambda i: print(f"\n\n Iteration {i} \n\n")
 
     for i in range(NUM_TESTS):
