@@ -61,6 +61,7 @@ import os
 from typing import List
 import pandas as pd
 import json
+from time import perf_counter
 
 
 #################################### HELPER FUNCTIONS ####################################
@@ -289,8 +290,16 @@ if __name__ == "__main__":
     # Note: The `windows_scrape_terminal_history` function is the core technical component of this script.
     # This function is platform (OS) & IDE dependent - please see the usage notes above this function.
 
-    NUM_TESTS = 2
+    ######## PROGRAM CONFIGURATION ########
+
+    CHALLENGE_JSON_NAME = "GAMMA_HARD_COBRA_T2"
+    NUM_TESTS = 3
     DEBUG_ON = False
+
+    # Reminder: remove any previous .jsonl files if necessary
+    OUTPUT_FILE_NAME = "results.jsonl"
+
+    ######## END PROGRAM CONFIGURATION ########
 
     """
     Note: I cloned FishBot into a new configuration directory ('PRODCONFIG') and am running autogames from 
@@ -310,15 +319,15 @@ if __name__ == "__main__":
     AUTOGAME_COMMAND = [
         rf"Warzone 2100\bin\warzone2100.exe",           # assumes WZ2100 is installed in the current working directory
         rf'--configdir="Warzone 2100\PRODCONFIG"',      # assumes that the mod is loaded in a "PRODCONFIG" subfolder of the WZ2100 install
-        rf'--skirmish="GAMMA_MEDIUM_COBRA_T2.json"',    # a custom challenge .json file (see `warzone2100/data/mp/tests/miza.json` for an example)
+        rf'--skirmish="{CHALLENGE_JSON_NAME}.json"',    # a custom challenge .json file (see `warzone2100/data/mp/tests/miza.json` for an example)
         rf"--enableconsole",                            # creates a console (this is where the Game State summary is printed)
         rf"--headless",                                 # runs the program without a GUI
         rf"--autogame"                                  # automatically runs the game
     ]
 
-
     # Run the test
-    print_iteration = lambda i: print(f"\n\n Iteration {i} \n\n")
+    TIME_STARTED = perf_counter()
+    print_iteration = lambda i: print(f"\n\n Iteration {i + 1} \n\n")
 
     for i in range(NUM_TESTS):
         clear_console()
@@ -337,4 +346,11 @@ if __name__ == "__main__":
 
         ADD_DEBUG_BREAKPOINT_HERE_TO_SEE_STATS_AS_DATAFRAME = 1
 
-        append_match(df=stats, path="results.jsonl")
+        append_match(df=stats, path=OUTPUT_FILE_NAME)
+
+
+    TIME_ENDED = perf_counter()
+    round_to_2dp = lambda x: round(x, 2)
+
+    clear_console()
+    print(f"\nScript finished {NUM_TESTS} tests in {round_to_2dp(TIME_ENDED - TIME_STARTED)} seconds")
