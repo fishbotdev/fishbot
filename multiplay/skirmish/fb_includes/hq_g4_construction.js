@@ -366,7 +366,7 @@ class armyEngineering {
 			'demolitionLocations': potentialDemolitionLocations
 		}
 
-		const SEARCH_RADIUS = 25;
+		const REPAIR_CENTER_SEARCH_RADIUS = 18;
 
 		// PART 1: FIND DEMOLITION LOCATIONS
 		myRepairFacilities.forEach(f => {
@@ -379,14 +379,14 @@ class armyEngineering {
 				return;
 			}
 
-			const FACILITY_INSIDE_BASE_RADIUS = distSq(repairFacility.x, baseLocation.x, repairFacility.y, baseLocation.y) <= SEARCH_RADIUS ** 2;
+			const FACILITY_INSIDE_BASE_RADIUS = distSq(repairFacility.x, baseLocation.x, repairFacility.y, baseLocation.y) <= REPAIR_CENTER_SEARCH_RADIUS ** 2;
 			if (FACILITY_INSIDE_BASE_RADIUS) {
 				// debug(`${gameTime}: repair facility @ ${repairFacility.x}, ${repairFacility.y} - ignored`);
 				return;
 			}
 
 			const FACILITY_NEAR_SOME_GROUP = forceLocations.some(brigadeLoc => {
-				if (distSq(brigadeLoc.x, repairFacility.x, brigadeLoc.y, repairFacility.y) <= SEARCH_RADIUS ** 2) {
+				if (distSq(brigadeLoc.x, repairFacility.x, brigadeLoc.y, repairFacility.y) <= REPAIR_CENTER_SEARCH_RADIUS ** 2) {
 					return true;
 				}
 				return false;
@@ -422,14 +422,14 @@ class armyEngineering {
 				return;
 			}
 
-			if (distSq(x, baseLocation.x, y, baseLocation.y) <= SEARCH_RADIUS ** 2) {
+			if (distSq(x, baseLocation.x, y, baseLocation.y) <= REPAIR_CENTER_SEARCH_RADIUS ** 2) {
 				// Too close to the base (prevents doubling-up on the repair facility in the base build order)
 				return;
 			}
 
 			let friendlyRepairCenterCount = 0;
 
-			const nearby = state.grid.enumRangeLazy(x, y, SEARCH_RADIUS, false, true);
+			const nearby = state.grid.enumRangeLazy(x, y, REPAIR_CENTER_SEARCH_RADIUS, false, true);
 			nearby['friendlyStructures'].forEach(s => {
 				if (!(s.flags & OBJ_FLAGS.REPAIR)) {
 					return;
@@ -441,6 +441,27 @@ class armyEngineering {
 			});
 			
 			if (friendlyRepairCenterCount > 0) {
+				return;
+			}
+
+			const NEARBY_FRIENDLY_UNIT_COUNT = nearby['friendlyUnits'].length;
+			const MIN_NEARBY_FRIENDLY_UNITS = 5;
+			if (NEARBY_FRIENDLY_UNIT_COUNT < MIN_NEARBY_FRIENDLY_UNITS) {
+				return;		
+			}
+
+			let nearbyFriendlyUnits = 0;
+			for (let i=0; i<nearby['friendlyUnits'].length; i++) {
+				const unit = nearby['friendlyUnits'][i];
+				if (unit.flags & (OBJ_FLAGS.ARMOUR | OBJ_FLAGS.INFANTRY)) {
+					nearbyFriendlyUnits++;
+				}
+
+				if (nearbyFriendlyUnits >= MIN_NEARBY_FRIENDLY_UNITS) {
+					break;
+				}
+			}
+			if (nearbyFriendlyUnits < MIN_NEARBY_FRIENDLY_UNITS) {
 				return;
 			}
 			

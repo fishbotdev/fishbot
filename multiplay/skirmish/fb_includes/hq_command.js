@@ -564,20 +564,35 @@ class CommandCenter {
 		const READY_TO_ATTACK = groundForces.isReadyToAttack(state);
 
 		if (READY_TO_ATTACK) {
+
+			const brigadeLocations = [];
+
+			// Move combat brigades
 			this.BRIGADE_DESIGNATIONS.forEach((brigadeID) => {
 
 				const groundTargets = this.#prioritiseBrigadeTargets(state, brigadeID);
 				this.toc.setBrigadeCASStrikeRequests(state, brigadeID, groundTargets['casTargets']);
 
+				const loc = state.brigades[brigadeID]['location'];
+				brigadeLocations.push(loc)
+
 				if (!this.#noTargetsAvailable(groundTargets)) {
 					moveBrigadeToAttack(state, brigadeID, groundTargets);	
 				} else {
 					// Compute closest enemy base and move to that.
-					const loc = state.brigades[brigadeID]['location'];
 					const CLOSEST_ENEMY_BASE = intelligence.findClosestEnemyBase(state, loc.x, loc.y); 			
-
 					moveBrigadeToLocation(state, brigadeID, CLOSEST_ENEMY_BASE.x, CLOSEST_ENEMY_BASE.y);
 				}
+			});
+
+			// Move reserves to pre-emptively reinforce the closest brigade
+			const RESERVES = [DIVISION.HEAVY_CAV_RESERVE, DIVISION.LIGHT_CAV_RESERVE, DIVISION.INFANTRY_RESERVE, DIVISION.SHORT_RANGE_FIRE_SUPPORT_RESERVE, DIVISION.SENSOR_RESERVE, DIVISION.AIR_DEFENCE_RESERVE];
+			RESERVES.forEach(id => {
+				const reserveUnits = state.g.enumGroup(id);
+				reserveUnits.forEach(droid => {
+					// TEMP: moves to BCT 0 for now
+					orderDroidLoc(droid, DORDER_MOVE, brigadeLocations[0].x, brigadeLocations[0].y);	
+				});		
 			});
 		}
 
@@ -659,7 +674,9 @@ class CommandCenter {
 				case MISSION_TYPE.CONSTRUCT_REPAIR_CENTER:
 				case MISSION_TYPE.DEMOLISH_REPAIR_CENTER:
 					activeRepairCenterBuildTaskIDs.push(missionData.sectorID);
-					activeRemoteMissions.push(missionData);
+
+					// Repair center tasks should not be added to the remoteMissions list because the danger level is set within the hq_g4 function 
+					// (so it should not be overwritten by the conservative danger level implemented by abort mission)
 					break;
 				default:
 					// Do nothing / ignore missions like default mission "HELP_CONSTRUCT"
@@ -802,7 +819,7 @@ class CommandCenter {
 				'heavyCavalry': 1,
 				'lightCavalry': 1,
 				'shortRangeArtillery': 0.75,
-				'ADA': 0.6,
+				'ADA': 0.5,
 				'sensor': 0.2,
 			};
 		}
