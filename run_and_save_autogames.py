@@ -21,7 +21,7 @@ and no dice. It seems like WZ2100 does not write to stdout/stderr by default usi
 Then I tried various combinations of these command line flags:
 1. "--debugfile=blah.log"      
 2. "--debug=all"                   ***
-3. "----flush-debug-stderr"
+3. "--flush-debug-stderr"
 but although I was able to obtain out the raw (internal) debug output in `blah.log` (when using 1. and 2. together), this did not contain the summary results table printed to the console with `--autogame`.
 
 *** Note: to find the <flags> for the `debug=<flags>` command line argument:
@@ -41,14 +41,23 @@ import ctypes
 import subprocess
 import os
 from typing import List
+import pandas as pd
 
-# Fold this function to hide it.
+#################################### HELPER FUNCTIONS ####################################
+
 def clear_console():
     # Use 'cls' for Windows (os.name == 'nt') and 'clear' for Linux/macOS
     os.system('cls' if os.name == 'nt' else 'clear')
 
-# Fold this function to hide it.
-def scrape_terminal_history(lines_to_read):
+"""
+Usage notes (`windows_scrape_terminal_history`):
+    - Tested working on Win11 OS; Linux/Mac will need a different implementation for compatibility
+    - If using a PyCharm IDE (e.g. 2026.1.2) you will need to enable the "Emulate Terminal In Output Console" option in
+      the "Edit Configuration" / "Run Configuration" panel get the output of --autogame to print to the console.
+      VSCode appears to show the terminal output by default so no special actions may be required.
+"""
+
+def windows_scrape_terminal_history(lines_to_read):
     """
     Extracts printed text directly from the current Windows 
     console host window's screen buffer matrix.
@@ -118,26 +127,133 @@ def find_final_game_summary_table_index(console_history: List[str]) -> int:
     
     return GAME_SUMMARY_TABLE_IDX
 
-#################################################################################################
 
-clear_console()
+def extract_stats_from_summary_table(summary_table: List[str]) -> pd.DataFrame:
+    """
+    Extract player summary rows from game output.
 
-# Execute normally (letting WZ write directly to the console)
-command_list = [rf"Warzone 2100\bin\warzone2100.exe", rf'--configdir="Warzone 2100\PRODCONFIG"', rf'--skirmish="GAMMA_HARD_COBRA_T2.json"', rf"--enableconsole", rf"--headless", rf"--autogame"]
-subprocess.run(command_list)
-del command_list
+    Expected dataframe columns:
+        player_id      int
+        name           str
+        extract_power  int
+        units_killed   int
+        structures     int
+        factories      int
+        research       int
+        units_alive    int
+        power          int
+        defeated       bool
+    """
 
-# Scrapes the console output and stores it into `console_history`, then clears the console in prep for further processing
-console_history = scrape_terminal_history(lines_to_read=1000)
-clear_console()
+    rows = []
 
-# Gets the final game summary table
-SUMMARY_TABLE_START_IDX = find_final_game_summary_table_index(console_history)
-final_game_summary_table = console_history[SUMMARY_TABLE_START_IDX:]      
-del SUMMARY_TABLE_START_IDX
+    for line in summary_table:
+        if "|" not in line:
+            continue
 
-# The final game summary table can now be used for further processing
-print("\n\n--- Final Game Summary ---\n\n")
+        parts = [p.strip() for p in line.split("|")]
 
-for line in final_game_summary_table:
-    print(line)
+        # Skip malformed rows
+        if len(parts) < 7:
+            continue
+
+        # Skip table headers
+        if parts[0] in {"#", "--"}:
+            continue
+
+        try:
+            player_id = int(parts[0])
+            name = parts[1]
+
+            # Ignore observer/player row
+            if name.lower() == "player":
+                continue
+
+            extract_power = int(parts[2])
+            units_killed = int(parts[3])
+
+            # Example: "51 (5/4)"
+            struct_text = parts[4]
+
+            structures_part, sub_part = struct_text.split("(")
+
+            structures = int(structures_part.strip())
+
+            sub_part = sub_part.replace(")", "")
+            factories, research = map(int, sub_part.split("/"))
+
+            units_alive = int(parts[5])
+            power = int(parts[6])
+
+            defeated = (
+                len(parts) > 7 and parts[7].lower() == "x"
+            )
+
+            rows.append({
+                "player_id": player_id,
+                "name": name,
+                "extract_power": extract_power,
+                "units_killed": units_killed,
+                "structures": structures,
+                "factories": factories,
+                "research": research,
+                "units_alive": units_alive,
+                "power": power,
+                "defeated": defeated,
+            })
+
+        except (ValueError, IndexError):
+            continue
+
+    return pd.DataFrame(rows)
+
+#################################### TEST RUNNERS ####################################
+
+def run_autogame(commands: List[str], debug_on: bool = False) -> List[str]:
+    
+    # Execute normally (let WZ write directly to the console)
+    subprocess.run(commands)        # blocking (only returns once the process is finished)
+    del commands
+
+    # Scrapes the console output and stores it into `console_history`, then clears the console in prep for further processing
+    console_history = windows_scrape_terminal_history(lines_to_read=1000)
+    clear_console()
+
+    # Gets the final game summary table
+    summary_table_start_idx = find_final_game_summary_table_index(console_history)
+    final_game_summary_table = console_history[summary_table_start_idx:]
+    del summary_table_start_idx
+
+    if debug_on:
+        print("\n\n--- Final Game Summary ---\n\n")
+        for line in final_game_summary_table:
+            print(line)
+
+    return final_game_summary_table
+
+
+#################################### MAIN ####################################
+
+if __name__ == "__main__":
+    clear_console()
+
+    # Note: The `windows_scrape_terminal_history` function is the core technical component of this script.
+    # This function is platform (OS) & IDE dependent - please see the usage notes above this function.
+
+    NUM_TESTS = 1
+    DEBUG_MODE = True
+
+    AUTOGAME_COMMAND = [
+        rf"Warzone 2100\bin\warzone2100.exe",           # assumes WZ2100 is installed in the current working directory
+        rf'--configdir="Warzone 2100\PRODCONFIG"',      # assumes that the mod is loaded in a "PRODCONFIG" subfolder of the WZ2100 install
+        rf'--skirmish="GAMMA_MEDIUM_COBRA_T2.json"',    # a custom challenge .json file (see `warzone2100/data/mp/tests/miza.json` for an example)
+        rf"--enableconsole",                            # creates a console (this is where the Game State summary is printed)
+        rf"--headless",                                 # runs the program without a GUI
+        rf"--autogame"                                  # automatically runs the game
+    ]
+
+    for i in range(NUM_TESTS):
+        final_summary_table = run_autogame(AUTOGAME_COMMAND, DEBUG_MODE)
+        stats = extract_stats_from_summary_table(final_summary_table)
+        ADD_DEBUG_BREAKPOINT_HERE_IN_IDE_TO_SEE_STATS_AS_DATAFRAME = 1
+
