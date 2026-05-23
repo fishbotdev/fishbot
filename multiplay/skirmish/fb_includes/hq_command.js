@@ -297,11 +297,20 @@ class CommandCenter {
 		// Intent: make it as clear as possible what the priorities are (even if the same lists are looped through multiple times)
 		const IMMEDIATE_RADIUS = 15;
 
-		const primaryDirectFireTargets = [...enemyArmor, ...enemyInfantry, ...enemyDefenses, ...enemyIndirectFire, ...enemyADA, ...enemyIndustrial];
-		primaryDirectFireTargets.sort((a,b) => distSq(a.x, x, a.y, y) - distSq(b.x, x, b.y, y));
+		const primaryDroidTargets = [...enemyArmor, ...enemyInfantry];
+		primaryDroidTargets.sort((a,b) => distSq(a.x, x, a.y, y) - distSq(b.x, x, b.y, y));		// distance heuristic only
+		const primaryDirectFireTargets = [ ...enemyDefenses, ...enemyIndirectFire, ...enemyADA, ...enemyIndustrial];
+		primaryDirectFireTargets.sort((a,b) => distSq(a.x, x, a.y, y) - distSq(b.x, x, b.y, y));		// distance heuristic only
 		const secondaryDirectFireTargets = [...enemyConstructor, ...enemyUtility];
 		const targetsOutOfRange = [];		// this will also be ordered in the priority order specified in `primaryDirectFireTargets`
 
+		primaryDroidTargets.forEach(obj => {
+			if (outsideOfRadius(obj, IMMEDIATE_RADIUS)) {
+				targetsOutOfRange.push(obj);
+			}
+			brigadeTargets["directFireTargets"].push(obj);
+		});
+		
 		primaryDirectFireTargets.forEach(obj => {
 			if (outsideOfRadius(obj, IMMEDIATE_RADIUS)) {
 				targetsOutOfRange.push(obj);
