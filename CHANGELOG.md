@@ -9,6 +9,8 @@ This file is used to record the changes to FishBot between each version.
     - T2+ research order improved for longer running games.
 - Production
     - Mortar units decreased to light bodies to increase mobility.
+- Infrastructure improvements
+    - Test runner now uses a Python script rather than a .bat file, which allows testing to be more efficient than before.
 
 #### Test results (Warzone 2100 v4.7.0)
 FishBot `v0.4.1` (commit `1`) was automatically tested on: `Gamma 3P T2` 1v1. 

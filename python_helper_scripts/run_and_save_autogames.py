@@ -295,14 +295,20 @@ if __name__ == "__main__":
 
     ######## PROGRAM CONFIGURATION ########
 
-    CHALLENGE_JSON_NAME = "GAMMA_HARD_COBRA_T2"
-    NUM_TESTS = 3
+    CHALLENGE_JSON_NAME = "GAMMA_INSANE_COBRA_T2"
+    NUM_TESTS = 250
     DEBUG_ON = False
 
+    COMMIT_SHA = """
+    87279a09c1dcf5678db1c74139ad4fe217983fdb
+    """
+
     # Reminder: remove any previous .jsonl files if necessary
-    OUTPUT_FILE_NAME = "results.jsonl"
 
     ######## END PROGRAM CONFIGURATION ########
+
+    SHORT_SHA = COMMIT_SHA.lstrip()[:7]
+    OUTPUT_FILE_NAME = f"{SHORT_SHA},{CHALLENGE_JSON_NAME},{NUM_TESTS}G.jsonl"
 
     """
     Note: I cloned FishBot into a new configuration directory ('PRODCONFIG') and am running autogames from 
@@ -358,4 +364,6 @@ if __name__ == "__main__":
     round_to_2dp = lambda x: round(x, 2)
 
     clear_console()
-    print(f"\nScript finished {NUM_TESTS} tests in {round_to_2dp(TIME_ENDED - TIME_STARTED)} seconds")
+    SECS_TO_COMPLETE = round_to_2dp(TIME_ENDED - TIME_STARTED)
+    MINS_TO_COMPLETE = round_to_2dp(SECS_TO_COMPLETE / 60.0)
+    print(f"\nScript finished {NUM_TESTS} tests in {SECS_TO_COMPLETE} seconds ({MINS_TO_COMPLETE} minutes)")
