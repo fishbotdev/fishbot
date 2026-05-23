@@ -136,8 +136,8 @@ function moveBrigadeToLocation(state, brigadeID, targetX, targetY) {
 		const DISTSQ_TO_CENTER = distSq(brigadeLocation.x, droid.x, brigadeLocation.y, droid.y); 
 		const DISTSQ_TO_TARGET = distSq(targetX, droid.x, targetY, droid.y);
 		
-		const TOO_FAR_AWAY_FROM_CENTER = DISTSQ_TO_CENTER > 20 ** 2;
-		const FAR_AWAY_FROM_CENTER = DISTSQ_TO_CENTER > 12 ** 2;
+		const TOO_FAR_AWAY_FROM_CENTER = DISTSQ_TO_CENTER > 8 ** 2;
+		const FAR_AWAY_FROM_CENTER = DISTSQ_TO_CENTER > 5 ** 2;
 		const AHEAD_OF_GROUP = DISTSQ_TO_TARGET < DISTSQ_CENTER_TO_TARGET;
 
 		if (AHEAD_OF_GROUP && TOO_FAR_AWAY_FROM_CENTER) {
