@@ -296,11 +296,11 @@ if __name__ == "__main__":
     ######## PROGRAM CONFIGURATION ########
 
     CHALLENGE_JSON_NAME = "GAMMA_INSANE_COBRA_T2"
-    NUM_TESTS = 250
+    NUM_TESTS = 100
     DEBUG_ON = False
 
     COMMIT_SHA = """
-    87279a09c1dcf5678db1c74139ad4fe217983fdb
+    2b7cd4f9bf7448519c564a4bb89a6bfc7eb337e0
     """
 
     # Reminder: remove any previous .jsonl files if necessary
