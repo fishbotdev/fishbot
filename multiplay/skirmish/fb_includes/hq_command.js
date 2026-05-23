@@ -659,7 +659,9 @@ class CommandCenter {
 				case MISSION_TYPE.CONSTRUCT_REPAIR_CENTER:
 				case MISSION_TYPE.DEMOLISH_REPAIR_CENTER:
 					activeRepairCenterBuildTaskIDs.push(missionData.sectorID);
-					activeRemoteMissions.push(missionData);
+
+					// Repair center tasks should not be added to the remoteMissions list because the danger level is set within the hq_g4 function 
+					// (so it should not be overwritten by the conservative danger level implemented by abort mission)
 					break;
 				default:
 					// Do nothing / ignore missions like default mission "HELP_CONSTRUCT"
