@@ -182,6 +182,7 @@
  * @typedef {Object} BrigadeMetadata
  * @property {number} id This is the brigade ID (duplicate of the key).
  * @property {PositionInfo} location  
+ * @property {number} strength
  * @property {NearbyTargets} nearbyTargets 
  * @property {AirStrikeMissionRequest[]} casStrikeRequests
  *  

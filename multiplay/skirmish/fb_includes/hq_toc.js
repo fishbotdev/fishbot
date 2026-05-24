@@ -854,6 +854,18 @@ class TacticalOperationsCenter {
 	}
 
 	/**
+	 * This function writes `strength` (percentage) to `state.brigades[id].strength`.
+	 * @param {worldState} state 
+	 * @param {number} brigadeID 
+	 * @param {number} strength
+	 * @returns {void}
+	 */
+	setBrigadeStrength(state, brigadeID, strength) {
+		const currBrigade = state.brigades[brigadeID];
+		currBrigade['strength'] = strength;
+	}
+
+	/**
 	 * This function overwrites `state.brigades[id].casStrikeRequests` with new CAS strike requests.
 	 * @param {worldState} state 
 	 * @param {number} brigadeID 

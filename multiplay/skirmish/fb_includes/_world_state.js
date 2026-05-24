@@ -619,6 +619,7 @@ class worldStateBuilder {
             return {
                 'id': brigadeID,
                 'location': {'x': x, 'y': y, 'z': MapTiles[y][x].height},
+                'strength': 0,
                 'nearbyTargets': createNearbyTargetsArray(),
                 'casStrikeRequests': createCASStrikeRequests(),                
             };

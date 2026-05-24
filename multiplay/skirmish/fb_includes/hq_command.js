@@ -572,18 +572,24 @@ class CommandCenter {
 			// Move combat brigades
 			this.BRIGADE_DESIGNATIONS.forEach((brigadeID) => {
 
+				const brigadeLocation = state.brigades[brigadeID]['location'];
+				const brigadeStrength = state.brigades[brigadeID]['strength'];
+
 				const groundTargets = this.#prioritiseBrigadeTargets(state, brigadeID);
 				this.toc.setBrigadeCASStrikeRequests(state, brigadeID, groundTargets['casTargets']);
 
-				const loc = state.brigades[brigadeID]['location'];
-				brigadeLocations.push(loc)
+				brigadeLocations.push(brigadeLocation);
 
 				if (!this.#noTargetsAvailable(groundTargets)) {
 					moveBrigadeToAttack(state, brigadeID, groundTargets);	
 				} else {
-					// Compute closest enemy base and move to that.
-					const CLOSEST_ENEMY_BASE = intelligence.findClosestEnemyBase(state, loc.x, loc.y); 			
-					moveBrigadeToLocation(state, brigadeID, CLOSEST_ENEMY_BASE.x, CLOSEST_ENEMY_BASE.y);
+					if (brigadeStrength < 75) {
+						moveBrigadeToLocation(state, brigadeID, brigadeLocation.x, brigadeLocation.y);
+					} else {
+						// Compute closest enemy base and move to that.
+						const CLOSEST_ENEMY_BASE = intelligence.findClosestEnemyBase(state, brigadeLocation.x, brigadeLocation.y); 			
+						moveBrigadeToLocation(state, brigadeID, CLOSEST_ENEMY_BASE.x, CLOSEST_ENEMY_BASE.y);
+					}
 				}
 			});
 
@@ -592,7 +598,6 @@ class CommandCenter {
 			const reserveGroupIDs = [DIVISION.HEAVY_CAV_RESERVE, DIVISION.LIGHT_CAV_RESERVE, DIVISION.INFANTRY_RESERVE, DIVISION.SHORT_RANGE_FIRE_SUPPORT_RESERVE, DIVISION.SENSOR_RESERVE, DIVISION.AIR_DEFENCE_RESERVE];
 			const x = brigadeLocations[0].x;
 			const y = brigadeLocations[0].y;
-			
 			moveReservesToShadow(reserveGroupIDs, x, y);
 		}
 
@@ -1005,9 +1010,10 @@ class CommandCenter {
 			const brigadeID = this.BRIGADE_DESIGNATIONS[i];
 
   			const supplyStatus = supply.getBrigadeSupplyStatus(state, brigadeID, this.FISHBOT_BRIGADE_COMPOSITION, this.TOTAL_UNITS_PER_BRIGADE, this.BRIGADE_REPAIR_THRESHOLD);
-			
+
 			// Check brigade strength as percentage
 			const brigadeStrength = supplyStatus['brigadeStrength'];
+			this.toc.setBrigadeStrength(state, brigadeID, brigadeStrength);
 
 			let BRIGADE_UNDERSTRENGTH = false;
 			if (brigadeStrength < UNDERSTRENGTH_THRESHOLD) {
