@@ -330,7 +330,7 @@ if __name__ == "__main__":
     AUTOGAME_COMMAND = [
         rf"Warzone 2100\bin\warzone2100.exe",           # assumes WZ2100 is installed in the current working directory
         rf'--configdir="Warzone 2100\PRODCONFIG"',      # assumes that the mod is loaded in a "PRODCONFIG" subfolder of the WZ2100 install
-        rf'--skirmish="{CHALLENGE_JSON_NAME}.json"',    # a custom challenge .json file (see `warzone2100/data/mp/tests/miza.json` for an example)
+        rf'--skirmish="{CHALLENGE_JSON_NAME}.json"',    # a custom challenge .json file loaded into `configdir/tests` (see `warzone2100/data/mp/tests/miza.json` for an example). The test file must be added to the 'tests' folder: https://github.com/Warzone2100/warzone2100/blob/8701c62ae68ca70da43ec915cbf6776c492e6656/src/main.cpp#L1870-L1871.
         rf"--enableconsole",                            # creates a console (this is where the Game State summary is printed)
         rf"--headless",                                 # runs the program without a GUI
         rf"--autogame"                                  # automatically runs the game
