@@ -55,6 +55,7 @@ import json
 
 FISHBOT_AI = "fishbot/multiplay/skirmish/FishBot.js"
 COBRA_AI = "multiplay/skirmish/Cobra.js"
+SPECTATOR_AI = "Spectator.js"
 
 EASY_DIFFICULTY = "Easy"
 MEDIUM_DIFFICULTY = "Medium"
@@ -65,7 +66,8 @@ INSANE_DIFFICULTY = "Insane"
 
 def create_empty_player(team=1):
     return {
-        "team": team
+        "team": team,
+        "ai": SPECTATOR_AI
     }
 
 
@@ -85,7 +87,9 @@ def create_cobra_player(team=0, difficulty=INSANE_DIFFICULTY):
     }
 
 
-def generate_challenge(map_name="Gamma", bases=1, power_level=2, scavengers=False, tech_level=2, total_players=8):
+def generate_challenge(map_name="Gamma",
+                       bases=1, power_level=2, scavengers=False, tech_level=2,
+                       total_players=8, fishbot_position: int=1, cobra_position: int=2):
     data = {
         "challenge": {
             "bases": bases,
@@ -101,13 +105,13 @@ def generate_challenge(map_name="Gamma", bases=1, power_level=2, scavengers=Fals
         data[f"player_{i}"] = create_empty_player()
 
     # Insert FishBot
-    data["player_1"] = create_fishbot_player(
+    data[f"player_{fishbot_position}"] = create_fishbot_player(
         team=1,
         difficulty=MEDIUM_DIFFICULTY
     )
 
     # Insert Cobra
-    data["player_2"] = create_cobra_player(
+    data[f"player_{cobra_position}"] = create_cobra_player(
         team=0,
         difficulty=HARD_DIFFICULTY
     )
@@ -129,17 +133,29 @@ if __name__ == "__main__":
 
     MAP_INFO = [
         {
-            "name": "Gamma",
-            "maxPlayers": 3
+            "name": "Entropy",
+            "maxPlayers": 6,
+            "fishbot_position": 1,
+            "cobra_position": 5
+        },
+        {
+            "name": "Melting",
+            "maxPlayers": 6,
+            "fishbot_position": 4,
+            "cobra_position": 1
         }
     ]
 
     for m in MAP_INFO:
-        NAME = m['name']
+        NAME: str = m['name']
         MAX_PLAYERS = m['maxPlayers']
+        FISHBOT_POSITION = m['fishbot_position']
+        COBRA_POSITION = m['cobra_position']
 
-        FILE_NAME = f"{NAME}.json"
+        FILE_NAME = f"{NAME.upper()}.json"
 
-        data = generate_challenge(map_name=NAME, total_players=MAX_PLAYERS)
+        data = generate_challenge(map_name=NAME, total_players=MAX_PLAYERS,
+                                  fishbot_position=FISHBOT_POSITION, cobra_position=COBRA_POSITION)
+
         save_challenge_file(FILE_NAME, data)
 
