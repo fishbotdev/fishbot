@@ -307,11 +307,11 @@ class CommandCenter {
 		/** @param {(DroidObject | StructureObject | FeatureObject)[]} targetList */
 		const addDirectFireTargetByProximity = (targetList) => {
 			targetList.forEach(obj => {
-			if (outsideOfRadius(obj, IMMEDIATE_RADIUS)) {
-				targetsOutOfRange.push(obj);
-			}
-			brigadeTargets["directFireTargets"].push(obj);
-		});
+				if (outsideOfRadius(obj, IMMEDIATE_RADIUS)) {
+					targetsOutOfRange.push(obj);
+				}
+				brigadeTargets["directFireTargets"].push(obj);
+			});
 		};
 
 		addDirectFireTargetByProximity(primaryDroidTargets);
@@ -587,15 +587,13 @@ class CommandCenter {
 				}
 			});
 
-			// Move reserves to pre-emptively reinforce the closest brigade
-			const RESERVES = [DIVISION.HEAVY_CAV_RESERVE, DIVISION.LIGHT_CAV_RESERVE, DIVISION.INFANTRY_RESERVE, DIVISION.SHORT_RANGE_FIRE_SUPPORT_RESERVE, DIVISION.SENSOR_RESERVE, DIVISION.AIR_DEFENCE_RESERVE];
-			RESERVES.forEach(id => {
-				const reserveUnits = state.g.enumGroup(id);
-				reserveUnits.forEach(droid => {
-					// TEMP: moves to BCT 0 for now
-					orderDroidLoc(droid, DORDER_MOVE, brigadeLocations[0].x, brigadeLocations[0].y);	
-				});		
-			});
+			// Manage reserves
+			// Temporary: Move reserves to pre-emptively reinforce BCT0
+			const reserveGroupIDs = [DIVISION.HEAVY_CAV_RESERVE, DIVISION.LIGHT_CAV_RESERVE, DIVISION.INFANTRY_RESERVE, DIVISION.SHORT_RANGE_FIRE_SUPPORT_RESERVE, DIVISION.SENSOR_RESERVE, DIVISION.AIR_DEFENCE_RESERVE];
+			const x = brigadeLocations[0].x;
+			const y = brigadeLocations[0].y;
+			
+			moveReservesToShadow(reserveGroupIDs, x, y);
 		}
 
 		const aviationTargets = this.#prioritiseAviationTargets(state);
@@ -923,9 +921,27 @@ class CommandCenter {
 	}
 
 	/**
+	 * Retrieves all units currently assigned to reserves.
+	 * @param {worldState} state 
+	 * @returns 
+	 */
+	#getReserveForceUnitsByCategory(state) {
+
+		const unitsByCategory = [];
+
+		const RESERVE_GROUP_IDS = [DIVISION.HEAVY_CAV_RESERVE, DIVISION.LIGHT_CAV_RESERVE, DIVISION.INFANTRY_RESERVE, DIVISION.SHORT_RANGE_FIRE_SUPPORT_RESERVE, DIVISION.AIR_DEFENCE_RESERVE, DIVISION.SENSOR_RESERVE];
+
+		const createCategory = (reserveGroupID) => {return {'id': reserveGroupID, 'reserveGroupUnits': state.g.enumGroup(reserveGroupID)};};
+		RESERVE_GROUP_IDS.forEach(id => unitsByCategory.push(createCategory(id)));
+
+		return unitsByCategory;
+	}
+
+	/**
 	 * This function:
 	 * - returns repaired units to active duty 
 	 * - assigns reserve units to active brigade combat teams
+	 * - assigns damaged units for repair (if the BCT is powerful enough)
 	 * @param {worldState} state 
 	 * @returns {void}
 	 */
@@ -936,10 +952,13 @@ class CommandCenter {
 
 		// Get reserve force units
 		const reserveUnitsByCategory = this.#getReserveForceUnits(state);
+		const reserveUnitsByCategory2 = this.#getReserveForceUnitsByCategory(state);
 
 		let SHOULD_RUN_RESUPPLY_LOGISTICS = false;
-		for (const c of Object.values(reserveUnitsByCategory)) {
-			if (c.length > 0) {		// there are reserves
+		for (let i=0; i<reserveUnitsByCategory2.length; i++) {
+			const reserveGroupUnits = reserveUnitsByCategory2[i].reserveGroupUnits;
+
+			if (reserveGroupUnits.length > 0) {		
 				SHOULD_RUN_RESUPPLY_LOGISTICS = true;
 				break;
 			}
@@ -949,6 +968,29 @@ class CommandCenter {
 		} else {
 			return;
 		}
+
+		const RESERVE_REPAIR_THRESHOLD = 80;
+		const unitsToBeRepaired = [];
+
+		// Return damaged reserves for repair (e.g. rear actions)
+		for (let i=0; i<reserveUnitsByCategory2.length; i++) {
+			const reserveGroupID = reserveUnitsByCategory2[i].id;
+			const reserveGroupUnits = reserveUnitsByCategory2[i].reserveGroupUnits;
+
+			if (reserveGroupUnits.length === 0) {
+				continue;
+			}
+
+			unitsToBeRepaired.length = 0;	// reset the list
+			reserveGroupUnits.forEach(droid => {
+				if (droid.health < RESERVE_REPAIR_THRESHOLD) {
+					unitsToBeRepaired.push(droid);
+				}
+			});
+
+			this.toc.assignUnitsForRepair(state, unitsToBeRepaired, reserveGroupID);			
+		}
+		unitsToBeRepaired.length = 0;	// reset the list
 
 		// Assign reserves into active brigade combat teams
 		const understrengthBrigades = [];

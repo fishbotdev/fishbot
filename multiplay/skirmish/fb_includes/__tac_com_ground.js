@@ -119,6 +119,31 @@ function returnUnitGroupsToBase(unitGroups) {
 }
 
 /**
+ * 
+ * @param {number[]} reserveGroupIDs 
+ * @param {number} x 
+ * @param {number} y 
+ */
+function moveReservesToShadow(reserveGroupIDs, x, y) {
+
+	const isTooFarAway = (droid) => distSq(droid.x, x, droid.y, y) > 10 ** 2;
+
+	const maintainPositionBehind = (droid) => {
+		if (isTooFarAway(droid)) {
+			orderDroidLoc(droid, DORDER_MOVE, x, y);
+		} else {
+			orderDroidLoc(droid, DORDER_SCOUT, droid.x, droid.y);
+		}
+	};
+
+	reserveGroupIDs.forEach(id => {
+		const reserveUnits = state.g.enumGroup(id);
+		reserveUnits.forEach(maintainPositionBehind);		
+	});
+
+}
+
+/**
  * TAC SOP: MOVE A BRIGADE COMBAT TEAM (BCT) TO A LOCATION
  * @param {worldState} state 
  * @param {number} brigadeID 
