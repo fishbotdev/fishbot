@@ -25,6 +25,7 @@
 
 """
 Example output `.json`:
+This code defines what the fields under "challenge" look like: https://github.com/Warzone2100/warzone2100/blob/8701c62ae68ca70da43ec915cbf6776c492e6656/src/multiint.cpp#L4848.
 
 {
 	"challenge": {
