@@ -580,17 +580,14 @@ class CommandCenter {
 
 				brigadeLocations.push(brigadeLocation);
 
-				if (!this.#noTargetsAvailable(groundTargets)) {
-					moveBrigadeToAttack(state, brigadeID, groundTargets);	
-				} else {
-					if (brigadeStrength < 75) {
-						moveBrigadeToLocation(state, brigadeID, brigadeLocation.x, brigadeLocation.y);
-					} else {
-						// Compute closest enemy base and move to that.
-						const CLOSEST_ENEMY_BASE = intelligence.findClosestEnemyBase(state, brigadeLocation.x, brigadeLocation.y); 			
-						moveBrigadeToLocation(state, brigadeID, CLOSEST_ENEMY_BASE.x, CLOSEST_ENEMY_BASE.y);
-					}
+				if (this.#noTargetsAvailable(groundTargets)) {
+					// Compute closest enemy base and move to that.
+					const CLOSEST_ENEMY_BASE = intelligence.findClosestEnemyBase(state, brigadeLocation.x, brigadeLocation.y); 			
+					moveBrigadeToLocation(state, brigadeID, CLOSEST_ENEMY_BASE.x, CLOSEST_ENEMY_BASE.y);
+					return;
 				}
+
+				moveBrigadeToAttack(state, brigadeID, groundTargets);				
 			});
 
 			// Manage reserves
@@ -1002,7 +999,7 @@ class CommandCenter {
 		const overstrengthBrigades = [];
 
 		const RECOMBINATION_THRESHOLD = 25;
-		const UNDERSTRENGTH_THRESHOLD = 25;
+		const UNDERSTRENGTH_THRESHOLD = 10;
 		const OVERSTRENGTH_THRESHOLD = 100;
 
 		for (let i=0; i<this.BRIGADE_DESIGNATIONS.length; i++) {

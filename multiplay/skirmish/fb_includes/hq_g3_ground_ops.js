@@ -72,7 +72,7 @@ class armyGroundOperations {
 	isReadyToAttack(state) {
 
 		const myPlayerInfo = state.playerInfo[me];
-		if (myPlayerInfo['numArmourUnits'] >= 2) {
+		if (myPlayerInfo['numArmourUnits'] >= 1) {
 			return true;
 		} else {
 			return false;
