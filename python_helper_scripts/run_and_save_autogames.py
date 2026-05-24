@@ -295,14 +295,20 @@ if __name__ == "__main__":
 
     ######## PROGRAM CONFIGURATION ########
 
-    CHALLENGE_JSON_NAME = "GAMMA_HARD_COBRA_T2"
-    NUM_TESTS = 3
+    CHALLENGE_JSON_NAME = "GAMMA_INSANE_COBRA_T2"
+    NUM_TESTS = 50
     DEBUG_ON = False
 
+    COMMIT_SHA = """
+    c6bf1b52487f27cba5a40d89b7e8553759f47322
+    """
+
     # Reminder: remove any previous .jsonl files if necessary
-    OUTPUT_FILE_NAME = "results.jsonl"
 
     ######## END PROGRAM CONFIGURATION ########
+
+    SHORT_SHA = COMMIT_SHA.lstrip()[:7]
+    OUTPUT_FILE_NAME = f"{SHORT_SHA},{CHALLENGE_JSON_NAME},{NUM_TESTS}G.jsonl"
 
     """
     Note: I cloned FishBot into a new configuration directory ('PRODCONFIG') and am running autogames from 
@@ -324,7 +330,7 @@ if __name__ == "__main__":
     AUTOGAME_COMMAND = [
         rf"Warzone 2100\bin\warzone2100.exe",           # assumes WZ2100 is installed in the current working directory
         rf'--configdir="Warzone 2100\PRODCONFIG"',      # assumes that the mod is loaded in a "PRODCONFIG" subfolder of the WZ2100 install
-        rf'--skirmish="{CHALLENGE_JSON_NAME}.json"',    # a custom challenge .json file (see `warzone2100/data/mp/tests/miza.json` for an example)
+        rf'--skirmish="{CHALLENGE_JSON_NAME}.json"',    # a custom challenge .json file loaded into `configdir/tests` (see `warzone2100/data/mp/tests/miza.json` for an example). The test file must be added to the 'tests' folder: https://github.com/Warzone2100/warzone2100/blob/8701c62ae68ca70da43ec915cbf6776c492e6656/src/multiint.cpp#L526
         rf"--enableconsole",                            # creates a console (this is where the Game State summary is printed)
         rf"--headless",                                 # runs the program without a GUI
         rf"--autogame"                                  # automatically runs the game
@@ -358,4 +364,6 @@ if __name__ == "__main__":
     round_to_2dp = lambda x: round(x, 2)
 
     clear_console()
-    print(f"\nScript finished {NUM_TESTS} tests in {round_to_2dp(TIME_ENDED - TIME_STARTED)} seconds")
+    SECS_TO_COMPLETE = round_to_2dp(TIME_ENDED - TIME_STARTED)
+    MINS_TO_COMPLETE = round_to_2dp(SECS_TO_COMPLETE / 60.0)
+    print(f"\nScript finished {NUM_TESTS} tests in {SECS_TO_COMPLETE} seconds ({MINS_TO_COMPLETE} minutes)")
