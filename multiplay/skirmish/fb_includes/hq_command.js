@@ -299,31 +299,24 @@ class CommandCenter {
 
 		const primaryDroidTargets = [...enemyArmor, ...enemyInfantry];
 		primaryDroidTargets.sort((a,b) => distSq(a.x, x, a.y, y) - distSq(b.x, x, b.y, y));		// distance heuristic only
-		const primaryDirectFireTargets = [ ...enemyDefenses, ...enemyIndirectFire, ...enemyADA, ...enemyIndustrial];
-		primaryDirectFireTargets.sort((a,b) => distSq(a.x, x, a.y, y) - distSq(b.x, x, b.y, y));		// distance heuristic only
-		const secondaryDirectFireTargets = [...enemyConstructor, ...enemyUtility];
+		const secondaryDirectFireTargets = [ ...enemyDefenses, ...enemyIndirectFire, ...enemyADA, ...enemyIndustrial];
+		secondaryDirectFireTargets.sort((a,b) => distSq(a.x, x, a.y, y) - distSq(b.x, x, b.y, y));		// distance heuristic only
+		const tertiaryDirectFireTargets = [...enemyConstructor, ...enemyUtility];
 		const targetsOutOfRange = [];		// this will also be ordered in the priority order specified in `primaryDirectFireTargets`
 
-		primaryDroidTargets.forEach(obj => {
+		/** @param {(DroidObject | StructureObject | FeatureObject)[]} targetList */
+		const addDirectFireTargetByProximity = (targetList) => {
+			targetList.forEach(obj => {
 			if (outsideOfRadius(obj, IMMEDIATE_RADIUS)) {
 				targetsOutOfRange.push(obj);
 			}
 			brigadeTargets["directFireTargets"].push(obj);
 		});
-		
-		primaryDirectFireTargets.forEach(obj => {
-			if (outsideOfRadius(obj, IMMEDIATE_RADIUS)) {
-				targetsOutOfRange.push(obj);
-			}
-			brigadeTargets["directFireTargets"].push(obj);
-		});
+		};
 
-		secondaryDirectFireTargets.forEach(obj => {
-			if (outsideOfRadius(obj, IMMEDIATE_RADIUS)) {
-				targetsOutOfRange.push(obj);
-			}
-			brigadeTargets["directFireTargets"].push(obj);
-		});
+		addDirectFireTargetByProximity(primaryDroidTargets);
+		addDirectFireTargetByProximity(secondaryDirectFireTargets);
+		addDirectFireTargetByProximity(tertiaryDirectFireTargets);
 
 		const MAX_DIRECT_FIRE_TARGETS = 8;
 		const FURTHER_TARGETS_REQUIRED = MAX_DIRECT_FIRE_TARGETS - brigadeTargets['directFireTargets'].length;
