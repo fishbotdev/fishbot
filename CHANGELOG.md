@@ -3,6 +3,13 @@ This file is used to record the changes to FishBot between each version.
 
 ## Fishbot v0.4.1
 ### Changes in v0.4.1
+- Combat improvements
+    - Ground forces
+        - Brigade combat teams (BCT) now keep their cohesion a bit better.
+        - Repaired troops now move towards a staging area behind BCT0.
+        - ADA is produced a bit earlier than before.
+    - Aviation
+        - Aircraft now attack urgent CAS targets more often (threshold on nearby anti-air defences increased).
 - Construction improvements
     - Increased the likelihood of repair faciltiies meeting the conditions for being forward-built.
 - Research improvements
@@ -10,7 +17,11 @@ This file is used to record the changes to FishBot between each version.
 - Production
     - Mortar units decreased to light bodies to increase mobility.
 - Infrastructure improvements
-    - Test runner now uses a Python script rather than a .bat file, which allows testing to be more efficient than before.
+    - Computational performance improvements
+        - Targeting code is now more efficient
+        - Reduced update rates of logistics structures (i.e. factories and research)
+    - Automated testing
+        - Test runner now uses a Python script rather than a .bat file, which now captures the test results automatically.
 
 #### Test results (Warzone 2100 v4.7.0)
 FishBot `v0.4.1` (commit `1`) was automatically tested on: `Gamma 3P T2` 1v1. 

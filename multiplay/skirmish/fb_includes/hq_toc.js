@@ -491,16 +491,14 @@ class TacticalOperationsCenter {
 	 * @param {Object} state 
 	 * @param {any[][]} newGrid 
 	 * @param {Array} playerInfo 
-	 * @param {Array} allTargets 
 	 * @returns {void}
 	 */
-	#printDebugGrid(state, newGrid, playerInfo, allTargets) {
+	#printDebugGrid(state, newGrid, playerInfo) {
 		// Write updated units to grid (only overwriting "KEYS" defined below)
 		const numXCells = state.grid.numXCells;
 		const numYCells = state.grid.numYCells;
 
 		state.playerInfo = playerInfo;
-		state.allTargets = allTargets;
 		
 		if (false) {
 			debug(`\nGrid-form derrickInfo @ ${gameTime}`);
@@ -526,13 +524,6 @@ class TacticalOperationsCenter {
 			// Test if grid['derricks'] & state.poi.derricks point to the same location in memory (yes)
 			debug(`List form - derrickInfo @ ${gameTime}`);
 			state.poi.derricks.forEach(d => debug(`	${d.id}\t\t${d.isClaimed ? `claimed by ${d.playerID}`: 'unclaimed'}`));
-		}
-
-		if (false) {
-			debug(`\n${gameTime} allTargets`);
-			state.allTargets.forEach(t => {
-				debug(`\t${t.name}  ${t.id}  (player ${t.player})	(flags ${toBinary20(t.flags)})`);
-			});
 		}
 
 		if (false) {
