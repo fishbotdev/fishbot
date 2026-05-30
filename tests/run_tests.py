@@ -22,6 +22,31 @@
 #     - Increased storage requirements and write speed are not critical for this application.
 # 3. `process_autogame_results.py` reads the `jsonl` formatted results and plots statistics.
 
-import create_1v1_challenge_json
-import run_and_save_autogames
-import process_autogame_results
+import set_autogame_config as cfg
+import create_1v1_challenge_json as g
+# import run_and_save_autogames as test_runner
+# import process_autogame_results as test_processor
+
+#################################### USER CONFIG START ####################################
+
+RUN_TESTS = True
+PRODUCTION_TEST_FOLDER_PATH = rf""
+TEST_RESULTS_FOLDER_PATH = rf""
+
+#################################### USER CONFIG END ####################################
+
+
+if RUN_TESTS:
+
+    # Generate tests & save to tests folder.
+    SKIRMISH_SETTINGS, MAP_SETTINGS = cfg.generate_1v1_cobra_hard()
+    data = g.generate_json_test_data(skirmish_settings=SKIRMISH_SETTINGS, map_settings=MAP_SETTINGS)
+    g.save_challenge_files(json_test_data=data, output_folder_path=PRODUCTION_TEST_FOLDER_PATH)
+
+    # Run tests in tests folder.
+    # TEST_RESULTS_FOLDER_PATH = test_runner.run_tests(output_folder_path=TEST_RESULTS_FOLDER_PATH)
+    # test_processor.compile_results(test_results_folder_path=TEST_RESULTS_FOLDER_PATH)
+
+else:
+    pass
+    # test_processor.compile_results(test_results_folder_path=TEST_RESULTS_FOLDER_PATH)

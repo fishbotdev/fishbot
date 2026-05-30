@@ -52,71 +52,43 @@ Note: This code defines what the fields under "challenge" look like: https://git
 """
 
 import json
+import CONSTANTS as C
 
-FISHBOT_AI = "fishbot/multiplay/skirmish/FishBot.js"
-COBRA_AI = "Cobra.js"
-SPECTATOR_AI = "Spectator.js"       # this is a custom spectator AI script with details below
+#################################### GENERATOR FUNCTIONS ####################################
 
-"""
-
-`Spectator.js` contains:
----
-function eventStartLevel() {
-	transformPlayerToSpectator(me);	
-}
----
-while `Spectator.json` contains:
----
-{
-	"AI": {
-		"js": "Spectator.js",
-		"name": "Spectator",
-		"tip": "Sets itself to a spectator as soon as the game starts."
-	}
-}
----
-"""
-
-
-EASY_DIFFICULTY = "Easy"
-MEDIUM_DIFFICULTY = "Medium"
-HARD_DIFFICULTY = "Hard"
-INSANE_DIFFICULTY = "Insane"
-
-#################################### HELPER FUNCTIONS ####################################
-
-def get_uppercase_ai_name(script_name):
+def get_uppercase_ai_name(script_name: str):
     # Turns `Cobra.js` -> `COBRA`
     return (script_name.split(".")[0]).upper()
 
-def create_empty_player(team=1):
+
+def create_empty_player(team: int):
     return {
-        "difficulty": EASY_DIFFICULTY,
+        "difficulty": C.EASY_DIFFICULTY,
         "team": team,
-        "ai": SPECTATOR_AI,
+        "ai": C.SPECTATOR_AI,
     }
 
 
-def create_fishbot_player(team=1, difficulty=MEDIUM_DIFFICULTY):
-    return {
-        "difficulty": difficulty,
-        "team": team,
-        "ai": FISHBOT_AI
-    }
-
-
-def create_cobra_player(team=0, difficulty=INSANE_DIFFICULTY):
+def create_fishbot_player(team: int, difficulty: int):
     return {
         "difficulty": difficulty,
         "team": team,
-        "ai": COBRA_AI
+        "ai": C.FISHBOT_AI
     }
 
 
-def generate_1v1_challenge(challenge_name, challenge_version, map_name, total_players,
-                           bases, power_level, scavengers, tech_level,
-                           fishbot_position, fishbot_difficulty, fishbot_factory,
-                           opponent_position, opponent_difficulty, opponent_factory):
+def create_cobra_player(team: int, difficulty: int):
+    return {
+        "difficulty": difficulty,
+        "team": team,
+        "ai": C.COBRA_AI
+    }
+
+
+def create_challenge_from_template(challenge_name: str, challenge_version: int, map_name: str, total_players: int,
+                                   bases: int, power_level: int, scavengers: int, tech_level: int,
+                                   fishbot_position: int, fishbot_difficulty: str, fishbot_factory: any,
+                                   opponent_position: int, opponent_difficulty: str, opponent_factory: any):
     data = {
         "challenge": {
             "bases": bases,
@@ -155,103 +127,38 @@ def generate_1v1_challenge(challenge_name, challenge_version, map_name, total_pl
     return data
 
 
-def save_challenge_file(filename, data):
+def generate_json_test_data(skirmish_settings, map_settings):
 
-    with open(filename, "w") as f:
-        json.dump(data, f, indent=4)
-
-    print(f"Generated: {filename}")
-
-
-###############################################################################################
-
-if __name__ == "__main__":
-
-    #################################### USER CONFIG START ####################################
-
-    SKIRMISH_1V1_INFO = {
-        # Challenge settings
-        "version": 1,
-
-        # Fishbot info
-        "fishbotName": FISHBOT_AI,
-        "fishbotDifficulty": MEDIUM_DIFFICULTY,
-        "fishbotFactory": create_fishbot_player,
-
-        # Opponent info
-        "opponentName": COBRA_AI,
-        "opponentDifficulty": HARD_DIFFICULTY,
-        "opponentFactory": create_cobra_player,
-
-        # Game settings
-        "bases": 1,
-        "powerLevel": 2,
-        "scavengers": 0,
-        "techLevel": 2,
-    }
-
-
-    MAP_INFO_COBRA_1V1 = [
-
-        # 2p maps (note: these are not included because challenge maps force add a human player as Player 0).
-
-        # 3p maps 
-        {
-            "mapName": "Monocot",
-            "maxPlayers": 3,
-            "fishbot_position": 1,
-            "opponent_position": 2
-        },
-        {
-            "mapName": "Gamma",
-            "maxPlayers": 3,
-            "fishbot_position": 1,
-            "opponent_position": 2
-        },
-
-        # # 6p maps
-        # {
-        #     "name": "Entropy",
-        #     "maxPlayers": 6,
-        #     "fishbot_position": 1,
-        #     "opponent_position": 5
-        # },
-        # {
-        #     "name": "Melting",
-        #     "maxPlayers": 6,
-        #     "fishbot_position": 4,
-        #     "opponent_position": 1
-        # }
-    ]
-
-    #################################### USER CONFIG END ####################################
-
-
-    # BOT INFO
-    FISHBOT_DIFFICULTY = SKIRMISH_1V1_INFO['fishbotDifficulty']
-    fishbot_factory = SKIRMISH_1V1_INFO['fishbotFactory']
-    OPPONENT_NAME = get_uppercase_ai_name(SKIRMISH_1V1_INFO['opponentName'])
-    OPPONENT_DIFFICULTY = SKIRMISH_1V1_INFO['opponentDifficulty']
-    opponent_factory = SKIRMISH_1V1_INFO['opponentFactory']
+    json_test_data = []
 
     # SKIRMISH INFO
-    BASES = SKIRMISH_1V1_INFO['bases']
-    POWER_LEVEL = SKIRMISH_1V1_INFO['powerLevel']
-    SCAVENGERS = SKIRMISH_1V1_INFO['scavengers']
-    TECH_LEVEL = SKIRMISH_1V1_INFO['techLevel']
+    BASES: int = skirmish_settings['bases']
+    POWER_LEVEL: int = skirmish_settings['powerLevel']
+    SCAVENGERS: int = skirmish_settings['scavengers']
+    TECH_LEVEL: int = skirmish_settings['techLevel']
 
+    # FISHBOT INFO
+    FISHBOT_DIFFICULTY: str = skirmish_settings['fishbotDifficulty']
+    fishbot_factory = create_fishbot_player
 
-    for m in MAP_INFO_COBRA_1V1:
+    # 'OPPONENT' INFO
+    OPPONENT_NAME: str = get_uppercase_ai_name(skirmish_settings['opponentName'])
+    OPPONENT_DIFFICULTY: int = skirmish_settings['opponentDifficulty']
+    opponent_factory = create_cobra_player         # todo -> extend cobra factory into others
+
+    for m in map_settings:
         # MAP INFO
         MAP_NAME: str = m['mapName']
-        MAX_PLAYERS = m['maxPlayers']
-        POSITION1 = m['fishbot_position']
-        POSITION2 = m['opponent_position']
+        MAX_PLAYERS: int = m['maxPlayers']
+
+        # POSITION INFO (1v1 ONLY)
+        POSITION1: int = m['fishbot_position']
+        POSITION2: int = m['opponent_position']
 
         POSITIONS = [POSITION1, POSITION2]
         NUM_POSITIONS = len(POSITIONS)
 
-        # Creates two copies with positions swapped
+        # Creates two copies with positions swapped (only works for 1v1)
         for i in range(NUM_POSITIONS):
 
             FISHBOT_POSITION = POSITIONS[i % NUM_POSITIONS]
@@ -260,7 +167,7 @@ if __name__ == "__main__":
             FILE_NAME = f"{MAP_NAME.upper()}_{FISHBOT_POSITION}_{OPPONENT_POSITION}_{OPPONENT_NAME}_{OPPONENT_DIFFICULTY.upper()}_T{TECH_LEVEL}.json"
             FILE_VER = 1
 
-            data = generate_1v1_challenge(
+            challenge_data = create_challenge_from_template(
                 # Map & game setup
                 challenge_name=FILE_NAME, challenge_version=FILE_VER, map_name=MAP_NAME, total_players=MAX_PLAYERS,
                 bases=BASES, power_level=POWER_LEVEL, scavengers=SCAVENGERS, tech_level=TECH_LEVEL,
@@ -269,4 +176,39 @@ if __name__ == "__main__":
                 opponent_position=OPPONENT_POSITION, opponent_difficulty=OPPONENT_DIFFICULTY, opponent_factory=opponent_factory,
             )
 
-            save_challenge_file(FILE_NAME, data)
+            json_test_data.append({'file_name': FILE_NAME, 'raw_data': challenge_data})
+
+    return json_test_data
+
+
+#################################### SAVE FUNCTIONS ####################################
+
+def save_challenge_files(json_test_data: list, output_folder_path: str):
+
+    for d in json_test_data:
+        FILE_NAME = d["file_name"]
+        DATA = d["raw_data"]
+
+        FILE_PATH = rf"{output_folder_path}/{FILE_NAME}"
+
+        with open(FILE_NAME, "w") as f:
+            json.dump(DATA, f, indent=4)
+
+        print(f"`{FILE_NAME}` saved locally.")
+
+
+###############################################################################################
+
+
+if __name__ == "__main__":
+
+    #################################### USER CONFIG START ####################################
+
+    import set_autogame_config as cfg
+    SKIRMISH_SETTINGS, MAP_SETTINGS = cfg.generate_1v1_cobra_hard()
+
+    #################################### USER CONFIG END ####################################
+
+    json_test_data = generate_json_test_data(skirmish_settings=SKIRMISH_SETTINGS, map_settings=MAP_SETTINGS)
+    save_challenge_files(json_test_data=json_test_data, output_folder_path=".")
+
