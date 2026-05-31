@@ -10,3 +10,4 @@ python_helper_scripts/map_analysis/*.json
 *.odp#
 *.jsonl
 *.json
+*.pyc
