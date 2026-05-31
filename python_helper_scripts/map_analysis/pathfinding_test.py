@@ -39,6 +39,10 @@ enum TYPE_OF_TERRAIN
 import json
 import numpy as np
 import matplotlib.pyplot as plt
+from time import perf_counter as get_time
+
+# Disclaimer: most of the helper functions are implemented by AI (ChatGPT), but
+# the `find_path_[x]` functions are implemented by hand for learning.
 
 ############################## HELPER FUNCTIONS ##############################
 
@@ -174,7 +178,7 @@ def find_path_bfs(map, start: tuple, goal: tuple) -> list[tuple]:
 
     # back out the path, starting from the end node
     idx = visited.index(goal) if (goal in visited) else None
-    print(f'goal index in visited: {idx}')
+    # print(f'goal index in visited: {idx}')
 
     iters = 0
     while idx != None and iters < max_iterations:
@@ -184,7 +188,7 @@ def find_path_bfs(map, start: tuple, goal: tuple) -> list[tuple]:
             # Append parent node information to result
             p = visited[idx]
             result.append(p)
-            print(f"\t - parent: {p}")
+            # print(f"\t - parent: {p}")
 
         iters += 1
 
@@ -266,8 +270,13 @@ if __name__ == '__main__':
     # Run path finding and plot
     pathing_algorithm = find_path_bfs
 
+    print("\n--------------------------------------------------------------\n")
+    START_TIME = get_time()
     path = pathing_algorithm(map=passability_map, start=START, goal=GOAL)
+    END_TIME = get_time()
+    print(f"`{pathing_algorithm.__name__}` finished executing in: {round(END_TIME - START_TIME, 1)} secs")
     plot_map_and_path(raw_map=passability_map, found_path=path, start=START, goal=GOAL)
+    print("\n--------------------------------------------------------------\n")
 
     # Run tests
     test_harness.run_test(pathing_algorithm)
