@@ -252,7 +252,7 @@ if __name__ == '__main__':
 
     ################### USER CONFIG START ###################
     START = (10, 15)
-    GOAL = (70, 70)
+    GOAL = (50, 50)
 
     FILE_NAME = "gamma_terrainType"     # this is the data obtained from the `MapTiles.terrainType` global
     ################### USER CONFIG END ###################
@@ -274,7 +274,7 @@ if __name__ == '__main__':
     START_TIME = get_time()
     path = pathing_algorithm(map=passability_map, start=START, goal=GOAL)
     END_TIME = get_time()
-    print(f"`{pathing_algorithm.__name__}` finished executing in: {round(END_TIME - START_TIME, 1)} secs")
+    print(f"`{pathing_algorithm.__name__}` finished executing in: {round(END_TIME - START_TIME, 3)} secs")
     plot_map_and_path(raw_map=passability_map, found_path=path, start=START, goal=GOAL)
     print("\n--------------------------------------------------------------\n")
 
