@@ -89,17 +89,22 @@ def plot_map_and_path(raw_map, found_path: list[tuple], start: tuple, goal: tupl
         s=150
     )
 
-    # Display path
-    if len(found_path) > 0:
-        xs = [p[0] for p in found_path]
-        ys = [p[1] for p in found_path]
+    # Secondary marker (for illustration purposes)
+    if False:
+        plt.scatter(94, 70, marker="D", color="red", s=150)
 
-        plt.plot(
-            xs,
-            ys,
-            color="blue",
-            linewidth=4
-        )
+    # Display path
+    if True:
+        if len(found_path) > 0:
+            xs = [p[0] for p in found_path]
+            ys = [p[1] for p in found_path]
+
+            plt.plot(
+                xs,
+                ys,
+                color="blue",
+                linewidth=4
+            )
 
     plt.show()
 
@@ -283,7 +288,7 @@ if __name__ == '__main__':
     EXECUTION_TIME_MS = round(END_TIME - START_TIME, 4) * 1000
 
     print(f"`{pathing_algorithm.__name__}` finished executing in: {EXECUTION_TIME_MS} ms")
-    plot_map_and_path(raw_map=terrain, found_path=path, start=START, goal=GOAL)
+    plot_map_and_path(raw_map=passability_map, found_path=path, start=START, goal=GOAL)
     print("\n--------------------------------------------------------------\n")
 
     # Run tests
