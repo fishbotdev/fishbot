@@ -280,10 +280,10 @@ if __name__ == '__main__':
     path = pathing_algorithm(map=passability_map, start=START, goal=GOAL)
     END_TIME = get_time()
 
-    EXECUTION_TIME = round(END_TIME - START_TIME, 4)
+    EXECUTION_TIME_MS = round(END_TIME - START_TIME, 4) * 1000
 
-    print(f"`{pathing_algorithm.__name__}` finished executing in: {EXECUTION_TIME} secs")
-    plot_map_and_path(raw_map=passability_map, found_path=path, start=START, goal=GOAL)
+    print(f"`{pathing_algorithm.__name__}` finished executing in: {EXECUTION_TIME_MS} ms")
+    plot_map_and_path(raw_map=terrain, found_path=path, start=START, goal=GOAL)
     print("\n--------------------------------------------------------------\n")
 
     # Run tests
