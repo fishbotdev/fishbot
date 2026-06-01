@@ -117,6 +117,7 @@ def find_path_bfs(map, start: tuple, goal: tuple) -> list[tuple]:
     References
     1. DFS/BFS - Abdul Bari
     2. Breadth First Search Algorithm | Shortest Path | Graph Theory - WilliamFiset
+    3. https://www.redblobgames.com/pathfinding/a-star/introduction.html
     """
 
     queue = [start]
@@ -155,9 +156,13 @@ def find_path_bfs(map, start: tuple, goal: tuple) -> list[tuple]:
         return valid_neighbours
 
     iters = 0
-    max_iterations = 10000      # to prevent the algorithm from running forever if I make a mistake
+    max_iterations = 50000      # to prevent the algorithm from running forever if I make a mistake
     while len(queue) > 0 and iters < max_iterations:
         node = queue.pop(0)
+        if node == goal:
+            print(f'goal found - terminated early ({iters} iterations)')
+            break
+
         parent_index = visited.index(node) if (node in visited) else None       # never returns `None` since all parents are registered in 'visited' before the child is spawned
 
         neighbours = get_valid_neighbours(node, map)
@@ -274,7 +279,10 @@ if __name__ == '__main__':
     START_TIME = get_time()
     path = pathing_algorithm(map=passability_map, start=START, goal=GOAL)
     END_TIME = get_time()
-    print(f"`{pathing_algorithm.__name__}` finished executing in: {round(END_TIME - START_TIME, 3)} secs")
+
+    EXECUTION_TIME = round(END_TIME - START_TIME, 4)
+
+    print(f"`{pathing_algorithm.__name__}` finished executing in: {EXECUTION_TIME} secs")
     plot_map_and_path(raw_map=passability_map, found_path=path, start=START, goal=GOAL)
     print("\n--------------------------------------------------------------\n")
 
