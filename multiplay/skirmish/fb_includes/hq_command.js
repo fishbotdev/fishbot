@@ -237,7 +237,7 @@ class CommandCenter {
 	 * @param {number} brigadeID 
 	 * @returns {BrigadeTargets} Intent: (DroidObject | StructureObject)[]	
 	 */
-	#prioritiseBrigadeTargets(state, brigadeID) {
+	#prioritiseBrigadeTargets(state, brigadeID, closestEnemyBasePosition) {
 
 		/** @type {BrigadeTargets} */
 		const brigadeTargets = {
@@ -294,13 +294,22 @@ class CommandCenter {
 		}
 
 		// Direct Fire Targeting
-		// Intent: make it as clear as possible what the priorities are (even if the same lists are looped through multiple times)
+		const closestBaseX = closestEnemyBasePosition.x; 
+		const closestBaseY = closestEnemyBasePosition.y;
 		const IMMEDIATE_RADIUS = 15;
 
+		const w_groupProximity = 2;
+		const w_baseProximity = 1;
+
+		const combinedDistanceHeuristic = (a,b) => {
+			return w_groupProximity * (distSq(a.x, x, a.y, y) - distSq(b.x, x, b.y, y)) + 
+					w_baseProximity * (distSq(a.x, closestBaseX, a.y, closestBaseY) - distSq(b.x, closestBaseX, b.y, closestBaseY))
+		}
+
 		const primaryDroidTargets = [...enemyArmor, ...enemyInfantry];
-		primaryDroidTargets.sort((a,b) => distSq(a.x, x, a.y, y) - distSq(b.x, x, b.y, y));		// distance heuristic only
+		primaryDroidTargets.sort((a,b) => combinedDistanceHeuristic(a,b));		
 		const secondaryDirectFireTargets = [ ...enemyDefenses, ...enemyIndirectFire, ...enemyADA, ...enemyIndustrial];
-		secondaryDirectFireTargets.sort((a,b) => distSq(a.x, x, a.y, y) - distSq(b.x, x, b.y, y));		// distance heuristic only
+		secondaryDirectFireTargets.sort((a,b) => combinedDistanceHeuristic(a,b));		
 		const tertiaryDirectFireTargets = [...enemyConstructor, ...enemyUtility];
 		const targetsOutOfRange = [];		// this will also be ordered in the priority order specified in `primaryDirectFireTargets`
 
@@ -323,6 +332,26 @@ class CommandCenter {
 		if (FURTHER_TARGETS_REQUIRED > 0) {
 			brigadeTargets['directFireTargets'].push(...targetsOutOfRange.slice(FURTHER_TARGETS_REQUIRED));
 		}
+
+		// Draw lines to the top 3 targets (to see what the brigade is trying to attack)
+		for (let i=0; i<4; i++) {
+			if (i >= brigadeTargets['directFireTargets'].length) {
+				break;
+			}
+
+			const target = brigadeTargets['directFireTargets'][i];
+			const lineToTarget = drawLine(x, y, target.x, target.y);
+
+			for (let j=0; j<lineToTarget.length; j++) {
+				const point = lineToTarget[j];
+				// if (MapTiles[point.y][point.x].terrainType === 7 || MapTiles[point.y][point.x].terrainType === 8) {
+				// 	// water or cliff; hack
+				// 	break;
+				// }
+				hackMarkTiles(point.x, point.y);		
+			}
+		}
+
 
 		// Fire Support Targeting
 		// Intent: Suppress enemy infantry (FishBot is vulnerable to massed cyborgs) then destroy indirect fires, defences & ADA.
@@ -570,19 +599,20 @@ class CommandCenter {
 			const brigadeLocations = [];
 
 			// Move combat brigades
+			if (DEBUG_MODE_ON) hackMarkTiles();		
+
 			this.BRIGADE_DESIGNATIONS.forEach((brigadeID) => {
 
-				const brigadeLocation = state.brigades[brigadeID]['location'];
 				const brigadeStrength = state.brigades[brigadeID]['strength'];
-
-				const groundTargets = this.#prioritiseBrigadeTargets(state, brigadeID);
-				this.toc.setBrigadeCASStrikeRequests(state, brigadeID, groundTargets['casTargets']);
-
+				const brigadeLocation = state.brigades[brigadeID]['location'];
 				brigadeLocations.push(brigadeLocation);
 
+				const CLOSEST_ENEMY_BASE = intelligence.findClosestEnemyBase(state, brigadeLocation.x, brigadeLocation.y); 			
+
+				const groundTargets = this.#prioritiseBrigadeTargets(state, brigadeID, CLOSEST_ENEMY_BASE);
+				this.toc.setBrigadeCASStrikeRequests(state, brigadeID, groundTargets['casTargets']);
+
 				if (this.#noTargetsAvailable(groundTargets)) {
-					// Compute closest enemy base and move to that.
-					const CLOSEST_ENEMY_BASE = intelligence.findClosestEnemyBase(state, brigadeLocation.x, brigadeLocation.y); 			
 					moveBrigadeToLocation(state, brigadeID, CLOSEST_ENEMY_BASE.x, CLOSEST_ENEMY_BASE.y);
 					return;
 				}

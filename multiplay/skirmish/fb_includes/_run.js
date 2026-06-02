@@ -26,6 +26,7 @@ function runGameEndedWatchdog() {
 	if (gameIsFinished && state.botIsActive) {
 		debug(`${gameTime}\t FishBot ${me}: gameHasEnded, stopping all function`);
 		state.botIsActive = false;
+		if (DEBUG_MODE_ON) hackMarkTiles();		// clear all residual debug tiles
 	}
 
 	if (!gameIsFinished && !state.botIsActive) {
