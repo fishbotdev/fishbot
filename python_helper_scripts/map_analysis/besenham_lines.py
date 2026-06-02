@@ -15,34 +15,20 @@
 	If not, see <https://www.gnu.org/licenses/>.
 """
 
-"""
-Note: terrainType as of 4.7.0 are defined as:
-warzone2100/lib/wzmaplib/include/wzmaplib/terrain_type.h
-
-enum TYPE_OF_TERRAIN
-{
-	TER_SAND,               -> 0
-	TER_SANDYBRUSH,
-	TER_BAKEDEARTH,
-	TER_GREENMUD,
-	TER_REDBRUSH,
-	TER_PINKROCK,
-	TER_ROAD,
-	TER_WATER,              -> 7 (not passable to wheeled vehicles)
-	TER_CLIFFFACE,          -> 8 (not passable to wheeled vehicles)
-	TER_RUBBLE,
-	TER_SHEETICE,
-	TER_SLUSH,
-	
-"""
 
 import json
 import numpy as np
 import matplotlib.pyplot as plt
 from time import perf_counter as get_time
+from math import floor, ceil
+import bresenham as b
 
 # Disclaimer: plot_line is implemented by AI (ChatGPT), but the
 # rest of the software was implemented by hand for learning.
+
+# 02 Jun 2026 - passes some test cases, fails others (not general to Q2, Q3 or Q4)
+# Decided to copy a JS implementation into Fishbot.
+
 
 ############################## HELPER FUNCTIONS ##############################
 
@@ -117,7 +103,7 @@ def plot_line(line: list[tuple], start: tuple, goal: tuple):
     plt.show()
 
 
-def draw_line_unoptimised(start: tuple, goal: tuple) -> list[tuple]:
+def draw_line_unoptimised(start: tuple, goal: tuple, debug_print: bool=False) -> list[tuple]:
     """
     The purpose of this function is to approximate an ideal line drawn on a grid using Besenham's algorithm.
     The intent of this is to use a simple raymarching algorithm to be able to cheaply prioritise targets without BFS.
@@ -131,8 +117,14 @@ def draw_line_unoptimised(start: tuple, goal: tuple) -> list[tuple]:
     x1 = goal[0]
     y1 = goal[1]
 
-    gradient = (y1 - y0) / (x1 - x0)                    # compute the gradient of the 'ideal line'
-    xrange = list(range(x0, x1, 1 if (x1 > x0) else -1))      # creates an integer x-range
+    dx = x1 - x0
+    dy = y1 - y0
+    if dx == 0:
+        return [(x0, y) for y in range(y0, y1+1)]       # special case of vertical line
+
+    gradient = (dy) / (dx)                    # compute the gradient of the 'ideal line'
+
+    xrange = list(range(x0, x1+1, 1 if (x1 > x0) else -1))      # creates an integer x-range
 
     y_offset = 1 if y1 > y0 else -1
     y_check_offset = 0.5 if y1 > y0 else -0.5
@@ -150,20 +142,37 @@ def draw_line_unoptimised(start: tuple, goal: tuple) -> list[tuple]:
         yi = gradient * (xi - x0) + y0
         # print(f" - {yi}")
 
+        # Compute difference between yi and the current y value
+        # NOTE: this part (which fills up the columns) has bugs in it, duplicate entries are common
+        ############
+
+        integer_offset = int(round(abs(result_y[-1] - yi), 0))
+        # print(integer_offset)
+        if integer_offset > 1:
+            for i in range(1, integer_offset+1, 1):
+                # check to see if the next point is going to be covered by the 'midpoint-check' below
+                if abs((result_y[-1]+y_offset) - (gradient * xi + y0)) < 0.5:
+                    break
+
+                # Stuff values
+                result_x.append(xi)
+                result_y.append(result_y[-1]+y_offset)
+
+        ############
+
         # Decide whether y0 should: (1) stay the same or (2) go up or down by `y_offset`
         y_checkpoint = result_y[-1] + y_check_offset
 
         # Check against the midpoint ('checkpoint')
         new_y = result_y[-1]
-        if yi - y_checkpoint > 0 and y1 > y0:
+        if yi - y_checkpoint >= 0 and y1 > y0:
+            new_y += y_offset
+        elif yi - y_checkpoint <= 0 and y1 < y0:
             new_y += y_offset
 
         result_y.append(new_y)
 
     # Post-processing
-    # Add goal
-    result_x.append(x1)
-    result_y.append(y1)
 
     # Left to right (for human readability, makes no difference when used in an algorithm)
     if x1 < x0:
@@ -171,30 +180,45 @@ def draw_line_unoptimised(start: tuple, goal: tuple) -> list[tuple]:
         result_x.reverse()
 
     result = list(zip(result_x, result_y))
-    # print(result)
+    if debug_print:
+        print(result)
     return result
 
 
 class BasicLineTest:
     def __init__(self):
-        self.tests = [
-            # Formatted as [input], [output] -> where [input] = [[start], [goal]] and [output] = List[tuple]
-            {
-                'name': 'y = x',
-                'inputs': [(0, 0), (6, 6)],
-                'output': [(0, 0), (1, 1), (2, 2), (3, 3), (4, 4), (5, 5), (6, 6)]
-            },
-            {
-                'name': 'y = -x',
-                'inputs': [(-6, -6), (0, 0)],
-                'output': [(-1*i, -1*i) for i in range(6, -1, -1)]
-            },
-            {
-                'name': 'y = 11/16 * x - 23 / 8',
-                'inputs': [(-6, -7), (10, 4)],
-                'output': [(-6, -7), (-5, -6), (-4, -6), (-3, -5), (-2, -4), (-1, -4), (0, -3), (1, -2), (2, -2), (3, -1), (4, 0), (5, 1), (6, 1), (7, 2), (8, 3), (9, 3), (10, 4)]
-            }
+
+        self.inputs = [
+            [(0, 0), (6, 6)],
+            [(0, 0), (10, 0)], # horizontal
+            [(0, 0), (0, 10)], # vertical
+            [(0, 0), (10, 10)], # diagonal slope 1
+            [(0, 0), (10, -10)], # diagonal slope -1
+    
+            [(0, 0), (10, 3)], # shallow positive
+            [(0, 0), (3, 10)], # steep positive
+    
+            [(0, 0), (-10, 3)], # quadrant II
+            [(0, 0), (-3, 10)],
+    
+            [(0, 0), (-10, -3)], # quadrant III
+            [(0, 0), (-3, -10)],
+    
+            [(0, 0), (10, -3)], # quadrant IV
+            [(0, 0), (3, -10)],
         ]
+        self.tests = [self._create_test_case(idx, inputs) for idx, inputs in enumerate(self.inputs)]
+
+
+    def _create_test_case(self, idx: int, input: list[tuple]) -> list[tuple]:
+        inp = [num for tup in input for num in tup]      # flatten list of tuples to int: [(1,2), (3,4)] -> [1,2,3,4]
+
+        test_case = {
+            'name': idx,
+            'inputs': input,
+            'output': list(b.bresenham(*inp))
+        }
+        return test_case
 
     def _get_test_name(self, line_drawing_algorithm):
         CLASS_NAME = type(self).__name__
@@ -214,15 +238,15 @@ class BasicLineTest:
             function_output = line_drawing_algorithm(*test['inputs'])
 
             if len(answer) != len(function_output):
-                print(f"\t FAIL - {test_name} - (wrong length)")
+                print(f"FAIL - {test_name} - (wrong length)")
                 continue
 
             for i, step in enumerate(function_output):
                 if step != answer[i]:
-                    print(f"\t FAIL - {test_name} - (incorrect entry @ {i} ({step} != {answer[i]}) found)")
+                    print(f"FAIL - {test_name} - (incorrect entry @ {i} ({step} != {answer[i]}) found)")
                     break
             else:
-                print(f"\t PASS - {test_name}")
+                print(f"PASS - {test_name}")
 
 
 ############################## MAIN ##############################
@@ -243,7 +267,7 @@ if __name__ == '__main__':
 
     print("\n--------------------------------------------------------------\n")
     START_TIME = get_time()
-    new_line = line_drawing_algorithm(start=START, goal=GOAL)
+    new_line = line_drawing_algorithm(start=START, goal=GOAL, debug_print=True)
     END_TIME = get_time()
 
     EXECUTION_TIME_MS = round(END_TIME - START_TIME, 8) * 1000
