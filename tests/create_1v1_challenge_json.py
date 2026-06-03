@@ -87,8 +87,8 @@ def create_cobra_player(team: int, difficulty: int):
 
 def create_challenge_from_template(challenge_name: str, challenge_version: int, map_name: str, total_players: int,
                                    bases: int, power_level: int, scavengers: int, tech_level: int,
-                                   fishbot_position: int, fishbot_difficulty: str, fishbot_factory: any,
-                                   opponent_position: int, opponent_difficulty: str, opponent_factory: any):
+                                   fishbot_position: int, fishbot_difficulty: str, fishbot_factory,
+                                   opponent_position: int, opponent_difficulty: str, opponent_factory):
     data = {
         "challenge": {
             "bases": bases,
@@ -129,7 +129,7 @@ def create_challenge_from_template(challenge_name: str, challenge_version: int, 
 
 def generate_json_test_data(skirmish_settings, map_settings):
 
-    json_test_data = []
+    generated_test_data = []
 
     # SKIRMISH INFO
     BASES: int = skirmish_settings['bases']
@@ -143,7 +143,7 @@ def generate_json_test_data(skirmish_settings, map_settings):
 
     # 'OPPONENT' INFO
     OPPONENT_NAME: str = get_uppercase_ai_name(skirmish_settings['opponentName'])
-    OPPONENT_DIFFICULTY: int = skirmish_settings['opponentDifficulty']
+    OPPONENT_DIFFICULTY: str = skirmish_settings['opponentDifficulty']
     opponent_factory = create_cobra_player         # todo -> extend cobra factory into others
 
     for m in map_settings:
@@ -176,25 +176,27 @@ def generate_json_test_data(skirmish_settings, map_settings):
                 opponent_position=OPPONENT_POSITION, opponent_difficulty=OPPONENT_DIFFICULTY, opponent_factory=opponent_factory,
             )
 
-            json_test_data.append({'file_name': FILE_NAME, 'raw_data': challenge_data})
+            generated_test_data.append({'file_name': FILE_NAME, 'raw_data': challenge_data})
 
-    return json_test_data
+    return generated_test_data
 
 
 #################################### SAVE FUNCTIONS ####################################
 
-def save_challenge_files(json_test_data: list, output_folder_path: str):
+def save_challenge_files(generated_test_data: list, output_folder_path: str):
 
-    for d in json_test_data:
+    print(f"Saving challenge files to: `{output_folder_path}`")
+
+    for d in generated_test_data:
         FILE_NAME = d["file_name"]
         DATA = d["raw_data"]
 
         FILE_PATH = rf"{output_folder_path}/{FILE_NAME}"
 
-        with open(FILE_NAME, "w") as f:
+        with open(FILE_PATH, "w") as f:
             json.dump(DATA, f, indent=4)
 
-        print(f"`{FILE_NAME}` saved locally.")
+        print(f"\t - `{FILE_NAME}` saved.")
 
 
 ###############################################################################################
@@ -202,13 +204,20 @@ def save_challenge_files(json_test_data: list, output_folder_path: str):
 
 if __name__ == "__main__":
 
+    import set_autogame_config as cfg
+
+    from os import path as path
+    DEV_CONFIG_PATH = path.expandvars(r"C:\Users\%USERNAME%\OneDrive\Documents\wz2100_config_dir\tests")
+    PROD_CONFIG_PATH = r"..\Warzone 2100\PRODCONFIG\tests"
+
     #################################### USER CONFIG START ####################################
 
-    import set_autogame_config as cfg
     SKIRMISH_SETTINGS, MAP_SETTINGS = cfg.generate_1v1_cobra_hard()
+
+    OUTPUT_FOLDER_PATH = PROD_CONFIG_PATH
 
     #################################### USER CONFIG END ####################################
 
     json_test_data = generate_json_test_data(skirmish_settings=SKIRMISH_SETTINGS, map_settings=MAP_SETTINGS)
-    save_challenge_files(json_test_data=json_test_data, output_folder_path=".")
+    save_challenge_files(generated_test_data=json_test_data, output_folder_path=OUTPUT_FOLDER_PATH)
 
