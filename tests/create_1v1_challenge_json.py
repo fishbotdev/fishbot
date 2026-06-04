@@ -183,13 +183,18 @@ def generate_json_test_data(skirmish_settings, map_settings):
 
 #################################### SAVE FUNCTIONS ####################################
 
+def extract_file_name_and_data(single_test_data):
+    FILE_NAME = single_test_data["file_name"]
+    DATA = single_test_data["raw_data"]
+    return FILE_NAME, DATA
+
+
 def save_challenge_files(generated_test_data: list, output_folder_path: str):
 
     print(f"Saving challenge files to: `{output_folder_path}`")
 
     for d in generated_test_data:
-        FILE_NAME = d["file_name"]
-        DATA = d["raw_data"]
+        FILE_NAME, DATA = extract_file_name_and_data(d)
 
         FILE_PATH = rf"{output_folder_path}/{FILE_NAME}"
 
