@@ -30,10 +30,10 @@ The split between the development / production environment is not strictly neces
     but it has made development + testing a lot more streamlined!
 """
 
-import set_autogame_config as cfg
-import create_1v1_challenge_json as g
-import run_and_save_autogames as test_runner
-import process_autogame_results as test_processor
+import _set_autogame_config as cfg
+import _create_1v1_challenge_json as g
+import _run_and_save_autogames as test_runner
+import _process_autogame_results as test_processor
 
 from os import getcwd
 
@@ -44,7 +44,7 @@ PRODUCTION_TEST_FOLDER_PATH = r"..\Warzone 2100\PRODCONFIG\tests"
 REGENERATE_TESTS = False
 config_generator = cfg.generate_1v1_cobra_hard
 
-RUN_TESTS = False               # Please see `__main__` in `run_and_save_autogames.py` for how to set up your console.
+RUN_TESTS = False               # Please see `__main__` in `_run_and_save_autogames.py` for how to set up your console.
 NUM_CYCLES_PER_TEST = 2
 TEST_RESULTS_FOLDER_PATH = getcwd()
 

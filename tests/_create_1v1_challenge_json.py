@@ -209,7 +209,7 @@ def save_challenge_files(generated_test_data: list, output_folder_path: str):
 
 if __name__ == "__main__":
 
-    import set_autogame_config as cfg
+    import _set_autogame_config as cfg
 
     from os import path as path
     DEV_CONFIG_PATH = path.expandvars(r"C:\Users\%USERNAME%\OneDrive\Documents\wz2100_config_dir\tests")
