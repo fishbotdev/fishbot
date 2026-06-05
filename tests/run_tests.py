@@ -44,7 +44,7 @@ PRODUCTION_TEST_FOLDER_PATH = r"..\Warzone 2100\PRODCONFIG\tests"
 REGENERATE_TESTS = False
 config_generator = cfg.generate_1v1_cobra_hard
 
-RUN_TESTS = False
+RUN_TESTS = False               # Please see `__main__` in `run_and_save_autogames.py` for how to set up your console.
 NUM_CYCLES_PER_TEST = 2
 TEST_RESULTS_FOLDER_PATH = getcwd()
 
