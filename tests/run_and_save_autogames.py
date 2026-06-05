@@ -303,7 +303,6 @@ def run_tests(test_file_name: str, in_progress_file_name: str, cycles: int, debu
 
         append_match(df=stats, path=in_progress_file_name)
 
-
     TIME_ENDED = perf_counter()
     round_to_2dp = lambda x: round(x, 2)
 
@@ -324,23 +323,19 @@ if __name__ == "__main__":
     The `results.jsonl` file will be processed back into a dataframe by the processing script.
     
     The jsonl pipeline is picked because its a good compromise between code complexity, speed & human-readability.
-    Extra memory usage (compared to .log/.txt writing) is not an issue for this application.
-
-    The other options I considered were:
+    
      1. Writing to .log/.txt (although faster) requires a custom parser & the performance improvement is minimal 
      for this application (the tests can take up to ~1min each; saving 0.5 seconds at best doesn't make a material difference).
-     2. Writing to Excel (as .xlsx or .csv) adds unnecessary overhead to configure the file properly.
+     
+     2. Writing to Excel (as .xlsx or .csv) adds unnecessary code complexity compared to saving & reading from jsonl.
     """
 
     clear_console()
 
-    # Note: The `windows_scrape_terminal_history` function is the core technical component of this script.
-    # This function is platform (OS) & IDE dependent - please see the usage notes above this function.
-
     ######## PROGRAM CONFIGURATION ########
 
     TEST_FILE_NAME = "GAMMA_1_2_COBRA_HARD_T2.json"        # make sure to include .json
-    NUM_CYCLES_PER_TEST = 50
+    NUM_CYCLES_PER_TEST = 2
     DEBUG_ON = False
 
     COMMIT_SHA = """
@@ -348,6 +343,14 @@ if __name__ == "__main__":
     """
 
     # Reminder: remove any previous .jsonl files if necessary
+
+    # Important Note: The `windows_scrape_terminal_history` function is the core technical component of this script.
+    # This function is platform (OS) & IDE dependent - please see the usage notes above this function.
+
+    # The results parser (extract_stats_from_summary_table) also assumes that each row is unbroken (no word wrap).
+    # To work around this, every time PyCharm is opened, we can either:
+    # 1. Minimise the console so no word wrap is required
+    # 2. Undock the console and enlarge it so the Game Summary table does not wrap onto new lines.
 
     # === RUN CONFIGURATION CHECKS (PyCharm) ===
     # 1. Check folder: `fishbot/tests` is set as the current working directory.
