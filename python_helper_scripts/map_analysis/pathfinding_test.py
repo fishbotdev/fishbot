@@ -27,7 +27,7 @@ enum TYPE_OF_TERRAIN
 	TER_GREENMUD,
 	TER_REDBRUSH,
 	TER_PINKROCK,
-	TER_ROAD,
+	TER_ROAD,               -> 6
 	TER_WATER,              -> 7 (not passable to wheeled vehicles)
 	TER_CLIFFFACE,          -> 8 (not passable to wheeled vehicles)
 	TER_RUBBLE,
@@ -107,14 +107,6 @@ def plot_map_and_path(raw_map, found_path: list[tuple], start: tuple, goal: tupl
             )
 
     plt.show()
-
-
-def mock_find_path(map, start: tuple, goal: tuple) -> list[tuple]:
-    if True:
-        t = BasicPathTest()
-        return t.correct_path
-    else:
-        return [(start[0]+i, start[1]) for i in range(0, 5)]        # to test display of path overlay on WZ2100 map
 
 
 def find_path_bfs(map, start: tuple, goal: tuple) -> list[tuple]:
