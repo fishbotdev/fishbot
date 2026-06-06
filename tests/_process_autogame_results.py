@@ -30,7 +30,7 @@ def print_test_summary(test_results_folder_path: str, test_file_name: str):
     try:
         df = pd.read_json(TEST_FILE_PATH, lines=True)
     except FileNotFoundError:
-        print(f"Skipping `{test_file_name}`... (file not found)\n")
+        print(f"\nSkipping `{test_file_name}`... (file not found)\n")
         return
 
     comparison_rows = []
@@ -42,14 +42,14 @@ def print_test_summary(test_results_folder_path: str, test_file_name: str):
             fishbot_player_name = [player_id for player_id in match_df["name"] if "Fis" in player_id][0]
             fishbot_row = match_df[match_df['name'] == fishbot_player_name].iloc[0]
         except IndexError:
-            print(f"Could not find 'Fis'. Skipping...")
+            print(f"\nCould not find 'Fis'. Skipping...\n")
             return
 
         try:
             opponent_player_name = [player_id for player_id in match_df["name"] if "Fis" not in player_id][0]
             opponent_row = match_df[match_df['name'] == opponent_player_name].iloc[0]
         except IndexError:
-            print(f"Could not find a non-FishBot player. Skipping...")
+            print(f"\nCould not find a non-FishBot player. Skipping...\n")
             return
 
         fishbot_win = not fishbot_row["defeated"]
@@ -83,7 +83,7 @@ def print_test_summary(test_results_folder_path: str, test_file_name: str):
     ## Print results summary
     print(f'\nAnalysed "{test_file_name}"\n')
 
-    print(f"Win rate: {round_to_2dp(win_rate * 100)}")
+    print(f"Win rate: {round_to_2dp(win_rate * 100)}%")
     print(f"Average kd ratio: {round_to_2dp(avg_kd)}")
     print(f"Average oil ratio: {round_to_2dp(avg_extract)}")
 
