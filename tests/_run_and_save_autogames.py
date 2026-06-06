@@ -288,7 +288,11 @@ def run_tests(test_file_name: str, in_progress_file_name: str, cycles: int, debu
         clear_console()
         print_iteration(i)
 
-        final_summary_table = run_autogame(AUTOGAME_COMMAND)
+        try:
+            final_summary_table = run_autogame(AUTOGAME_COMMAND)
+        except KeyboardInterrupt:
+            print(f"Terminated iteration {i} early")
+            continue
 
         if debug_mode:
             clear_console()

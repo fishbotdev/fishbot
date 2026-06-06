@@ -41,16 +41,16 @@ from os import getcwd
 
 PRODUCTION_TEST_FOLDER_PATH = r"..\Warzone 2100\PRODCONFIG\tests"
 
-REGENERATE_TESTS = False
-config_generator = cfg.generate_1v1_cobra_hard
+REGENERATE_TESTS = True
+config_generator = cfg.generate_1v1_cobra_hard_3P
 
-RUN_TESTS = False               # Please see `__main__` in `_run_and_save_autogames.py` for how to set up your console.
-NUM_CYCLES_PER_TEST = 2
+RUN_TESTS = True               # Please see `__main__` in `_run_and_save_autogames.py` for how to set up your console.
+NUM_CYCLES_PER_TEST = 50
 TEST_RESULTS_FOLDER_PATH = getcwd()
 
 # Test metadata
 COMMIT_SHA = r"""
-f69d37b32e4e300762209d57374e369b15e8280e
+fa1cd14b1cd724c99efdd2d999ee2bd658ab49ca
 """
 
 #################################### USER CONFIG END ####################################

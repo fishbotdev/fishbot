@@ -217,7 +217,7 @@ if __name__ == "__main__":
 
     #################################### USER CONFIG START ####################################
 
-    SKIRMISH_SETTINGS, MAP_SETTINGS = cfg.generate_1v1_cobra_hard()
+    SKIRMISH_SETTINGS, MAP_SETTINGS = cfg.generate_1v1_cobra_hard_3P()
 
     OUTPUT_FOLDER_PATH = PROD_CONFIG_PATH
 

@@ -80,5 +80,8 @@ MAP_SETTINGS_COBRA_1V1 = [
 #################################### USER CONFIG END ####################################
 
 #################################### HELPER FUNCTIONS ####################################
-def generate_1v1_cobra_hard():
+def generate_1v1_cobra_hard_3P():
+    """
+    Returns  1v1 config to test FishBot (@Medium Difficulty) vs Cobra (@Hard Difficulty) on 3P maps `Monocot` and `Gamma`.
+    """
     return SKIRMISH_SETTINGS_COBRA_HARD_1V1, MAP_SETTINGS_COBRA_1V1
