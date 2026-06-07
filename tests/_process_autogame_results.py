@@ -23,6 +23,7 @@
 import pandas as pd
 from os import getcwd
 
+
 def print_test_summary(test_results_folder_path: str, test_file_name: str):
 
     TEST_FILE_PATH = rf"{test_results_folder_path}/{test_file_name}"
@@ -83,7 +84,7 @@ def print_test_summary(test_results_folder_path: str, test_file_name: str):
     ## Print results summary
     print(f'\nAnalysed "{test_file_name}"\n')
 
-    print(f"Win rate: {round_to_2dp(win_rate * 100)}%")
+    print(f"Win rate: {round_to_2dp(win_rate * 100)}% ({len(comparison_df['fishbot_win'])} games)")
     print(f"Average kd ratio: {round_to_2dp(avg_kd)}")
     print(f"Average oil ratio: {round_to_2dp(avg_extract)}")
 

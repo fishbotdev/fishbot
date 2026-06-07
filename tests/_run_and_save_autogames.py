@@ -255,7 +255,7 @@ def append_match(df: pd.DataFrame, path: str) -> None:
 
 def run_autogame(commands: List[str]) -> List[str]:
     # Execute normally (let WZ write directly to the console)
-    subprocess.run(commands)        # blocking (only returns once the process is finished)
+    subprocess.run(commands, timeout=120)        # blocking (only returns once the process is finished); times out in 120seconds = 2 mins
     del commands
 
     # Scrapes the console output and stores it into `console_history`, then clears the console in prep for further processing
@@ -290,8 +290,11 @@ def run_tests(test_file_name: str, in_progress_file_name: str, cycles: int, debu
 
         try:
             final_summary_table = run_autogame(AUTOGAME_COMMAND)
+        except subprocess.TimeoutExpired:
+            print(f"Timed out - Terminated iteration {i} early")
+            continue
         except KeyboardInterrupt:
-            print(f"Terminated iteration {i} early")
+            print(f"Keyboard Interrupt - Terminated iteration {i} early")
             continue
 
         if debug_mode:
