@@ -6,22 +6,23 @@ This file is used to record the changes to FishBot between each version.
 - Combat improvements
     - Ground forces
         - Brigade combat teams (BCT) now keep their cohesion a bit better.
-        - Repaired troops now move towards a staging area behind BCT0.
-        - ADA is produced a bit earlier than before.
+        - Repaired units now move towards a staging area behind BCT0 rather than staying around the repair center.
+        - Increased priority of ADA in the production order.
     - Aviation
-        - Aircraft now attack urgent CAS targets more often (threshold on nearby anti-air defences increased).
+        - Increased likelihood of aircraft to attack urgent CAS targets (higher tolerance for nearby anti-air defences).
 - Construction improvements
-    - Increased the likelihood of repair faciltiies meeting the conditions for being forward-built.
+    - Increased the likelihood of repair faciltiies being forward constructed.
 - Research improvements
     - T2+ research order improved for longer running games.
 - Production
-    - Mortar units decreased to light bodies to increase mobility.
+    - Changed mortar units to only use light bodies for increased mobility (mortars no longer use Medium bodies).
+    - Fixed FishBot producing Hover Trucks before the command center is built.
 - Infrastructure improvements
-    - Computational performance improvements
-        - Targeting code is now more efficient
-        - Reduced update rates of logistics structures (i.e. factories and research)
-    - Automated testing
-        - Test runner now uses a Python script rather than a .bat file, which now captures the test results automatically.
+    - Computational performance improvements:
+        - Improved efficiency of targeting code.
+        - Reduced update rates of logistics structures (i.e. factories and research).
+    - Implemented an automated testing pipeline in Python.
+        
 
 #### Test results (Warzone 2100 v4.7.0)
 FishBot `v0.4.1` (commit `1`) was automatically tested on: `Gamma 3P T2` 1v1. 
