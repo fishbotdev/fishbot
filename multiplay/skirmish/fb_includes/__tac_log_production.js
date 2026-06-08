@@ -15,24 +15,26 @@
 	If not, see <https://www.gnu.org/licenses/>.
 */
 
-/*
-	WZ2100 DRIVERS
-*/
+/**
+ * Wraps `buildDroid()` from the JSAPI, which causes the specified unit to be produced in the specified factory.
+ * @param {StructureObject} factory 
+ * @param {string} droidName 
+ * @param {string} bodies 
+ * @param {string} propulsions 
+ * @param {string} weapon 
+ * @returns {boolean} whether or not the unit is now in production in the specified factory.
+ */
 function buildDroidWrapper(factory, droidName, bodies, propulsions, weapon) {
-	/*
-		NOTE: Regarding the input parameters to buildDroid()
-		- The components can be passed as ordinary strings, or as a list of strings. 
-		- If passed as a list, the first available component in the list will be used.
-	*/
 	const productionStarted = buildDroid(factory, droidName, bodies, propulsions, null, "", weapon);
-	if (productionStarted === true) {
-		return true;
-	} else {
-		return false;
-	}
+	return productionStarted;
 }
 
-function chooseVehicleBody({bodies=[], factory=undefined, maxFactoryModules=undefined}) {
+/**
+ * Filters out all unavailable bodies, then selects the most technologically advanced body (within the capability of the factory) from the provided `bodies` array.
+ * @returns {any | undefined}
+ */
+function chooseVehicleBody({bodies=[], factory=undefined, maxFactoryModules=undefined, unitsDesignable=true}) {
+	// TODO: add typing
 	const DEBUG_MODE = false;
 	
 	if (!defined(bodies) || !defined(factory) || !defined(maxFactoryModules)) {
@@ -46,11 +48,9 @@ function chooseVehicleBody({bodies=[], factory=undefined, maxFactoryModules=unde
 		return undefined;
 	}
 
-	/*
-		Algorithm: 
-		1. Filter out all unavailable bodies.
-		2. For the highest capability of the factory, select the most technologically advanced body.
-	*/
+	if (!unitsDesignable) {
+		return FISHBOT_BODIES[0];		// First body in the bodies list will be selected (should be Viper)
+	}
 
 	const availableBodies = FISHBOT_BODIES.filter((body) => componentAvailable(body.Id)).reverse();		// reversing goes from highest tech to lowest tech
 
@@ -73,15 +73,24 @@ function chooseVehicleBody({bodies=[], factory=undefined, maxFactoryModules=unde
 		}
 		return sortedBodies[0];
 	}
+
+	return undefined;
 }
 
-function chooseWeapon({weaponList=undefined}) {
+/**
+ * Selects the most technologically advanced weapon from the provided `weaponList`.
+ * @param {any[]} weaponList
+ * @returns {any | undefined}
+ */
+function chooseWeapon(weaponList) {
+	// TODO: add typing
 	const DEBUG_MODE = false;
 
-	if (!defined(weaponList)) {
+	if (weaponList == null) {
 		debug("chooseWeapon(): weaponList was not passed to this function.")
 		return undefined;
 	}
+
 	if (weaponList.length === 0) {
 		debug("chooseWeapon(): weaponList was empty.");
 		return undefined;
@@ -95,13 +104,24 @@ function chooseWeapon({weaponList=undefined}) {
 	}
 
 	if (DEBUG_MODE) debug(`chooseWeapon(): selected ${availableWeapons[0].name}`);
-	return availableWeapons[0];		// the list is pre-sorted before it enters this function
+	return availableWeapons[0];		// Assumption: the list is pre-sorted in order of priority before it enters this function
 }
 
-function choosePropulsion(propulsionList) {
-	if (!defined(propulsionList)) {
+/**
+ * Chooses the most technologically advanced propulsion from the provided `propulsionList`.
+ * @param {any[]} propulsionList 		
+ * @param {boolean} unitsDesignable used to prevent FishBot from building designable 
+ * @returns {any | undefined}
+ */
+function choosePropulsion(propulsionList, unitsDesignable=true) {
+	// TODO: add typing
+	if (propulsionList == null) {
 		debug("choosePropulsion(): Input parameter 'propulsionList' is missing.")
 		return undefined;
+	}
+
+	if (!unitsDesignable) {
+		return PROPULSIONS["Wheels"];
 	}
 
 	// propulsionList.forEach(p => debug(`		testing: ${p.name}, ${p.id}, ${p.Id}`));
@@ -113,7 +133,11 @@ function choosePropulsion(propulsionList) {
 	return availablePropulsions[0];
 }
 
-function produceVehicle({factory, weaponList, propulsionList, maxBodyWeight=BODY_WEIGHT.HEAVY}) {
+/**
+ * Attempts to produce a unit (to the provided specification) at the specified factory.
+ * @returns {boolean} whether or not the unit is now in production in the specified factory.
+ */
+function produceVehicle({factory, weaponList, propulsionList, maxBodyWeight=BODY_WEIGHT.HEAVY, unitsDesignable=true}) {
 
 	let maxRequiredModules;
 	switch (maxBodyWeight) {
@@ -130,13 +154,13 @@ function produceVehicle({factory, weaponList, propulsionList, maxBodyWeight=BODY
 			maxRequiredModules = 0;
 	}
 		
-	const body = chooseVehicleBody({bodies: FISHBOT_BODIES, factory: factory, maxFactoryModules: maxRequiredModules});		
+	const body = chooseVehicleBody({bodies: FISHBOT_BODIES, factory: factory, maxFactoryModules: maxRequiredModules, unitsDesignable: unitsDesignable});		
 
 	// Select most up-to-date weapon
-	const weapon = chooseWeapon({weaponList: weaponList});
+	const weapon = chooseWeapon(weaponList);
 
 	// Select available (ground) propulsion
-	const propulsion = choosePropulsion(propulsionList);
+	const propulsion = choosePropulsion(propulsionList, unitsDesignable);
 	
 	if (!defined(body) || !defined(weapon) || !defined(propulsion)) {
 		debug("produceVehicle(): Either 'body' or 'weapon' or 'propulsion' were undefined.")
@@ -149,10 +173,17 @@ function produceVehicle({factory, weaponList, propulsionList, maxBodyWeight=BODY
 	return productionInProgress;
 }
 
+
 /*
 	LOGISTICS UNIT PRODUCTION
 */
-function produceTruck(factory) {
+/**
+ * Produces a truck. FishBot will only produce 'Truck Viper Wheels' when units are not designable (to follow human player rules).
+ * @param {StructureObject} factory 
+ * @param {boolean} unitsDesignable 
+ * @returns {boolean} whether or not the unit is now in production
+ */
+function produceTruck(factory, unitsDesignable) {
 
 	const truckTurrets = [
 		WEAPONS["Truck"]
@@ -167,7 +198,8 @@ function produceTruck(factory) {
 		factory: factory, 
 		weaponList: truckTurrets, 
 		propulsionList: truckPropulsions, 
-		maxBodyWeight: BODY_WEIGHT.LIGHT
+		maxBodyWeight: BODY_WEIGHT.LIGHT,
+		unitsDesignable: unitsDesignable		// this flag is here to prevent FishBot from producing Hover Trucks before a command center is built
 	});
 }
 

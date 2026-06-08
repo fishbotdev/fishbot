@@ -1187,11 +1187,11 @@ class CommandCenter {
 
 		// Decide on whether or not to produce combat units
 		// Note: FishBot will not build combat vehicles before it can design them, on any difficulty.	
-		const CAN_DESIGN_COMBAT_UNITS = HQ_IS_CONSTRUCTED;
+		const CAN_DESIGN_UNITS = HQ_IS_CONSTRUCTED;
 
-		const SHOULD_PRODUCE_LAND_VEHICLES = CAN_DESIGN_COMBAT_UNITS && !HIT_LAND_VEHICLE_LIMIT;
+		const SHOULD_PRODUCE_LAND_VEHICLES = CAN_DESIGN_UNITS && !HIT_LAND_VEHICLE_LIMIT;
 		const SHOULD_PRODUCE_INFANTRY = !HIT_INFANTRY_LIMIT;
-		const SHOULD_PRODUCE_VTOLS = CAN_DESIGN_COMBAT_UNITS && !HIT_AIR_UNIT_LIMIT;
+		const SHOULD_PRODUCE_VTOLS = CAN_DESIGN_UNITS && !HIT_AIR_UNIT_LIMIT;
 		
 		// Decide on which category of land combat vehicle to produce (basic greedy algorithm)
 		let landVehicleCategory = "heavyCavalry";
@@ -1204,7 +1204,7 @@ class CommandCenter {
 
 		// Decide on whether or not to produce trucks
 		const SHOULD_PRODUCE_TRUCKS = !HIT_TRUCK_LIMIT;
-		const SINGLE_TRUCK_THIS_TICK = CAN_DESIGN_COMBAT_UNITS;
+		const SINGLE_TRUCK_THIS_TICK = CAN_DESIGN_UNITS;
 		let producedTruckThisTick = false;
 
 		// Run production
@@ -1244,8 +1244,10 @@ class CommandCenter {
 			const factory = idleFactories[i];
 
 			if (SHOULD_PRODUCE_TRUCKS && !CYBORG_CONSTRUCTOR_AVAILABLE && !producedTruckThisTick) {
-				if (DEBUG_PRODUCTION) debug(`	${gameTime}: produced Hover Truck`);
-				produceTruck(factory);
+				if (DEBUG_PRODUCTION) debug(`	${gameTime}: produced Truck`);
+				// Note: CAN_DESIGN_UNITS prevents FishBot from producing any other trucks other than `Truck Viper Wheels` until the command center is built
+				produceTruck(factory, CAN_DESIGN_UNITS);		
+				
 				if (SINGLE_TRUCK_THIS_TICK) {
 					producedTruckThisTick = true;
 				}
