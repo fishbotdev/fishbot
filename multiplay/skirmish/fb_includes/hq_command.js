@@ -294,9 +294,12 @@ class CommandCenter {
 		}
 
 		// Direct Fire Targeting
+		const IMMEDIATE_RADIUS = 15;
+
 		const closestBaseX = closestEnemyBasePosition.x; 
 		const closestBaseY = closestEnemyBasePosition.y;
-		const IMMEDIATE_RADIUS = 15;
+
+		const dSqClosestBase = distSq(x, closestBaseX, y, closestBaseY);
 
 		const w_groupProximity = 2;
 		const w_baseProximity = 1;
@@ -304,12 +307,21 @@ class CommandCenter {
 		const combinedDistanceHeuristic = (a,b) => {
 			return w_groupProximity * (distSq(a.x, x, a.y, y) - distSq(b.x, x, b.y, y)) + 
 					w_baseProximity * (distSq(a.x, closestBaseX, a.y, closestBaseY) - distSq(b.x, closestBaseX, b.y, closestBaseY))
+		};
+
+		const standardDistanceHeuristic = (a,b) => {
+			return distSq(a.x, x, a.y, y) - distSq(b.x, x, b.y, y);
+		};
+
+		let distanceHeuristic = standardDistanceHeuristic;
+		if (dSqClosestBase < 25 ** 2) {
+			distanceHeuristic = combinedDistanceHeuristic;
 		}
 
 		const primaryDroidTargets = [...enemyArmor, ...enemyInfantry];
-		primaryDroidTargets.sort((a,b) => combinedDistanceHeuristic(a,b));		
+		primaryDroidTargets.sort((a,b) => distanceHeuristic(a,b));		
 		const secondaryDirectFireTargets = [ ...enemyDefenses, ...enemyIndirectFire, ...enemyADA, ...enemyIndustrial];
-		secondaryDirectFireTargets.sort((a,b) => combinedDistanceHeuristic(a,b));		
+		secondaryDirectFireTargets.sort((a,b) => distanceHeuristic(a,b));		
 		const tertiaryDirectFireTargets = [...enemyConstructor, ...enemyUtility];
 		const targetsOutOfRange = [];		// this will also be ordered in the priority order specified in `primaryDirectFireTargets`
 
