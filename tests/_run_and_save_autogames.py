@@ -19,7 +19,7 @@
 # 1. automatically run a WZ2100 bot vs bot game
 # 2. save the result internally within Python for further processing
 
-"""
+r"""
 ~ Historical Context ~
 
 At the start of the project I found that:
@@ -77,7 +77,7 @@ def clear_console():
 Usage notes (`windows_scrape_terminal_history`):
     - Tested working on Win11 OS; Linux/Mac will need a different implementation for compatibility
     - If using a PyCharm IDE (e.g. 2026.1.2) you will need to enable the "Emulate Terminal In Output Console" option in
-      the "Edit Configuration" / "Run Configuration" panel get the output of --autogame to print to the console.
+      the "Edit Configuration" / "Run Configuration" panel to get the output of --autogame to print to the console.
       VSCode appears to show the terminal output by default so no special actions may be required.
 """
 def windows_scrape_terminal_history(lines_to_read):
@@ -255,7 +255,7 @@ def append_match(df: pd.DataFrame, path: str) -> None:
 
 def run_autogame(commands: List[str]) -> List[str]:
     # Execute normally (let WZ write directly to the console)
-    subprocess.run(commands)        # blocking (only returns once the process is finished)
+    subprocess.run(commands, timeout=120)        # blocking (only returns once the process is finished); times out in 120seconds = 2 mins
     del commands
 
     # Scrapes the console output and stores it into `console_history`, then clears the console in prep for further processing
@@ -269,6 +269,56 @@ def run_autogame(commands: List[str]) -> List[str]:
     return final_game_summary_table
 
 
+def run_tests(test_file_name: str, in_progress_file_name: str, cycles: int, debug_mode: bool=False):
+    AUTOGAME_COMMAND = [
+        rf"..\Warzone 2100\bin\warzone2100.exe",        # assumes WZ2100 is installed in `fishbot/Warzone 2100`
+        rf'--configdir="..\Warzone 2100\PRODCONFIG"',   # assumes that the mod is loaded in a "PRODCONFIG" subfolder of the WZ2100 install location e.g. `fishbot/Warzone 2100/PRODCONFIG`
+        rf'--skirmish="{test_file_name}"',              # a custom challenge .json file loaded into `configdir/tests` (see `warzone2100/data/mp/tests/miza.json` for an example). The test file must be added to the 'tests' folder: https://github.com/Warzone2100/warzone2100/blob/8701c62ae68ca70da43ec915cbf6776c492e6656/src/multiint.cpp#L526
+        rf"--enableconsole",                            # creates a console (this is where the Game State summary is printed)
+        rf"--headless",                                 # runs the program without a GUI
+        rf"--autogame"                                  # automatically runs the game
+    ]
+
+    print_iteration = lambda j: print(f"\n\n Iteration {j + 1} \n\n")
+
+    # Run the test
+    TIME_STARTED = perf_counter()
+
+    for i in range(cycles):
+        clear_console()
+        print_iteration(i)
+
+        try:
+            final_summary_table = run_autogame(AUTOGAME_COMMAND)
+        except subprocess.TimeoutExpired:
+            print(f"Timed out - Terminated iteration {i} early")
+            continue
+        except KeyboardInterrupt:
+            print(f"Keyboard Interrupt - Terminated iteration {i} early")
+            continue
+
+        if debug_mode:
+            clear_console()
+            print_iteration(i)
+            print_game_summary(final_summary_table)
+            ADD_DEBUG_BREAKPOINT_HERE_TO_SEE_THE_EXTRACTED_RESULTS_TABLE = 1
+
+        stats = extract_stats_from_summary_table(final_summary_table)
+        stats["match_id"] = i   # Record test metadata for batch processing later
+
+        ADD_DEBUG_BREAKPOINT_HERE_TO_SEE_STATS_AS_DATAFRAME = 1
+
+        append_match(df=stats, path=in_progress_file_name)
+
+    TIME_ENDED = perf_counter()
+    round_to_2dp = lambda x: round(x, 2)
+
+    clear_console()
+    SECS_TO_COMPLETE = round_to_2dp(TIME_ENDED - TIME_STARTED)
+    MINS_TO_COMPLETE = round_to_2dp(SECS_TO_COMPLETE / 60.0)
+    print(f"\nFinished {cycles} tests in {SECS_TO_COMPLETE} seconds ({MINS_TO_COMPLETE} minutes)")
+
+
 #################################### MAIN ####################################
 
 if __name__ == "__main__":
@@ -280,90 +330,49 @@ if __name__ == "__main__":
     The `results.jsonl` file will be processed back into a dataframe by the processing script.
     
     The jsonl pipeline is picked because its a good compromise between code complexity, speed & human-readability.
-    Extra memory usage (compared to .log/.txt writing) is not an issue for this application.
-
-    The other options I considered were:
+    
      1. Writing to .log/.txt (although faster) requires a custom parser & the performance improvement is minimal 
      for this application (the tests can take up to ~1min each; saving 0.5 seconds at best doesn't make a material difference).
-     2. Writing to Excel (as .xlsx or .csv) adds unnecessary overhead to configure the file properly.
+     
+     2. Writing to Excel (as .xlsx or .csv) adds unnecessary code complexity compared to saving & reading from jsonl.
     """
 
     clear_console()
 
-    # Note: The `windows_scrape_terminal_history` function is the core technical component of this script.
-    # This function is platform (OS) & IDE dependent - please see the usage notes above this function.
-
     ######## PROGRAM CONFIGURATION ########
 
-    CHALLENGE_JSON_NAME = "GAMMA_INSANE_COBRA_T2"
-    NUM_TESTS = 50
+    TEST_FILE_NAME = "GAMMA_1_2_COBRA_HARD_T2.json"        # make sure to include .json
+    NUM_CYCLES_PER_TEST = 2
     DEBUG_ON = False
 
     COMMIT_SHA = """
-    c6bf1b52487f27cba5a40d89b7e8553759f47322
+    f69d37b32e4e300762209d57374e369b15e8280e
     """
 
     # Reminder: remove any previous .jsonl files if necessary
 
+    # Important Note: The `windows_scrape_terminal_history` function is the core technical component of this script.
+    # This function is platform (OS) & IDE dependent - please see the usage notes above this function.
+
+    # The results parser (extract_stats_from_summary_table) also assumes that each row is unbroken (no word wrap).
+    # To work around this, every time PyCharm is opened, we can either:
+    # 1. Minimise the console so no word wrap is required
+    # 2. Undock the console and enlarge it so the Game Summary table does not wrap onto new lines.
+
+    # === RUN CONFIGURATION CHECKS (PyCharm) ===
+    # 1. Check folder: `fishbot/tests` is set as the current working directory.
+    # 2. If using a PyCharm IDE (e.g. 2026.1.2) you will need to enable the "Emulate Terminal In Output Console" option in
+    #       the "Edit Configuration" / "Run Configuration" panel to get the output of --autogame to print to the console.
+    #       VSCode appears to show the terminal output by default so no special actions may be required.
+
     ######## END PROGRAM CONFIGURATION ########
 
     SHORT_SHA = COMMIT_SHA.lstrip()[:7]
-    OUTPUT_FILE_NAME = f"{SHORT_SHA},{CHALLENGE_JSON_NAME},{NUM_TESTS}G.jsonl"
+    OUTPUT_FILE_NAME = f"{SHORT_SHA},{TEST_FILE_NAME},{NUM_CYCLES_PER_TEST}G.jsonl"
 
-    """
-    Note: I cloned FishBot into a new configuration directory ('PRODCONFIG') and am running autogames from 
-        this 'production' folder (this explains the file paths for `warzone2100.exe` & `PRODCONFIG`).
-    This means I can run autogames & perform development simultaneously using the same `warzone2100.exe`, e.g. 
-    1. different config directories for dev / prod => (allows for) 
-    2. different mods directories => 
-    3. different FishBot instances
-    
-    PRODCONFIG is a clone of the devconfig folder. This means that changes to the development config directory
-        (e.g. a new `challenge.json` from the 'tests' folder) can be pulled from version control.
-        
-    The development / production environment split is not strictly necessary but it has made development + testing
-        a lot more streamlined!
-    """
-
-    # Check the parent folder: `fishbot` is set as the current working directory.
-
-    AUTOGAME_COMMAND = [
-        rf"Warzone 2100\bin\warzone2100.exe",           # assumes WZ2100 is installed in the current working directory
-        rf'--configdir="Warzone 2100\PRODCONFIG"',      # assumes that the mod is loaded in a "PRODCONFIG" subfolder of the WZ2100 install
-        rf'--skirmish="{CHALLENGE_JSON_NAME}.json"',    # a custom challenge .json file loaded into `configdir/tests` (see `warzone2100/data/mp/tests/miza.json` for an example). The test file must be added to the 'tests' folder: https://github.com/Warzone2100/warzone2100/blob/8701c62ae68ca70da43ec915cbf6776c492e6656/src/multiint.cpp#L526
-        rf"--enableconsole",                            # creates a console (this is where the Game State summary is printed)
-        rf"--headless",                                 # runs the program without a GUI
-        rf"--autogame"                                  # automatically runs the game
-    ]
-
-    # Run the test
-    TIME_STARTED = perf_counter()
-    print_iteration = lambda i: print(f"\n\n Iteration {i + 1} \n\n")
-
-    for i in range(NUM_TESTS):
-        clear_console()
-        print_iteration(i)
-
-        final_summary_table = run_autogame(AUTOGAME_COMMAND)
-
-        if DEBUG_ON:
-            clear_console()
-            print_iteration(i)
-            print_game_summary(final_summary_table)
-            ADD_DEBUG_BREAKPOINT_HERE_TO_SEE_THE_EXTRACTED_RESULTS_TABLE = 1
-
-        stats = extract_stats_from_summary_table(final_summary_table)
-        stats["match_id"] = i   # Record test metadata for batch processing later
-
-        ADD_DEBUG_BREAKPOINT_HERE_TO_SEE_STATS_AS_DATAFRAME = 1
-
-        append_match(df=stats, path=OUTPUT_FILE_NAME)
-
-
-    TIME_ENDED = perf_counter()
-    round_to_2dp = lambda x: round(x, 2)
-
-    clear_console()
-    SECS_TO_COMPLETE = round_to_2dp(TIME_ENDED - TIME_STARTED)
-    MINS_TO_COMPLETE = round_to_2dp(SECS_TO_COMPLETE / 60.0)
-    print(f"\nScript finished {NUM_TESTS} tests in {SECS_TO_COMPLETE} seconds ({MINS_TO_COMPLETE} minutes)")
+    run_tests(
+        test_file_name=TEST_FILE_NAME,
+        in_progress_file_name=OUTPUT_FILE_NAME,
+        cycles=NUM_CYCLES_PER_TEST,
+        debug_mode=DEBUG_ON
+    )
