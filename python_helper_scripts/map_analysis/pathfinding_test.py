@@ -40,6 +40,8 @@ import json
 import numpy as np
 import matplotlib.pyplot as plt
 from time import perf_counter as get_time
+from typing import List, Callable
+
 
 # Disclaimer: most of the helper functions are implemented by AI (ChatGPT), but
 # the `find_path_[x]` functions are implemented by hand for learning.
@@ -109,6 +111,13 @@ def plot_map_and_path(raw_map, found_path: list[tuple], start: tuple, goal: tupl
     plt.show()
 
 
+def is_invalid_position(map, position: tuple):
+    x = position[0]
+    y = position[1]
+    valid_tile = map[y][x]  # NOTE: array indexing map needs to be in this order because it looks up 'rows' = 'y', and then 'cols' = 'x'
+    return True if not valid_tile else False
+
+
 def find_path_bfs(map, start: tuple, goal: tuple) -> list[tuple]:
     """
     References
@@ -116,6 +125,10 @@ def find_path_bfs(map, start: tuple, goal: tuple) -> list[tuple]:
     2. Breadth First Search Algorithm | Shortest Path | Graph Theory - WilliamFiset
     3. https://www.redblobgames.com/pathfinding/a-star/introduction.html
     """
+
+    if is_invalid_position(map, start) or is_invalid_position(map, goal):
+        print(f"Terminating - start or goal is an invalid position")
+        return []
 
     queue = [start]
     visited = [start]
@@ -203,7 +216,112 @@ def find_path_bfs(map, start: tuple, goal: tuple) -> list[tuple]:
     return []
 
 
-def find_path_djikstra(map, start: tuple, goal: tuple) -> list[tuple]:
+def find_path_greedy_best_first_search(map, start: tuple, goal: tuple) -> list[tuple]:
+    """
+    References
+    1. https://www.redblobgames.com/pathfinding/a-star/introduction.html
+    """
+
+    if is_invalid_position(map, start) or is_invalid_position(map, goal):
+        print(f"Terminating - start or goal is an invalid position")
+        return []
+
+    def dist_to_goal_heuristic(a, b):
+        # Euclidean distance (can use Manhattan distance)
+        return (a[0] - b[0]) ** 2 + (a[1] - b[1]) ** 2
+
+    # Note: I am implementing PriorityQueue myself for learning
+    start_to_goal_dist = dist_to_goal_heuristic(start, goal)
+    frontier = [{'pos': start, 'score': start_to_goal_dist}]
+    visited = [start]
+    parent_indexes: List = [None]
+    result = [goal]
+
+    def get_valid_neighbours(pos: tuple, map):
+        ymax, xmax = map.shape
+
+        valid_neighbours = []
+        offsets = [(-1, 0), (1, 0), (0, -1), (0, 1), (-1,-1), (-1, 1), (1, 1), (1,-1)]
+
+        tx = 0  # initialise these variables so they are reused
+        ty = 0
+
+        # Test for valid locations
+        for offset in offsets:
+            new_pos = (pos[0] + offset[0], pos[1] + offset[1])
+            # print(f"new pos: {new_pos}")
+
+            # Test in map bounds
+            tx = new_pos[0]
+            ty = new_pos[1]
+
+            if tx < 0 or tx >= xmax:
+                continue
+            if ty < 0 or ty >= ymax:
+                continue
+
+            valid_tile = map[ty][tx]    # NOTE: array indexing map needs to be in this order because it looks up 'rows' = 'y', and then 'cols' = 'x'
+            if valid_tile:
+                valid_neighbours.append(new_pos)
+
+        return valid_neighbours
+
+    iters = 0
+    max_iterations = 50000      # to prevent the algorithm from running forever if I make a mistake
+    while len(frontier) > 0 and iters < max_iterations:
+        node = frontier.pop()
+        pos = node['pos']
+
+        if pos == goal:
+            print(f'goal found - terminated early ({iters} iterations)')
+            break
+
+        parent_index = visited.index(pos) if (pos in visited) else None       # never returns `None` since all parents are registered in 'visited' before the child is spawned
+
+        neighbours = get_valid_neighbours(pos, map)
+        for neighbour in neighbours:
+            if neighbour in visited:
+                continue
+
+            neighbour_score = dist_to_goal_heuristic(goal, neighbour)
+            frontier.append({'pos': neighbour, 'score': neighbour_score})       # constructs a new node
+
+            visited.append(neighbour)       # add the new neighbour so it's not reused in future iterations
+            parent_indexes.append(parent_index)       # add the parent node of the newest visited node (used in path traceback)
+
+        frontier.sort(key=lambda x: x['score'], reverse=True)
+
+        # if iters < 10:
+        #     print(f"Iter {iters}:\t{frontier[-2:]} (frontier len: {len(frontier)})")
+
+        iters += 1
+
+    # print(f"visited: {visited}")
+    # print(f"parent: {parent_indexes}")
+    print(f"Greedy-Best-FS completed in {iters} iterations.")
+
+    # back out the path, starting from the end node
+    idx = visited.index(goal) if (goal in visited) else None
+    # print(f'goal index in visited: {idx}')
+
+    iters = 0
+    while idx is not None and iters < max_iterations:
+        idx = parent_indexes[idx]
+
+        if idx is not None:
+            # Append parent node information to result
+            p = visited[idx]
+            result.append(p)
+            # print(f"\t - parent: {p}")
+
+        iters += 1
+
+    if idx is None:
+        result.reverse()        # start to finish
+
+        # print(f"result: {result}")
+        return result
+
     return []
 
 
@@ -222,9 +340,10 @@ class BasicPathTest:
         self.start = (0, 0)
         self.goal = (0, 2)
 
-        self.correct_path = [(0,0), (1,0), (2,0), (2,1), (2,2), (1,2), (0, 2)]
+        # self.correct_path = [(0,0), (1,0), (2,0), (2,1), (2,2), (1,2), (0, 2)]      # up / down / left / right neighbours only
+        self.correct_path = [(0,0), (1,0), (2,1), (1,2), (0, 2)]      # diagonal search included
 
-    def run_test(self, pathfinding_algorithm):
+    def run_test(self, pathfinding_algorithm: Callable):
 
         found_path = pathfinding_algorithm(
             self.test_map,
@@ -248,15 +367,30 @@ class BasicPathTest:
             return True
 
 
+def run_and_time_pathing(pathfinding_algorithm: Callable) -> None:
+    print("\n--------------------------------------------------------------")
+    START_TIME = get_time()
+    path = pathfinding_algorithm(map=passability_map, start=START, goal=GOAL)
+    END_TIME = get_time()
+
+    EXECUTION_TIME_MS = round((END_TIME - START_TIME) * 1000, 2)
+
+    print(f"`{pathfinding_algorithm.__name__}` -> {EXECUTION_TIME_MS} ms")
+    plot_map_and_path(raw_map=passability_map, found_path=path, start=START, goal=GOAL)
+    print("--------------------------------------------------------------")
+
+
 ############################## MAIN ##############################
 
 if __name__ == '__main__':
 
     ################### USER CONFIG START ###################
-    START = (10, 15)
-    GOAL = (50, 50)
+    FILE_NAME = "gamma_terrainType"  # this is the data obtained from the `MapTiles.terrainType` global
 
-    FILE_NAME = "gamma_terrainType"     # this is the data obtained from the `MapTiles.terrainType` global
+    START = (10, 15)
+    GOAL = (45, 60)
+
+    RUN_TESTS = False
     ################### USER CONFIG END ###################
 
     test_harness = BasicPathTest()
@@ -270,18 +404,14 @@ if __name__ == '__main__':
         passability_map = build_passability_map(terrain)
 
     # Run path finding and plot
-    pathing_algorithm = find_path_bfs
+    run_and_time_pathing(find_path_bfs)
+    run_and_time_pathing(find_path_greedy_best_first_search)
 
-    print("\n--------------------------------------------------------------\n")
-    START_TIME = get_time()
-    path = pathing_algorithm(map=passability_map, start=START, goal=GOAL)
-    END_TIME = get_time()
+    # Test results:
+    # Between (10, 15) amd (45, 60)
+    # - BFS: 1172 iterations (92.65ms), finds the optimal path but is slow
+    # - GBest-FS: 65 iterations (1.99ms), but does not find the optimal path
 
-    EXECUTION_TIME_MS = round(END_TIME - START_TIME, 4) * 1000
-
-    print(f"`{pathing_algorithm.__name__}` finished executing in: {EXECUTION_TIME_MS} ms")
-    plot_map_and_path(raw_map=passability_map, found_path=path, start=START, goal=GOAL)
-    print("\n--------------------------------------------------------------\n")
-
-    # Run tests
-    test_harness.run_test(pathing_algorithm)
+    if RUN_TESTS:
+        pathing_algorithm = find_path_greedy_best_first_search
+        test_harness.run_test(pathing_algorithm)
