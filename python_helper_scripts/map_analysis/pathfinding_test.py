@@ -338,7 +338,7 @@ def find_path_astar(map, start: tuple, goal: tuple) -> list[tuple]:
 
     def h_cost_heuristic(tx: int, ty: int, gx: int, gy: int):
         # return 0      # returns close to the optimal path but is similar to BFS in computational efficiency (Djikstra)
-        return 10 * (abs(tx - gx) + abs(ty - gy))
+        return abs(tx - gx) + abs(ty - gy)
 
     def create_node(node_pos, g_cost, h_cost):
         return {'pos': node_pos, 'g': g_cost, 'h': h_cost}
@@ -375,7 +375,7 @@ def find_path_astar(map, start: tuple, goal: tuple) -> list[tuple]:
 
         offsets = [(-1, 0), (1, 0), (0, -1), (0, 1), (-1,-1), (-1, 1), (1, 1), (1,-1)]
         neighbour_positions = [(x + offset[0], y + offset[1]) for offset in offsets]
-        g_costs = [10, 10, 10, 10, 14, 14, 14, 14]      # Note: lower weight for diagonal actions = prefers diagonal movement
+        g_costs = [1, 1, 1, 1, 1.4, 1.4, 1.4, 1.4]      # Note: higher weight for diagonal movt => less likely to change direction
 
         valid_neighbour_nodes = []
 
@@ -600,8 +600,8 @@ if __name__ == '__main__':
     ################### USER CONFIG START ###################
     FILE_NAME = "gamma_terrainType"  # this is the data obtained from the `MapTiles.terrainType` global
 
-    START = (10, 15)
-    GOAL = (100, 20)
+    START = (100, 20)
+    GOAL = (10, 15)
 
     RUN_TESTS = False
     ################### USER CONFIG END ###################
