@@ -227,7 +227,7 @@ def find_path_greedy_best_first_search(map, start: tuple, goal: tuple) -> list[t
         return []
 
     def dist_to_goal_heuristic(a, b):
-        # Euclidean distance (can use Manhattan distance)
+        # Euclidean distance SQ (can also use Manhattan distance)
         return (a[0] - b[0]) ** 2 + (a[1] - b[1]) ** 2
 
     # Note: I am implementing PriorityQueue myself for learning
@@ -326,6 +326,172 @@ def find_path_greedy_best_first_search(map, start: tuple, goal: tuple) -> list[t
 
 
 def find_path_astar(map, start: tuple, goal: tuple) -> list[tuple]:
+    """
+    References
+    1. https://www.redblobgames.com/pathfinding/a-star/introduction.html
+    """
+
+    if is_invalid_position(map, start) or is_invalid_position(map, goal):
+        print(f"Terminating - start or goal is an invalid position")
+        return []
+
+    def h_cost_heuristic(tx: int, ty: int, gx: int, gy: int):
+        return (tx - gx) ** 2 + (ty - gy) ** 2
+
+    def create_node(node_pos, g_cost, h_cost):
+        return {'pos': node_pos, 'g': g_cost, 'h': h_cost}
+
+    def get_f_cost(n):
+        return n['g'] + n['h']
+
+    def find_index_in_visited(node, visited_list):
+        for j in range(len(visited_list) - 1, -1, -1):
+            if node['pos'] == visited_list[j]['pos']:
+                return j
+        else:
+            return None
+
+    start_h_cost = h_cost_heuristic(start[0], start[1], goal[0], goal[1])
+
+    start_node = create_node(start, 0, start_h_cost)
+    goal_node = create_node(goal, None, 0)
+
+    frontier = [start_node]
+    visited = [start_node]
+    parent_indexes: List = [None]
+
+    def get_valid_neighbour_nodes(node, goal, map):
+        x = node['pos'][0]
+        y = node['pos'][1]
+        g_cost = node['g']
+
+        gx = goal['pos'][0]
+        gy = goal['pos'][1]
+
+        ymax, xmax = map.shape
+
+        offsets = [(-1, 0), (1, 0), (0, -1), (0, 1), (-1,-1), (-1, 1), (1, 1), (1,-1)]
+        neighbour_positions = [(x + offset[0], y + offset[1]) for offset in offsets]
+        g_costs = [10, 10, 10, 10, 14, 14, 14, 14]      # Note: lower weight for diagonal actions = prefers diagonal movement
+
+        valid_neighbour_nodes = []
+
+        # Test for valid neighbours
+        for i, n in enumerate(neighbour_positions):
+
+            # Check map bounds
+            tx = n[0]
+            ty = n[1]
+            if tx < 0 or tx >= xmax:
+                continue
+            if ty < 0 or ty >= ymax:
+                continue
+
+            # Check walkable
+            valid_tile = map[ty][tx]  # NOTE: array indexing map needs to be in this order because it looks up 'rows' = 'y', and then 'cols' = 'x'
+            if not valid_tile:
+                continue
+
+            n1 = create_node(node_pos=n, g_cost=g_cost + g_costs[i], h_cost=h_cost_heuristic(tx, ty, gx, gy))
+            valid_neighbour_nodes.append(n1)
+
+        return valid_neighbour_nodes
+
+
+    lowest_entries = []
+
+    iters = 0
+    max_iterations = 5000      # to prevent the algorithm from running forever if I make a mistake
+    while len(frontier) > 0 and iters < max_iterations:
+
+        curr_lowest_score = None
+        lowest_entries.clear()
+        frontier_idx = None
+
+        for i in range(len(frontier)-1, -1, -1):
+            curr_node = frontier[i]
+            if curr_lowest_score is None:
+                curr_lowest_score = get_f_cost(curr_node)
+                lowest_entries.append((curr_node, i))
+                frontier_idx = i
+                continue
+
+            curr_fcost = get_f_cost(curr_node)
+            if curr_fcost == curr_lowest_score:
+                curr_lowest_score = curr_fcost
+                lowest_entries.append((curr_node, i))
+            elif curr_fcost < curr_lowest_score:
+                curr_lowest_score = curr_fcost
+                lowest_entries.clear()
+                lowest_entries.append((curr_node, i))
+
+        lowest_entries.sort(key=lambda x: x[0]['h'], reverse=True)
+        # print(f"\t{iters}: {lowest_entries} ({len(lowest_entries)} entries sorted)")
+
+        lowest_entry = lowest_entries.pop()     # removes last element from the list
+        frontier.pop(lowest_entry[1])           # removes it from the source 'frontier' list
+        node = lowest_entry[0]
+
+        pos = node['pos']
+        curr_g_cost = node['g']
+        curr_h_cost = node['h']
+
+        if pos == goal_node['pos']:
+            print(f'goal found - terminated early ({iters} iterations)')
+            break
+
+        parent_index = find_index_in_visited(node=node, visited_list=visited)
+
+        neighbour_nodes = get_valid_neighbour_nodes(node, goal_node, map)
+        for nn in neighbour_nodes:
+
+            # Search in the visited list for the node, (NOT IMPLEMENTED) then check if the new f cost is lower
+            if find_index_in_visited(node=nn, visited_list=visited):
+                continue
+
+            frontier.append(nn)
+            visited.append(nn)       # add the new neighbour so it's not reused in future iterations
+            parent_indexes.append(parent_index)       # add the parent node of the newest visited node (used in path traceback)
+
+        # if iters < 10:
+        #     print(f"Iter {iters}:\t{frontier[-2:]} (frontier len: {len(frontier)})")
+
+        iters += 1
+
+    # print(f"visited: {visited}")
+    # print(f"parent: {parent_indexes}")
+    print(f"A* completed in {iters} iterations.")
+
+
+    # back out the path, starting from the end node
+    result = [goal_node['pos']]
+
+    idx = None
+    for i in range(len(visited)-1, -1, -1):
+        if visited[i]['pos'] == goal_node['pos']:
+            idx = i
+            break
+
+    # print(f'goal index in visited: {idx}')
+
+    iters = 0
+    while idx is not None and iters < max_iterations:
+        idx = parent_indexes[idx]
+
+        if idx is not None:
+            # Append parent node information to result
+            p = visited[idx]
+            result.append(p['pos'])
+            # print(f"\t - parent: {p}")
+
+        iters += 1
+
+    if idx is None:
+        result.reverse()        # start to finish
+
+        # print(f"result: {result}")
+        return result
+
     return []
 
 
@@ -388,7 +554,7 @@ if __name__ == '__main__':
     FILE_NAME = "gamma_terrainType"  # this is the data obtained from the `MapTiles.terrainType` global
 
     START = (10, 15)
-    GOAL = (45, 60)
+    GOAL = (100, 20)
 
     RUN_TESTS = False
     ################### USER CONFIG END ###################
@@ -406,6 +572,7 @@ if __name__ == '__main__':
     # Run path finding and plot
     run_and_time_pathing(find_path_bfs)
     run_and_time_pathing(find_path_greedy_best_first_search)
+    run_and_time_pathing(find_path_astar)
 
     # Test results:
     # Between (10, 15) amd (45, 60)
