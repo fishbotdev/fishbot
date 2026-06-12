@@ -329,6 +329,7 @@ def find_path_astar(map, start: tuple, goal: tuple) -> list[tuple]:
     """
     References
     1. https://www.redblobgames.com/pathfinding/a-star/introduction.html
+    2. Pathfinding - Understanding A* (A star) - Tarodev (YouTube)
     """
 
     if is_invalid_position(map, start) or is_invalid_position(map, goal):
@@ -336,7 +337,7 @@ def find_path_astar(map, start: tuple, goal: tuple) -> list[tuple]:
         return []
 
     def h_cost_heuristic(tx: int, ty: int, gx: int, gy: int):
-        return (tx - gx) ** 2 + (ty - gy) ** 2
+        return 10 * (abs(tx - gx) + abs(ty - gy))
 
     def create_node(node_pos, g_cost, h_cost):
         return {'pos': node_pos, 'g': g_cost, 'h': h_cost}
@@ -344,9 +345,10 @@ def find_path_astar(map, start: tuple, goal: tuple) -> list[tuple]:
     def get_f_cost(n):
         return n['g'] + n['h']
 
-    def find_index_in_visited(node, visited_list):
+    def find_index_in_node_list(node, visited_list):
         for j in range(len(visited_list) - 1, -1, -1):
             if node['pos'] == visited_list[j]['pos']:
+                # print(f"{j} / {len(visited_list)}")       # confirming if searching from the end is more efficient (it is)
                 return j
         else:
             return None
@@ -356,8 +358,8 @@ def find_path_astar(map, start: tuple, goal: tuple) -> list[tuple]:
     start_node = create_node(start, 0, start_h_cost)
     goal_node = create_node(goal, None, 0)
 
-    frontier = [start_node]
-    visited = [start_node]
+    to_be_processed = [start_node]
+    seen_nodes = [start_node]
     parent_indexes: List = [None]
 
     def get_valid_neighbour_nodes(node, goal, map):
@@ -402,26 +404,24 @@ def find_path_astar(map, start: tuple, goal: tuple) -> list[tuple]:
 
     iters = 0
     max_iterations = 5000      # to prevent the algorithm from running forever if I make a mistake
-    while len(frontier) > 0 and iters < max_iterations:
+    while len(to_be_processed) > 0 and iters < max_iterations:
 
-        curr_lowest_score = None
+        curr_lowest_fcost = None
         lowest_entries.clear()
-        frontier_idx = None
 
-        for i in range(len(frontier)-1, -1, -1):
-            curr_node = frontier[i]
-            if curr_lowest_score is None:
-                curr_lowest_score = get_f_cost(curr_node)
+        for i in range(len(to_be_processed)-1, -1, -1):
+            curr_node = to_be_processed[i]
+            if curr_lowest_fcost is None:
+                curr_lowest_fcost = get_f_cost(curr_node)
                 lowest_entries.append((curr_node, i))
-                frontier_idx = i
                 continue
 
             curr_fcost = get_f_cost(curr_node)
-            if curr_fcost == curr_lowest_score:
-                curr_lowest_score = curr_fcost
+            if curr_fcost == curr_lowest_fcost:
+                curr_lowest_fcost = curr_fcost
                 lowest_entries.append((curr_node, i))
-            elif curr_fcost < curr_lowest_score:
-                curr_lowest_score = curr_fcost
+            elif curr_fcost < curr_lowest_fcost:
+                curr_lowest_fcost = curr_fcost
                 lowest_entries.clear()
                 lowest_entries.append((curr_node, i))
 
@@ -429,29 +429,37 @@ def find_path_astar(map, start: tuple, goal: tuple) -> list[tuple]:
         # print(f"\t{iters}: {lowest_entries} ({len(lowest_entries)} entries sorted)")
 
         lowest_entry = lowest_entries.pop()     # removes last element from the list
-        frontier.pop(lowest_entry[1])           # removes it from the source 'frontier' list
+        to_be_processed.pop(lowest_entry[1])           # removes it from the 'to be processed' list
+
         node = lowest_entry[0]
 
+
         pos = node['pos']
-        curr_g_cost = node['g']
-        curr_h_cost = node['h']
 
         if pos == goal_node['pos']:
             print(f'goal found - terminated early ({iters} iterations)')
             break
 
-        parent_index = find_index_in_visited(node=node, visited_list=visited)
+        parent_index = find_index_in_node_list(node=node, visited_list=seen_nodes)
 
         neighbour_nodes = get_valid_neighbour_nodes(node, goal_node, map)
         for nn in neighbour_nodes:
 
-            # Search in the visited list for the node, (NOT IMPLEMENTED) then check if the new f cost is lower
-            if find_index_in_visited(node=nn, visited_list=visited):
+            # Search in the `seen_nodes` list (!) for the node
+            existing_idx = find_index_in_node_list(node=nn, visited_list=seen_nodes)
+
+            if existing_idx:
+                processed_node = seen_nodes[existing_idx]
+                # Check if new g cost is lower
+                if nn['g'] < processed_node['g']:
+                    processed_node['g'] = nn['g']                   # take on new g cost
+                    parent_indexes[existing_idx] = parent_index     # take on current parent
                 continue
 
-            frontier.append(nn)
-            visited.append(nn)       # add the new neighbour so it's not reused in future iterations
-            parent_indexes.append(parent_index)       # add the parent node of the newest visited node (used in path traceback)
+            # Else not yet available (inverts Tarodev's video logic for more clarity)
+            seen_nodes.append(nn)                # this adds even nodes that haven't been 'processsed' officially yet
+            to_be_processed.append(nn)
+            parent_indexes.append(parent_index)
 
         # if iters < 10:
         #     print(f"Iter {iters}:\t{frontier[-2:]} (frontier len: {len(frontier)})")
@@ -467,8 +475,8 @@ def find_path_astar(map, start: tuple, goal: tuple) -> list[tuple]:
     result = [goal_node['pos']]
 
     idx = None
-    for i in range(len(visited)-1, -1, -1):
-        if visited[i]['pos'] == goal_node['pos']:
+    for i in range(len(seen_nodes)-1, -1, -1):
+        if seen_nodes[i]['pos'] == goal_node['pos']:
             idx = i
             break
 
@@ -480,7 +488,7 @@ def find_path_astar(map, start: tuple, goal: tuple) -> list[tuple]:
 
         if idx is not None:
             # Append parent node information to result
-            p = visited[idx]
+            p = seen_nodes[idx]
             result.append(p['pos'])
             # print(f"\t - parent: {p}")
 
