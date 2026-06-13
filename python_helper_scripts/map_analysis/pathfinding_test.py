@@ -614,13 +614,13 @@ def profile_algorithm(pathfinding_algorithm: Callable, passability_map, start: t
 if __name__ == '__main__':
 
     ################### USER CONFIG START ###################
-    FILE_NAME = "gamma_terrainType"  # this is the data obtained from the `MapTiles.terrainType` global
+    FILE_NAME = "bloat_terrainType"  # this is the data obtained from the `MapTiles.terrainType` global
 
-    START = (10, 15)
-    GOAL = (100, 20)
+    START = (90, 65)
+    GOAL = (83, 75)
 
-    PLOT_RESULTS = False
-    RUN_PROFILING = True
+    PLOT_RESULTS = True
+    RUN_PROFILING = False
     RUN_TESTS = False
     ################### USER CONFIG END ###################
 
