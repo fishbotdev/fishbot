@@ -41,7 +41,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from time import perf_counter as get_time
 from typing import List, Callable
-
+import line_profiler        # pip install line_profiler
 
 # Disclaimer: most of the helper functions are implemented by AI (ChatGPT), but
 # the `find_path_[x]` functions are implemented by hand for learning.
@@ -324,7 +324,14 @@ def find_path_greedy_best_first_search(map, start: tuple, goal: tuple) -> list[t
 
     return []
 
+# kernprof -l pathfinding_test.py
+# python -m line_profiler pathfinding_test.py.lprof
 
+# Using this method, I found that these lines had the highest percentage usage:
+#    442    241700    6197741.3     25.6     ((((60.8%))))    existing_idx = find_index_in_node_list(node=nn, visited_list=seen_nodes)
+#    438     34400    1052046.3     30.6     ((((10.3%))))     neighbour_nodes = get_valid_neighbour_nodes(node, goal_node, map)
+#    447    127400     854746.0      6.7     (((((8.4%))))     existing_idx = find_index_in_node_list(node=nn, visited_list=to_be_processed)
+# @line_profiler.profile   # this decorator & the first terminal above causes a .lprof file to be saved, which can be processed by the second terminal command
 def find_path_astar(map, start: tuple, goal: tuple) -> list[tuple]:
     """
     References
@@ -577,6 +584,30 @@ def run_and_time_pathing(pathfinding_algorithm: Callable) -> None:
     print("--------------------------------------------------------------")
 
 
+def profile_algorithm(pathfinding_algorithm: Callable, passability_map, start: tuple, goal: tuple):
+    # Using this function showed the highest performance impact functions (7f889f2) were:
+    #   1. find_index_in_node_list (369200 calls, 2.383s cumulative time)
+    #   2. get_valid_neighbour_nodes (34400 calls, 0.513s cumulative time)
+    #   3. get_f_cost (1427900 calls, 0.143s cumulative)
+    #   4. h_cost_heuristic (241800 calls, 0.125s cumulative)
+    #   5. create_node (241900 calls, 0.042s cumulative)
+
+    import cProfile
+    import pstats
+
+    pr = cProfile.Profile()
+    pr.enable()
+
+    for _ in range(100):
+        pathfinding_algorithm(map=passability_map, start=start, goal=goal)
+
+    pr.disable()
+
+    stats = pstats.Stats(pr)
+    stats.sort_stats("tottime")
+    stats.print_stats(20)
+
+
 ############################## MAIN ##############################
 
 if __name__ == '__main__':
@@ -587,6 +618,8 @@ if __name__ == '__main__':
     START = (90, 25)
     GOAL = (75, 40)
 
+    PLOT_RESULTS = False
+    RUN_PROFILING = True
     RUN_TESTS = False
     ################### USER CONFIG END ###################
 
@@ -601,16 +634,14 @@ if __name__ == '__main__':
         passability_map = build_passability_map(terrain)
 
     # Run path finding and plot
-    run_and_time_pathing(find_path_bfs)
-    run_and_time_pathing(find_path_greedy_best_first_search)
-    run_and_time_pathing(find_path_astar)
+    if PLOT_RESULTS:
+        run_and_time_pathing(find_path_bfs)
+        run_and_time_pathing(find_path_greedy_best_first_search)
+        run_and_time_pathing(find_path_astar)
+        run_reference_astar_implementation(passability_map, START, GOAL)
 
-    run_reference_astar_implementation(passability_map, START, GOAL)
-
-    # Test results:
-    # Between (10, 15) amd (45, 60)
-    # - BFS: 1172 iterations (92.65ms), finds the optimal path but is slow
-    # - GBest-FS: 65 iterations (1.99ms), but does not find the optimal path
+    if RUN_PROFILING:
+        profile_algorithm(find_path_astar, passability_map, START, GOAL)
 
     if RUN_TESTS:
         pathing_algorithm = find_path_greedy_best_first_search
