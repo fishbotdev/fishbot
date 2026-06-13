@@ -351,20 +351,26 @@ def find_path_astar(map, start: tuple, goal: tuple) -> list[tuple]:
     def create_node(node_pos, g_cost, h_cost, parent_node):
         return {'pos': node_pos, 'g': g_cost, 'h': h_cost, 'parent': parent_node}
 
-    def find_index_in_node_list(x, y, visited_list):
-        for j in range(len(visited_list) - 1, -1, -1):
-            if x == visited_list[j]['pos'][0] and y == visited_list[j]['pos'][1]:
-                # print(f"{j} / {len(visited_list)}")       # confirming if searching from the end is more efficient (it is)
-                return j
-        else:
-            return None
-
-    ymax, xmax = map.shape      # xmax is implicitly used
-
     def calculate_seen_index(x, y, width):
         return y * width + x
 
-    seen_lookup = [False] * (ymax * xmax)
+    def is_invalid_neighbour_node(x1, y1, passability_map, xmax: int, ymax: int) -> bool:
+        # Check map bounds
+        if x1 < 0 or x1 >= xmax:
+            return True
+        if y1 < 0 or y1 >= ymax:
+            return True
+
+        # Check walkable
+        valid_tile = passability_map[y1][x1]  # NOTE: array indexing map needs to be in this order because it looks up 'rows' = 'y', and then 'cols' = 'x'
+        if not valid_tile:
+            return True
+
+        return False
+
+
+    ymax, xmax = map.shape
+    seen_nodes = [None] * (ymax * xmax)
     to_be_processed_lookup: list[Any] = [None] * (ymax * xmax)
 
     start_h_cost = h_cost_heuristic(start[0], start[1], goal[0], goal[1])
@@ -373,46 +379,16 @@ def find_path_astar(map, start: tuple, goal: tuple) -> list[tuple]:
     gx, gy = goal
 
     to_be_processed = [start_node]
-    seen_nodes = []
 
-    def get_valid_neighbour_nodes(node_pos: tuple, passability_map, xmax: int, ymax: int) -> list[tuple]:
+    neighbour_offsets_and_gcosts = [
+        # The data format chosen below is chosen for performance reasons (this does make the code harder to read though):
+        #   (xoffset, yoffset, gcost delta (additional g cost compared to the parent))
 
-        x, y = node_pos
-
-        offsets_and_gcosts = [
-            # The data format chosen below is chosen for performance reasons (this does make the code harder to read though):
-            #   (xoffset, yoffset, gcost delta (additional g cost compared to the parent))
-            (-1, 0, 1), (1, 0, 1), (0, -1, 1), (0, 1, 1), (-1, -1, 2), (-1, 1, 2), (1, 1, 2), (1, -1, 2)
-        ]
-
-        # Manhattan h-cost remains admissible because diagonal cost == 2, equivalent to two orthogonal moves.
+        # Manhattan heuristic remains admissible because diagonal cost == 2, equivalent to two orthogonal moves.
         # If diagonal cost changes (e.g. sqrt(2)), the heuristic must change.
+        (-1, 0, 1), (1, 0, 1), (0, -1, 1), (0, 1, 1), (-1, -1, 2), (-1, 1, 2), (1, 1, 2), (1, -1, 2)
+    ]
 
-        valid_neighbour_nodes = []
-
-        # Test for valid neighbours
-        for o in offsets_and_gcosts:
-            tx, ty, gdelta = o
-
-            x1 = x + tx
-            y1 = y + ty
-
-            # Check walkable
-            valid_tile = passability_map[y1][x1]  # NOTE: array indexing map needs to be in this order because it looks up 'rows' = 'y', and then 'cols' = 'x'
-            if not valid_tile:
-                continue
-
-            # Check map bounds
-            if x1 < 0 or x1 >= xmax:
-                continue
-            if y1 < 0 or y1 >= ymax:
-                continue
-
-            new_node_reduced = (x1, y1, gdelta)
-
-            valid_neighbour_nodes.append(new_node_reduced)
-
-        return valid_neighbour_nodes
 
     iters = 0
     max_iterations = 5000      # to prevent the algorithm from running forever if I make a mistake
@@ -446,23 +422,25 @@ def find_path_astar(map, start: tuple, goal: tuple) -> list[tuple]:
         to_be_processed.pop(lowest_entry[1])  # removes it from the 'to be processed' list
         to_be_processed_lookup[nidx] = None
 
-        seen_nodes.append(node)
-        seen_lookup[nidx] = True
+        seen_nodes[nidx] = node
 
         if nx == gx and ny == gy:
             print(f'goal found - terminated early ({iters} iterations)')
             break
 
-        neighbour_nodes = get_valid_neighbour_nodes(pos, map, xmax, ymax)
-        for nn in neighbour_nodes:
+        for nn in neighbour_offsets_and_gcosts:
+            ox, oy, gdelta = nn
+            nnx = nx + ox
+            nny = ny + oy
 
-            nnx, nny, gdelta = nn
+            if is_invalid_neighbour_node(nnx, nny, map, xmax, ymax):
+                continue
 
             # Search in the `seen_nodes` list (!) for the node (seen nodes are not updated)
             nb_idx = calculate_seen_index(nnx, nny, xmax)
 
-            NODE_PREVIOUSLY_PROCESSED = seen_lookup[nb_idx]
-            if NODE_PREVIOUSLY_PROCESSED:
+            NODE_PREVIOUSLY_PROCESSED = seen_nodes[nb_idx]
+            if NODE_PREVIOUSLY_PROCESSED is not None:
                 continue
 
             # Search in the `to_be_processed` list (!) for the node
@@ -499,12 +477,11 @@ def find_path_astar(map, start: tuple, goal: tuple) -> list[tuple]:
 
     # back out the path, starting from the end node
     result = []
+    gidx = calculate_seen_index(gx, gy, xmax)       # index the goal node
+    n = seen_nodes[gidx]                            # retrieve the goal node
 
-    existing_idx = find_index_in_node_list(gx, gy, visited_list=seen_nodes)
-    if existing_idx is None:
+    if n is None:
         return []
-
-    n = seen_nodes[existing_idx]
 
     iters = 0
     while n['parent'] is not None and iters < max_iterations:
@@ -639,8 +616,8 @@ if __name__ == '__main__':
     ################### USER CONFIG START ###################
     FILE_NAME = "gamma_terrainType"  # this is the data obtained from the `MapTiles.terrainType` global
 
-    START = (90, 25)
-    GOAL = (75, 40)
+    START = (10, 15)
+    GOAL = (100, 20)
 
     PLOT_RESULTS = False
     RUN_PROFILING = True
