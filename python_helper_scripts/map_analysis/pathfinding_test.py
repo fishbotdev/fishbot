@@ -350,65 +350,67 @@ def find_path_astar(map, start: tuple, goal: tuple) -> list[tuple]:
     def create_node(node_pos, g_cost, h_cost, parent_node):
         return {'pos': node_pos, 'g': g_cost, 'h': h_cost, 'parent': parent_node}
 
-    def find_index_in_node_list(node, visited_list):
+    def find_index_in_node_list(x, y, visited_list):
         for j in range(len(visited_list) - 1, -1, -1):
-            if node['pos'] == visited_list[j]['pos']:
+            if x == visited_list[j]['pos'][0] and y == visited_list[j]['pos'][1]:
                 # print(f"{j} / {len(visited_list)}")       # confirming if searching from the end is more efficient (it is)
                 return j
         else:
             return None
 
-    ymax, xmax = map.shape
+    ymax, xmax = map.shape      # xmax is implicitly used
+
+    def calculate_seen_index(x, y, width):
+        return y * width + x
+
     seen_lookup = [False] * (ymax * xmax)
     to_be_processed_lookup = [False] * (ymax * xmax)
-    calculate_seen_index = lambda node_pos: node_pos[1] * xmax + node_pos[0]
 
     start_h_cost = h_cost_heuristic(start[0], start[1], goal[0], goal[1])
 
     start_node = create_node(start, 0, start_h_cost, None)
     goal_node = create_node(goal, None, 0, None)
+    gx, gy = goal
 
     to_be_processed = [start_node]
     seen_nodes = []
 
-    def get_valid_neighbour_nodes(node, goal, map):
-        x = node['pos'][0]
-        y = node['pos'][1]
-        g_cost = node['g']
+    def get_valid_neighbour_nodes(node_pos: tuple, passability_map, xmax: int, ymax: int) -> list[tuple]:
 
-        gx = goal['pos'][0]
-        gy = goal['pos'][1]
+        x, y = node_pos
 
-        ymax, xmax = map.shape
+        offsets_and_gcosts = [
+            # The data format chosen below is chosen for performance reasons (this does make the code harder to read though):
+            #   (xoffset, yoffset, gcost delta (additional g cost compared to the parent))
+            (-1, 0, 1), (1, 0, 1), (0, -1, 1), (0, 1, 1), (-1, -1, 2), (-1, 1, 2), (1, 1, 2), (1, -1, 2)
+        ]
 
-        offsets = [(-1, 0), (1, 0), (0, -1), (0, 1), (-1,-1), (-1, 1), (1, 1), (1,-1)]
-        neighbour_positions = [(x + offset[0], y + offset[1]) for offset in offsets]
-        g_costs = [1, 1, 1, 1, 2, 2, 2, 2]      # Note: higher weight for diagonal movt => less likely to change direction
-
-        # Manhattan h-cost remains admissible because diagonal cost == 2,
-        # equivalent to two orthogonal moves.
+        # Manhattan h-cost remains admissible because diagonal cost == 2, equivalent to two orthogonal moves.
         # If diagonal cost changes (e.g. sqrt(2)), the heuristic must change.
 
         valid_neighbour_nodes = []
 
         # Test for valid neighbours
-        for i, n in enumerate(neighbour_positions):
+        for o in offsets_and_gcosts:
+            tx, ty, gdelta = o
 
-            # Check map bounds
-            tx = n[0]
-            ty = n[1]
-            if tx < 0 or tx >= xmax:
-                continue
-            if ty < 0 or ty >= ymax:
-                continue
+            x1 = x + tx
+            y1 = y + ty
 
             # Check walkable
-            valid_tile = map[ty][tx]  # NOTE: array indexing map needs to be in this order because it looks up 'rows' = 'y', and then 'cols' = 'x'
+            valid_tile = passability_map[y1][x1]  # NOTE: array indexing map needs to be in this order because it looks up 'rows' = 'y', and then 'cols' = 'x'
             if not valid_tile:
                 continue
 
-            n1 = create_node(node_pos=n, g_cost=g_cost + g_costs[i], h_cost=h_cost_heuristic(tx, ty, gx, gy), parent_node=node)
-            valid_neighbour_nodes.append(n1)
+            # Check map bounds
+            if x1 < 0 or x1 >= xmax:
+                continue
+            if y1 < 0 or y1 >= ymax:
+                continue
+
+            new_node_reduced = (x1, y1, gdelta)
+
+            valid_neighbour_nodes.append(new_node_reduced)
 
         return valid_neighbour_nodes
 
@@ -429,6 +431,7 @@ def find_path_astar(map, start: tuple, goal: tuple) -> list[tuple]:
                 lowest_entry = (curr_node, i)
                 continue
 
+            # This line looks for lower 'f' cost or equal 'f' scores with lower 'h'
             if ((curr_fcost == curr_lowest_fcost and curr_node['h'] < lowest_entry[0]['h']) or
                     curr_fcost < curr_lowest_fcost):
                 curr_lowest_fcost = curr_fcost
@@ -436,43 +439,60 @@ def find_path_astar(map, start: tuple, goal: tuple) -> list[tuple]:
 
         node = lowest_entry[0]
         pos = node['pos']
+        g_cost = node['g']
+        nx, ny = pos
+        nidx = calculate_seen_index(nx, ny, xmax)
 
         to_be_processed.pop(lowest_entry[1])  # removes it from the 'to be processed' list
-        to_be_processed_lookup[calculate_seen_index(pos)] = True
+        to_be_processed_lookup[nidx] = False
 
         seen_nodes.append(node)
-        seen_lookup[calculate_seen_index(pos)] = True
+        seen_lookup[nidx] = True
 
-        if pos == goal_node['pos']:
+        if nx == gx and ny == gy:
             print(f'goal found - terminated early ({iters} iterations)')
             break
 
-        neighbour_nodes = get_valid_neighbour_nodes(node, goal_node, map)
+        neighbour_nodes = get_valid_neighbour_nodes(pos, map, xmax, ymax)
         for nn in neighbour_nodes:
 
-            # Search in the `seen_nodes` list (!) for the node (seen nodes are not updated)
-            index = calculate_seen_index(nn['pos'])
+            nnx, nny, gdelta = nn
 
-            NODE_PREVIOUSLY_PROCESSED = seen_lookup[index]
+            # Search in the `seen_nodes` list (!) for the node (seen nodes are not updated)
+            nb_idx = calculate_seen_index(nnx, nny, xmax)
+
+            NODE_PREVIOUSLY_PROCESSED = seen_lookup[nb_idx]
             if NODE_PREVIOUSLY_PROCESSED:
                 continue
 
             # Search in the `to_be_processed` list (!) for the node
-            NODE_TO_BE_PROCESSED = to_be_processed_lookup[index]
+            NODE_TO_BE_PROCESSED = to_be_processed_lookup[nb_idx]
             if NODE_TO_BE_PROCESSED:
-                existing_idx = find_index_in_node_list(node=nn, visited_list=to_be_processed)
+
+                potential_new_g_cost = g_cost + gdelta      # the g cost if the current node is taken as parent
+
+                # Find the corresponding existing node so we can check its existing gcost
+                existing_idx = find_index_in_node_list(nnx, nny, visited_list=to_be_processed)
                 if existing_idx is None:
                     raise ValueError("`to_be_processed_lookup` does not match `to_be_processed`")
-                to_search_Node = to_be_processed[existing_idx]
-                # Check if new g cost is lower
-                if nn['g'] < to_search_Node['g']:
-                    to_search_Node['g'] = nn['g']                   # take on new g cost
-                    to_search_Node['parent'] = node     # take on current parent
+                existing_open_node = to_be_processed[existing_idx]
+
+                # Check if new g cost is lower than the existing gcost
+                if potential_new_g_cost < existing_open_node['g']:
+                    existing_open_node['g'] = potential_new_g_cost      # take on new g cost
+                    existing_open_node['parent'] = node                 # take on current parent
                 continue
 
             # Else not yet available (inverts Tarodev's video logic for more clarity)
-            to_be_processed.append(nn)
-            to_be_processed_lookup[calculate_seen_index(nn['pos'])] = True
+            new_node = create_node(
+                node_pos=(nnx, nny),
+                g_cost=g_cost + gdelta,
+                h_cost=h_cost_heuristic(nnx, nny, gx, gy),
+                parent_node=node
+            )
+
+            to_be_processed.append(new_node)
+            to_be_processed_lookup[calculate_seen_index(nnx, nny, xmax)] = True
 
         # if iters < 10:
         #     print(f"Iter {iters}:\t{to_be_processed[-2:]} (frontier len: {len(to_be_processed)})")
@@ -486,7 +506,7 @@ def find_path_astar(map, start: tuple, goal: tuple) -> list[tuple]:
     # back out the path, starting from the end node
     result = []
 
-    existing_idx = find_index_in_node_list(node=goal_node, visited_list=seen_nodes)
+    existing_idx = find_index_in_node_list(gx, gy, visited_list=seen_nodes)
     if existing_idx is None:
         return []
 
@@ -536,7 +556,7 @@ def run_reference_astar_implementation(passability_map, start: tuple, goal: tupl
     END_TIME = get_time()
 
     EXECUTION_TIME_MS = round((END_TIME - START_TIME) * 1000, 2)
-    print(f"`prebuilt A*` -> {EXECUTION_TIME_MS} ms")
+    print(f"`Python 'pathfinding' library A*` -> {EXECUTION_TIME_MS} ms")
     print("--------------------------------------------------------------")
 
     plotting_path = [(n.x, n.y) for n in path]
