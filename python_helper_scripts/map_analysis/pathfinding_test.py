@@ -363,6 +363,7 @@ def find_path_astar(map, start: tuple, goal: tuple) -> list[tuple]:
 
     ymax, xmax = map.shape
     seen_lookup = [False] * (ymax * xmax)
+    to_be_processed_lookup = [False] * (ymax * xmax)
     calculate_seen_index = lambda node_pos: node_pos[1] * xmax + node_pos[0]
 
     start_h_cost = h_cost_heuristic(start[0], start[1], goal[0], goal[1])
@@ -436,10 +437,11 @@ def find_path_astar(map, start: tuple, goal: tuple) -> list[tuple]:
                 curr_lowest_fcost = curr_fcost
                 lowest_entry = (curr_node, i)
 
-        to_be_processed.pop(lowest_entry[1])           # removes it from the 'to be processed' list
-
         node = lowest_entry[0]
         pos = node['pos']
+
+        to_be_processed.pop(lowest_entry[1])  # removes it from the 'to be processed' list
+        to_be_processed_lookup[calculate_seen_index(pos)] = True
 
         seen_nodes.append(node)
         seen_lookup[calculate_seen_index(pos)] = True
@@ -452,13 +454,18 @@ def find_path_astar(map, start: tuple, goal: tuple) -> list[tuple]:
         for nn in neighbour_nodes:
 
             # Search in the `seen_nodes` list (!) for the node (seen nodes are not updated)
-            PREVIOUSLY_SEEN = seen_lookup[calculate_seen_index(nn['pos'])]
-            if PREVIOUSLY_SEEN:
+            index = calculate_seen_index(nn['pos'])
+
+            NODE_PREVIOUSLY_PROCESSED = seen_lookup[index]
+            if NODE_PREVIOUSLY_PROCESSED:
                 continue
 
             # Search in the `to_be_processed` list (!) for the node
+            NODE_TO_BE_PROCESSED = to_be_processed_lookup[index]
+            if NODE_TO_BE_PROCESSED:
             existing_idx = find_index_in_node_list(node=nn, visited_list=to_be_processed)
-            if existing_idx is not None:
+                if existing_idx is None:
+                    raise ValueError("`to_be_processed_lookup` does not match `to_be_processed`")
                 to_search_Node = to_be_processed[existing_idx]
                 # Check if new g cost is lower
                 if nn['g'] < to_search_Node['g']:
@@ -468,6 +475,7 @@ def find_path_astar(map, start: tuple, goal: tuple) -> list[tuple]:
 
             # Else not yet available (inverts Tarodev's video logic for more clarity)
             to_be_processed.append(nn)
+            to_be_processed_lookup[calculate_seen_index(nn['pos'])] = True
 
         # if iters < 10:
         #     print(f"Iter {iters}:\t{to_be_processed[-2:]} (frontier len: {len(to_be_processed)})")
