@@ -375,7 +375,7 @@ def find_path_astar(map, start: tuple, goal: tuple) -> list[tuple]:
 
         offsets = [(-1, 0), (1, 0), (0, -1), (0, 1), (-1,-1), (-1, 1), (1, 1), (1,-1)]
         neighbour_positions = [(x + offset[0], y + offset[1]) for offset in offsets]
-        g_costs = [1, 1, 1, 1, 1.4, 1.4, 1.4, 1.4]      # Note: higher weight for diagonal movt => less likely to change direction
+        g_costs = [1, 1, 1, 1, 2, 2, 2, 2]      # Note: higher weight for diagonal movt => less likely to change direction
 
         valid_neighbour_nodes = []
 
@@ -399,7 +399,6 @@ def find_path_astar(map, start: tuple, goal: tuple) -> list[tuple]:
             valid_neighbour_nodes.append(n1)
 
         return valid_neighbour_nodes
-
 
     iters = 0
     max_iterations = 5000      # to prevent the algorithm from running forever if I make a mistake
@@ -600,8 +599,8 @@ if __name__ == '__main__':
     ################### USER CONFIG START ###################
     FILE_NAME = "gamma_terrainType"  # this is the data obtained from the `MapTiles.terrainType` global
 
-    START = (100, 20)
-    GOAL = (10, 15)
+    START = (90, 25)
+    GOAL = (75, 40)
 
     RUN_TESTS = False
     ################### USER CONFIG END ###################
