@@ -376,6 +376,10 @@ def find_path_astar(map, start: tuple, goal: tuple) -> list[tuple]:
         neighbour_positions = [(x + offset[0], y + offset[1]) for offset in offsets]
         g_costs = [1, 1, 1, 1, 2, 2, 2, 2]      # Note: higher weight for diagonal movt => less likely to change direction
 
+        # Manhattan h-cost remains admissible because diagonal cost == 2,
+        # equivalent to two orthogonal moves.
+        # If diagonal cost changes (e.g. sqrt(2)), the heuristic must change.
+
         valid_neighbour_nodes = []
 
         # Test for valid neighbours
@@ -436,12 +440,12 @@ def find_path_astar(map, start: tuple, goal: tuple) -> list[tuple]:
 
             # Search in the `seen_nodes` list (!) for the node (seen nodes are not updated)
             existing_idx = find_index_in_node_list(node=nn, visited_list=seen_nodes)
-            if existing_idx:
+            if existing_idx is not None:
                 continue
 
             # Search in the `to_be_processed` list (!) for the node
             existing_idx = find_index_in_node_list(node=nn, visited_list=to_be_processed)
-            if existing_idx:
+            if existing_idx is not None:
                 to_search_Node = to_be_processed[existing_idx]
                 # Check if new g cost is lower
                 if nn['g'] < to_search_Node['g']:
@@ -466,6 +470,9 @@ def find_path_astar(map, start: tuple, goal: tuple) -> list[tuple]:
     result = []
 
     existing_idx = find_index_in_node_list(node=goal_node, visited_list=seen_nodes)
+    if existing_idx is None:
+        return []
+
     n = seen_nodes[existing_idx]
 
     iters = 0
