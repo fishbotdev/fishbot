@@ -40,11 +40,12 @@ import json
 import numpy as np
 import matplotlib.pyplot as plt
 from time import perf_counter as get_time
-from typing import List, Callable
+from typing import List, Callable, Any
 import line_profiler        # pip install line_profiler
 
 # Disclaimer: most of the helper functions are implemented by AI (ChatGPT), but
-# the `find_path_[x]` functions are implemented by hand for learning.
+# all of the `find_path_[x]` functions are implemented by hand for learning.
+# (This may explain some of the residual parallel redundant logic)
 
 ############################## HELPER FUNCTIONS ##############################
 
@@ -364,12 +365,11 @@ def find_path_astar(map, start: tuple, goal: tuple) -> list[tuple]:
         return y * width + x
 
     seen_lookup = [False] * (ymax * xmax)
-    to_be_processed_lookup = [False] * (ymax * xmax)
+    to_be_processed_lookup: list[Any] = [None] * (ymax * xmax)
 
     start_h_cost = h_cost_heuristic(start[0], start[1], goal[0], goal[1])
 
     start_node = create_node(start, 0, start_h_cost, None)
-    goal_node = create_node(goal, None, 0, None)
     gx, gy = goal
 
     to_be_processed = [start_node]
@@ -444,7 +444,7 @@ def find_path_astar(map, start: tuple, goal: tuple) -> list[tuple]:
         nidx = calculate_seen_index(nx, ny, xmax)
 
         to_be_processed.pop(lowest_entry[1])  # removes it from the 'to be processed' list
-        to_be_processed_lookup[nidx] = False
+        to_be_processed_lookup[nidx] = None
 
         seen_nodes.append(node)
         seen_lookup[nidx] = True
@@ -466,21 +466,15 @@ def find_path_astar(map, start: tuple, goal: tuple) -> list[tuple]:
                 continue
 
             # Search in the `to_be_processed` list (!) for the node
-            NODE_TO_BE_PROCESSED = to_be_processed_lookup[nb_idx]
-            if NODE_TO_BE_PROCESSED:
+            existing_node = to_be_processed_lookup[nb_idx]      # this now contains a reference to the actual node
+            if existing_node is not None:
 
                 potential_new_g_cost = g_cost + gdelta      # the g cost if the current node is taken as parent
 
-                # Find the corresponding existing node so we can check its existing gcost
-                existing_idx = find_index_in_node_list(nnx, nny, visited_list=to_be_processed)
-                if existing_idx is None:
-                    raise ValueError("`to_be_processed_lookup` does not match `to_be_processed`")
-                existing_open_node = to_be_processed[existing_idx]
-
                 # Check if new g cost is lower than the existing gcost
-                if potential_new_g_cost < existing_open_node['g']:
-                    existing_open_node['g'] = potential_new_g_cost      # take on new g cost
-                    existing_open_node['parent'] = node                 # take on current parent
+                if potential_new_g_cost < existing_node['g']:
+                    existing_node['g'] = potential_new_g_cost      # take on new g cost
+                    existing_node['parent'] = node                 # take on current parent
                 continue
 
             # Else not yet available (inverts Tarodev's video logic for more clarity)
@@ -492,7 +486,7 @@ def find_path_astar(map, start: tuple, goal: tuple) -> list[tuple]:
             )
 
             to_be_processed.append(new_node)
-            to_be_processed_lookup[calculate_seen_index(nnx, nny, xmax)] = True
+            to_be_processed_lookup[nb_idx] = new_node
 
         # if iters < 10:
         #     print(f"Iter {iters}:\t{to_be_processed[-2:]} (frontier len: {len(to_be_processed)})")
