@@ -350,9 +350,6 @@ def find_path_astar(map, start: tuple, goal: tuple) -> list[tuple]:
     def create_node(node_pos, g_cost, h_cost, parent_node):
         return {'pos': node_pos, 'g': g_cost, 'h': h_cost, 'parent': parent_node}
 
-    def get_f_cost(n):
-        return n['g'] + n['h']
-
     def find_index_in_node_list(node, visited_list):
         for j in range(len(visited_list) - 1, -1, -1):
             if node['pos'] == visited_list[j]['pos']:
@@ -425,7 +422,7 @@ def find_path_astar(map, start: tuple, goal: tuple) -> list[tuple]:
         for i in range(len(to_be_processed)-1, -1, -1):
             curr_node = to_be_processed[i]
 
-            curr_fcost = get_f_cost(curr_node)
+            curr_fcost = curr_node['g'] + curr_node['h']
 
             if lowest_entry is None:
                 curr_lowest_fcost = curr_fcost
@@ -463,7 +460,7 @@ def find_path_astar(map, start: tuple, goal: tuple) -> list[tuple]:
             # Search in the `to_be_processed` list (!) for the node
             NODE_TO_BE_PROCESSED = to_be_processed_lookup[index]
             if NODE_TO_BE_PROCESSED:
-            existing_idx = find_index_in_node_list(node=nn, visited_list=to_be_processed)
+                existing_idx = find_index_in_node_list(node=nn, visited_list=to_be_processed)
                 if existing_idx is None:
                     raise ValueError("`to_be_processed_lookup` does not match `to_be_processed`")
                 to_search_Node = to_be_processed[existing_idx]
