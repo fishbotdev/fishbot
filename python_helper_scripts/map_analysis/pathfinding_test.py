@@ -331,7 +331,7 @@ def find_path_greedy_best_first_search(map, start: tuple, goal: tuple) -> list[t
 #    442    241700    6197741.3     25.6     ((((60.8%))))    existing_idx = find_index_in_node_list(node=nn, visited_list=seen_nodes)
 #    438     34400    1052046.3     30.6     ((((10.3%))))     neighbour_nodes = get_valid_neighbour_nodes(node, goal_node, map)
 #    447    127400     854746.0      6.7     (((((8.4%))))     existing_idx = find_index_in_node_list(node=nn, visited_list=to_be_processed)
-# @line_profiler.profile   # this decorator & the first terminal above causes a .lprof file to be saved, which can be processed by the second terminal command
+@line_profiler.profile   # this decorator & the first terminal above causes a .lprof file to be saved, which can be processed by the second terminal command
 def find_path_astar(map, start: tuple, goal: tuple) -> list[tuple]:
     """
     References
