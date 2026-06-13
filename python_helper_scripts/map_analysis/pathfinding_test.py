@@ -361,6 +361,10 @@ def find_path_astar(map, start: tuple, goal: tuple) -> list[tuple]:
         else:
             return None
 
+    ymax, xmax = map.shape
+    seen_lookup = [False] * (ymax * xmax)
+    calculate_seen_index = lambda node_pos: node_pos[1] * xmax + node_pos[0]
+
     start_h_cost = h_cost_heuristic(start[0], start[1], goal[0], goal[1])
 
     start_node = create_node(start, 0, start_h_cost, None)
@@ -435,9 +439,11 @@ def find_path_astar(map, start: tuple, goal: tuple) -> list[tuple]:
         to_be_processed.pop(lowest_entry[1])           # removes it from the 'to be processed' list
 
         node = lowest_entry[0]
-        seen_nodes.append(node)
-
         pos = node['pos']
+
+        seen_nodes.append(node)
+        seen_lookup[calculate_seen_index(pos)] = True
+
         if pos == goal_node['pos']:
             print(f'goal found - terminated early ({iters} iterations)')
             break
@@ -446,8 +452,8 @@ def find_path_astar(map, start: tuple, goal: tuple) -> list[tuple]:
         for nn in neighbour_nodes:
 
             # Search in the `seen_nodes` list (!) for the node (seen nodes are not updated)
-            existing_idx = find_index_in_node_list(node=nn, visited_list=seen_nodes)
-            if existing_idx is not None:
+            PREVIOUSLY_SEEN = seen_lookup[calculate_seen_index(nn['pos'])]
+            if PREVIOUSLY_SEEN:
                 continue
 
             # Search in the `to_be_processed` list (!) for the node
@@ -468,10 +474,9 @@ def find_path_astar(map, start: tuple, goal: tuple) -> list[tuple]:
 
         iters += 1
 
-    # print(f"visited: {visited}")
-    # print(f"parent: {parent_indexes}")
     print(f"A* completed in {iters} iterations.")
 
+    ##################################################################################
 
     # back out the path, starting from the end node
     result = []
