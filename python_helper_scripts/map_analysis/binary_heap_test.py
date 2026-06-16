@@ -80,6 +80,8 @@ class MyBinaryHeap:
 
                 temp_filled_indexes.append(int((last_entry+second_last_entry)/2))
 
+            temp_filled_indexes.reverse()
+
             # print(temp_filled_indexes)
             filled_indexes = temp_filled_indexes
 
