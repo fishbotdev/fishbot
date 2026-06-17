@@ -105,7 +105,7 @@ class MyBinaryMinHeap:
             print(''.join(row))
 
 
-    def insert(self, value: float | int):
+    def push(self, value: float | int):
         self.heap.append(value)     # this adds it to the end of the complete binary tree
 
         # Bubble up the tree to make the heap-invariant true
@@ -129,8 +129,10 @@ class MyBinaryMinHeap:
             else:
                 break       # insertion is finished
 
+    def peek(self) -> Optional[float | int]:
+        return self.heap[0] if len(self.heap) > 0 else None
 
-    def delete(self) -> Optional[float | int]:
+    def pop(self) -> Optional[float | int]:
         if len(self.heap) == 0:
             return None
 
@@ -191,7 +193,7 @@ class MyBinaryMinHeap:
 
     def create_heap(self, values: list[float | int]) -> None:
         for v in values:
-            self.insert(v)
+            self.push(v)
 
 
 def run_heap_sort(values: list[float | int]) -> list[float | int]:
@@ -200,13 +202,8 @@ def run_heap_sort(values: list[float | int]) -> list[float | int]:
     h = MyBinaryMinHeap()
     h.create_heap(values)
 
-    iters = 0
-    MAX_ITERS = 2000
-
-    while iters < min(MAX_ITERS, len(h)):
-        v = h.delete()
-        sorted_values.append(v)
-        iters += 1
+    while len(h):
+        sorted_values.append(h.pop())
 
     return sorted_values
 
@@ -222,7 +219,7 @@ def run_adhoc_tests():
     h.print_heap()
 
     for _ in range(5):
-        print(h.delete())
+        print(h.pop())
 
     h.print_heap()
 
@@ -230,7 +227,22 @@ def run_adhoc_tests():
     print("Heap Sort test")
     print(run_heap_sort(values))
 
+def run_debug_tests():
+    h = MyBinaryMinHeap()
+    for x in [1,2,3,4,5]:
+        h.push(x)
+
+    h.print_heap()
+
+    result = []
+    while len(h):
+        result.append(h.pop())
+
+    print(result)
+
+    print(run_heap_sort([1,2,3,4,5]))
 
 
 if __name__ == '__main__':
-    run_adhoc_tests()
+    # run_adhoc_tests()
+    run_debug_tests()
