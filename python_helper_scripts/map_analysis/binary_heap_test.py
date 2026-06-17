@@ -3,18 +3,24 @@ This is a throwaway script for learning how binary heaps work.
 """
 
 import random
+from math import floor
+from typing import Optional
 
-class MyBinaryHeap:
+
+class MyBinaryMinHeap:
+    # This heap is implemented zero-index formulas
+    #   Node i (zero indexed)
+    #   Left child `2*i+1`
+    #   Right child `2*i+2`
+    #   Parent node `floor((i - 1) / 2)`
+
     def __init__(self):
+        self.heap: list[float | int] = []
 
-        COUNT = 27
+    def __len__(self) -> int:
+        return len(self.heap)
 
-        self.heap = list(range(COUNT))
-        # self.heap = [random.randint(0, 99) for _ in range(COUNT)]
-        # self.heap = []
-
-
-    def print_heap(self):
+    def print_heap(self) -> None:
         # Function 1: Visualisation is important for learning & debugging, so I build this first
         # The implementation is not very clean but it does the job.
 
@@ -99,16 +105,129 @@ class MyBinaryHeap:
             print(''.join(row))
 
 
-    def insert(self):
-        pass
+    def insert(self, value: float | int):
+        self.heap.append(value)     # this adds it to the end of the complete binary tree
 
-    def delete(self):
-        pass
+        # Bubble up the tree to make the heap-invariant true
+        # Algorithm:
+        #   1. Compare with parent.
+        #   2. If smaller, swap, else, do nothing.
+        #   3. Recursively perform until curr_idx is at the root (index 0) or the parent is smaller
 
-    def create_heap(self):
-        pass
+        curr_idx = len(self.heap) - 1
+
+        while curr_idx > 0:
+            parent_idx = floor((curr_idx - 1) / 2)
+
+            curr_value = self.heap[curr_idx]
+            parent_value = self.heap[parent_idx]
+            if curr_value < parent_value:
+                self.heap[parent_idx] = curr_value
+                self.heap[curr_idx] = parent_value
+                curr_idx = parent_idx
+
+            else:
+                break       # insertion is finished
+
+
+    def delete(self) -> Optional[float | int]:
+        if len(self.heap) == 0:
+            return None
+
+        last_entry = self.heap.pop()
+        first_entry = self.heap[0]
+        self.heap[0] = last_entry
+
+        # Bubble down to preserve the heap invariant
+        # Algorithm:
+        #   1. Find the min of the two children nodes
+        #   2. Compare the parent to the minimum of the two children nodes
+        #   3. If child is smaller, swap, else, break.
+        curr_idx = 0
+        LAST_IDX = len(self.heap) - 1
+
+        while curr_idx < LAST_IDX:
+            curr_value = self.heap[curr_idx]
+
+            child1_idx = 2 * curr_idx + 1
+            child2_idx = 2 * curr_idx + 2
+
+            child1_value = None
+            child2_value = None
+            if child1_idx < LAST_IDX:
+                child1_value = self.heap[child1_idx]
+            if child2_idx < LAST_IDX:
+                child2_value = self.heap[child2_idx]
+
+            child_value = None
+            child_idx = None
+            if child1_value is not None and child2_value is not None:
+                child_value = child1_value if child1_value < child2_value else child2_value
+                child_idx = child1_idx if child1_value < child2_value else child2_idx
+            elif child1_value is not None:
+                child_value = child1_value
+                child_idx = child1_idx
+            elif child2_value is not None:
+                child_value = child2_value
+                child_idx = child2_idx
+
+            if child_value is None:
+                # no children
+                break
+
+            if child_value > curr_value:
+                # Min heap invariant satisfied
+                break
+
+            self.heap[curr_idx] = child_value
+            self.heap[child_idx] = curr_value
+            curr_idx = child_idx
+
+        return first_entry
+
+
+    def create_heap(self, values: list[float | int]) -> None:
+        for v in values:
+            self.insert(v)
+
+
+def run_heap_sort(values: list[float | int]) -> list[float | int]:
+    sorted_values = []
+
+    h = MyBinaryMinHeap()
+    h.create_heap(values)
+
+    iters = 0
+    MAX_ITERS = 2000
+
+    while iters < min(MAX_ITERS, len(h)):
+        v = h.delete()
+        sorted_values.append(v)
+        iters += 1
+
+    return sorted_values
+
+
+def run_adhoc_tests():
+    h = MyBinaryMinHeap()
+
+    COUNT = 17
+    values = [random.randint(0, 99) for _ in range(COUNT)]
+
+    h.create_heap(values)
+
+    h.print_heap()
+
+    for _ in range(5):
+        print(h.delete())
+
+    h.print_heap()
+
+    print("\n\n\n")
+    print("Heap Sort test")
+    print(run_heap_sort(values))
+
 
 
 if __name__ == '__main__':
-    h = MyBinaryHeap()
-    h.print_heap()
+    run_adhoc_tests()
