@@ -135,6 +135,9 @@ class MyBinaryMinHeap:
             return None
 
         last_entry = self.heap.pop()
+        if len(self.heap) == 0:
+            return last_entry
+
         first_entry = self.heap[0]
         self.heap[0] = last_entry
 
@@ -146,7 +149,7 @@ class MyBinaryMinHeap:
         curr_idx = 0
         LAST_IDX = len(self.heap) - 1
 
-        while curr_idx < LAST_IDX:
+        while curr_idx <= LAST_IDX:
             curr_value = self.heap[curr_idx]
 
             child1_idx = 2 * curr_idx + 1
@@ -154,9 +157,9 @@ class MyBinaryMinHeap:
 
             child1_value = None
             child2_value = None
-            if child1_idx < LAST_IDX:
+            if child1_idx <= LAST_IDX:
                 child1_value = self.heap[child1_idx]
-            if child2_idx < LAST_IDX:
+            if child2_idx <= LAST_IDX:
                 child2_value = self.heap[child2_idx]
 
             child_value = None
@@ -164,10 +167,10 @@ class MyBinaryMinHeap:
             if child1_value is not None and child2_value is not None:
                 child_value = child1_value if child1_value < child2_value else child2_value
                 child_idx = child1_idx if child1_value < child2_value else child2_idx
-            elif child1_value is not None:
+            elif child1_value is not None and child2_value is None:
                 child_value = child1_value
                 child_idx = child1_idx
-            elif child2_value is not None:
+            elif child1_value is None and child2_value is not None:
                 child_value = child2_value
                 child_idx = child2_idx
 
