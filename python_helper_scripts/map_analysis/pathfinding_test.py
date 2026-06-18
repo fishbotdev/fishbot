@@ -547,23 +547,6 @@ def find_path_astar(map, start: tuple, goal: tuple) -> list[tuple]:
     def create_node(node_pos, g_cost, h_cost, parent_node):
         return {'pos': node_pos, 'f': g_cost+h_cost, 'g': g_cost, 'h': h_cost, 'parent': parent_node, 'stale': False}
 
-    def calculate_seen_index(x, y, width):
-        return y * width + x
-
-    def is_invalid_neighbour_node(x1, y1, passability_map, xmax: int, ymax: int) -> bool:
-        # Check map bounds
-        if x1 < 0 or x1 >= xmax:
-            return True
-        if y1 < 0 or y1 >= ymax:
-            return True
-
-        # Check walkable
-        valid_tile = passability_map[y1][x1]  # NOTE: array indexing map needs to be in this order because it looks up 'rows' = 'y', and then 'cols' = 'x'
-        if not valid_tile:
-            return True
-
-        return False
-
     ymax, xmax = map.shape
     seen_nodes = [None] * (ymax * xmax)
     to_be_processed_lookup: list[Any] = [None] * (ymax * xmax)
@@ -600,7 +583,7 @@ def find_path_astar(map, start: tuple, goal: tuple) -> list[tuple]:
         pos = node['pos']
         nx, ny = pos
 
-        nidx = calculate_seen_index(nx, ny, xmax)
+        nidx = ny * xmax + nx
         to_be_processed_lookup[nidx] = None
         seen_nodes[nidx] = node
 
@@ -613,11 +596,19 @@ def find_path_astar(map, start: tuple, goal: tuple) -> list[tuple]:
             nnx = nx + ox
             nny = ny + oy
 
-            if is_invalid_neighbour_node(nnx, nny, map, xmax, ymax):
+            # Check map bounds
+            if nnx < 0 or nnx >= xmax:
+                continue
+            if nny < 0 or nny >= ymax:
+                continue
+
+            # Check walkable
+            valid_tile = passability_map[nny][nnx]  # NOTE: array indexing map needs to be in this order because it looks up 'rows' = 'y', and then 'cols' = 'x'
+            if not valid_tile:
                 continue
 
             # Search in the `seen_nodes` list (!) for the node (seen nodes are not updated)
-            nb_idx = calculate_seen_index(nnx, nny, xmax)
+            nb_idx = nny * xmax + nnx
 
             NODE_PREVIOUSLY_PROCESSED = seen_nodes[nb_idx]
             if NODE_PREVIOUSLY_PROCESSED is not None:
@@ -666,7 +657,7 @@ def find_path_astar(map, start: tuple, goal: tuple) -> list[tuple]:
 
     # back out the path, starting from the end node
     result = []
-    gidx = calculate_seen_index(gx, gy, xmax)       # index the goal node
+    gidx = gy * xmax + gx       # index the goal node
     n = seen_nodes[gidx]                            # retrieve the goal node
 
     if n is None:
