@@ -325,6 +325,10 @@ def find_path_greedy_best_first_search(map, start: tuple, goal: tuple) -> list[t
 
     return []
 
+
+from binary_heap import MyBinaryMinHeap as BinaryHeap
+
+
 # kernprof -l pathfinding_test.py
 # python -m line_profiler pathfinding_test.py.lprof
 
@@ -349,7 +353,7 @@ def find_path_astar(map, start: tuple, goal: tuple) -> list[tuple]:
         return abs(tx - gx) + abs(ty - gy)
 
     def create_node(node_pos, g_cost, h_cost, parent_node):
-        return {'pos': node_pos, 'g': g_cost, 'h': h_cost, 'parent': parent_node}
+        return {'pos': node_pos, 'f': g_cost+h_cost, 'g': g_cost, 'h': h_cost, 'parent': parent_node, 'stale': False}
 
     def calculate_seen_index(x, y, width):
         return y * width + x
@@ -368,6 +372,31 @@ def find_path_astar(map, start: tuple, goal: tuple) -> list[tuple]:
 
         return False
 
+    def satisfies_fcost_invariant(parent_value, child_value) -> bool:
+        if parent_value['f'] < child_value['f']:        # normal minheap invariant for f
+            return True
+        elif parent_value['f'] == child_value['f']:
+            if parent_value['h'] <= child_value['h']:    # A-star prioritisation of nodes closer to the target
+                return True
+            else:
+                return False
+        else:
+            return False
+
+    def get_lowest_fcost_child(child1: tuple, child2: tuple) -> tuple:
+
+        child1_idx, child1_node = child1
+        child2_idx, child2_node = child2
+
+        if child1_node['f'] < child2_node['f']:        # normal minheap invariant for f
+            return child1
+        elif child1_node['f'] == child2_node['f']:
+            if child1_node['h'] <= child2_node['h']:    # A-star prioritisation of nodes closer to the target
+                return child1
+            else:
+                return child2
+        else:
+            return child2
 
     ymax, xmax = map.shape
     seen_nodes = [None] * (ymax * xmax)
@@ -378,7 +407,12 @@ def find_path_astar(map, start: tuple, goal: tuple) -> list[tuple]:
     start_node = create_node(start, 0, start_h_cost, None)
     gx, gy = goal
 
-    to_be_processed = [start_node]
+    # Initialise heap
+    h = BinaryHeap()
+    h.satifies_heap_invariant = satisfies_fcost_invariant       # override internal heap-invariant comparison
+    h.get_best_child = get_lowest_fcost_child                   # override child comparison (for .pop())
+
+    h.push(start_node)
 
     neighbour_offsets_and_gcosts = [
         # The data format chosen below is chosen for performance reasons (this does make the code harder to read though):
@@ -389,39 +423,21 @@ def find_path_astar(map, start: tuple, goal: tuple) -> list[tuple]:
         (-1, 0, 1), (1, 0, 1), (0, -1, 1), (0, 1, 1), (-1, -1, 2), (-1, 1, 2), (1, 1, 2), (1, -1, 2)
     ]
 
-
     iters = 0
     max_iterations = 5000      # to prevent the algorithm from running forever if I make a mistake
-    while len(to_be_processed) > 0 and iters < max_iterations:
+    while len(h) > 0 and iters < max_iterations:
 
-        curr_lowest_fcost = None
-        lowest_entry = None
+        node = h.pop()
+        if node['stale']:
+            continue
 
-        for i in range(len(to_be_processed)-1, -1, -1):
-            curr_node = to_be_processed[i]
-
-            curr_fcost = curr_node['g'] + curr_node['h']
-
-            if lowest_entry is None:
-                curr_lowest_fcost = curr_fcost
-                lowest_entry = (curr_node, i)
-                continue
-
-            # This line looks for lower 'f' cost or equal 'f' scores with lower 'h'
-            if ((curr_fcost == curr_lowest_fcost and curr_node['h'] < lowest_entry[0]['h']) or
-                    curr_fcost < curr_lowest_fcost):
-                curr_lowest_fcost = curr_fcost
-                lowest_entry = (curr_node, i)
-
-        node = lowest_entry[0]
-        pos = node['pos']
         g_cost = node['g']
+
+        pos = node['pos']
         nx, ny = pos
+
         nidx = calculate_seen_index(nx, ny, xmax)
-
-        to_be_processed.pop(lowest_entry[1])  # removes it from the 'to be processed' list
         to_be_processed_lookup[nidx] = None
-
         seen_nodes[nidx] = node
 
         if nx == gx and ny == gy:
@@ -451,11 +467,20 @@ def find_path_astar(map, start: tuple, goal: tuple) -> list[tuple]:
 
                 # Check if new g cost is lower than the existing gcost
                 if potential_new_g_cost < existing_node['g']:
-                    existing_node['g'] = potential_new_g_cost      # take on new g cost
-                    existing_node['parent'] = node                 # take on current parent
+                    existing_node['stale'] = True       # This sets the old node as 'stale' which will be ignored during processing. This is required because binary trees cannot 'readjust themselves'
+
+                    new_node = create_node(
+                        node_pos=(nnx, nny),
+                        g_cost=potential_new_g_cost,                # take on new g cost
+                        h_cost=h_cost_heuristic(nnx, nny, gx, gy),
+                        parent_node=node                            # take on current parent
+                    )
+                    h.push(new_node)
+                    to_be_processed_lookup[nb_idx] = new_node
+
                 continue
 
-            # Else not yet available (inverts Tarodev's video logic for more clarity)
+            # Else not yet available
             new_node = create_node(
                 node_pos=(nnx, nny),
                 g_cost=g_cost + gdelta,
@@ -463,7 +488,7 @@ def find_path_astar(map, start: tuple, goal: tuple) -> list[tuple]:
                 parent_node=node
             )
 
-            to_be_processed.append(new_node)
+            h.push(new_node)
             to_be_processed_lookup[nb_idx] = new_node
 
         # if iters < 10:
