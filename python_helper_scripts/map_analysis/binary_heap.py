@@ -17,6 +17,9 @@ class MyBinaryMinHeap:
     def __init__(self):
         self.heap: list[float | int] = []
 
+        self.satifies_heap_invariant = self._satisfies_min_heap_invariant
+        self.get_best_child = self._get_smallest_child
+
     def __len__(self) -> int:
         return len(self.heap)
 
@@ -104,6 +107,22 @@ class MyBinaryMinHeap:
         for row in print_rows:
             print(''.join(row))
 
+    @staticmethod
+    def _satisfies_min_heap_invariant(parent_value, child_value):
+        if parent_value < child_value:
+            return True
+        else:
+            return False
+
+    @staticmethod
+    def _get_smallest_child(child1: tuple, child2: tuple) -> tuple:
+        child1_idx, child1_value = child1
+        child2_idx, child2_value = child2
+
+        if child1_value <= child2_value:
+            return child1
+        else:
+            return child2
 
     def push(self, value: float | int):
         self.heap.append(value)     # this adds it to the end of the complete binary tree
@@ -121,13 +140,12 @@ class MyBinaryMinHeap:
 
             curr_value = self.heap[curr_idx]
             parent_value = self.heap[parent_idx]
-            if curr_value < parent_value:
-                self.heap[parent_idx] = curr_value
-                self.heap[curr_idx] = parent_value
-                curr_idx = parent_idx
+            if self.satifies_heap_invariant(parent_value=parent_value, child_value=curr_value):
+                break
 
-            else:
-                break       # insertion is finished
+            self.heap[parent_idx] = curr_value
+            self.heap[curr_idx] = parent_value
+            curr_idx = parent_idx
 
     def peek(self) -> Optional[float | int]:
         return self.heap[0] if len(self.heap) > 0 else None
@@ -157,33 +175,30 @@ class MyBinaryMinHeap:
             child1_idx = 2 * curr_idx + 1
             child2_idx = 2 * curr_idx + 2
 
-            child1_value = None
-            child2_value = None
+            child1 = None
+            child2 = None
             if child1_idx <= LAST_IDX:
                 child1_value = self.heap[child1_idx]
+                child1 = (child1_idx, child1_value)
+
             if child2_idx <= LAST_IDX:
                 child2_value = self.heap[child2_idx]
+                child2 = (child2_idx, child2_value)
 
-            child_value = None
-            child_idx = None
-            if child1_value is not None and child2_value is not None:
-                child_value = child1_value if child1_value < child2_value else child2_value
-                child_idx = child1_idx if child1_value < child2_value else child2_idx
-            elif child1_value is not None and child2_value is None:
-                child_value = child1_value
-                child_idx = child1_idx
-            elif child1_value is None and child2_value is not None:
-                child_value = child2_value
-                child_idx = child2_idx
-
-            if child_value is None:
-                # no children
+            if child1 is None and child2 is None:
                 break
 
-            if child_value > curr_value:
-                # Min heap invariant satisfied
+            if child1 is not None and child2 is None:
+                child_idx, child_value = child1
+            elif child1 is None and child2 is not None:
+                child_idx, child_value = child2
+            else:
+                child_idx, child_value = self.get_best_child(child1, child2)
+
+            if self.satifies_heap_invariant(parent_value=curr_value, child_value=child_value):
                 break
 
+            # Else swap & continue to recurse
             self.heap[curr_idx] = child_value
             self.heap[child_idx] = curr_value
             curr_idx = child_idx
