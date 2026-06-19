@@ -5,23 +5,23 @@ This file is used to record the changes to FishBot between each version.
 ### Changes in v0.4.1
 - Combat improvements
     - Ground forces
-        - Brigade combat teams (BCT) now keep their cohesion a bit better.
+        - Improved cohesion of Brigade Combat Teams (BCTs).
         - Repaired units now move towards a staging area behind BCT0 rather than staying around the repair center.
         - Increased priority of ADA in the production order.
     - Aviation
-        - Increased likelihood of aircraft to attack urgent CAS targets (higher tolerance for nearby anti-air defences).
+        - Increased risk appetite when attacking urgent-priority targets (higher tolerance for nearby anti-air defences).
 - Construction improvements
-    - Increased the likelihood of repair faciltiies being forward constructed.
+    - Increased the likelihood of repair facilities being forward-constructed.
 - Research improvements
     - T2+ research order improved for longer running games.
 - Production
-    - Changed mortar units to only use light bodies for increased mobility (mortars no longer use Medium bodies).
+    - Mortar units now only use light bodies for increased mobility (i.e. indirect fire units no longer use Medium bodies).
     - Fixed FishBot producing Hover Trucks before the command center is built.
 - Infrastructure improvements
     - Computational performance improvements:
         - Improved efficiency of targeting code.
         - Reduced update rates of logistics structures (i.e. factories and research).
-    - Implemented an automated testing pipeline in Python.
+    - Added an automated testing pipeline.
         
 
 #### Test results (Warzone 2100 v4.7.0)
