@@ -11,3 +11,5 @@ python_helper_scripts/map_analysis/*.json
 *.jsonl
 *.json
 *.pyc
+*.lprof
+

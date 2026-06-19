@@ -570,8 +570,8 @@ class worldStateBuilder {
             const mapRow = [];
 
             xMap.forEach(x => {
-                mapRow.push(MapTiles[y][x].height);      // height
-                // mapRow.push(MapTiles[y][x].terrainType);    // different terrain type
+                // mapRow.push(MapTiles[y][x].height);      // uncomment for height
+                mapRow.push(MapTiles[y][x].terrainType);    // uncomment for different terrain type; see: https://github.com/Warzone2100/warzone2100/blob/00ca862eb87e8d22462ee97b4d2b8ab9ee30a451/lib/wzmaplib/include/wzmaplib/terrain_type.h#L26 for terrainType enum
             });
 
             debug(`"${mapRow}",`);      // python script processes list of comma-delimited strings
