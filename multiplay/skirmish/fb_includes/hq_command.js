@@ -294,7 +294,7 @@ class CommandCenter {
 		}
 
 		// Direct Fire Targeting
-		const IMMEDIATE_RADIUS = 15;
+		const IMMEDIATE_RADIUS = 10;
 
 		const directFireHeuristic = (a,b) => {
 			const al = drawLine(x, y, a.x, a.y);
