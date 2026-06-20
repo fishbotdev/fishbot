@@ -61,6 +61,30 @@ function precalculateConstructionSearchPattern() {
 
 const constructionSearchPattern = precalculateConstructionSearchPattern();
 
+const baseConstructionSearchLocations = getBaseStructurePositions();
+
+/**
+ * Iterates through ranged walkable tiles from the player's base to determine the position.
+ * Unlike `pickStructLoc`, it takes into account obstacles.
+ * @param {string} structureID 
+ * @returns 
+ */
+function pickBaseStructLocation(structureID) {
+
+	for (let i=0; i<baseConstructionSearchLocations.length; i++) {
+		
+		const loc = baseConstructionSearchLocations[i];
+		const x = loc[0], y = loc[1];
+
+		if (!structureCanFit(structureID, x, y)) {
+			continue;
+		}
+
+		return {'x': x, 'y': y};
+	}
+
+	return undefined;
+}
 
 /* 
 	pickStructLocation3: Intention is that this function is a deterministic & will reliably try to pick the same location. 
