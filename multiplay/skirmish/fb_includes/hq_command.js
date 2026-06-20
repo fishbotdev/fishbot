@@ -345,25 +345,26 @@ class CommandCenter {
 			brigadeTargets['directFireTargets'].push(...targetsOutOfRange.slice(FURTHER_TARGETS_REQUIRED));
 		}
 
-		// Draw lines to the top 3 targets (to see what the brigade is trying to attack)
-		for (let i=0; i<4; i++) {
-			if (i >= brigadeTargets['directFireTargets'].length) {
-				break;
-			}
+		if (false) {
+			// Draw lines to the top 3 targets (to see what the brigade is trying to attack)
+			for (let i=0; i<4; i++) {
+				if (i >= brigadeTargets['directFireTargets'].length) {
+					break;
+				}
 
-			const target = brigadeTargets['directFireTargets'][i];
-			const lineToTarget = drawLine(x, y, target.x, target.y);
+				const target = brigadeTargets['directFireTargets'][i];
+				const lineToTarget = drawLine(x, y, target.x, target.y);
 
-			for (let j=0; j<lineToTarget.length; j++) {
-				const point = lineToTarget[j];
-				// if (MapTiles[point.y][point.x].terrainType === 7 || MapTiles[point.y][point.x].terrainType === 8) {
-				// 	// water or cliff; hack
-				// 	break;
-				// }
-				hackMarkTiles(point.x, point.y);		
+				for (let j=0; j<lineToTarget.length; j++) {
+					const point = lineToTarget[j];
+					// if (MapTiles[point.y][point.x].terrainType === 7 || MapTiles[point.y][point.x].terrainType === 8) {
+					// 	// water or cliff; hack
+					// 	break;
+					// }
+					hackMarkTiles(point.x, point.y);		
+				}
 			}
 		}
-
 
 		// Fire Support Targeting
 		// Intent: Suppress enemy infantry (FishBot is vulnerable to massed cyborgs) then destroy indirect fires, defences & ADA.
