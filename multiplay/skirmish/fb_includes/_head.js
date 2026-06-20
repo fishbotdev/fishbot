@@ -155,6 +155,12 @@
  * @property {number} z map height at (x,y), obtained from `MapTiles[y][x].height`.
  */
 
+/** 
+ * @typedef {[number, number]} Coordinate 
+ * Raw coordinate object (x, y) where performance is critical.
+ */
+
+
 /**
  * @typedef {Object} NearbyTargets
  * @property {FbObject[]} enemyArmor

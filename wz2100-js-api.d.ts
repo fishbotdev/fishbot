@@ -33,6 +33,16 @@ declare const mapWidth: number;
 */
 declare const mapHeight: number;
 
+/** From the `terrainType` Enum: https://github.com/Warzone2100/warzone2100/blob/00ca862eb87e8d22462ee97b4d2b8ab9ee30a451/lib/wzmaplib/include/wzmaplib/terrain_type.h#L26 */
+type TerrainTypeType = number;
+/** `MapTiles.terrainType` => Road */
+declare const TER_ROAD: TerrainTypeType;
+/** `MapTiles.terrainType` => Water */
+declare const TER_WATER: TerrainTypeType;
+/** `MapTiles.terrainType` => Cliff */
+declare const TER_CLIFFFACE: TerrainTypeType;
+
+
 /**
 ```MapTiles``` A two-dimensional array of static information about the map tiles in a game. Each item in MapTiles[y][x] is an object containing the following variables:
 - ```terrainType``` tile type of a given map tile, such as ```TER_WATER``` for water tiles or ```TER_CLIFFFACE``` for cliffs. Tile types regulate which units may pass through this tile. (3.2+ only)
