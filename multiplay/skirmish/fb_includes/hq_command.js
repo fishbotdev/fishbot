@@ -297,6 +297,14 @@ class CommandCenter {
 		const IMMEDIATE_RADIUS = 10;
 
 		const directFireHeuristic = (a,b) => {
+			const aDist = distSq(x, a.x, y, a.y);
+			const bDist = distSq(x, b.x, y, b.y);
+
+			const MIN_DIRECT_FIRE_RANGE_SQ = 12 ** 2;
+			if (aDist > MIN_DIRECT_FIRE_RANGE_SQ || bDist > MIN_DIRECT_FIRE_RANGE_SQ) {
+				return aDist - bDist;
+			}
+
 			const al = drawLine(x, y, a.x, a.y);
 			const bl = drawLine(x, y, b.x, b.y);
 
@@ -320,7 +328,7 @@ class CommandCenter {
 				}
 			};
 
-			return aDetour * al.length - bDetour * bl.length;
+			return aDetour * aDist - bDetour * bDist;
 		}
 
 		const primaryDroidTargets = [...enemyArmor, ...enemyInfantry];
