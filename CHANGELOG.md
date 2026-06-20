@@ -8,6 +8,7 @@ This file is used to record the changes to FishBot between each version.
         - Improved cohesion of Brigade Combat Teams (BCTs).
         - Repaired units now move towards a staging area behind BCT0 rather than staying around the repair center.
         - Increased priority of ADA in the production order.
+        - Direct fire units are more likely to target enemies where there is already a good field of fire.
     - Aviation
         - Increased risk appetite when attacking urgent-priority targets (higher tolerance for nearby anti-air defences).
 - Construction improvements
