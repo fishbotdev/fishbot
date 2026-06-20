@@ -17,7 +17,7 @@ This file is used to record the changes to FishBot between each version.
 - Research improvements
     - T2+ research order improved for longer running games.
 - Production
-    - Mortar units now only use light bodies for increased mobility (i.e. indirect fire units no longer use Medium bodies).
+    - Mortar units now only use light bodies / half tracks for increased mobility (i.e. indirect fire units no longer use Medium bodies).
     - Fixed FishBot producing Hover Trucks before the command center is built.
 - Infrastructure improvements
     - Computational performance improvements:
