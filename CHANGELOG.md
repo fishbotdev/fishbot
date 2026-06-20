@@ -12,6 +12,7 @@ This file is used to record the changes to FishBot between each version.
         - Increased risk appetite when attacking urgent-priority targets (higher tolerance for nearby anti-air defences).
 - Construction improvements
     - Increased the likelihood of repair facilities being forward-constructed.
+    - Base structures will now be constructed with a tighter grouping (base structure positioning now accounts for terrain obstacles).
 - Research improvements
     - T2+ research order improved for longer running games.
 - Production
