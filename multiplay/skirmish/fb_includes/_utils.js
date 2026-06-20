@@ -220,7 +220,8 @@ function getBaseStructurePositions() {
 	const toSearch = [[baseLocation.x, baseLocation.y]];
 	const inSearchList = new Array(xMax * yMax).fill(false);	
 
-	const MAX_ITERS = Math.min(xMax * yMax, 256 * 256);
+	const MAX_MAP_DIM = 256;
+	const MAX_ITERS = Math.min(xMax * yMax, MAX_MAP_DIM * MAX_MAP_DIM);
 	let iters = 0;
 	
 	// Formatted as [x, y, manhattanDistance]
