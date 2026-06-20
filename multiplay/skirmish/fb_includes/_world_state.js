@@ -96,9 +96,14 @@ class fbGroup {
 			this.groups.delete(groupID);
 	}
 
+    /**
+     * Returns an array containing all units in the FishBot group with `groupID`.
+     * @param {string | number} groupID 
+     * @returns {DroidObject[]}
+     */
 	enumGroup(groupID) {
 		if (!this.groups.has(groupID)) {
-			debug("no such groupID", groupID);
+			debug(`no such groupID: "${groupID}"`);
 			return [];
 		}
 

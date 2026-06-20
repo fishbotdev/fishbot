@@ -299,7 +299,7 @@ function drawLine(startX, startY, endX, endY) {
     let err = dx - dy;
 
     while (true) {
-        points.push({'x': x, 'y': y});
+        points.push([x, y]);
 
         if (x === endX && y === endY) {
             break;
