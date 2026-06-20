@@ -156,15 +156,9 @@ function breadthFirstSearch(grid, bgx, bgy, objectiveFunc) {
 	let gridResult = create2DGrid(numXCells, numYCells, createEmptyCell);
 	let orderedResult = [];
 
-	const DEBUG_ON = false;
-
 	while (queue.length > 0 && iters < MAX_ITERS) {
-		if (DEBUG_ON) debug(`queue: ${queue}`);
-
 		// Dequeue the next cell
 		const next = queue.shift();
-
-		if (DEBUG_ON) debug(`dequeued next cell: ${queue}`);
 
 		// Process & push to result
 		const gx = next[0], gy = next[1];
@@ -172,18 +166,11 @@ function breadthFirstSearch(grid, bgx, bgy, objectiveFunc) {
 		orderedResult.push(result);
 		gridResult[gx][gy] = {'idx': iters, 'result': result};
 
-		if (DEBUG_ON) {
-			debug(`gx gy: ${gx} ${gy}`);
-			debug(`result: ${orderedResult}`);
-		} 
-
 		// For each of the 4 adjacent cells, check the coordinates in bounds
 		const up = [gx, gy + 1];
 		const down = [gx, gy - 1];
 		const left = [gx - 1, gy];
 		const right = [gx + 1, gy];
-
-		if (DEBUG_ON) debug(`up ${up} down  ${down} left ${left} right ${right}`); 
 
 		let valid = [];
 		[up, down, left, right].forEach(coord => {
@@ -191,8 +178,6 @@ function breadthFirstSearch(grid, bgx, bgy, objectiveFunc) {
 				valid.push(coord);
 			}
 		});
-
-		if (DEBUG_ON) valid.forEach(v => debug(`\tvalid: ${v}`)); 
 
 		// Add unvisited values to the queue
 		valid.forEach(v => {
@@ -207,11 +192,6 @@ function breadthFirstSearch(grid, bgx, bgy, objectiveFunc) {
 			// Remember newly queued values
 			queuedUp.push(v);
 		});			
-
-		if (DEBUG_ON) {
-			queuedUp.forEach(v => debug(`new queued: ${v}`)); 
-			queue.forEach(q => debug(`\tnew queue: ${q}`)); 
-		}
 
 		iters++;
 	}

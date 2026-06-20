@@ -46,16 +46,6 @@ const isReachable = precalculateWheeledReachableTiles();
 
 
 function precalculateConstructionSearchPattern() {
-	const makeItEven = (n) => {
-		if (n % 2 === 0) {
-			return n;
-		} else {
-			return n + 1;
-		}
-	}
-
-	// const MAX_X = makeItEven(Math.floor(mapWidth/2));
-	// const MAX_Y = makeItEven(Math.floor(mapHeight/2));
 	const MAX_X = 8;
 	const MAX_Y = 8;
 	const HALF_MAX_X = MAX_X/2;
