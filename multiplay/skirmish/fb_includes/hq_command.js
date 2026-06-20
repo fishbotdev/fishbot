@@ -631,8 +631,12 @@ class CommandCenter {
 				this.toc.setBrigadeCASStrikeRequests(state, brigadeID, groundTargets['casTargets']);
 
 				if (this.#noTargetsAvailable(groundTargets)) {
-					moveBrigadeToLocation(state, brigadeID, CLOSEST_ENEMY_BASE.x, CLOSEST_ENEMY_BASE.y);
-					return;
+					const CLOSEST_TARGET = intelligence.findClosestTarget(state, brigadeLocation.x, brigadeLocation.y); 
+					if (CLOSEST_TARGET == undefined) {
+						moveBrigadeToLocation(state, brigadeID, brigadeLocation.x, brigadeLocation.y);
+						return;
+					} 
+					moveBrigadeToLocation(state, brigadeID, CLOSEST_TARGET.x, CLOSEST_TARGET.y);
 				}
 
 				moveBrigadeToAttack(state, brigadeID, groundTargets);				

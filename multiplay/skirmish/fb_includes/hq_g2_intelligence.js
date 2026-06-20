@@ -375,4 +375,96 @@ class armyIntelligence {
 		}
 	}
 
+	/**
+	 * Returns location of the closest target object. If none exists, returns the local player's `baseLocation`.
+	 * @param {worldState} state 
+	 * @param {number} x 
+	 * @param {number} y 
+	 * @return {DroidObject | StructureObject | FeatureObject | undefined}
+	 */
+	findClosestTarget(state, x, y) {
+
+		// **
+		const xMax = state.grid.numXCells;
+		const yMax = state.grid.numYCells;
+		const cellSize = state.grid.cellSize;
+		const grid = state.grid.grid;
+
+		/** @type {Coordinate[]} */
+		const visited = [];
+		const isVisited = new Array(xMax * yMax).fill(false);
+
+		/** @type {Coordinate[]} */
+		const toSearch = [[Math.floor(x / cellSize), Math.floor(y / cellSize)]];
+		const inSearchList = new Array(xMax * yMax).fill(false);	
+
+		// **
+		const MAX_MAP_DIM = 256;
+		const MAX_CELLS = Math.ceil(MAX_MAP_DIM / cellSize);
+		const MAX_ITERS = Math.min(xMax * yMax, MAX_CELLS * MAX_CELLS);
+		let iters = 0;
+		
+		// Formatted as [x, y, manhattanDistance]
+		// const NEIGHBOUR_OFFSETS = [[-1, -1, 2], [-1, 0, 1], [-1, 1, 2], [0, 1, 1], [1, 1, 2], [1, 0, 1], [1, -1, 2], [0, -1, 1]];
+		const NEIGHBOUR_OFFSETS = [[-1, 0, 1], [0, 1, 1], [1, 0, 1], [0, -1, 1]];
+
+		while (toSearch.length != 0 && iters < MAX_ITERS) {
+			const node = toSearch.shift();
+			if (node == undefined) {
+				break;
+			}
+			const gx = node[0], gy = node[1];
+
+			visited.push(node);
+			isVisited[gy * xMax + gx] = true;
+
+			// Check neighbours
+			for (let j=0; j<NEIGHBOUR_OFFSETS.length; j++) {
+				const o = NEIGHBOUR_OFFSETS[j];
+				const ox = o[0] + node[0];
+				const oy = o[1] + node[1];
+				const oIdx = oy * xMax + ox;
+				// const d = o[2];
+
+				// Check in map bounds
+				if (ox < 0 || ox >= xMax) {
+					continue;
+				}
+				if (oy < 0 || oy >= yMax) {
+					continue;
+				}
+
+				if (isVisited[oIdx]) {
+					continue;
+				}
+
+				if (inSearchList[oIdx]) {
+					continue;
+				}
+				
+				// **
+				if (grid[ox][oy]['targetStructures'].length > 0 || grid[ox][oy]['targetUnits'].length > 0) {
+					const potentialTargets = [...grid[ox][oy]['targetStructures'], ...grid[ox][oy]['targetUnits']];
+					for (let j=0; j<potentialTargets.length; j++) {
+						const t = potentialTargets[j];
+						const obj = getObject(t.type, t.player, t.id);
+						if (obj != null) {
+							// debug(`${gameTime}: intel/findClosestTarget: BFS in ${iters} iterations (returning ${obj.name} (${obj.x}, ${obj.y})).`);
+							return obj;		
+						}
+					};
+				}
+
+				toSearch.push([ox, oy]);
+				inSearchList[oIdx] = true;
+			};
+
+			iters++;
+		}
+
+		debug(`${gameTime}: intel/findClosestTarget: BFS in ${iters} iterations: no targets found.`);
+		return undefined;
+	}
+		
+
 }
