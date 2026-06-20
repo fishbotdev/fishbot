@@ -366,7 +366,7 @@ function produceLandFireSupportGeneric(factory) {
 	const fireSupportPropulsions = [
 		PROPULSIONS["Wheels"], 
 		PROPULSIONS["Half-tracks"],
-		PROPULSIONS["Tracks"]
+		// PROPULSIONS["Tracks"]		// Experimental: removed to allow mortars to keep pace with direct fire units (mortars were removed from group median calculations)
 	].reverse();
 
 	return produceVehicle({
