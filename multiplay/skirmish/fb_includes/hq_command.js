@@ -296,32 +296,37 @@ class CommandCenter {
 		// Direct Fire Targeting
 		const IMMEDIATE_RADIUS = 15;
 
-		const closestBaseX = closestEnemyBasePosition.x; 
-		const closestBaseY = closestEnemyBasePosition.y;
+		const directFireHeuristic = (a,b) => {
+			const al = drawLine(x, y, a.x, a.y);
+			const bl = drawLine(x, y, b.x, b.y);
 
-		const dSqClosestBase = distSq(x, closestBaseX, y, closestBaseY);
+			let aDetour = 1, bDetour = 1;
 
-		const w_groupProximity = 2;
-		const w_baseProximity = 1;
+			for (let i=0; i<al.length; i++) {
+				const point = al[i];
+				const terrainType = MapTiles[point[1]][point[0]].terrainType;
+				if (terrainType	=== TER_CLIFFFACE || terrainType === TER_WATER) {
+					aDetour++;
+					break;
+				}
+			};
+			
+			for (let i=0; i<bl.length; i++) {
+				const point = bl[i];
+				const terrainType = MapTiles[point[1]][point[0]].terrainType;
+				if (terrainType	=== TER_CLIFFFACE || terrainType === TER_WATER) {
+					bDetour++;
+					break;
+				}
+			};
 
-		const combinedDistanceHeuristic = (a,b) => {
-			return w_groupProximity * (distSq(a.x, x, a.y, y) - distSq(b.x, x, b.y, y)) + 
-					w_baseProximity * (distSq(a.x, closestBaseX, a.y, closestBaseY) - distSq(b.x, closestBaseX, b.y, closestBaseY))
-		};
-
-		const standardDistanceHeuristic = (a,b) => {
-			return distSq(a.x, x, a.y, y) - distSq(b.x, x, b.y, y);
-		};
-
-		let distanceHeuristic = standardDistanceHeuristic;
-		if (dSqClosestBase < 25 ** 2) {
-			distanceHeuristic = combinedDistanceHeuristic;
+			return aDetour * al.length - bDetour * bl.length;
 		}
 
 		const primaryDroidTargets = [...enemyArmor, ...enemyInfantry];
-		primaryDroidTargets.sort((a,b) => distanceHeuristic(a,b));		
+		primaryDroidTargets.sort((a,b) => directFireHeuristic(a,b));		
 		const secondaryDirectFireTargets = [ ...enemyDefenses, ...enemyIndirectFire, ...enemyADA, ...enemyIndustrial];
-		secondaryDirectFireTargets.sort((a,b) => distanceHeuristic(a,b));		
+		secondaryDirectFireTargets.sort((a,b) => directFireHeuristic(a,b));		
 		const tertiaryDirectFireTargets = [...enemyConstructor, ...enemyUtility];
 		const targetsOutOfRange = [];		// this will also be ordered in the priority order specified in `primaryDirectFireTargets`
 
@@ -361,7 +366,7 @@ class CommandCenter {
 					// 	// water or cliff; hack
 					// 	break;
 					// }
-					hackMarkTiles(point.x, point.y);		
+					hackMarkTiles(point[0], point[1]);		
 				}
 			}
 		}
@@ -371,7 +376,7 @@ class CommandCenter {
 		const EFFECTIVE_FIRE_SUPPORT_RADIUS = 18;
 
 		const primaryIndirectFireTargets = [...enemyInfantry, ...enemyDefenses, ...enemyIndirectFire, ...enemyADA, ...enemyIndustrial, ...enemyArmor];
-		primaryIndirectFireTargets.sort((a,b) => distSq(a.x, x, a.y, y) - distSq(b.x, x, b.y, y));
+		primaryIndirectFireTargets.sort((a,b) => directFireHeuristic(a,b));
 		const secondaryIndirectFireTargets = [...enemyConstructor, ...enemyUtility];
 
 		primaryIndirectFireTargets.forEach(obj => {
