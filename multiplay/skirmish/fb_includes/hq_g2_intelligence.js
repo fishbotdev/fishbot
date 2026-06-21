@@ -462,7 +462,7 @@ class armyIntelligence {
 			iters++;
 		}
 
-		debug(`${gameTime}: intel/findClosestTarget: BFS in ${iters} iterations: no targets found.`);
+		// debug(`${gameTime}: intel/findClosestTarget: BFS in ${iters} iterations: no targets found.`);
 		return undefined;
 	}
 		
