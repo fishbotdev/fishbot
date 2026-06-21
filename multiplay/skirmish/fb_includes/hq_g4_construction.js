@@ -366,7 +366,7 @@ class armyEngineering {
 			'demolitionLocations': potentialDemolitionLocations
 		}
 
-		const REPAIR_CENTER_SEARCH_RADIUS = 18;
+		const REPAIR_CENTER_SEARCH_RADIUS = 14;
 
 		// PART 1: FIND DEMOLITION LOCATIONS
 		myRepairFacilities.forEach(f => {
@@ -445,7 +445,7 @@ class armyEngineering {
 			}
 
 			const NEARBY_FRIENDLY_UNIT_COUNT = nearby['friendlyUnits'].length;
-			const MIN_NEARBY_FRIENDLY_UNITS = 5;
+			const MIN_NEARBY_FRIENDLY_UNITS = 4;
 			if (NEARBY_FRIENDLY_UNIT_COUNT < MIN_NEARBY_FRIENDLY_UNITS) {
 				return;		
 			}

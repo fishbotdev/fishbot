@@ -99,6 +99,8 @@ class armyGroundOperations {
 
 		const droidX = [], droidY = [];
 		brigadeUnits.forEach((droid) => {
+			if (droid.hasIndirect) return;	// Experimental: removing mortar units, does that make this estimate more accurate?
+
 			droidX.push(droid.x);
 			droidY.push(droid.y);
 		});	
