@@ -15,55 +15,24 @@
 	If not, see <https://www.gnu.org/licenses/>.
 */
 
+const constructionSearchPattern = [
+	// Distance 0
+	[0, 0],
+	// Distance 1
+	[-1, 0], [0, -1], [0, 1], [1, 0],
+	// Distance 2
+	[-2, 0], [-1, -1], [-1, 1], [0, -2], [0, 2], [1, -1], [1, 1], [2, 0],
+	// Distance 3
+	[-3, 0], [-2, -1], [-2, 1], [-1, -2], [-1, 2], [0, -3], [0, 3], [1, -2], [1, 2], [2, -1], [2, 1], [3, 0],
+	// Distance 4
+	[-4, 0], [-3, -1], [-3, 1], [-2, -2], [-2, 2], [-1, -3], [-1, 3], [0, -4], [0, 4], [1, -3], [1, 3], [2, -2], [2, 2], [3, -1], [3, 1], [4, 0],
+	// Distance 5
+	[-5, 0], [-4, -1], [-4, 1], [-3, -2], [-3, 2], [-2, -3], [-2, 3], [-1, -4], [-1, 4], [0, -5], [0, 5], [1, -4], [1, 4], [2, -3], [2, 3], [3, -2], [3, 2], [4, -1], [4, 1], [5, 0]
+];
 
-function precalculateWheeledReachableTiles() {
-	const wheeledDroidCanReach = (x, y) => propulsionCanReach(PROPULSIONS["Wheels"].id, baseLocation.x, baseLocation.y, x, y);
-	const isReachable = create2DGrid(mapWidth + 1, mapHeight + 1, wheeledDroidCanReach);
-
-	if (false) {
-		debug(`x-max?: ${mapWidth}, y-max?: ${mapHeight}`);
-
-		// Note: `create2DGrid` uses a [x][y] construction, so each printed line (printed row) is actually a column (iterate along x, get the columns).
-		// This means that the map will appear sideways in the debug view.
-
-		isReachable.forEach(col => {
-			let row = '';
-			col.forEach(c => {
-				if (c === true) {
-					row += `1 `;
-				} else {
-					row += `0 `;
-				}
-			});
-			debug(row);
-		});
-	}
-
-	return isReachable;
-}
-
-const isReachable = precalculateWheeledReachableTiles();
-
-
-function precalculateConstructionSearchPattern() {
-	const MAX_X = 8;
-	const MAX_Y = 8;
-	const HALF_MAX_X = MAX_X/2;
-	const HALF_MAX_Y = MAX_Y/2;
-
-	const csg = new fbGrid(MAX_X, MAX_Y);
-	const objFunc = (grid, gx, gy) => {return [gx - HALF_MAX_X, gy - HALF_MAX_Y];};
-
-	const standardConstructionSearchGrid = breadthFirstSearch(csg, HALF_MAX_X, HALF_MAX_Y, objFunc);
-	return standardConstructionSearchGrid['ordered'];
-}
-
-
-const constructionSearchPattern = precalculateConstructionSearchPattern();
-
-const baseConstructionSearchLocations = getBaseStructurePositions();
+const walkableTiles = getWalkableTiles();
 const isWalkable = create2DGrid(mapWidth, mapHeight, () => {return false;});
-baseConstructionSearchLocations.forEach(b => {
+walkableTiles.forEach(b => {
 	const x = b[0];
 	const y = b[1];
 	isWalkable[x][y] = true;
@@ -92,9 +61,9 @@ function pickBaseStructLocation(structureID) {
 		boundingBoxRadius = 1;
 	}
 	
-	for (let i=0; i<baseConstructionSearchLocations.length; i++) {
+	for (let i=0; i<walkableTiles.length; i++) {
 		
-		const loc = baseConstructionSearchLocations[i];
+		const loc = walkableTiles[i];
 		const x = loc[0], y = loc[1];
 
 		if (!structureCanFit(structureID, x, y)) {
@@ -133,7 +102,7 @@ function pickStructLocation3({structureID, x, y}) {
 	const specifiedHeight = MapTiles[y][x].height;		// Uses this to try the match the height.
 	const HEIGHT_TOLERANCE = 33;
 	
-	if (!isReachable[x][y]) {
+	if (!isWalkable[x][y]) {
 		// debug(` ${gameTime}: pickStructLocation3() failed: (${x} ${y}) for "${structureID}" is not reachable with wheels. Check caller function.`);
 		return undefined;
 	}
@@ -144,7 +113,7 @@ function pickStructLocation3({structureID, x, y}) {
 		const tX = constructionSearchPattern[i][0] + x;
 		const tY = constructionSearchPattern[i][1] + y;
 
-		if (!isReachable[tX][tY]) {
+		if (!isWalkable[tX][tY]) {
 			// debug(`	${gameTime}: psl2 rejected: (${tX}, ${tY}); not reachable`);
 			continue;
 		}

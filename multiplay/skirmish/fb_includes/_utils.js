@@ -131,87 +131,12 @@ function create2DGrid(numXCells, numYCells, cellFactory) {
 	return grid;
 }
 
-/**
- * An objective function is evaluated on each grid coordinate (in BFS order); the result is appended to an equi-dimensional grid.
- * e.g. BFS is conducted on a 2D grid of 12 x 12; result is returned in a new 2D grid of 12 x 12.
- * @param {fbGrid} grid grid to iterate over to produce a result
- * @param {number} bgx starting grid-x coordinate
- * @param {number} bgy starting grid-y coordinate
- * @param {Function} objectiveFunc The function to be evaluated for each grid cell.
- * @returns {Object} the result of the objective function evaluated on each grid coordinate (returned as an equi-dimensioned grid)
- */
-function breadthFirstSearch(grid, bgx, bgy, objectiveFunc) {
-	const numXCells = grid.numXCells;
-	const numYCells = grid.numYCells;
-	
-	const checkXInBounds = (gx) => {return (gx >= 0 && gx < numXCells)};
-	const checkYInBounds = (gy) => {return (gy >= 0 && gy < numYCells)};
-	
-	// Initialise BFS parameters
-	let iters = 0;		
-	const MAX_ITERS = numXCells * numYCells; 	// failsafe
-	
-	let queue = [[bgx, bgy]];		// y = rows, x = cols => [row, col]
-	let queuedUp = [[bgx, bgy]];
-
-	const objFunc = (grid, gx, gy) => {return objectiveFunc(grid, gx, gy);};
-	const createEmptyCell = (...args) => {return undefined;};
-	let gridResult = create2DGrid(numXCells, numYCells, createEmptyCell);
-	let orderedResult = [];
-
-	while (queue.length > 0 && iters < MAX_ITERS) {
-		// Dequeue the next cell
-		const next = queue.shift();
-
-		// Process & push to result
-		const gx = next[0], gy = next[1];
-		const result = objFunc(grid, gx, gy);
-		orderedResult.push(result);
-		gridResult[gx][gy] = {'idx': iters, 'result': result};
-
-		// For each of the 4 adjacent cells, check the coordinates in bounds
-		const up = [gx, gy + 1];
-		const down = [gx, gy - 1];
-		const left = [gx - 1, gy];
-		const right = [gx + 1, gy];
-
-		let valid = [];
-		[up, down, left, right].forEach(coord => {
-			if (checkXInBounds(coord[0]) && checkYInBounds(coord[1])) {
-				valid.push(coord);
-			}
-		});
-
-		// Add unvisited values to the queue
-		valid.forEach(v => {
-			// Check if it has been visited before
-			for (let i=queuedUp.length - 1; i>= 0; i--) {
-				if (v[0] === queuedUp[i][0] && v[1] === queuedUp[i][1]) {
-					return;		// get out of this loop, onto the next valid value
-				}
-			}
-			// Add unvisited cell to the queue
-			queue.push(v);
-			// Remember newly queued values
-			queuedUp.push(v);
-		});			
-
-		iters++;
-	}
-
-	if (false) {
-		debug(`BFS result:`);
-		orderedResult.forEach(coord => debug(`\t${coord[0]} ${coord[1]}`));
-	}
-
-	return {'ordered': orderedResult, 'grid': gridResult};
-}
 
 /**
  * Returns the BFS order of all walkable tiles from the player's base location.
  * @returns {Coordinate[]} Javascript list of tuples
  */
-function getBaseStructurePositions() {
+function getWalkableTiles() {
 	const xMax = mapWidth;
 	const yMax = mapHeight;
 
@@ -277,8 +202,10 @@ function getBaseStructurePositions() {
 		iters++;
 	}
 
-	debug(`Completed BFS in ${iters} iterations (walkable tiles = ${visited.length}).`);
-	// visited.forEach(v => debug(`${v[0]}, ${v[1]}`));		// prints out all of the tilecos in question
+	if (false) {
+		debug(`Completed BFS in ${iters} iterations (walkable tiles = ${visited.length}).`);
+		// visited.forEach(v => debug(`${v[0]}, ${v[1]}`));		// prints out all of the tilecos in question
+	}
 
 	return visited;
 }

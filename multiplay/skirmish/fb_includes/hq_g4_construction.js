@@ -238,7 +238,7 @@ class armyEngineering {
 				continue;
 			}
 
-			if (!isReachable[d.x][d.y]) {		// this checks if the location is reachable with wheeled trucks
+			if (!isWalkable[d.x][d.y]) {		
 				continue;
 			}
 
@@ -412,7 +412,7 @@ class armyEngineering {
 		forceLocations.forEach(LOCATION => {
 			const x = LOCATION.x;
 			const y = LOCATION.y;
-			if (!isReachable[x][y]) {		// this checks if the location is reachable with wheeled trucks
+			if (!isWalkable[x][y]) {		
 				return;
 			}
 
