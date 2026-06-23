@@ -62,6 +62,13 @@ function precalculateConstructionSearchPattern() {
 const constructionSearchPattern = precalculateConstructionSearchPattern();
 
 const baseConstructionSearchLocations = getBaseStructurePositions();
+const isWalkable = create2DGrid(mapWidth, mapHeight, () => {return false;});
+baseConstructionSearchLocations.forEach(b => {
+	const x = b[0];
+	const y = b[1];
+	isWalkable[x][y] = true;
+});
+
 
 /**
  * Iterates through ranged walkable tiles from the player's base to determine the position.
@@ -71,6 +78,20 @@ const baseConstructionSearchLocations = getBaseStructurePositions();
  */
 function pickBaseStructLocation(structureID) {
 
+	const BBOX_CORNERS = [[-1, -1], [-1, 1], [1, -1], [1, 1]];
+	let boundingBoxRadius = 0;
+
+	const BBOX_3x3_STRUCTURES = [STRUCTURES["Factory"].id, STRUCTURES["VTOL Factory"].id, STRUCTURES["Laser Satellite Command Post"].id, STRUCTURES["Satellite Uplink Center"].id];
+	const BBOX_2x2_STRUCTURES = [STRUCTURES["Command Center"].id, STRUCTURES["Command Relay Center"].id, STRUCTURES["Power Generator"].id, STRUCTURES["Research Facility"].id];
+
+	if (BBOX_3x3_STRUCTURES.includes(structureID)) {
+		boundingBoxRadius = 2;		// coordinate for a 3x3 structure is the center of the structure
+	} else if (BBOX_2x2_STRUCTURES.includes(structureID)) {
+		boundingBoxRadius = 1;		// coordinate for a 2x2 structure is the bottom right of the structure ((7, 16) center = (7, 15), (6, 15), (6, 16))
+	} else {
+		boundingBoxRadius = 1;
+	}
+	
 	for (let i=0; i<baseConstructionSearchLocations.length; i++) {
 		
 		const loc = baseConstructionSearchLocations[i];
@@ -80,6 +101,23 @@ function pickBaseStructLocation(structureID) {
 			continue;
 		}
 
+		// Check a bounding box around the structure is in the walkable tiles list
+		let boundingBoxTestFailed = false;
+		for (let j=0; j<BBOX_CORNERS.length; j++) {
+			const c = BBOX_CORNERS[j];
+			const x1 = x + boundingBoxRadius * c[0]; 
+			const y1 = y + boundingBoxRadius * c[1];
+
+			if (!isWalkable[x1][y1]) {
+				boundingBoxTestFailed = true;
+				break;
+			}
+		}
+		if (boundingBoxTestFailed) {
+			continue;
+		}
+
+		// debug(`${structureID} success @ ${x}, ${y}`);
 		return {'x': x, 'y': y};
 	}
 
