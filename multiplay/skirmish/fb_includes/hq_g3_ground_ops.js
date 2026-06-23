@@ -93,24 +93,30 @@ class armyGroundOperations {
 		const getUnitsIn = (brigadeID) => state.g.enumGroup(brigadeID);
 
 		const brigadeUnits = getUnitsIn(brigadeID);
+
+		const baseX = baseLocation.x;
+		const baseY = baseLocation.y;
+		const baseZ = MapTiles[baseLocation.y][baseLocation.x].height;
+		const basePosition = {'x': baseX, 'y': baseY, 'z': baseZ};
 		if (brigadeUnits.length === 0) {
-			return {"x": baseLocation.x, "y": baseLocation.y, "z": MapTiles[baseLocation.y][baseLocation.x].height};
+			return basePosition;
 		}
 
 		const droidX = [], droidY = [];
 		brigadeUnits.forEach((droid) => {
 			if (droid.hasIndirect) return;	// Experimental: removing mortar units, does that make this estimate more accurate?
-
 			droidX.push(droid.x);
 			droidY.push(droid.y);
 		});	
-
+		if (droidX.length === 0 || droidY.length === 0) {
+			// This is required because the `droid.hasIndirect` filtering may mean that droidX/droidY may be empty, in which case `arrayMedian` is invalid		
+			return basePosition;
+		}
+		
 		// Find median
 		const medianX = Math.floor(arrayMedian(droidX));
 		const medianY = Math.floor(arrayMedian(droidY));
-
-		// TODO: add validation if within map bounds.
-
+		
 		return {"x": medianX, "y": medianY, "z": MapTiles[medianY][medianX].height};
 	}
 
