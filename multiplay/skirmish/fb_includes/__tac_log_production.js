@@ -79,12 +79,11 @@ function chooseVehicleBody({bodies=[], factory=undefined, maxFactoryModules=unde
 
 /**
  * Selects the most technologically advanced weapon from the provided `weaponList`.
+ * Assumption: the list is pre-sorted in order of priority before it enters this function
  * @param {any[]} weaponList
- * @returns {any | undefined}
+ * @returns {any | undefined} TODO: add typing
  */
 function chooseWeapon(weaponList) {
-	// TODO: add typing
-	const DEBUG_MODE = false;
 
 	if (weaponList == null) {
 		debug("chooseWeapon(): weaponList was not passed to this function.")
@@ -103,18 +102,17 @@ function chooseWeapon(weaponList) {
 		return undefined;
 	}
 
-	if (DEBUG_MODE) debug(`chooseWeapon(): selected ${availableWeapons[0].name}`);
-	return availableWeapons[0];		// Assumption: the list is pre-sorted in order of priority before it enters this function
+	// debug(`chooseWeapon(): selected ${availableWeapons[0].name}`);
+	return availableWeapons[0];		
 }
 
 /**
  * Chooses the most technologically advanced propulsion from the provided `propulsionList`.
  * @param {any[]} propulsionList 		
- * @param {boolean} unitsDesignable used to prevent FishBot from building designable 
- * @returns {any | undefined}
+ * @param {boolean} unitsDesignable used to prevent FishBot from building any other units other than `Truck Viper Wheels` before the Command Center is built
+ * @returns {any | undefined} TODO: add typing
  */
 function choosePropulsion(propulsionList, unitsDesignable=true) {
-	// TODO: add typing
 	if (propulsionList == null) {
 		debug("choosePropulsion(): Input parameter 'propulsionList' is missing.")
 		return undefined;
@@ -127,7 +125,8 @@ function choosePropulsion(propulsionList, unitsDesignable=true) {
 	// propulsionList.forEach(p => debug(`		testing: ${p.name}, ${p.id}, ${p.Id}`));
 	const availablePropulsions = propulsionList.filter((p) => componentAvailable(p.id));
 	if (availablePropulsions.length === 0) {
-		debug("choosePropulsion(): No technologically-available propulsion in 'propulsionList'.")
+		debug("choosePropulsion(): No technologically-available propulsion in 'propulsionList'.");
+		return undefined;
 	}
 
 	return availablePropulsions[0];
@@ -366,7 +365,6 @@ function produceLandFireSupportGeneric(factory) {
 	const fireSupportPropulsions = [
 		PROPULSIONS["Wheels"], 
 		PROPULSIONS["Half-tracks"],
-		// PROPULSIONS["Tracks"]		// Experimental: removed to allow mortars to keep pace with direct fire units (mortars were removed from group median calculations)
 	].reverse();
 
 	return produceVehicle({
