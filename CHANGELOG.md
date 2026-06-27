@@ -2,6 +2,7 @@
 This file is used to record the changes to FishBot between each version.
 
 ## Fishbot v0.4.1
+*Released **27 Jun 2026***
 ### Changes in v0.4.1
 - Combat improvements
     - Ground forces
@@ -41,6 +42,7 @@ FishBot `v0.4.1` (commit `03a99ae`) was tested 1v1 against Cobra. Sides are swap
 - 54 / 100 = **54%** win rate: FishBot-v0.4.1 Medium vs Cobra **Insane** 
 
 ## Fishbot v0.4.0
+*Released **02 May 2026***
 ### Changes in v0.4.0
 - Combat improvements
     - FishBot now divides its army into two main battle groups ('brigades') and a reserve group. Each group is controlled independently. With this change, FishBot becomes markedly more effective in high unit count games.
@@ -67,6 +69,7 @@ FishBot `v0.4.0` (commit `4e03988`) was automatically tested on: `Gamma 3P T2` 1
 - 24 / 50 = **48%** win rate: FishBot-v0.4.0 Medium vs Cobra **Insane** 
 
 ## Fishbot v0.3.3
+*Released **07 Apr 2026***
 ### Changes in v0.3.3
 - Fixes:
     - Fixed research collisions: FishBot will now try to research other technologies if they are already being researched by an ally.
@@ -80,6 +83,7 @@ FishBot `v0.3.3` (commit `b6c85a5`) was automatically tested on: `Gamma 3P T2` 1
 - 48 / 50 = **96%** win rate: FishBot-v0.3.3 Medium vs Cobra **Hard** 
 
 ## Fishbot v0.3.2
+*Released **06 Apr 2026***
 ### Changes in v0.3.2
 - Minor AI behavioural improvements:
     - Production

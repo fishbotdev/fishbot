@@ -233,8 +233,9 @@ LFE = ".log"
 # path1 = PROCESS_RESULTS_DIR + rf"02d990f,hard,cobra,50g" + LFE                              # v0.4.1 after enumRangeLazy, .filter() optim
 # path1 = PROCESS_RESULTS_DIR + rf"3674546,hard,cobra,50g" + LFE                              # v0.4.1 after enumRangeLazy, enemy / friendly filter
 # path1 = PROCESS_RESULTS_DIR + rf"fbbb931,hard,cobra,50g" + LFE                                # v0.4.1 after scheduler optim
-path1 = PROCESS_RESULTS_DIR + rf"fbbb931,hard,cobra,50g_rerun" + LFE                          # v0.4.1 after scheduler optim, with many other programs open (big difference!)
-path2 = PROCESS_RESULTS_DIR + rf"87279a0,GAMMA_INSANE_COBRA_T2,250G" + LFE                          # new test run script; no change in behaviour
+# path1 = PROCESS_RESULTS_DIR + rf"fbbb931,hard,cobra,50g_rerun" + LFE                          # v0.4.1 after scheduler optim, with many other programs open (big difference!)
+path1 = PROCESS_RESULTS_DIR + rf"87279a0,GAMMA_INSANE_COBRA_T2,250G" + LFE                          # new test run script; no change in behaviour
+path2 = PROCESS_RESULTS_DIR + rf"03a99ae" + LFE                                              # v0.4.1 release
 
 #####################################################################################################################
 
