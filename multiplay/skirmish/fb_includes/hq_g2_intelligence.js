@@ -376,7 +376,7 @@ class armyIntelligence {
 	}
 
 	/**
-	 * Returns location of the closest target object. If none exists, returns the local player's `baseLocation`.
+	 * Returns location of the closest target object.
 	 * @param {worldState} state 
 	 * @param {number} x 
 	 * @param {number} y 

@@ -10,11 +10,11 @@ However, at the moment I feel like Cobra already fills the gap in the other tech
 In particular, I think Cobra performs excellently on T1 in Warzone 2100 v4.6.3+. 
 
 ## List of supported maps (Warzone2100 4.7.0)
-As of the most current version **v0.4.0**, FishBot works best on large, standard "low-oil" game maps with up to ~10 derricks per player. 
+As of the most current version **v0.4.1**, FishBot works best on large, standard "low-oil" game maps with up to ~10 derricks per player. 
 It currently only has been tested with scavengers disabled.
 
 The current method for determining whether or not a map is *supported* is:
-* For 2P & 3P maps, FishBot can win in T2 against a single Cobra @ Medium difficulty without bankrupting itself.
+* For 2P & 3P maps, FishBot can win in T2 against a single Cobra @ Medium difficulty.
 * For higher player-count maps, it can win in a team with other FishBots.
 
 ### 2 player (T2)
@@ -65,10 +65,10 @@ If you can find `Fishbot.js` here, FishBot should automatically load on the next
 Please see [`CHANGELOG.md`](CHANGELOG.md) for a detailed list of past changes.
 
 ## Upcoming features
-* **v0.4.2** -- *release date TBA*
-    * Support for T1 & T3.
-    * Strategic improvements (FishBot's current strategic level is: 'this is the closest target, go there').
-    * Improve spatial awareness (e.g. prioritisation of defence construction).
+The current areas for improvement are:
+* Strategic improvements (FishBot's current strategic level is: 'this is the closest target, go there').
+* Support for T1 & T3.
+* Increased support for popular skirmish maps.
 
 ## Background and Goals
 FishBot was initially forked from NullBot v3. I acknowledge and appreciate the work of the NullBot team in creating the foundation for this body of work. As of v0.4.0, not much of the original code remains, but I am grateful for the structural and spiritual influence of the original work.

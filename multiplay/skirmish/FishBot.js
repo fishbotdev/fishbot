@@ -61,7 +61,7 @@ const DEBUG_MODE_ON = false;
 1. Update FISHBOT_VERSION to latest version number. Also update the version number in the "name" property in `FishBot.json`.
 2. Disable all beacons / hackMarkTiles() used for debugging (currently just in `__tac_com_ground.js`).
 3. Run automated tests using `tests/run_tests.py`. Update `CHANGELOG.md` with the test results. Pass if no regression.
-4. Move logs from autogames & test using `python_helper_scripts/process_performance_data.py`. Pass if no regression.
+4. Extract logs from autogames (`\logs` folder) & display using `python_helper_scripts/process_performance_data.py`. Pass if no regression.
 5. Set `DEBUG_MODE_ON` = `false`.
 6. Test all supported maps in `README.md` once, against Cobra @ Medium. Pass if it can win a single game in 2 tries or less.
 7. Update LOC above (this doesn't mean anything, it's just a fun metric).
