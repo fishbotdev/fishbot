@@ -15,62 +15,83 @@
 	If not, see <https://www.gnu.org/licenses/>.
 */
 
+const constructionSearchPattern = [
+	// Distance 0
+	[0, 0],
+	// Distance 1
+	[-1, 0], [0, -1], [0, 1], [1, 0],
+	// Distance 2
+	[-2, 0], [-1, -1], [-1, 1], [0, -2], [0, 2], [1, -1], [1, 1], [2, 0],
+	// Distance 3
+	[-3, 0], [-2, -1], [-2, 1], [-1, -2], [-1, 2], [0, -3], [0, 3], [1, -2], [1, 2], [2, -1], [2, 1], [3, 0],
+	// Distance 4
+	[-4, 0], [-3, -1], [-3, 1], [-2, -2], [-2, 2], [-1, -3], [-1, 3], [0, -4], [0, 4], [1, -3], [1, 3], [2, -2], [2, 2], [3, -1], [3, 1], [4, 0],
+	// Distance 5
+	[-5, 0], [-4, -1], [-4, 1], [-3, -2], [-3, 2], [-2, -3], [-2, 3], [-1, -4], [-1, 4], [0, -5], [0, 5], [1, -4], [1, 4], [2, -3], [2, 3], [3, -2], [3, 2], [4, -1], [4, 1], [5, 0]
+];
 
-function precalculateWheeledReachableTiles() {
-	const wheeledDroidCanReach = (x, y) => propulsionCanReach(PROPULSIONS["Wheels"].id, baseLocation.x, baseLocation.y, x, y);
-	const isReachable = create2DGrid(mapWidth + 1, mapHeight + 1, wheeledDroidCanReach);
+const walkableTiles = getWalkableTiles();
+const isWalkable = create2DGrid(mapWidth, mapHeight, () => {return false;});
+walkableTiles.forEach(b => {
+	const x = b[0];
+	const y = b[1];
+	isWalkable[x][y] = true;
+});
 
-	if (false) {
-		debug(`x-max?: ${mapWidth}, y-max?: ${mapHeight}`);
 
-		// Note: `create2DGrid` uses a [x][y] construction, so each printed line (printed row) is actually a column (iterate along x, get the columns).
-		// This means that the map will appear sideways in the debug view.
+/**
+ * Iterates through ranged walkable tiles from the player's base to determine the position.
+ * Unlike `pickStructLoc`, it takes into account obstacles.
+ * @param {string} structureID 
+ * @returns 
+ */
+function pickBaseStructLocation(structureID) {
 
-		isReachable.forEach(col => {
-			let row = '';
-			col.forEach(c => {
-				if (c === true) {
-					row += `1 `;
-				} else {
-					row += `0 `;
-				}
-			});
-			debug(row);
-		});
+	const BBOX_CORNERS = [[-1, -1], [-1, 1], [1, -1], [1, 1]];
+	let boundingBoxRadius = 0;
+
+	const BBOX_3x3_STRUCTURES = [STRUCTURES["Factory"].id, STRUCTURES["VTOL Factory"].id, STRUCTURES["Laser Satellite Command Post"].id, STRUCTURES["Satellite Uplink Center"].id];
+	const BBOX_2x2_STRUCTURES = [STRUCTURES["Command Center"].id, STRUCTURES["Command Relay Center"].id, STRUCTURES["Power Generator"].id, STRUCTURES["Research Facility"].id];
+
+	if (BBOX_3x3_STRUCTURES.includes(structureID)) {
+		boundingBoxRadius = 2;		// coordinate for a 3x3 structure is the center of the structure
+	} else if (BBOX_2x2_STRUCTURES.includes(structureID)) {
+		boundingBoxRadius = 1;		// coordinate for a 2x2 structure is the bottom right of the structure ((7, 16) center = (7, 15), (6, 15), (6, 16))
+	} else {
+		boundingBoxRadius = 1;
 	}
+	
+	for (let i=0; i<walkableTiles.length; i++) {
+		
+		const loc = walkableTiles[i];
+		const x = loc[0], y = loc[1];
 
-	return isReachable;
-}
-
-const isReachable = precalculateWheeledReachableTiles();
-
-
-function precalculateConstructionSearchPattern() {
-	const makeItEven = (n) => {
-		if (n % 2 === 0) {
-			return n;
-		} else {
-			return n + 1;
+		if (!structureCanFit(structureID, x, y)) {
+			continue;
 		}
+
+		// Check a bounding box around the structure is in the walkable tiles list
+		let boundingBoxTestFailed = false;
+		for (let j=0; j<BBOX_CORNERS.length; j++) {
+			const c = BBOX_CORNERS[j];
+			const x1 = x + boundingBoxRadius * c[0]; 
+			const y1 = y + boundingBoxRadius * c[1];
+
+			if (!isWalkable[x1][y1]) {
+				boundingBoxTestFailed = true;
+				break;
+			}
+		}
+		if (boundingBoxTestFailed) {
+			continue;
+		}
+
+		// debug(`${structureID} success @ ${x}, ${y}`);
+		return {'x': x, 'y': y};
 	}
 
-	// const MAX_X = makeItEven(Math.floor(mapWidth/2));
-	// const MAX_Y = makeItEven(Math.floor(mapHeight/2));
-	const MAX_X = 8;
-	const MAX_Y = 8;
-	const HALF_MAX_X = MAX_X/2;
-	const HALF_MAX_Y = MAX_Y/2;
-
-	const csg = new fbGrid(MAX_X, MAX_Y);
-	const objFunc = (grid, gx, gy) => {return [gx - HALF_MAX_X, gy - HALF_MAX_Y];};
-
-	const standardConstructionSearchGrid = breadthFirstSearch(csg, HALF_MAX_X, HALF_MAX_Y, objFunc);
-	return standardConstructionSearchGrid['ordered'];
+	return undefined;
 }
-
-
-const constructionSearchPattern = precalculateConstructionSearchPattern();
-
 
 /* 
 	pickStructLocation3: Intention is that this function is a deterministic & will reliably try to pick the same location. 
@@ -81,7 +102,7 @@ function pickStructLocation3({structureID, x, y}) {
 	const specifiedHeight = MapTiles[y][x].height;		// Uses this to try the match the height.
 	const HEIGHT_TOLERANCE = 33;
 	
-	if (!isReachable[x][y]) {
+	if (!isWalkable[x][y]) {
 		// debug(` ${gameTime}: pickStructLocation3() failed: (${x} ${y}) for "${structureID}" is not reachable with wheels. Check caller function.`);
 		return undefined;
 	}
@@ -92,7 +113,7 @@ function pickStructLocation3({structureID, x, y}) {
 		const tX = constructionSearchPattern[i][0] + x;
 		const tY = constructionSearchPattern[i][1] + y;
 
-		if (!isReachable[tX][tY]) {
+		if (!isWalkable[tX][tY]) {
 			// debug(`	${gameTime}: psl2 rejected: (${tX}, ${tY}); not reachable`);
 			continue;
 		}

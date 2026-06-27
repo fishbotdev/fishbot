@@ -2,67 +2,32 @@
 FishBot is a Warzone 2100 AI bot compatible with Warzone 2100 **v4.6.1+**.
 It is designed for Tech Level 2, No-Base starts on the supported maps below.
 
-## Most recent updates
-* **v0.4.0** -- *released **02 May 2026***
-    * FishBot now divides its army into 2 main groups ('brigades') with 1 reserve group.
-    * FishBot now uses repair facilities, and forward-builds these near active combat brigades.
-    * Production is no longer randomised (now depends on current brigade demand).
-    * Various construction fixes and improvements (please see [`CHANGELOG.md`](CHANGELOG.md) for a full list of changes).
-
-* **v0.3.3** -- *released **07 Apr 2026***
-    * Fixed research collisions: FishBot will now try to research other technologies if they are already being researched by an ally.
-
-* **v0.3.2** -- *released **06 Apr 2026***
-    * Production decisions are no longer random (depends on current force composition instead).
-    * Fixed an issue where some factories would do nothing for a long period of time.
-    * Changed primary fire support & AA weapons.
-    * Temporarily removed `Sk-Startup` from the list of supported maps.
-
-Please see [`CHANGELOG.md`](CHANGELOG.md) for a detailed list of past changes.
-
-## Roadmap for upcoming features
-* **v0.4.1** -- *release date TBA*
-    * Make FishBot aware of pathfinding cost (e.g. fix to ground target bounce, truck luring, VTOLs flying in overly dangerous airspace, etc.).
-    * Improve spatial awareness (e.g. prioritisation of defence construction).
-
-## Background and Goals
-FishBot was initially forked from NullBot v3. I acknowledge and appreciate the work of the NullBot team in creating the foundation for this body of work. As of v0.4.0, not much of the original code remains, but I am grateful for the structural and spiritual influence of the original work.
-
-I played Warzone 2100 many years ago, and I remember how much happiness it brought me as as a kid. 
-It was so much fun to build up a little army, rush the AI and see the enemy base satisfyingly turn into little puffs of debris.
-I am hoping that FishBot will bring a little bit of that happiness to our dedicated players by being a fun, fresh and challenging opponent (or ally) for your skirmish games.
-
-My goal is to make FishBot a generally useful bot which could be packaged with the official game one day. 
-As mentioned above, I'd like it to be genuinely fun to play with, both as a teammate and as an opponent! 
-Admittedly, there is a long way to go - but I am hoping that one day I am able to make this wish come true. 
-
 ## List of supported technology levels
-Currently, only T2 (**Technology Level 2**) starts are supported.
-
-Further support for other technology levels might be added in a future version. 
+Currently, only T2 (**Technology Level 2**) starts are supported. Further support for other technology levels might be added in a future version. 
 
 However, at the moment I feel like Cobra already fills the gap in the other technology levels very well.
-In particular, I think Cobra performs excellently on T1 in Warzone 2100 v4.6.3+. Even as a human player, I think I would struggle to win against T1 Cobra (Warzone 2100 v4.6.3+) without decidedly human strategies (e.g. walls and heavy-MG guard towers in chokepoints during army build-up).
+
+In particular, I think Cobra performs excellently on T1 in Warzone 2100 v4.6.3+. 
 
 ## List of supported maps (Warzone2100 4.7.0)
-As of the most current version **v0.4.0**, FishBot works best on large, standard "low-oil" game maps with up to ~10 derricks per player. 
+As of the most current version **v0.4.1**, FishBot works best on large, standard "low-oil" game maps with up to ~10 derricks per player. 
 It currently only has been tested with scavengers disabled.
 
 The current method for determining whether or not a map is *supported* is:
-* For 2P & 3P maps, FishBot can win against a single Cobra @ Medium difficulty on that map without bankrupting itself
-* For higher player-count maps, it can win in a team with other FishBots (I'd like to know if it can be a good teammate for the player)
+* For 2P & 3P maps, FishBot can win in T2 against a single Cobra @ Medium difficulty.
+* For higher player-count maps, it can win in a team with other FishBots.
 
 ### 2 player (T2)
-* `Sk-Startup` -- compatible
+* `Sk-Startup`
 * ~~`Sk-UrbanChasm`~~ -- bankrupts itself (rigid build order)
 * ~~`Sk-HighGround`~~ -- bankrupts itself (rigid build order)
-* ~~`Roughness`~~ -- loses all trucks; construction stops
-* `Vision` -- compatible
-* `DustyMaze (2P)` -- compatible
+* `Roughness`
+* `Vision`
+* `DustyMaze (2P)`
 
 ### 3 player (T2)
-* `Monocot` -- compatible
-* `Gamma` -- compatible (FishBot has been optimised for this map)
+* `Monocot`
+* `Gamma`
 
 Official support for other maps will be included in future versions. The current limitations are:
 * On very small maps with very low oil, FishBot runs out of power (and gets stuck) due to a fixed rigid build order. It can also get stuck if it doesn't claim enough derricks in the early game.
@@ -79,8 +44,42 @@ To check if the path is correct, you should be able to find `FishBot.js` in this
 
 If you can find `Fishbot.js` here, FishBot should automatically load on the next startup of Warzone 2100. It will then be available to select as an AI bot.
 
-## Detailed Changelog
-Please see `CHANGELOG.md` for a detailed list of changes between versions.
+## Recent updates
+* **v0.4.1** - *released **27 Jun 2026***
+    * Increased combat group cohesion.
+    * Construction fixes:
+        * Repair facilities are more likely to be forward-constructed. 
+        * Base structure positions now account for terrain obstacles.
+    * Improved TL2 to TL3 research transition (now focuses on Gauss Cannon tree).
+    * FishBot now follows the same rules as human players on game start (will no longer produce Hover Trucks before the Command Center is built).
+
+* **v0.4.0** -- *released **02 May 2026***
+    * FishBot now divides its army into 2 main groups ('brigades') with 1 reserve group.
+    * FishBot now uses repair facilities, and forward-builds these near active combat brigades.
+    * Production is no longer randomised (now depends on current brigade demand).
+    * Various construction fixes and improvements (please see [`CHANGELOG.md`](CHANGELOG.md) for a full list of changes).
+
+* **v0.3.3** -- *released **07 Apr 2026***
+    * Fixed research collisions: FishBot will now try to research other technologies if they are already being researched by an ally.
+
+Please see [`CHANGELOG.md`](CHANGELOG.md) for a detailed list of past changes.
+
+## Upcoming features
+The current areas for improvement are:
+* Strategic improvements (FishBot's current strategic level is: 'this is the closest target, go there').
+* Support for T1 & T3.
+* Increased support for popular skirmish maps.
+
+## Background and Goals
+FishBot was initially forked from NullBot v3. I acknowledge and appreciate the work of the NullBot team in creating the foundation for this body of work. As of v0.4.0, not much of the original code remains, but I am grateful for the structural and spiritual influence of the original work.
+
+I played Warzone 2100 many years ago, and I remember how much happiness it brought me as as a kid. 
+It was so much fun to build up a little army, rush the AI and see the enemy base satisfyingly turn into little puffs of debris.
+I am hoping that FishBot will bring a little bit of that happiness to our dedicated players by being a fun, fresh and challenging opponent (or ally) for your skirmish games.
+
+My goal is to make FishBot a generally useful bot which could be packaged with the official game one day. 
+As mentioned above, I'd like it to be genuinely fun to play with, both as a teammate and as an opponent! 
+Admittedly, there is a long way to go - but I am hoping that one day I am able to make this wish come true. 
 
 ## Software Documentation
 jsdocs are used throughout the code. Additionally, `wz2100-js-api.d.ts` is used to indicate the typing of commonly used JS API functions and global variables from the Warzone 2100 game engine. The addition of `jsconfig.json` allows VSCode to understand the various symbols within the project, allowing for some type checking and code navigation. The intent of these documentation features is to make changing the software easier.

@@ -51,7 +51,7 @@
 	fbGroup: FISHBOT v3 CUSTOM GROUPING SYSTEM
 
 	Fishbot custom implementation of inbuilt "groups"
-	Fishbot requires transient, one-to-many labelling to support its ability to maneuver & control multiple groups of units at once.
+	Fishbot requires transient, one-to-many labelling to support its ability to maneuver & control multiple groups of units simultaneously.
     Construction and aviation use this capability extensively.
 	As of Warzone 2100 v4.6.1, neither the built-in groups, nor labels, are suitable for transient, one-to-many labelling.
 */
@@ -69,15 +69,15 @@ class fbGroup {
 			// Update members
 			let c = this.groups.get(groupID);
 
-			// niceDebug("lazyUpdateGroup/groupMember data -- before filter", c["groupMemberIDs"], c["groupMembers"]);
+			// debug("lazyUpdateGroup/groupMember data -- before filter", c["groupMemberIDs"], c["groupMembers"]);
 
 			c["groupMemberIDs"] = c["groupMemberIDs"].filter((id) => getObject(DROID, me, id) !== null);
 
-			// niceDebug("lazyUpdateGroup/groupMember data -- after filter", c["groupMemberIDs"], c["groupMembers"]);
+			// debug("lazyUpdateGroup/groupMember data -- after filter", c["groupMemberIDs"], c["groupMembers"]);
 
 			c["groupMembers"] = c["groupMemberIDs"].map((id) => {return getObject(DROID, me, id);});
 
-			// niceDebug("lazyUpdateGroup/groupMember data -- after getObject map", c["groupMemberIDs"], c["groupMembers"]);
+			// debug("lazyUpdateGroup/groupMember data -- after getObject map", c["groupMemberIDs"], c["groupMembers"]);
 
 			c["groupSize"] = c["groupMembers"].length;
 		}
@@ -96,9 +96,14 @@ class fbGroup {
 			this.groups.delete(groupID);
 	}
 
+    /**
+     * Returns an array containing all units in the FishBot group with `groupID`.
+     * @param {string | number} groupID 
+     * @returns {DroidObject[]}
+     */
 	enumGroup(groupID) {
 		if (!this.groups.has(groupID)) {
-			debug("no such groupID", groupID);
+			debug(`no such groupID: "${groupID}"`);
 			return [];
 		}
 
@@ -160,9 +165,9 @@ class fbGrid {
      * @param {number?} numYCells 
      */
     constructor(numXCells=null, numYCells=null) {
+        this.cellSize = 10;     // in game tiles
 
-        if (numXCells == undefined || numYCells == undefined) {
-            this.cellSize = 10;     // in game tiles
+        if (numXCells == null || numYCells == null) {    
             this.numXCells = Math.ceil(mapWidth / this.cellSize);
             this.numYCells = Math.ceil(mapHeight / this.cellSize);
         } else {
@@ -170,187 +175,181 @@ class fbGrid {
             this.numYCells = numYCells;
         }
 
-        const createStandardGridCell = (gx, gy) => this.createNewFbGridCell(gx, gy);
-        this.grid = create2DGrid(this.numXCells, this.numYCells, createStandardGridCell);        
+        const createStandardFbGridCell = (gx, gy) => this.createNewFbGridCell(gx, gy);
+        /** @type {FbGridCell[][]} */
+        this.grid = create2DGrid(this.numXCells, this.numYCells, createStandardFbGridCell);        
     }
 
+    /**
+     * Default factory function to create a new `fbGrid` grid cell.
+     * @param {number} gx 
+     * @param {number} gy 
+     * @returns {FbGridCell}
+     */
     createNewFbGridCell(gx, gy) {
+        /** @type {FbGridCell} */
         return {
             'id': `${gx}_${gy}`,    
             'gx': gx,
             'gy': gy,    
-
             'targetUnits': [],
             'targetStructures': [],
-
             'friendlyUnits': [],
             'friendlyStructures': [],
-
             'derricks': [],
             'bases': []
         }
     }
 
     /**
-     * Custom enumRange for FishBot; this uses FishBot's grid system. 
-     * The intent is to optimise for speed.
+     * More computationally efficient `grid.enumRange`. Compared to the standard `enumRange`, the tradeoff is to sacrifice positional accuracy for speed. 
+     * The calling function must handle potentially stale outputs, particularly if the grid is not updated that often.
      * @param {number} x central x-coord (game tiles)
      * @param {number} y central y-coord (game tiles)
      * @param {number} radius radial distance, inclusive (game tiles)
-     * @returns Object containing droids[], structs[], closestDroid: DroidObject and closestStruct: StructureObject
+     * @param {boolean} showEnemy if `true`, populates `targetUnits` and `targetStructures`.
+     * @param {boolean} showFriendly if `true`, populates `friendlyUnits` and `friendlyStructures`.
+     * @returns {EnumRangeLazyResult}
      */
-    enumRange(x, y, radius) {
-        let results = {
+    enumRangeLazy(x, y, radius, showEnemy=true, showFriendly=true) {
+        /** @type {EnumRangeLazyResult} */
+        const result = {
             'targetUnits': [],
             'targetStructures': [],
-            'closestTargetUnit': undefined,
-            'closestTargetStructure': undefined,
-
-            // 'friendlyUnits': [],
+            'friendlyUnits': [],
             'friendlyStructures': [],
         };
 
         if (!defined(this.grid)) {
             debug(`WARNING: grid.enumRange() could not read from undefined grid.`);
-            return results;
+            return result;
         }
-
-        // Initialise closest droid / struct calculation
-        let closestDroidDistSq = 0, closestStructDistSq = 0;
-        let closestDroid = undefined, closestStruct = undefined;
 
         const cx = Math.floor(x / this.cellSize);
         const cy = Math.floor(y / this.cellSize);
         const gr = Math.ceil(radius / this.cellSize);
+        
+        const RADIUS_SQ = radius ** 2;
+
+        /** @param {FbObject} obj */
+        const insideSpecifiedRadius = (obj) => {
+            const DISTANCE_SQ = distSq(x, obj.x, y, obj.y);
+            if (DISTANCE_SQ <= RADIUS_SQ) {
+                return true;
+            } else {
+                return false;
+            }
+        };
+
+        /**
+         * 
+         * @param {string} className 
+         * @param {number} gx 
+         * @param {number} gy 
+         * @returns {void} pushes the result to the result array
+         */
+        const pushObjectsInRadiusToResult = (className, gx, gy) => {
+            const objectsInCell = this.grid[gx][gy][className];
+            objectsInCell.forEach(obj => {
+                if (insideSpecifiedRadius(obj)) {
+                   result[className].push(obj);
+                }    
+            });            
+        }
+
+        const ENEMY_OBJECT_CLASSES = ['targetUnits', 'targetStructures'];
+        const FRIENDLY_OBJECT_CLASSES = ['friendlyUnits', 'friendlyStructures'];
 
         for (let dx = -gr; dx <= gr; dx++) {
             for (let dy = -gr; dy <= gr; dy++) {
 
-                // Compute deviations & test validity
                 const gx = cx + dx;
-                if (gx < 0 || gx >= this.numXCells) {
+                if (gx < 0 || gx >= this.numXCells) {   // valid check is '>= this.numXCells' because of 0 indexing: [0, 1, ..., numXCells - 1] are valid
                     continue;
                 }
                 
                 const gy = cy + dy;
-                if (gy < 0 || gy >= this.numYCells) {       // >= because of 0 indexing: [0, 1, ..., numYCells - 1]
+                if (gy < 0 || gy >= this.numYCells) {       
                     continue;
                 }
 
-                // Get corresponding grid entry
-                this.grid[gx][gy]['targetUnits'].forEach(t => {
-                    const obj = getObject(t.type, t.player, t.id);
-                    if (!defined(obj)) {
-                        return;
-                    }
-                    const d = distSq(x, obj.x, y, obj.y);
-                    if (d > radius ** 2) {
-                        return;
-                    }
-                    results['targetUnits'].push(t);
-                    
-                    if (!(t.flags & OBJ_FLAGS.AVIATION)) {
-                        if (!defined(closestDroid)) {
-                            closestDroid = obj;
-                            closestDroidDistSq = d;
-                            return;
-                        }
-
-                        if (d < closestDroidDistSq) {
-                            closestDroid = obj;
-                            closestDroidDistSq = d;
-                        }
-                    }
-                });
-                results['closestTargetUnit'] = closestDroid;
+                if (showEnemy) {
+                    ENEMY_OBJECT_CLASSES.forEach(className => pushObjectsInRadiusToResult(className, gx, gy));
+                }
+                if (showFriendly) {
+                    FRIENDLY_OBJECT_CLASSES.forEach(className => pushObjectsInRadiusToResult(className, gx, gy));
+                }
                 
-                this.grid[gx][gy]['targetStructures'].forEach(t => {
-                    const obj = getObject(t.type, t.player, t.id);
-                    if (!defined(obj)) {
-                        return;
-                    }
-                    const d = distSq(x, obj.x, y, obj.y);
-                    if (d > radius ** 2) {
-                        return;
-                    }
-                    results['targetStructures'].push(t);
-
-                    if (!defined(closestStruct)) {
-                        closestStruct = obj;
-                        closestStructDistSq = d;
-                        return;
-                    }
-
-                    if (d < closestStructDistSq) {
-                        closestStruct = obj;
-                        closestStructDistSq = d;
-                    }
-                });
-                results['closestTargetStructure'] = closestStruct;     
-                
-                this.grid[gx][gy]['friendlyStructures'].forEach(t => {
-                    const obj = getObject(t.type, t.player, t.id);
-                    if (!defined(obj)) {
-                        return;
-                    }
-                    const d = distSq(x, obj.x, y, obj.y);
-                    if (d > radius ** 2) {
-                        return;
-                    }
-                    results['friendlyStructures'].push(t);
-                });
             }                
         }
 
-        return results;
+        return result;
     }
 }
 
 
+/**
+ *  `worldState`: this class stores the game state from FishBot's perspective.
+ *   All functions in FishBot use this class as the current ground truth.
+ */
 class worldState {
-    // State: this class stores the game state from FishBot's perspective.
-    // All functions in FishBot use this class as the current ground truth.
     constructor() {
 
-        // Grid system (new)
+        ////////////////////////// SPATIAL AWARENESS //////////////////////////
+        /**
+         *  The "grid" is the core component of FishBot's spatial awareness system. 
+         *  @type {fbGrid} 
+         */
         this.grid = new fbGrid();
+
+        /**
+         *  Spatial fields, derived from the dimensions of the grid, are used for decision making.
+         *  @type {SpatialFieldsObject} 
+         */
+        this.fields;
+
+        /**
+         *  This object stores data about fixed points of interest on the game map.
+         */
         this.poi = {
+            /** @type {DerrickObject[]} */
             'derricks': [], 
+            /** @type {PlayerHomeBaseObject[]} */
             'bases': []
         };
-        const emptyCell = (...args) => {return 0;};
-        const createEmptyGrid = () => {return create2DGrid(this.grid.numXCells, this.grid.numYCells, emptyCell);};
-        this.fields = {
-            'adaThreat': createEmptyGrid(),
-            'enemyStaticDefenceThreat': createEmptyGrid(),
-            'enemyUnitThreat': createEmptyGrid(),
-            'distanceFromMyBase': createEmptyGrid(),
-            'totalDerricksInCell': createEmptyGrid(),
-            'unclaimedDerricksInCell': createEmptyGrid(),
-            'controlStability': createEmptyGrid(),
-        };
 
-        // Player statistics
-        this.playerInfo = [];
+        ////////////////////////// PLAYER STATISTICS / CUSTOM METADATA //////////////////////////
+        /** 
+         * The numeric array index is the same as the player ID, so `state.playerInfo[me].numTrucks` is a possible & accepted access pattern.
+         * @type {PlayerStatsObject[]} 
+         */
+        this.playerInfo;
+
+        // Game statistics
         this.REPAIR_FACILITY_HARD_CAP = 3; // getStructureLimit(STRUCTURES["Repair Facility"].id);      // TODO: Fix this when this function is fixed.
 
         // Combat targeting
-        this.allTargets = [];
-        this.forceLocations = [];           // list of brigade locations: [{brigadeID: '', location: {'x': 0, 'y': 0}}]
-        this.nearbyGroundTargets = [];      // nearbyTargets (list); ordered by brigade designation
+        /** @type {BrigadeInfo} */
+        this.brigades = {};
+
         this.aviationTargets = {
+            /** @type {AirStrikeMissionRequest[]} */
             'raidTargets': [],
-            'casTargets': [],
 
             // 4 types of targets around enemy bases
+            /** @type {AirStrikeMissionRequest[]} */
             'productionTargets': [],
+            /** @type {AirStrikeMissionRequest[]} */
             'adaTargets': [],
+            /** @type {AirStrikeMissionRequest[]} */
             'indirectFireTargets': [],
+            /** @type {AirStrikeMissionRequest[]} */
             'defensiveStructureTargets': []
         }; 
 
         // Mission management system
-        this.g = undefined;
+        /** @type {fbGroup} */
+        this.g;
         this.activeMissions = [];
 
         // Bot attributes
@@ -362,45 +361,6 @@ class worldState {
         this.TIME_BLOCK_MS = 200;
         this.INTERVALS_PER_MIN = Math.floor(60000 / this.TIME_BLOCK_MS);
 		this.WORKER_IDS = {};
-    }
-
-    createPlayerInfoEntry(playerID) {
-        return {
-			'playerID': playerID,
-			'isFriendly': !isEnemy(playerID), 
-
-            // Unit stats
-            'numTotalUnits': 0,
-			'numInfantryUnits': 0,
-			'numArmourUnits': 0,
-            'numAirUnits': 0,       // air units (e.g. vtol)        
-
-            'numRocketUnits': 0,        // anti-personnel units (e.g. MG)
-            'numCannonUnits': 0,        // general-purpose (e.g. cannon)
-            'numMGUnits': 0,
-            'numShortRangeIndirectUnits': 0,  // indirect fires (e.g. mortar)
-            'numLongRangeIndirectUnits': 0,
-            'numVTOLBombUnits': 0,
-            'numADAUnits': 0,       // air-defence-artillery units (e.g. flak cannon)
-            'numLaserUnits': 0,
-            'numFlamerUnits': 0,
-
-            'numTrucks': 0,
-
-            // Structure stats
-			'numStructs': 0,
-            'numFactories': 0,
-			'numDerricks': 0, 
-            'numConstructedHQs': 0,
-            'numRepairFacilities': 0,
-
-            // Intended to be used for getting idle structures for Production & Research, and for demolishing Repair Facilities
-            'normalFactoryFbObjects': [],           
-            'cyborgFactoryFbObjects': [],
-            'vtolFactoryFbObjects': [],
-            'researchFacilityFbObjects': [],
-            'repairFacilityFbObjects': []
-		};
     }
 
     /**
@@ -448,11 +408,12 @@ class worldState {
 
 class worldStateBuilder {
 
-    #createFbGroupingSystem() {
-        // Generates initial values in FishBot v3 grouping system
+    /**
+     * Returns a new `fbGroup` with FishBot base group IDs initialised. 
+     * @returns {fbGroup} 
+     */
+    #initialiseFbGroupingSystem() {
         let g = new fbGroup();
-
-        g.createGroup(DIVISION.AIR_RESERVE);
 
         for (const d in DIVISION) {
             g.createGroup(DIVISION[d]);
@@ -466,15 +427,37 @@ class worldStateBuilder {
     }
 
     /**
-     * Factory function for a 'derrick' object.
+     * Factory function to initialise `state.fields`. Note that `state.grid` must be initialised before this.
+     * @param {worldState} state 
+     * @returns {SpatialFieldsObject}
+     */
+    #initialiseSpatialFields(state) {
+        const numXCells = state.grid.numXCells;
+        const numYCells = state.grid.numYCells;
+
+        const createZeroCell = () => {return 0;};
+        const createGridWithZeros = () => {return create2DGrid(numXCells, numYCells, createZeroCell);};
+
+        return {
+            'adaThreat': createGridWithZeros(),
+            'enemyStaticDefenceThreat': createGridWithZeros(),
+            'enemyUnitThreat': createGridWithZeros(),
+            'distanceFromMyBase': createGridWithZeros(),
+            'totalDerricksInCell': createGridWithZeros(),
+            'unclaimedDerricksInCell': createGridWithZeros(),
+            'controlStability': createGridWithZeros(),
+        };
+    }
+
+    /**
+     * Factory function to create a 'DerrickObject'.
      * @param {number} x 
      * @param {number} y 
      * @param {number} gx 
      * @param {number} gy 
-     * @returns 
+     * @returns {DerrickObject}
      */
     #createNewDerrick(x, y, gx, gy) {
-        // Helper: derrickTemplate factory (new implementation to support new sector system)
         return {
             'id': `DERRICK_${x}_${y}`,
             'x': x,
@@ -484,17 +467,19 @@ class worldStateBuilder {
             
             'isClaimed': false,
             'playerID': undefined,
-        }
+        };
     }
 
     /**
-     * Used to initialise `state.poi.derricks` & also writes a reference to `state.grid.grid` directly.
+     * Factory function used to initialise `state.poi.derricks`. 
+     * Returns derricks in ascending order of distance from base.
      * @param {worldState} state 
+     * @returns {DerrickObject[]}
      */
     #initialiseDerrickLocs(state) {
         const cellSize = state.grid.cellSize;
 
-        let d = [];
+        const d = [];
 
         for (let i=0; i<derrickPositions.length; i++) {
             const x = derrickPositions[i].x;
@@ -505,8 +490,6 @@ class worldStateBuilder {
 
             const derrick = this.#createNewDerrick(x, y, gx, gy);
             d.push(derrick);
-            state.grid.grid[gx][gy].derricks.push(derrick);
-            state.fields['totalDerricksInCell'][gx][gy]++;
         }
 
         // Order d in order of increasing order from base 
@@ -516,38 +499,40 @@ class worldStateBuilder {
     }
 
     /**
-     * Factory function for a 'base' object.
+     * Factory function to create a `PlayerHomeBaseObject`.
      * @param {number} playerID 
      * @param {number} x 
      * @param {number} y 
      * @param {number} gx 
      * @param {number} gy 
-     * @returns 
+     * @returns {PlayerHomeBaseObject}
      */
     #createNewBase(playerID, x, y, gx, gy) {
-        // Helper: baseTemplate factory (new implementation to support new sector system)
-        let baseTemplate = {
+        return {
             'id': `BASE_${playerID}_${x}_${y}`,    
             'x': x,
             'y': y,
             'gx': gx,
             'gy': gy,
 
-            'playerID': playerID,
             'isEnemy': isEnemy(playerID),
-        }
-        return baseTemplate;
+            'playerID': playerID,
+        };
     }
 
     /**
-     * Used to initialise `state.poi.bases` & also writes a reference to `state.grid.grid` directly.
+     * Factory function used to initialise `state.poi.bases`. 
      * @param {worldState} state 
-     * @returns 
+     * @returns {PlayerHomeBaseObject[]}
      */
     #initialiseBaseLocs(state) {
         const cellSize = state.grid.cellSize;
 
-        let b = [];
+        const b = [];
+
+        if (startPositions.length !== maxPlayers) {
+            debug(`WARNING: ${startPositions.length} !== ${maxPlayers}! Weird behaviour may result: e.g. playerInfo might be unsynced with base locations.`);
+        }
 
         for (let i=0; i<startPositions.length; i++) {
             const x = startPositions[i].x;
@@ -558,25 +543,31 @@ class worldStateBuilder {
 
             const base = this.#createNewBase(i, x, y, gx, gy);
             b.push(base);
-            state.grid.grid[gx][gy].bases.push(base);
         }
         return b;
     }
 
     /**
-     * Used to initialise `state.playerInfo`.
+     * Factory function used to initialise `state.playerInfo`.
      * @param {worldState} state 
-     * @returns 
+     * @returns {PlayerStatsObject[]}
      */
     #initialisePlayerInfo(state) {
-        let p = [];
-        const playerIdList = generateRange(maxPlayers);       // will create 0-indexed playerIDs from 0, 1, 2, ..., maxPlayers - 1
-        playerIdList.forEach(playerID => p.push(state.createPlayerInfoEntry(playerID)));
+        const p = [];
+
+        const PLAYER_ID_LIST = generateRange(maxPlayers);       // will create 0-indexed playerIDs from 0, 1, 2, ..., maxPlayers - 1
+        PLAYER_ID_LIST.forEach(playerID => 
+            p.push(createPlayerInfoEntry(playerID))
+        );
         
         return p;
     }
 
+    /**
+     * TODO: Add jsdocs & add consolidate all other useful map-data related definitions here
+     */
     #initialiseMapTiles() {
+
         const yMap = generateRange(mapHeight);
         const xMap = generateRange(mapWidth);
 
@@ -584,27 +575,103 @@ class worldStateBuilder {
             const mapRow = [];
 
             xMap.forEach(x => {
-                mapRow.push(MapTiles[y][x].height);      // height
-                // mapRow.push(MapTiles[y][x].terrainType);    // different terrain type
+                // mapRow.push(MapTiles[y][x].height);      // uncomment for height
+                mapRow.push(MapTiles[y][x].terrainType);    // uncomment for different terrain type; see: https://github.com/Warzone2100/warzone2100/blob/00ca862eb87e8d22462ee97b4d2b8ab9ee30a451/lib/wzmaplib/include/wzmaplib/terrain_type.h#L26 for terrainType enum
             });
 
             debug(`"${mapRow}",`);      // python script processes list of comma-delimited strings
         });
+
+        const isReachable = precalculateWheeledReachableTiles();
+        const constructionSearchPattern = precalculateConstructionSearchPattern();
     }
 
     /**
-     * Initialises `state` with the FishBot grouping system, default POIs and basic player information.
+     * Factory function to create buffers for `state.brigades`.
+     * @param {worldState} state
+     * @returns {BrigadeInfo} 
+     */
+    #initialiseBrigades(state) {
+
+        /** @returns {FbObject[]} */
+        const createTargetObjectArray = () => [];
+
+        /** @returns {NearbyTargets} */
+        const createNearbyTargetsArray = () => {
+            return {
+                'enemyArmor': createTargetObjectArray(),
+                'enemyInfantry': createTargetObjectArray(), 
+                'enemyIndirectFire': createTargetObjectArray(), 
+                'enemyADA': createTargetObjectArray(), 
+                'enemyDefenses': createTargetObjectArray(),
+                'enemyConstructor': createTargetObjectArray(), 
+                'enemyIndustrial': createTargetObjectArray(), 
+                'enemyUtility': createTargetObjectArray(), 
+                'enemyAviation': createTargetObjectArray(), 
+            };
+        };
+
+        /** @returns {AirStrikeMissionRequest[]} */
+        const createCASStrikeRequests = () => [];
+
+        /**
+         * Creates an empty brigade object.
+         * @param {number} brigadeID 
+         * @returns {BrigadeMetadata} 
+         */
+        const createNewBrigadeObject = (brigadeID) => {
+            const x = baseLocation.x, y = baseLocation.y;
+            return {
+                'id': brigadeID,
+                'location': {'x': x, 'y': y, 'z': MapTiles[y][x].height},
+                'strength': 0,
+                'nearbyTargets': createNearbyTargetsArray(),
+                'casStrikeRequests': createCASStrikeRequests(),                
+            };
+        };
+
+        /** @type {BrigadeInfo} */
+        const brigades = {};
+
+        BRIGADE_IDS.forEach(id => {
+            brigades[id] = createNewBrigadeObject(id);
+        });
+
+        return brigades;
+    }
+
+    /**
+     *  Initialises `state` with:
+     *  - FishBot grouping system `state.g`, 
+     *  - default POIs (bases & derricks) `state.poi.derricks` & `state.poi.bases`,
+     *  - default player information,
+     *  - 
      * @param {worldState} state 
      * @returns {void}
      */
     initialise(state) {
-        state.g = this.#createFbGroupingSystem();
-
         // this.#initialiseMapTiles();
 
-        state.poi.derricks = this.#initialiseDerrickLocs(state);    // this function also modifies each grid cell
-        state.poi.bases = this.#initialiseBaseLocs(state);          // this function also modifies each grid cell
+        state.g = this.#initialiseFbGroupingSystem();
+
+        state.fields = this.#initialiseSpatialFields(state);
+
+        state.poi.derricks = this.#initialiseDerrickLocs(state);   
+        state.poi.derricks.forEach(d => {
+            // Write the same reference to the grid.
+            state.grid.grid[d.gx][d.gy].derricks.push(d);
+            state.fields['totalDerricksInCell'][d.gx][d.gy]++;
+        }); 
+
+        state.poi.bases = this.#initialiseBaseLocs(state); 
+        state.poi.bases.forEach(b => {
+            // Write the same reference to the grid.
+            state.grid.grid[b.gx][b.gy].bases.push(b);
+        });         
 
         state.playerInfo = this.#initialisePlayerInfo(state);
+
+        state.brigades = this.#initialiseBrigades(state);
+
     }
 }

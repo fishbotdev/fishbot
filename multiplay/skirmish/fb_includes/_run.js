@@ -24,12 +24,13 @@ function runGameEndedWatchdog() {
 	const gameIsFinished = state.gameHasEnded();
 
 	if (gameIsFinished && state.botIsActive) {
-		debug(`FishBot ${me}: gameHasEnded, stopping all function`);
+		debug(`${gameTime}\t FishBot ${me}: gameHasEnded, stopping all function`);
 		state.botIsActive = false;
+		if (DEBUG_MODE_ON) hackMarkTiles();		// clear all residual debug tiles
 	}
 
 	if (!gameIsFinished && !state.botIsActive) {
-		debug(`FishBot ${me}: is alive, resuming function`);
+		debug(`${gameTime}\t FishBot ${me}: is alive, resuming function`);
 		state.botIsActive = true;
 	}
 }
@@ -55,16 +56,21 @@ function runC2() {
 	}
 }
 
-function runLogistics() {
+function runConstructionLogistics() {
 	if (state.botIsActive) {
-		if (state.WORKER_IDS['runLogistics'][state.currWorkerID]) {
+		if (state.WORKER_IDS['logistics_runConstruction'][state.currWorkerID]) {
 			hq.runConstructionLogistics(state);
+		}
+	}
+}
 
+function runSupplyLogistics() {
+	if (state.botIsActive) {
+		if (state.WORKER_IDS['logistics_runSupply'][state.currWorkerID]) {
 			hq.runResupplyLogistics(state);				// assigns reserve units to brigades
 			hq.runProductionLogistics(state);			// schedules production to replenish reserves
 
 			hq.runResearchLogistics(state);
-			
 		}
 	}
 }
@@ -86,10 +92,10 @@ function scheduleCoreFunctions() {
 function setupFishBot() {
 	// This function queued with a player-specific delay          
 	setTimer("scheduleCoreFunctions", state.TIME_BLOCK_MS);
-
 	setTimer("runIntelligence", state.TIME_BLOCK_MS);
 	setTimer("runC2", state.TIME_BLOCK_MS);
-	setTimer("runLogistics", state.TIME_BLOCK_MS);
+	setTimer("runConstructionLogistics", state.TIME_BLOCK_MS);
+	setTimer("runSupplyLogistics", state.TIME_BLOCK_MS);
 	setTimer("runMissionManager", state.TIME_BLOCK_MS);
 
 	setTimer("runGameEndedWatchdog", 60000);
@@ -131,9 +137,22 @@ function setupDebugMode() {
 	changePlayerColour(9, COLOURS["orange"]);
 	changePlayerColour(10, COLOURS["purple"]);
 	changePlayerColour(11, COLOURS["brown"]);
+	
+	const DIFFICULTY_LEVEL = ["Campaign", "Easy", "Medium", "Hard", "Insane"];
+	const get_difficulty_text = (difficulty) => DIFFICULTY_LEVEL[difficulty];
 
-	// remove default human player (force-added in challenge mode)
-	transformPlayerToSpectator(0);		
+	playerData.forEach(p => {
+		if (p.isHuman) {
+			// remove default human player (force-added in challenge mode)
+			transformPlayerToSpectator(p.position);
+			return;
+		}
+
+		const difficulty = get_difficulty_text(p.difficulty);
+		const playerInfo = `Player ${p.position}: ${p.name} (${difficulty})`;
+		chat(ALL_PLAYERS, playerInfo);
+		debug(playerInfo);
+	});
 }
 
 function eventStartLevel() {
@@ -150,6 +169,6 @@ function eventStartLevel() {
 		orderDroidLoc(droid, DORDER_MOVE, droid.x + 1, droid.y + 1);		// copied from NullBot (apparently trucks can sometimes get stuck when a building is placed on top of them)
 		state.g.addDroidToGroup({groupID: ENGINEERING.ENGINEERING_RESERVE, droidID: droid.id});
 	});
-	queue("runLogistics");				
+	queue("runConstructionLogistics");				
 	queue("runMissionManager");
 }

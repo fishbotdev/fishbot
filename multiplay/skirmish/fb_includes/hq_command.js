@@ -17,16 +17,16 @@
 
 /**
 The functions in this class:
-- Have the authority to write to the global state (typically delegated to `hq_toc.js`)
+- Have the authority to write to the global state (typically delegated to (and consolidated in) `hq_toc.js`)
 - Should make decisions on what course action to take, but should handle no direct execution (this should be delegated to other functions)
-- Should be supported by proposals made by the staff functions hq_gX
+- Should be informed by potential courses of action proposed by the staff functions `hq_gX_Y`.
+
+This models how a HQ at divisional level is structured in real life. Much of the terminology in this bot is borrowed from the real world.
  */
 class CommandCenter {
 	constructor() {
 
 		this.toc = new TacticalOperationsCenter();
-
-		this.campaignStatus = CAMPAIGN_STATUS.BUILDUP;	
 
 		/*
 			This constructor is intended to contain *all* FishBot parameters which change how it behaves.
@@ -35,7 +35,6 @@ class CommandCenter {
 		// Strategic parameters
 		this.OIL_DOMINANCE_PERCENTAGE = 60;
 		this.TARGET_SEARCH_RADIUS = 25;
-		this.FORCE_IMMEDIATE_RADIUS = 16;
 
 		// Production logistics parameters
 		this.MAX_TRUCKS = 8;
@@ -51,7 +50,7 @@ class CommandCenter {
 		this.TOTAL_UNITS_PER_BRIGADE = Object.values(this.FISHBOT_BRIGADE_COMPOSITION).reduce((a, b) => a + b, 0);
 
 		this.NUMBER_OF_BRIGADES = 2;
-		this.BRIGADE_DESIGNATIONS = [DIVISION.FIRST_BCT, DIVISION.SECOND_BCT, DIVISION.THIRD_BCT, DIVISION.FOURTH_BCT, DIVISION.FIFTH_BCT].slice(0, this.NUMBER_OF_BRIGADES);
+		this.BRIGADE_DESIGNATIONS = BRIGADE_IDS.slice(0, this.NUMBER_OF_BRIGADES);
 
 		this.BRIGADE_REPAIR_THRESHOLD = 30;
 		
@@ -62,11 +61,11 @@ class CommandCenter {
 		this.REQUESTS_PER_MINUTE = {
 			'combat_runC2': 60,
 			'global_missionManager': 60,
-			'runLogistics': 60,
-			'intel_getNearbyGroundTargets': 60,
-			'intel_getMapIntelligence': 20,
-			'intel_checkCampaignStatus': 15,
-			'intel_getAviationTargets': 15,
+			'logistics_runConstruction': 60,
+			'intel_getNearbyGroundTargets': 20,
+			'logistics_runSupply': 15,
+			'intel_getMapIntelligence': 12,
+			'intel_getAviationTargets': 10,
 			'intel_checkOilDominance': 2,
 		};
 
@@ -154,58 +153,6 @@ class CommandCenter {
 		}
 	}
 
-	/////////////////////////////////////////////////// "CAMPAIGN STATUS" ///////////////////////////////////////////////////
-	#getCampaignStatus() {
-		return this.campaignStatus;
-	}
-
-	/**
-	 * 
-	 * @param {string} event 
-	 */
-	#updateCampaignStatus(event) {
-		const currState = this.#getCampaignStatus();
-
-		// Advance the state machine on 'event'
-		let nextState = undefined;
-		if(defined(campaignTransitions[event])) {
-			nextState = campaignTransitions[event][currState];
-		}
-
-		if (defined(nextState)) {
-			// debug(`Advanced to next campaign state ${nextState}`);
-			this.campaignStatus = nextState;
-		} 
-	}
-
-	/**
-	 * 
-	 * @param {worldState} state 
-	 */
-	#checkCampaignStatus(state) {
-		// Note: this modifies 'campaignStatus' directly -> to be integrated into 'state'
-
-		// ADVANCE CAMPAIGN BASED ON GAME STATE -- TEMPORARY IMPLEMENTATION
-		let event = undefined;
-
-		const status = groundForces.getGroundForceStatus(state);
-		if (status['completedInitialBuildup']) {
-			event = 'CompletedBuildup';
-		}
-		if (status['completedFinalBuildup']) {
-			event = 'CompletedStaging';
-		}
-
-		if (defined(event)) {
-			const currCampaignStatus = this.#getCampaignStatus();
-			this.#updateCampaignStatus(event);
-			const newCampaignStatus = this.#getCampaignStatus();
-			if (newCampaignStatus !== currCampaignStatus) {
-				debug(`Campaign event detected: ${event}, campaign status updated to: ${this.#getCampaignStatus()}`);
-			}	
-		}
-	}
-
 	/////////////////////////////////////////////////// G2: INTELLIGENCE ///////////////////////////////////////////////////
 
 	/**
@@ -221,6 +168,7 @@ class CommandCenter {
 	runIntelligence(state, taskID) {
 		
 		// Note: For performance reasons, anything which can be executed immediately should not use the mission management system.
+		// i.e. tactical functions may be called directly where appropriate
 
 		switch(taskID) {
 
@@ -230,333 +178,327 @@ class CommandCenter {
 				break;
 			
 			case 'intel_getNearbyGroundTargets':
-
-				// Update location(s) & composition(s) of active combat force(s)
-				const forceLocations = [];
-
+				// Update location(s) & target(s) of active combat force(s)
 				this.BRIGADE_DESIGNATIONS.forEach(brigadeID => {
-					forceLocations.push({
-						'brigadeID': brigadeID,
-						'location': groundForces.getForceMedianLocation(brigadeID)
-					});
+					const brigadeLocation = groundForces.getForceMedianLocation(brigadeID);
+					this.toc.setBrigadeLocation(state, brigadeID, brigadeLocation);
+
+					const nearbyTargets = intelligence.getTargetClassesInRadius(state, brigadeLocation, this.TARGET_SEARCH_RADIUS);
+					this.toc.addBrigadeTargets(state, brigadeID, nearbyTargets);
 				});
-				this.toc.setForceLocations(state, forceLocations);
-
-				const nearbyGroundTargets = [];
-				state.forceLocations.forEach(fLoc => {
-					const targetInfo = {
-						'brigadeID': fLoc['brigadeID'],
-						'targets' : intelligence.proposeTargetsInRadius2(state, fLoc['location'], this.TARGET_SEARCH_RADIUS, this.FORCE_IMMEDIATE_RADIUS)
-					};
-					nearbyGroundTargets.push(targetInfo);						
-				});
-				hq.toc.setNearbyGroundTargets(state, nearbyGroundTargets);
-
-				break;
-			
-			case 'intel_checkCampaignStatus':
-
-				this.#checkCampaignStatus(state);
 				break;
 
 			case 'intel_getAviationTargets':
-
 				const raidTargets = intelligence.getTargetsNearDerricks(state);
 				const baseTargets = intelligence.getBaseTargets(state);
-				hq.toc.setAviationTargets(state, 
+				this.toc.setAviationTargets(
+					state, 
 					raidTargets, 
 					baseTargets['productionTargets'], 
-					baseTargets['adaTargets'],
-					baseTargets['indirectFireTargets'],
+					baseTargets['adaTargets'],  
+					baseTargets['indirectFireTargets'],  
 					baseTargets['defensiveStructureTargets']
 				);
-
 				break;
 
 			case 'intel_getMapIntelligence':
-
-				const objectData = intelligence.getAllObjects(state);
-				this.toc.setCoreIntelParameters(state, objectData['grid'], objectData['playerInfo'], objectData['allTargets']);
-				this.toc.updateSpatialFields(state, objectData['grid']);
+				const rawObjectData = getDroidsAndStructsByPlayer();
+				this.toc.updateCoreIntel(state, rawObjectData);
 				break;
 				
 			default:
-				debug(`	WARNING	runIntelligence(): could not understand ${taskID} @ ${gameTime}`);
+				debug(`	WARNING / runIntelligence(): could not understand ${taskID} @ ${gameTime}`);
 				return;
 		}
-
-		if (false) debug(`${gameTime}:		${taskID}`);
 	
 	}
 
 	/////////////////////////////////////////////////// G3: COMBAT OPERATIONS ///////////////////////////////////////////////////
-	#prioritiseLandForceTargets(targetInfo, groupPosition) {
 
-		let output = {
-			"directFireTarget": undefined, 
-			"fireSupportTarget": undefined,
-			"adaTarget": undefined, 
-			"casTargets": [],
-			"targetsInImmediateRadius": 0
-		};
-
-		/*
-			targetInfo in this format:
- 			info = {
-				'enemyArmor': [], 
-				'enemyInfantry': [], 
-				'enemyIndirectFire': [], 
-				'enemyADA': [], 
-				'enemyAviation': [], 
-				'enemyConstructor': [], 
-				'enemyIndustrial': [], 
-				'enemyUtility': [], 
-				'enemyDefenses': [],
-				'closestObject': undefined,
-				'targetsInImmediateRadius': 0
-			};		
-		*/
-
-		if (!defined(targetInfo["closestObject"]) || !defined(groupPosition)) {
-			// Then the target-generating function immediately returned as there were no inputs
-			return output;
-		}
-
-		// DIRECT FIRE TARGETS
-		const DIRECT_FIRE_DEBUG = false;
-
-		const isNotTruckOrADA = (t) => (t.flags & (OBJ_FLAGS.CONSTRUCTOR | OBJ_FLAGS.ADA)) === 0;
-		const isHighPriorityStructure = (t) => (t.flags & OBJ_FLAGS.IS_BUILT) && (t.flags & (OBJ_FLAGS.RESOURCE_EXTRACTOR | OBJ_FLAGS.PRODUCTION | OBJ_FLAGS.DEFENSIVE_STRUCTURE)) !== 0;
-
-		const cObj = targetInfo["closestObject"];
-		if (defined(getObject(cObj.type, cObj.player, cObj.id))) {
-			if (cObj.type === DROID && isNotTruckOrADA(cObj) && cObj.stattype !== WALL) {
-				output["directFireTarget"] = targetInfo["closestObject"];
-				if (DIRECT_FIRE_DEBUG) debug(`used default direct fire target @${gameTime}`);
-			}
-		} 
-
-		let closestDroidTarget = undefined, closestDroidDistSq = 8888;				// some large number is used in case it is never set
-		let closestStructTarget = undefined, closestStrucTargetDistSq = 8888;
-		if (!defined(output["directFireTarget"])) {
-			// This is a fallback to handle stale inputs / non-droid targets
-			for (let i=0; i<targetInfo["closestObjects"].length; i++) {
-
-				const t = targetInfo["closestObjects"][i];
-				const obj = getObject(t.type, t.player, t.id);
-
-				if (!defined(obj)) {
-					continue;
+	/**
+	 * Returns `true` if all of the sublists of a target array are empty, else `false`.
+	 * @param {BrigadeTargets | NearbyTargets} targetArray 
+	 * @returns {boolean}
+	 */
+	#noTargetsAvailable(targetArray) {
+		for (const metadata of Object.values(targetArray)) {
+			if (Array.isArray(metadata)) {
+				if (metadata.length !== 0) {
+					return false;
 				}
-
-				const d = distSq(obj.x, groupPosition.x, obj.y, groupPosition.y);
-				if (t.type === DROID && isNotTruckOrADA(t)) {
-					if (!defined(closestDroidTarget)) {
-					closestDroidTarget = t;
-					closestDroidDistSq = d;
-					} else if (d < closestDroidDistSq) {
-						closestDroidTarget = t;
-						closestDroidDistSq = d;
-					}
-				} else if (t.type === STRUCTURE && isHighPriorityStructure(t)) {
-					if (!defined(closestStructTarget)) {
-						closestStructTarget = t;
-						closestStrucTargetDistSq = d;
-					} else if (d < closestStrucTargetDistSq) {
-						closestStructTarget = t;
-						closestStrucTargetDistSq = d;
-					}
-				}
-			}
-
-			if (defined(closestDroidTarget) && closestDroidDistSq <= 10 ** 2) {
-				output["directFireTarget"] = closestDroidTarget;
-				if (DIRECT_FIRE_DEBUG) debug(`fallback directFireTarget (DROID) used @ ${gameTime} ms`);
-			} else if (defined(closestStructTarget) && closestStrucTargetDistSq < 10 ** 2) {
-				output["directFireTarget"] = closestStructTarget;
-				if (DIRECT_FIRE_DEBUG) debug(`fallback directFireTarget (STRUCTURE) used @ ${gameTime} ms`);
-			} else {
-				output["directFireTarget"] = targetInfo["closestObject"];
-				if (DIRECT_FIRE_DEBUG) debug(`used non-preferable closestObject @${gameTime}`);
 			}
 		}
-
-		// CAS
-		output["casTargets"].push(...targetInfo["enemyIndirectFire"], ...targetInfo["enemyArmor"]);
-
-		// FIRE SUPPORT
-		const EFFECTIVE_SQ_FS_RADIUS = 12 ** 2;
-		const infantryTargets = targetInfo["enemyInfantry"];
-		if (infantryTargets.length > 0) {
-			let closestIdx = 0;
-			let closestCyborg = undefined;
-			let closestDistSq = 0;
-
-			for (let i=0; i<infantryTargets.length; i++) {
-				const currCyborg = getObject(infantryTargets[i].type, infantryTargets[i].player, infantryTargets[i].id);
-
-				if (!defined(currCyborg)) {
-					continue;
-				}
-
-				if (!defined(closestCyborg)) {
-					closestCyborg = currCyborg;
-					closestDistSq = distSq(closestCyborg.x, groupPosition.x, closestCyborg.y, groupPosition.y);
-					continue;
-				}
-
-				const currDistSq = distSq(currCyborg.x, groupPosition.x, currCyborg.y, groupPosition.y);
-				if (currDistSq < closestDistSq) {
-					closestDistSq = currDistSq;
-					closestIdx = i;
-				}
-			}
-
-			if (closestDistSq < EFFECTIVE_SQ_FS_RADIUS) {
-				output["fireSupportTarget"] = infantryTargets[closestIdx];
-			}
-		}
-
-		if (!defined(output["fireSupportTarget"])) {
-			let backupFsTargets = [...targetInfo["enemyIndirectFire"], ...targetInfo["enemyADA"], ...targetInfo["enemyIndustrial"], ...targetInfo["enemyDefenses"]];
-			if (backupFsTargets.length > 0) {
-
-				backupFsTargets = backupFsTargets.filter(t => {
-					const o = getObject(t.type, t.player, t.id);
-					if (!defined(o)) {
-						return false;
-					}
-
-					if (distSq(o.x, groupPosition.x, o.y, groupPosition.y) < EFFECTIVE_SQ_FS_RADIUS) {
-						return true;
-					} else {
-						return false;
-					}
-				});
-
-				output["fireSupportTarget"] = backupFsTargets[0];		// no sorting, maybe should refactor to sort in order of distance (think it doesn't matter though)
-			}
-		}
-
-		if (!defined(output["fireSupportTarget"]) && defined(output["directFireTarget"])) {
-			output["fireSupportTarget"] = output["directFireTarget"];
-		}
-
-		// ADA (Air Defense Artillery)
-		let adaTargets = targetInfo["enemyAviation"];
-
-		if (adaTargets.length > 0) {
-			let lowestHealthIdx = undefined;
-			let lowestHealth = undefined;
-
-			for (let i=0; i<adaTargets.length; i++) {
-				const t = adaTargets[i];
-				const v = getObject(t.type, t.player, t.id);
-				if (!defined(v)) {
-					continue;
-				}
-
-				if (distSq(v.x, groupPosition.x, v.y, groupPosition.y) > EFFECTIVE_SQ_FS_RADIUS) {		// uses the same FS RADIUS as fireSupport
-					continue;
-				}
-
-				if (!defined(lowestHealthIdx)) {
-					lowestHealthIdx = i;
-					lowestHealth = v.health;
-				} else {
-					if (v.health < lowestHealth) {
-						lowestHealthIdx = i;
-						lowestHealth = v.health;
-					}
-				}
-			}
-
-			if (defined(lowestHealthIdx)) {
-				output["adaTarget"] = adaTargets[lowestHealthIdx];
-			}
-		}		
-		
-		if (!defined(output["directFireTarget"]) && adaTargets.length > 0) {
-			// handle the case where there are only a few remaining enemy VTOLs & all other land units are dead
-			output["directFireTarget"] = adaTargets[0];
-		}
-
-		output["targetsInImmediateRadius"] = targetInfo["targetsInImmediateRadius"];
-
-		return output;
+		return true;
 	}
 
 	/**
-	 * 
+	 * This function returns a list of prioritised Droid / Structure Objects (fresh data) which can be directly used in the `__tac` functions.
 	 * @param {worldState} state 
-	 * @param {*} groupPositions 
-	 * @param {*} nearbyTargetCount 
-	 * @param {*} airRaidTargets 
-	 * @param {*} casTargets 
-	 * @param {*} industrialTargets 
-	 * @param {*} adaTargets 
-	 * @returns {Array}
+	 * @param {number} brigadeID 
+	 * @returns {BrigadeTargets} Intent: (DroidObject | StructureObject)[]	
 	 */
-	#prioritiseAviationTargets(state, groupPositions, nearbyTargetCount, airRaidTargets, casTargets, industrialTargets, adaTargets, indirectFireTargets, defensiveStructureTargets) {
+	#prioritiseBrigadeTargets(state, brigadeID, closestEnemyBasePosition) {
 
+		/** @type {BrigadeTargets} */
+		const brigadeTargets = {
+			"directFireTargets": [], 
+			"fireSupportTargets": [],
+			"adaTargets": [], 
+			"casTargets": [],
+		};
+
+		const brigadeInfo = state.brigades[brigadeID]; 
+		const POSITION = brigadeInfo['location'];
+		const TARGETS = brigadeInfo['nearbyTargets'];		
+
+		if (this.#noTargetsAvailable(TARGETS)) {
+			return brigadeTargets;
+		}
+
+		/**
+		 * Gets a fresh object list.
+		 * @param {FbObject[]} targetObjectList
+		 * @returns {(StructureObject | DroidObject | FeatureObject)[]}
+		 */
+		const getObjectList = (targetObjectList) => {
+			const objectList = [];
+			targetObjectList.forEach(t => {
+				const obj = getObject(t.type, t.player, t.id);
+				if (obj != null) {
+					objectList.push(obj);
+				}
+			});
+			return objectList;
+		}
+
+		const enemyArmor = getObjectList(TARGETS['enemyArmor']);
+		const enemyInfantry = getObjectList(TARGETS['enemyInfantry']);
+		const enemyIndirectFire = getObjectList(TARGETS['enemyIndirectFire']);
+		const enemyADA = getObjectList(TARGETS['enemyADA']);
+		const enemyConstructor = getObjectList(TARGETS['enemyConstructor']);
+		const enemyIndustrial = getObjectList(TARGETS['enemyIndustrial']);
+		const enemyUtility = getObjectList(TARGETS['enemyUtility']);
+		const enemyDefenses = getObjectList(TARGETS['enemyDefenses']);
+
+		const x = POSITION.x;
+		const y = POSITION.y;
+		
+		/** @param {DroidObject | StructureObject | FeatureObject} obj */
+		const outsideOfRadius = (obj, radius) => {
+			const d = distSq(obj.x, x, obj.y, y);		
+			if (d > radius ** 2) {		
+				return true;
+			} else {
+				return false;
+			}
+		}
+
+		// Direct Fire Targeting
+		const IMMEDIATE_RADIUS = 10;
+
+		const directFireHeuristic = (a,b) => {
+			const aDist = distSq(x, a.x, y, a.y);
+			const bDist = distSq(x, b.x, y, b.y);
+
+			const MIN_DIRECT_FIRE_RANGE_SQ = 12 ** 2;
+			if (aDist > MIN_DIRECT_FIRE_RANGE_SQ || bDist > MIN_DIRECT_FIRE_RANGE_SQ) {
+				return aDist - bDist;
+			}
+
+			const al = drawLine(x, y, a.x, a.y);
+			const bl = drawLine(x, y, b.x, b.y);
+
+			let aDetour = 1, bDetour = 1;
+
+			for (let i=0; i<al.length; i++) {
+				const point = al[i];
+				const terrainType = MapTiles[point[1]][point[0]].terrainType;
+				if (terrainType	=== TER_CLIFFFACE || terrainType === TER_WATER) {
+					aDetour++;
+					break;
+				}
+			};
+			
+			for (let i=0; i<bl.length; i++) {
+				const point = bl[i];
+				const terrainType = MapTiles[point[1]][point[0]].terrainType;
+				if (terrainType	=== TER_CLIFFFACE || terrainType === TER_WATER) {
+					bDetour++;
+					break;
+				}
+			};
+
+			return aDetour * aDist - bDetour * bDist;
+		}
+
+		const primaryDroidTargets = [...enemyArmor, ...enemyInfantry];
+		primaryDroidTargets.sort((a,b) => directFireHeuristic(a,b));		
+		const secondaryDirectFireTargets = [ ...enemyDefenses, ...enemyIndirectFire, ...enemyADA, ...enemyIndustrial];
+		secondaryDirectFireTargets.sort((a,b) => directFireHeuristic(a,b));		
+		const tertiaryDirectFireTargets = [...enemyConstructor, ...enemyUtility];
+		const targetsOutOfRange = [];		// this will also be ordered in the priority order specified in `primaryDirectFireTargets`
+
+		/** @param {(DroidObject | StructureObject | FeatureObject)[]} targetList */
+		const addDirectFireTargetByProximity = (targetList) => {
+			targetList.forEach(obj => {
+				if (outsideOfRadius(obj, IMMEDIATE_RADIUS)) {
+					targetsOutOfRange.push(obj);
+				}
+				brigadeTargets["directFireTargets"].push(obj);
+			});
+		};
+
+		addDirectFireTargetByProximity(primaryDroidTargets);
+		addDirectFireTargetByProximity(secondaryDirectFireTargets);
+		addDirectFireTargetByProximity(tertiaryDirectFireTargets);
+
+		const MAX_DIRECT_FIRE_TARGETS = 8;
+		const FURTHER_TARGETS_REQUIRED = MAX_DIRECT_FIRE_TARGETS - brigadeTargets['directFireTargets'].length;
+		if (FURTHER_TARGETS_REQUIRED > 0) {
+			brigadeTargets['directFireTargets'].push(...targetsOutOfRange.slice(FURTHER_TARGETS_REQUIRED));
+		}
+
+		if (false) {
+			// Draw lines to the top 3 targets (to see what the brigade is trying to attack)
+			for (let i=0; i<4; i++) {
+				if (i >= brigadeTargets['directFireTargets'].length) {
+					break;
+				}
+
+				const target = brigadeTargets['directFireTargets'][i];
+				const lineToTarget = drawLine(x, y, target.x, target.y);
+
+				for (let j=0; j<lineToTarget.length; j++) {
+					const point = lineToTarget[j];
+					// if (MapTiles[point.y][point.x].terrainType === 7 || MapTiles[point.y][point.x].terrainType === 8) {
+					// 	// water or cliff; hack
+					// 	break;
+					// }
+					hackMarkTiles(point[0], point[1]);		
+				}
+			}
+		}
+
+		// Fire Support Targeting
+		// Intent: Suppress enemy infantry (FishBot is vulnerable to massed cyborgs) then destroy indirect fires, defences & ADA.
+		const EFFECTIVE_FIRE_SUPPORT_RADIUS = 18;
+
+		const primaryIndirectFireTargets = [...enemyInfantry, ...enemyDefenses, ...enemyIndirectFire, ...enemyADA, ...enemyIndustrial, ...enemyArmor];
+		primaryIndirectFireTargets.sort((a,b) => directFireHeuristic(a,b));
+		const secondaryIndirectFireTargets = [...enemyConstructor, ...enemyUtility];
+
+		primaryIndirectFireTargets.forEach(obj => {
+			if (outsideOfRadius(obj, EFFECTIVE_FIRE_SUPPORT_RADIUS)) {
+				// targetsOutOfRange.push(obj);
+				return;
+			}
+			brigadeTargets["fireSupportTargets"].push(obj);
+		});
+
+		secondaryIndirectFireTargets.forEach(obj => {
+			if (outsideOfRadius(obj, EFFECTIVE_FIRE_SUPPORT_RADIUS)) {
+				// targetsOutOfRange.push(obj);
+				return;
+			}
+			brigadeTargets["fireSupportTargets"].push(obj);
+		});		
+
+		// CAS Targeting (Close Air Support)
+		// Intent: `casTargets` should be a list of mission requests interpretable by a following call of `#prioritiseAviationTargets`.
+		const primaryCASTargets = [...enemyIndirectFire];
+		const secondaryCASTargets = [...enemyArmor, ...enemyDefenses];
+
+		const isHealthy = (obj) => obj.health > 50;
+		secondaryCASTargets.forEach(obj => {
+			if (isHealthy(obj)) {
+				brigadeTargets['casTargets'].unshift(aviation.translateIntoCASRequest(obj, MISSION_PRIORITY.VERY_HIGH));
+			} else {
+				brigadeTargets['casTargets'].push(aviation.translateIntoCASRequest(obj, MISSION_PRIORITY.HIGH));
+			}			
+		});
+
+		primaryCASTargets.forEach(obj => {
+			const missionRequest = aviation.translateIntoCASRequest(obj, MISSION_PRIORITY.URGENT); 
+			brigadeTargets['casTargets'].unshift(missionRequest);
+		});
+
+
+		// ADA Targeting (Air Defense Artillery)
+		// Intent: Concentrate fire on one target.
+		const EFFECTIVE_ADA_RADIUS = 14;
+
+		const enemyAircraft = getObjectList(TARGETS['enemyAviation']);		// todo: remove if no ADA available
+		enemyAircraft.forEach(obj => {
+			if (outsideOfRadius(obj, EFFECTIVE_ADA_RADIUS)) return;
+			brigadeTargets["adaTargets"].push(obj);
+		});		
+		brigadeTargets["adaTargets"].sort((a,b) => a.health - b.health);			
+	
+
+		return brigadeTargets;
+	}
+
+	/**
+	 * This function returns a list of prioritised Droid / Structure Objects (fresh data) which can be directly used in the `__tac` functions.
+	 * @param {worldState} state 
+	 * @returns {(AirStrikeMissionRequest)[]}	
+	 */
+	#prioritiseAviationTargets(state) {
+
+		const airRaidTargets = state.aviationTargets['raidTargets'];
+		const industrialTargets = state.aviationTargets['productionTargets'];
+		const adaTargets = state.aviationTargets['adaTargets'];
+		const indirectFireTargets = state.aviationTargets['indirectFireTargets'];
+		const defensiveStructureTargets = state.aviationTargets['defensiveStructureTargets'];
+
+		/** @type {PositionInfo[]} */
+		const GROUP_POSITIONS = [];
+		/** @type {AirStrikeMissionRequest[]} */
+		const CAS_MISSION_REQUESTS = [];
+
+		let maxCasTargets = 0;
+
+		const BRIGADES = state.brigades;
+		this.BRIGADE_DESIGNATIONS.forEach(id => {
+			GROUP_POSITIONS.push(BRIGADES[id]['location']);
+
+			const casStrikeRequests = BRIGADES[id]['casStrikeRequests'];
+			maxCasTargets = Math.max(maxCasTargets, casStrikeRequests.length);
+			CAS_MISSION_REQUESTS.push(...casStrikeRequests);
+		});
+
+		const NUM_URGENT_CAS_MISSIONS = CAS_MISSION_REQUESTS.filter(r => r.priority === MISSION_PRIORITY.URGENT).length;
+		CAS_MISSION_REQUESTS.sort((a, b) => b.priority - a.priority);
+
+		
 		const aviationTargets = [];
+		let targetCandidates = [];
 		
 		const adaThreat = state.fields.adaThreat;
 		const cellSize = state.grid.cellSize;
 		const IS_OIL_DOMINANT = state.oilDominance;
 		const NUM_AIRCRAFT = state.playerInfo[me].numAirUnits;	
 		const AIR_UNIT_DOMINANCE = NUM_AIRCRAFT >= 10;
-		const AIR_UNIT_SHORTAGE = NUM_AIRCRAFT === 1;
-
-		const GROUP_POSITIONS = [];
-		groupPositions.forEach(p => GROUP_POSITIONS.push(p['location']));
-
-		let targetCandidates = [];
-
-		if (!defined(airRaidTargets)) {
-			airRaidTargets = [];
-		}
-
-		// TEMPORARY IMPLEMENTATION
-		const prioritiseCasTargets = (nearbyTargetCount >= 4 && !IS_OIL_DOMINANT) || (IS_OIL_DOMINANT && nearbyTargetCount >= 5);
+		// const AIR_UNIT_SHORTAGE = NUM_AIRCRAFT === 1;
+		
+		const prioritiseCasTargets = NUM_URGENT_CAS_MISSIONS >= 1 || maxCasTargets >= 4;
 		const prioritiseRaidTargets = !IS_OIL_DOMINANT;
 		const prioritiseIndustrialTargets = IS_OIL_DOMINANT;
 		const SATURATION_RAID = prioritiseIndustrialTargets && AIR_UNIT_DOMINANCE;		// Saturation raid = an attack designed to overwhelm defenses
 
-		let minAircraft = (AIR_UNIT_SHORTAGE && !IS_OIL_DOMINANT) ? 1 : 2;
+		// const minAircraft = (AIR_UNIT_SHORTAGE && !IS_OIL_DOMINANT) ? 1 : 2;
 
-		// Set missionType & numAircraft (attached to existing target object)
-		casTargets.forEach(t => {
-			t.missionType = MISSION_TYPE.CAS_STRIKE;
-			if (prioritiseCasTargets) {
-				t.priority = MISSION_PRIORITY.URGENT;
-			}
-			t.minAircraft = minAircraft;
-		});
-		airRaidTargets.forEach(t => {
-			t.missionType = MISSION_TYPE.AIR_RAID;
-			t.minAircraft = minAircraft;
-		});
-		industrialTargets.forEach(t => {
-			t.missionType = MISSION_TYPE.DAS_STRIKE;
-			if (SATURATION_RAID) {		
-				t.minAircraft = 3;
-			} else {
-				t.minAircraft = minAircraft;
-			}
-		});
 		adaTargets.forEach(t => {
-			t.missionType = MISSION_TYPE.DAS_STRIKE;
-			t.minAircraft = 3;
+			t.numAircraft = 3;
 		});
 
-		const casPriorityTargets = [...casTargets, ...airRaidTargets];
-		const raidPriorityTargets = [...airRaidTargets, ...casTargets];
+		const casPriorityTargets = [...CAS_MISSION_REQUESTS, ...airRaidTargets];
+		const raidPriorityTargets = [...airRaidTargets, ...CAS_MISSION_REQUESTS];
 
 		if (prioritiseIndustrialTargets) {
 
 			if (prioritiseCasTargets) {
-				targetCandidates = [...casTargets, ...adaTargets, ...indirectFireTargets, ...defensiveStructureTargets, ...industrialTargets, ...airRaidTargets];
+				targetCandidates = [...CAS_MISSION_REQUESTS, ...adaTargets, ...indirectFireTargets, ...defensiveStructureTargets, ...industrialTargets, ...airRaidTargets];
 			} else {
 				// Pure industrial strike
 				if (SATURATION_RAID) {
@@ -582,10 +524,10 @@ class CommandCenter {
 		// Terminate current missions which are TWO PRIORITY LEVELS below e.g.
 		// If new URGENT task -> cancel HIGH missions 
 		const OFFENSIVE_MISSION_TYPES = [MISSION_TYPE.CAS_STRIKE, MISSION_TYPE.AIR_RAID, MISSION_TYPE.DAS_STRIKE];
-		let activeMissions = this.toc.getActiveAviationMissions(state).
-										filter(m => OFFENSIVE_MISSION_TYPES.includes(m.missionType));
 
-		let activeTargetIDs = [];
+		const activeMissions = this.toc.getActiveAviationMissions(state).filter(m => OFFENSIVE_MISSION_TYPES.includes(m.missionType));
+
+		const activeTargetIDs = [];
 
 		/*
 			Set no-fly regions; 
@@ -593,21 +535,19 @@ class CommandCenter {
 				0.69 > 0.33 * 2 = allow 1 tile over from a single air defence. 
 			Modify value to match "hq_toc/updateSpatialFields" filter.
 		*/
-		const threatThreshold = IS_OIL_DOMINANT ? 0.69 : 0;		
-
-
-		const MED_PRIORITY_MISSION_TYPES = [MISSION_TYPE.AIR_RAID, MISSION_TYPE.DAS_STRIKE];
+		const STANDARD_THREAT_THRESHOLD = IS_OIL_DOMINANT ? 0.69 : 0;		
+		const URGENT_THREAT_THRESHOLD = 2;
 		
 		for (let i=0; i<activeMissions.length; i++) {
 			let c = activeMissions[i];
 			activeTargetIDs.push(c.target.id);
 
 			const currObj = getObject(c.target.type, c.target.player, c.target.id);
-			if (!defined(currObj)) {
+			if (currObj == null) {
 				continue;
 			}
 
-			if (prioritiseCasTargets && MED_PRIORITY_MISSION_TYPES.includes(c.missionType)) {
+			if (prioritiseCasTargets && c.missionType !== MISSION_TYPE.CAS_STRIKE) {
 				// debug(`removed DAS / RAID mission to make room for CAS`);
 				c.missionStatus = MISSION_STATUS.ABORT;
 				continue;
@@ -616,6 +556,9 @@ class CommandCenter {
 			if (!SATURATION_RAID) {
 				const gx = Math.floor(currObj.x / cellSize); 
 				const gy = Math.floor(currObj.y / cellSize);
+
+				const threatThreshold = (c.priority === MISSION_PRIORITY.URGENT) ? URGENT_THREAT_THRESHOLD : STANDARD_THREAT_THRESHOLD;
+
 				if (adaThreat[gx][gy] > threatThreshold) {
 					// debug(`	removed ACTIVE: ${currObj.name} (${c.missionType}) @ grid (${currObj.x} ${currObj.y})`);
 					c.missionStatus = MISSION_STATUS.ABORT;		
@@ -634,15 +577,15 @@ class CommandCenter {
 			}
 		}
 		
-		// Remove already active missions (inefficient, loops through the list again)
-		// Also handles stale inputs, to be integrated with another part of the code later
+		// Remove already active missions
 		let newAviationTargets = [], existingAviationTargets = [];
 
 		for (let i=0; i<targetCandidates.length; i++) {
-			const c = getObject(targetCandidates[i].type, targetCandidates[i].player, targetCandidates[i].id);
-			if (!defined(c)) {
-				continue;
-			}
+			const missionRequest = targetCandidates[i];
+
+			const c = missionRequest.target;
+
+			const threatThreshold = (missionRequest.priority === MISSION_PRIORITY.URGENT) ? URGENT_THREAT_THRESHOLD : STANDARD_THREAT_THRESHOLD;
 
 			if (!SATURATION_RAID) {
 				const gx = Math.floor(c.x / cellSize); 
@@ -653,10 +596,10 @@ class CommandCenter {
 				}
 			}
 
-			if (activeTargetIDs.includes(targetCandidates[i].id)) {
-				existingAviationTargets.push(targetCandidates[i]);
+			if (activeTargetIDs.includes(c.id)) {
+				existingAviationTargets.push(missionRequest);
 			} else {
-				newAviationTargets.push(targetCandidates[i]);
+				newAviationTargets.push(missionRequest);
 			}
 		}
 
@@ -670,65 +613,52 @@ class CommandCenter {
 	}
 
 	/**
-	 * 
+	 * Directs brigades to maneuver to and attack land targets, as well as directing aircraft to support land efforts.
 	 * @param {worldState} state 
 	 */
 	runCombatOperations(state) {
 
-		// Gather prepared information from intelligence
-		const nearbyGroundTargets = state.nearbyGroundTargets;
-		const forceLocations = state.forceLocations;
+		const READY_TO_ATTACK = groundForces.isReadyToAttack(state);
 
-		const raidTargets = state.aviationTargets['raidTargets'];
-		const productionTargets = state.aviationTargets['productionTargets'];
-		const adaTargets = state.aviationTargets['adaTargets'];
-		const indirectFireTargets = state.aviationTargets['indirectFireTargets'];
-		const defensiveStructureTargets = state.aviationTargets['defensiveStructureTargets'];
+		if (READY_TO_ATTACK) {
 
-		const campaignStatus = this.#getCampaignStatus();
-		const readyToAttack = campaignStatus === CAMPAIGN_STATUS.MAIN_ASSAULT || campaignStatus === CAMPAIGN_STATUS.STAGING;
+			const brigadeLocations = [];
 
-		let casTargets = [];
-		let numTargetsInImmediateRadius = 0;
+			// Move combat brigades
+			if (DEBUG_MODE_ON) hackMarkTiles();		
 
-		if (readyToAttack) {
-			// Prioritise & assign targets
-			this.BRIGADE_DESIGNATIONS.forEach((brigadeID, i) => {
-				const brigadeTargets = nearbyGroundTargets[i]['targets'];
-				const brigadeLocation = forceLocations[i]['location'];
+			this.BRIGADE_DESIGNATIONS.forEach((brigadeID) => {
 
-				const groundTargets = this.#prioritiseLandForceTargets(brigadeTargets, brigadeLocation);
-				// hackMarkTiles();
-				
-				// TODO: use mission management system once this mission can be conducted independently on brigade-level
-				moveBrigadeToAttack(
-					state, 
-					brigadeID, 
-					brigadeLocation,
-					groundTargets["directFireTarget"], 
-					groundTargets["fireSupportTarget"], 
-					groundTargets["adaTarget"]
-				);
+				const brigadeStrength = state.brigades[brigadeID]['strength'];
+				const brigadeLocation = state.brigades[brigadeID]['location'];
+				brigadeLocations.push(brigadeLocation);
 
-				// Extract further information for aviation missions
-				casTargets.push(...groundTargets["casTargets"]);
+				const CLOSEST_ENEMY_BASE = intelligence.findClosestEnemyBase(state, brigadeLocation.x, brigadeLocation.y); 			
 
-				// Temporary: get max targets to decide if CAS should be prioritised for all brigades
-				numTargetsInImmediateRadius = Math.max(groundTargets["targetsInImmediateRadius"], numTargetsInImmediateRadius);
-					
+				const groundTargets = this.#prioritiseBrigadeTargets(state, brigadeID, CLOSEST_ENEMY_BASE);
+				this.toc.setBrigadeCASStrikeRequests(state, brigadeID, groundTargets['casTargets']);
+
+				if (this.#noTargetsAvailable(groundTargets)) {
+					const CLOSEST_TARGET = intelligence.findClosestTarget(state, brigadeLocation.x, brigadeLocation.y); 
+					if (CLOSEST_TARGET == undefined) {
+						moveBrigadeToLocation(state, brigadeID, brigadeLocation.x, brigadeLocation.y);
+						return;
+					} 
+					moveBrigadeToLocation(state, brigadeID, CLOSEST_TARGET.x, CLOSEST_TARGET.y);
+				}
+
+				moveBrigadeToAttack(state, brigadeID, groundTargets);				
 			});
+
+			// Manage reserves
+			// Temporary: Move reserves to pre-emptively reinforce BCT0
+			const reserveGroupIDs = [DIVISION.HEAVY_CAV_RESERVE, DIVISION.LIGHT_CAV_RESERVE, DIVISION.INFANTRY_RESERVE, DIVISION.SHORT_RANGE_FIRE_SUPPORT_RESERVE, DIVISION.SENSOR_RESERVE, DIVISION.AIR_DEFENCE_RESERVE];
+			const x = brigadeLocations[0].x;
+			const y = brigadeLocations[0].y;
+			moveReservesToShadow(reserveGroupIDs, x, y);
 		}
 
-		const aviationTargets = this.#prioritiseAviationTargets(state, 
-			forceLocations, 
-			numTargetsInImmediateRadius, 
-			raidTargets, 
-			casTargets, 
-			productionTargets,
-			adaTargets,
-			indirectFireTargets,
-			defensiveStructureTargets,
-		);
+		const aviationTargets = this.#prioritiseAviationTargets(state);
 
 		this.toc.assignAviationMissions(state, aviationTargets);					
 	}
@@ -806,7 +736,9 @@ class CommandCenter {
 				case MISSION_TYPE.CONSTRUCT_REPAIR_CENTER:
 				case MISSION_TYPE.DEMOLISH_REPAIR_CENTER:
 					activeRepairCenterBuildTaskIDs.push(missionData.sectorID);
-					// activeRemoteMissions.push(missionData);	// building near friendly troops; don't want to be cancelled prematurely
+
+					// Repair center tasks should not be added to the remoteMissions list because the danger level is set within the hq_g4 function 
+					// (so it should not be overwritten by the conservative danger level implemented by abort mission)
 					break;
 				default:
 					// Do nothing / ignore missions like default mission "HELP_CONSTRUCT"
@@ -861,7 +793,12 @@ class CommandCenter {
 
 			const myRepairFacilities = state.playerInfo[me]["repairFacilityFbObjects"];
 
-			const options = engineering.generateRemoteServiceCenterConstructionOptions(state, myRepairFacilities);
+			const GROUP_POSITIONS = [];
+			this.BRIGADE_DESIGNATIONS.forEach(brigadeID => {
+				GROUP_POSITIONS.push(state.brigades[brigadeID]['location']);
+			});
+
+			const options = engineering.generateRemoteServiceCenterConstructionOptions(state, myRepairFacilities, GROUP_POSITIONS);
 			const newFacilityLocations = options["newFacilityLocations"];
 			const demolitionLocations = options["demolitionLocations"];
 
@@ -944,7 +881,7 @@ class CommandCenter {
 				'heavyCavalry': 1,
 				'lightCavalry': 1,
 				'shortRangeArtillery': 0.75,
-				'ADA': 0.35,
+				'ADA': 0.5,
 				'sensor': 0.2,
 			};
 		}
@@ -1046,10 +983,29 @@ class CommandCenter {
 	}
 
 	/**
-	 * This function:
-	 * 	- returns repaired units to active duty 
-	 * 	- assigns reserve units to active brigade combat teams
+	 * Retrieves all units currently assigned to reserves.
 	 * @param {worldState} state 
+	 * @returns 
+	 */
+	#getReserveForceUnitsByCategory(state) {
+
+		const unitsByCategory = [];
+
+		const RESERVE_GROUP_IDS = [DIVISION.HEAVY_CAV_RESERVE, DIVISION.LIGHT_CAV_RESERVE, DIVISION.INFANTRY_RESERVE, DIVISION.SHORT_RANGE_FIRE_SUPPORT_RESERVE, DIVISION.AIR_DEFENCE_RESERVE, DIVISION.SENSOR_RESERVE];
+
+		const createCategory = (reserveGroupID) => {return {'id': reserveGroupID, 'reserveGroupUnits': state.g.enumGroup(reserveGroupID)};};
+		RESERVE_GROUP_IDS.forEach(id => unitsByCategory.push(createCategory(id)));
+
+		return unitsByCategory;
+	}
+
+	/**
+	 * This function:
+	 * - returns repaired units to active duty 
+	 * - assigns reserve units to active brigade combat teams
+	 * - assigns damaged units for repair (if the BCT is powerful enough)
+	 * @param {worldState} state 
+	 * @returns {void}
 	 */
 	runResupplyLogistics(state) {
 
@@ -1058,10 +1014,13 @@ class CommandCenter {
 
 		// Get reserve force units
 		const reserveUnitsByCategory = this.#getReserveForceUnits(state);
+		const reserveUnitsByCategory2 = this.#getReserveForceUnitsByCategory(state);
 
 		let SHOULD_RUN_RESUPPLY_LOGISTICS = false;
-		for (const c of Object.values(reserveUnitsByCategory)) {
-			if (c.length > 0) {		// there are reserves
+		for (let i=0; i<reserveUnitsByCategory2.length; i++) {
+			const reserveGroupUnits = reserveUnitsByCategory2[i].reserveGroupUnits;
+
+			if (reserveGroupUnits.length > 0) {		
 				SHOULD_RUN_RESUPPLY_LOGISTICS = true;
 				break;
 			}
@@ -1072,12 +1031,35 @@ class CommandCenter {
 			return;
 		}
 
+		const RESERVE_REPAIR_THRESHOLD = 80;
+		const unitsToBeRepaired = [];
+
+		// Return damaged reserves for repair (e.g. rear actions)
+		for (let i=0; i<reserveUnitsByCategory2.length; i++) {
+			const reserveGroupID = reserveUnitsByCategory2[i].id;
+			const reserveGroupUnits = reserveUnitsByCategory2[i].reserveGroupUnits;
+
+			if (reserveGroupUnits.length === 0) {
+				continue;
+			}
+
+			unitsToBeRepaired.length = 0;	// reset the list
+			reserveGroupUnits.forEach(droid => {
+				if (droid.health < RESERVE_REPAIR_THRESHOLD) {
+					unitsToBeRepaired.push(droid);
+				}
+			});
+
+			this.toc.assignUnitsForRepair(state, unitsToBeRepaired, reserveGroupID);			
+		}
+		unitsToBeRepaired.length = 0;	// reset the list
+
 		// Assign reserves into active brigade combat teams
 		const understrengthBrigades = [];
 		const overstrengthBrigades = [];
 
 		const RECOMBINATION_THRESHOLD = 25;
-		const UNDERSTRENGTH_THRESHOLD = 25;
+		const UNDERSTRENGTH_THRESHOLD = 10;
 		const OVERSTRENGTH_THRESHOLD = 100;
 
 		for (let i=0; i<this.BRIGADE_DESIGNATIONS.length; i++) {
@@ -1085,9 +1067,10 @@ class CommandCenter {
 			const brigadeID = this.BRIGADE_DESIGNATIONS[i];
 
   			const supplyStatus = supply.getBrigadeSupplyStatus(state, brigadeID, this.FISHBOT_BRIGADE_COMPOSITION, this.TOTAL_UNITS_PER_BRIGADE, this.BRIGADE_REPAIR_THRESHOLD);
-			
+
 			// Check brigade strength as percentage
 			const brigadeStrength = supplyStatus['brigadeStrength'];
+			this.toc.setBrigadeStrength(state, brigadeID, brigadeStrength);
 
 			let BRIGADE_UNDERSTRENGTH = false;
 			if (brigadeStrength < UNDERSTRENGTH_THRESHOLD) {
@@ -1152,6 +1135,11 @@ class CommandCenter {
 
 	}
 
+	/**
+	 * Decides which land vehicles, cyborgs & VTOLs to produce.
+	 * @param {worldState} state 
+	 * @returns {void}
+	 */
 	runProductionLogistics(state) {
 		/**
 		 * Debug print of idle factories.
@@ -1229,11 +1217,11 @@ class CommandCenter {
 
 		// Decide on whether or not to produce combat units
 		// Note: FishBot will not build combat vehicles before it can design them, on any difficulty.	
-		const CAN_DESIGN_COMBAT_UNITS = HQ_IS_CONSTRUCTED;
+		const CAN_DESIGN_UNITS = HQ_IS_CONSTRUCTED;
 
-		const SHOULD_PRODUCE_LAND_VEHICLES = CAN_DESIGN_COMBAT_UNITS && !HIT_LAND_VEHICLE_LIMIT;
+		const SHOULD_PRODUCE_LAND_VEHICLES = CAN_DESIGN_UNITS && !HIT_LAND_VEHICLE_LIMIT;
 		const SHOULD_PRODUCE_INFANTRY = !HIT_INFANTRY_LIMIT;
-		const SHOULD_PRODUCE_VTOLS = CAN_DESIGN_COMBAT_UNITS && !HIT_AIR_UNIT_LIMIT;
+		const SHOULD_PRODUCE_VTOLS = CAN_DESIGN_UNITS && !HIT_AIR_UNIT_LIMIT;
 		
 		// Decide on which category of land combat vehicle to produce (basic greedy algorithm)
 		let landVehicleCategory = "heavyCavalry";
@@ -1246,7 +1234,7 @@ class CommandCenter {
 
 		// Decide on whether or not to produce trucks
 		const SHOULD_PRODUCE_TRUCKS = !HIT_TRUCK_LIMIT;
-		const SINGLE_TRUCK_THIS_TICK = CAN_DESIGN_COMBAT_UNITS;
+		const SINGLE_TRUCK_THIS_TICK = CAN_DESIGN_UNITS;
 		let producedTruckThisTick = false;
 
 		// Run production
@@ -1286,8 +1274,10 @@ class CommandCenter {
 			const factory = idleFactories[i];
 
 			if (SHOULD_PRODUCE_TRUCKS && !CYBORG_CONSTRUCTOR_AVAILABLE && !producedTruckThisTick) {
-				if (DEBUG_PRODUCTION) debug(`	${gameTime}: produced Hover Truck`);
-				produceTruck(factory);
+				if (DEBUG_PRODUCTION) debug(`	${gameTime}: produced Truck`);
+				// Note: CAN_DESIGN_UNITS prevents FishBot from producing any other trucks other than `Truck Viper Wheels` until the command center is built
+				produceTruck(factory, CAN_DESIGN_UNITS);		
+				
 				if (SINGLE_TRUCK_THIS_TICK) {
 					producedTruckThisTick = true;
 				}
@@ -1322,53 +1312,74 @@ class CommandCenter {
 		/*
 			v0.3.1 release -> Power upgrade, Heavy Cannon, Cannon Dmg, Research upgrade, ROF, twin aslt, vehicle metals
 
-			Example v0.3.2 T2 research order (quite one-dimensional)
-				449902: R-Wpn-Cannon-Damage06
-				668902: R-Struc-Power-Upgrade01c
-				690902: R-Struc-Research-Upgrade06
-				814902: R-Wpn-Cannon-Damage07
-				949902: R-Wpn-Cannon6TwinAslt
-				950902: R-Wpn-Mortar-Damage05
-				1045902: R-Wpn-Cannon-Damage08
-				1058902: R-Vehicle-Metals05
-				1096902: R-Wpn-Cannon-ROF03
-				1187902: R-Wpn-Mortar-Damage06
-				1226902: R-Struc-Research-Upgrade07
-				1276902: R-Vehicle-Metals06
-				1279902: R-Wpn-Cannon-Damage09
-				1291902: R-Wpn-Cannon-ROF04
-				1534902: R-Wpn-Cannon-Damage09
-				1559902: R-Wpn-Mortar-Damage06
+			Example v0.4.1 T2 research order 
+				446902   APFSDS Cannon Rounds Mk3
+				678902   Dedicated Synaptic Link Data Analysis Mk3
+				689902   Gas Turbine Generator Mk3
+				842902   Dense Composite Alloys Mk2
+				903902   Twin Assault Cannon
+				1034902  HVAPFSDS Cannon Rounds
+				1039902  Heavy Body - Tiger
+				1074902  HEAP Mortar Shells Mk2
+				1130902  Neural Synapse Research Brain
+				1226902  Cannon Autoloader Mk3
+				1234902  HVAPFSDS Cannon Rounds Mk2
+				1266902  Dense Composite Alloys Mk3
+				1282902  HEAP Mortar Shells Mk3
+				1345902  Vapor Turbine Generator
+				1393902  Cannon Rapid Loader
+				1438902  HVAPFSDS Cannon Rounds Mk3
+				1457902  Mortar Autoloader Mk3
+				1481902  Superdense Composite Alloys
+				1507902  Vapor Turbine Generator Mk2
+				1570902  Mortar Fast Loader
+				1572902  Cannon Rapid Loader Mk2
+				1653902  Needle Gun
+				1689902  Neural Synapse Research Brain Mk2
+				1722902  Vapor Turbine Generator Mk3
+				1725902  Superdense Composite Alloys Mk2
+				1787902  Cannon Rapid Loader Mk3
+				1904902  Advanced Engineering
+				1910902  Hardened Rail Dart
 		*/
 
 		const FISHBOT_T2_CANNON_RESEARCH_PRIORITIES = [
 			RESEARCHES["APFSDS Cannon Rounds Mk3"].id,
-			"R-Struc-Power",
 			RESEARCHES["Twin Assault Cannon"].id,
+			RESEARCHES["Heavy Body - Tiger"].id,
 			RESEARCHES["Dedicated Synaptic Link Data Analysis Mk3"].id,
+			"R-Struc-Power",
+			RESEARCHES["Dense Composite Alloys Mk2"].id,
 			"R-Wpn-Cannon-Damage",
 			"R-Wpn-Mortar-Damage", 	
-			"R-Vehicle-Metals",
+			RESEARCHES["Neural Synapse Research Brain"].id,
 			"R-Wpn-Cannon-ROF", 
-			RESEARCHES["Advanced Engineering"].id,
-			RESEARCHES["Advanced Repair Facility"].id,
-			"R-Struc-Research-Upgrade",
-			"R-Cyborg-Metals",
-			RESEARCHES["Heavy Body - Tiger"].id,
-			"R-Struc-Factory-Upgrade",
-			RESEARCHES["Twin Assault Gun"].id,
-			"R-Wpn-Mortar-ROF", 
-			"R-Struc-VTOLPad-Upgrade",
+			"R-Vehicle-Metals",
+			"R-Wpn-Mortar-ROF",
 
-			// Gauss Researches added here temporarily - need to figure out how to do
+			// Gauss Cannon researches added here
 			RESEARCHES["Needle Gun"].id,
 			RESEARCHES["Rail Gun"].id,
 			RESEARCHES["Gauss Cannon"].id,
-			"R-Wpn-Rail-Damage",
-			"R-Wpn-Rail-Accuracy",
 			"R-Wpn-Rail-ROF", 
-			
+			"R-Wpn-Rail-Accuracy",
+			"R-Wpn-Rail-Damage",
+
+			RESEARCHES["Advanced Engineering"].id,
+			RESEARCHES["Advanced Repair Facility"].id,
+			RESEARCHES["Auto-Repair"].id,
+			RESEARCHES["Neural Synapse Research Brain Mk2"].id,
+
+			"R-Cyborg-Metals", 
+			"R-Struc-VTOLPad-Upgrade",
+
+			RESEARCHES["Twin Assault Gun"].id,
 			RESEARCHES["Whirlwind AA Turret"].id,
+
+			"R-Struc-Factory-Upgrade",
+			RESEARCHES["Neural Synapse Research Brain Mk3"].id,
+			
+			// RESEARCHES["Howitzer"].id,
 			RESEARCHES["Heavy Cannon"].id, 
 			RESEARCHES["AA Cyclone Flak Cannon"].id, 		
 		];
@@ -1387,6 +1398,7 @@ class CommandCenter {
 				if (pursueResearch(idleLabs[i], researchOrder[j].id)) {
 					positionInResearchOrder++;
 					// debug(`${gameTime} (FishBot ${me}): ${researchOrder[j].name}`);		
+					// debug(`${gameTime}\t ${researchOrder[j].name}`);		
 					break;
 				}
 			}

@@ -39,6 +39,6 @@ def create_folders_at_path(destination_path, new_folder_name):
 # --- USER INPUTS ---
 # Use 'r' before the string to handle backslashes correctly on Windows
 target_directory = os.path.expandvars(rf"C:\Users\%USERNAME%\Videos")
-folder_name = rf"v0.4.0 development - 1v3 nexus hard"
+folder_name = rf"v0.4.0-showc-med-vs-insane"
 
 create_folders_at_path(target_directory, folder_name)

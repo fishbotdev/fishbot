@@ -20,14 +20,16 @@ import json
 import numpy as np
 import matplotlib.pyplot as plt
 
-####################################################################
+############################## USER CONFIG START ##############################
 
 # FILE_NAME = "gamma_height"
+FILE_NAME = "gamma_terrainType"
 # FILE_NAME = "bloat_height"
-FILE_NAME = "bloat_terrainType"
+# FILE_NAME = "bloat_terrainType"
 
-####################################################################
-with open(rf'.\map_analysis\{FILE_NAME}.json', 'r') as f:
+############################## USER CONFIG END ##############################
+
+with open(rf'{FILE_NAME}.json', 'r') as f:
     raw_data = json.load(f)
 
 # Convert strings to 2D numeric array

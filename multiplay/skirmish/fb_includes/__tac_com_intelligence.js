@@ -16,17 +16,30 @@
 */
 
 
+/**
+ * Uses `enumStruct` and `enumDroid` to gather intelligence directly from the game engine (common behaviour across all bots).
+ * Bot to be reworked in future to use imperfect intelligence.
+ * @param {number[] | undefined} playerIdList numeric array of player IDs `enumDroid` and `enumStruct` will be called on.
+ * @returns {PlayerInfoBucketObject[]}
+ */
 function getDroidsAndStructsByPlayer(playerIdList=undefined) {
-
+    /**
+     * Creates player bucket
+     * @param {number} id 
+     * @param {DroidObject[]} droids 
+     * @param {StructureObject[]} structs 
+     * @returns {PlayerInfoBucketObject}
+     */
     const createPlayerBucket = (id, droids, structs) => {return {'playerID': id, 'droids': droids, 'structs': structs}};  
 
-    let objectsByPlayer = [];
+    const objectsByPlayer = [];
 
-    if (!defined(playerIdList)) {
-        playerIdList = generateRange(maxPlayers);       // will create 0-indexed playerIDs from 0, 1, 2, ..., maxPlayers - 1
+    let PLAYER_ID_LIST = generateRange(maxPlayers);       // will create 0-indexed playerIDs from 0, 1, 2, ..., maxPlayers - 1
+    if (playerIdList) {
+        PLAYER_ID_LIST = playerIdList;
     }
 
-    playerIdList.forEach(id => {
+    PLAYER_ID_LIST.forEach(id => {
         const p = createPlayerBucket(id, enumDroid(id), enumStruct(id));
         objectsByPlayer.push(p);
     });
@@ -190,9 +203,82 @@ function classifyGameObject(obj) {
     return flags;
 }
 
+/**
+ * Creates a (reduced) FishBot game object.
+ * @param {BaseObject} object 
+ * @param {number} flags 
+ * @param {number} x 
+ * @param {number} y 
+ * @param {number} gx 
+ * @param {number} gy 
+ * @returns {FbObject}
+ */
+function createFbObject(object, flags, x, y, gx, gy) {
+    /** @type {FbObject} */
+    return {
+        'name': object.name,
+
+        // These 3 parameters allow 'getObject' to be used at a later point to retrieve up-to-date object information
+        'type': object.type,
+        'player': object.player,
+        'id': object.id,
+
+        'flags': flags,
+        'x': x,
+        'y': y,
+        'gx': gx,
+        'gy': gy,
+    };
+}
 
 /**
- * 
+ * Factory function to create a new `playerInfo` object.
+ * @param {number} playerID 
+ * @returns {PlayerStatsObject}
+ */
+function createPlayerInfoEntry(playerID) {
+    return {
+        'playerID': playerID,
+        'isFriendly': !isEnemy(playerID), 
+
+        // Unit stats
+        'numTotalUnits': 0,
+        'numInfantryUnits': 0,
+        'numArmourUnits': 0,
+        'numAirUnits': 0,       // air units (e.g. vtol)        
+
+        'numRocketUnits': 0,        // anti-personnel units (e.g. MG)
+        'numCannonUnits': 0,        // general-purpose (e.g. cannon)
+        'numMGUnits': 0,
+        'numShortRangeIndirectUnits': 0,  // indirect fires (e.g. mortar)
+        'numLongRangeIndirectUnits': 0,
+        'numVTOLBombUnits': 0,
+        'numADAUnits': 0,       // air-defence-artillery units (e.g. flak cannon)
+        'numLaserUnits': 0,
+        'numFlamerUnits': 0,
+
+        'numTrucks': 0,
+
+        // Structure stats
+        'numStructs': 0,
+        'numFactories': 0,
+        'numDerricks': 0, 
+        'numConstructedHQs': 0,
+        'numRepairFacilities': 0,
+
+        // Intended to be used for getting idle structures for Production & Research, and for demolishing Repair Facilities
+        'normalFactoryFbObjects': [],           
+        'cyborgFactoryFbObjects': [],
+        'vtolFactoryFbObjects': [],
+        'researchFacilityFbObjects': [],
+        'repairFacilityFbObjects': []
+    };
+}
+
+
+/**
+ * Checks if the current player owns more than a certain percentage of derricks on the map. 
+ * O(1) complexity.
  * @param {worldState} state 
  * @param {number} oilDominancePercentage 
  * @returns {boolean}
@@ -201,13 +287,7 @@ function checkOilDominance(state, oilDominancePercentage) {
     const playerInfo = state.playerInfo;
     const totalDerricks = state.poi.derricks.length;
 
-    for (let i=0; i<playerInfo.length; i++) {
-        if (playerInfo[i]['playerID'] !== me) {
-            continue;
-        }
-        
-        const pc = playerInfo[i]['numDerricks'] / totalDerricks * 100;
-        // debug(` ${gameTime}: captured ${playerInfo[i]['numDerricks']} out of ${totalDerricks} (${pc}%)`);
-        return (pc > oilDominancePercentage);        
-    }    
+    const pc = playerInfo[me]['numDerricks'] / totalDerricks * 100;
+    // debug(` ${gameTime}: captured ${playerInfo[i]['numDerricks']} out of ${totalDerricks} (${pc}%)`);
+    return (pc > oilDominancePercentage);        
 }

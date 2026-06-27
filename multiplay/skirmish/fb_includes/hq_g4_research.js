@@ -93,7 +93,7 @@ class armyResearchAndDevelopment {
 		let highPriority = [], highPriorityUnsorted = [], regularPriority = [];
 
 		for (let i=0; i<currAvailableResearches.length; i++) {
-			const curr = currAvailableResearches[i];
+			const curr = RESEARCHES_BY_ID[currAvailableResearches[i].id];
 
 			// Check if high priority, if so, add to `highPriority` list 
 			if (researchPriorities.some(searchText => curr.id.includes(searchText))) {

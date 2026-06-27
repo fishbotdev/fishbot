@@ -23,7 +23,7 @@ class armyGroundOperations {
 	}
 
 	#createMissionOrders() {
-		let missionDataTemplate = {
+		return {
 			'id': undefined, 
 			'missionType': undefined, 
 			'missionStatus': MISSION_STATUS.FAILED_CREATION, 
@@ -36,8 +36,6 @@ class armyGroundOperations {
 			
 			'target': undefined,
 		};
-
-		return missionDataTemplate;
 	}
 
 	#mcb(callback, ...args) {
@@ -67,39 +65,19 @@ class armyGroundOperations {
 	}
 
 	/**
-	 * 
+	 * Returns if FishBot is ready to send its initial units out of base.
 	 * @param {worldState} state 
-	 * @returns {Object}
+	 * @returns {boolean}
 	 */
-	getGroundForceStatus(state) {
-		const playerInfo = state.playerInfo;
+	isReadyToAttack(state) {
 
-		let result = {
-			'completedInitialBuildup': false,
-			'completedFinalBuildup': false,
-		};
-
-		if (playerInfo.length === 0) {
-			// Guard against playerInfo being undefined at the start of the game
-			return result;
+		const myPlayerInfo = state.playerInfo[me];
+		if (myPlayerInfo['numArmourUnits'] >= 1) {
+			return true;
+		} else {
+			return false;
 		}
 
-		for (let i=0; i<playerInfo.length; i++) {
-			if (playerInfo[i]['playerID'] !== me) {
-				continue;
-			}
-			
-			if (playerInfo[i]['numArmourUnits'] >= 2) {
-				result.completedInitialBuildup = true;
-			}
-			if (playerInfo[i]['numIndirectUnits'] >=3 && playerInfo[i]['numArmourUnits'] >= 7) {
-				result.completedFinalBuildup = true;
-			}
-			return result;
-		}
-
-		debug(`WARNING: getGroundForceStatus(): completed the loop but did not find the player id in state.playerInfo`);
-		return result;		
 	}
 
 	/**
@@ -109,27 +87,37 @@ class armyGroundOperations {
 	 * 
 	 * Returns 'baseLocation' if no units are found.
 	 * @param {number} brigadeID 
-	 * @returns `medianLocation` (if units exist); else `baseLocation`.
+	 * @returns {PositionInfo} `medianLocation` (if units exist); else `baseLocation`.
 	 */
 	getForceMedianLocation(brigadeID) {
 		const getUnitsIn = (brigadeID) => state.g.enumGroup(brigadeID);
 
-		let brigadeUnits = getUnitsIn(brigadeID);
+		const brigadeUnits = getUnitsIn(brigadeID);
+
+		const baseX = baseLocation.x;
+		const baseY = baseLocation.y;
+		const baseZ = MapTiles[baseLocation.y][baseLocation.x].height;
+		const basePosition = {'x': baseX, 'y': baseY, 'z': baseZ};
 		if (brigadeUnits.length === 0) {
-			return {"x": baseLocation.x, "y": baseLocation.y};
+			return basePosition;
 		}
 
-		let droidX = [], droidY = [];
+		const droidX = [], droidY = [];
 		brigadeUnits.forEach((droid) => {
+			if (droid.hasIndirect) return;	// Experimental: removing mortar units, does that make this estimate more accurate?
 			droidX.push(droid.x);
 			droidY.push(droid.y);
 		});	
-
+		if (droidX.length === 0 || droidY.length === 0) {
+			// This is required because the `droid.hasIndirect` filtering may mean that droidX/droidY may be empty, in which case `arrayMedian` is invalid		
+			return basePosition;
+		}
+		
 		// Find median
-		let medianX = Math.floor(arrayMedian(droidX));
-		let medianY = Math.floor(arrayMedian(droidY));
-
-		return {"x": medianX, "y": medianY};
+		const medianX = Math.floor(arrayMedian(droidX));
+		const medianY = Math.floor(arrayMedian(droidY));
+		
+		return {"x": medianX, "y": medianY, "z": MapTiles[medianY][medianX].height};
 	}
 
 }

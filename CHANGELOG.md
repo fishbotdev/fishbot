@@ -1,7 +1,48 @@
 # Changelog
 This file is used to record the changes to FishBot between each version.
 
+## Fishbot v0.4.1
+*Released **27 Jun 2026***
+### Changes in v0.4.1
+- Combat improvements
+    - Ground forces
+        - Improved group cohesion of Brigade Combat Teams (BCTs).
+        - Repaired units now move towards a staging area behind BCT0 rather than staying around the repair center.
+        - Increased priority of ADA in the production order.
+        - Direct fire units are more likely to target enemies where there is already a good field of fire.
+    - Aviation
+        - Increased risk appetite when attacking urgent-priority targets (higher tolerance for nearby anti-air defences).
+- Construction improvements
+    - Increased the likelihood of repair facilities being forward-constructed.
+    - Base structure positioning now accounts for terrain obstacles.
+- Research improvements
+    - Research order improved for longer running games (focuses on Gauss Cannon route).
+- Production
+    - FishBot no longer produces Hover Trucks before the command center is built (it now follows human player rules on game start).
+    - Mortar units now only use light bodies / half tracks for increased mobility (i.e. indirect fire units no longer use Medium bodies).
+- Infrastructure improvements
+    - Computational performance improvements:
+        - Improved efficiency of targeting code.
+        - Reduced update rates of logistics structures (i.e. factories and research).
+    - Added an automated testing pipeline.
+    - Enabling Debug Mode now prints AI information on game start.
+        
+
+#### Test results (Warzone 2100 v4.7.0)
+FishBot `v0.4.1` (commit `03a99ae`) was tested 1v1 against Cobra. Sides are swapped mid-way through all tests to account for any map imbalances.
+
+`Gamma 3P T2`:
+- 100 / 100 = **100%** win rate: FishBot-v0.4.1 Medium vs Cobra **Medium** 
+- 93 / 100 = **93%** win rate: FishBot-v0.4.1 Medium vs Cobra **Hard** 
+- 43 / 100 = **43%** win rate: FishBot-v0.4.1 Medium vs Cobra **Insane** 
+
+`Monocot 3P T2`:
+- 100 / 100 = **100%** win rate: FishBot-v0.4.1 Medium vs Cobra **Medium** 
+- 91 / 100 = **91%** win rate: FishBot-v0.4.1 Medium vs Cobra **Hard** 
+- 54 / 100 = **54%** win rate: FishBot-v0.4.1 Medium vs Cobra **Insane** 
+
 ## Fishbot v0.4.0
+*Released **02 May 2026***
 ### Changes in v0.4.0
 - Combat improvements
     - FishBot now divides its army into two main battle groups ('brigades') and a reserve group. Each group is controlled independently. With this change, FishBot becomes markedly more effective in high unit count games.
@@ -28,6 +69,7 @@ FishBot `v0.4.0` (commit `4e03988`) was automatically tested on: `Gamma 3P T2` 1
 - 24 / 50 = **48%** win rate: FishBot-v0.4.0 Medium vs Cobra **Insane** 
 
 ## Fishbot v0.3.3
+*Released **07 Apr 2026***
 ### Changes in v0.3.3
 - Fixes:
     - Fixed research collisions: FishBot will now try to research other technologies if they are already being researched by an ally.
@@ -41,6 +83,7 @@ FishBot `v0.3.3` (commit `b6c85a5`) was automatically tested on: `Gamma 3P T2` 1
 - 48 / 50 = **96%** win rate: FishBot-v0.3.3 Medium vs Cobra **Hard** 
 
 ## Fishbot v0.3.2
+*Released **06 Apr 2026***
 ### Changes in v0.3.2
 - Minor AI behavioural improvements:
     - Production

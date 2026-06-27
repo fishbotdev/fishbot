@@ -33,6 +33,16 @@ declare const mapWidth: number;
 */
 declare const mapHeight: number;
 
+/** From the `terrainType` Enum: https://github.com/Warzone2100/warzone2100/blob/00ca862eb87e8d22462ee97b4d2b8ab9ee30a451/lib/wzmaplib/include/wzmaplib/terrain_type.h#L26 */
+type TerrainTypeType = number;
+/** `MapTiles.terrainType` => Road */
+declare const TER_ROAD: TerrainTypeType;
+/** `MapTiles.terrainType` => Water */
+declare const TER_WATER: TerrainTypeType;
+/** `MapTiles.terrainType` => Cliff */
+declare const TER_CLIFFFACE: TerrainTypeType;
+
+
 /**
 ```MapTiles``` A two-dimensional array of static information about the map tiles in a game. Each item in MapTiles[y][x] is an object containing the following variables:
 - ```terrainType``` tile type of a given map tile, such as ```TER_WATER``` for water tiles or ```TER_CLIFFFACE``` for cliffs. Tile types regulate which units may pass through this tile. (3.2+ only)
@@ -83,6 +93,19 @@ These values are defined:
     - ```limitedContinent``` (For land or sea limited propulsion types)
  */
 declare const Stats: Object;
+
+/**
+ * ```playerData```:
+ *  An array of information about the players in a game. Each item in the array is an object containing the following variables:
+ *  - ```difficulty``` (see ```difficulty``` global constant)
+ *  - ```colour``` number describing the colour of the player
+ *  - ```position``` number describing the position of the player in the game's setup screen
+ *  - ```isAI``` whether the player is an AI (3.2+ only)
+ *  - ```isHuman``` whether the player is human (3.2+ only)
+ *  - ```name``` the name of the player (3.2+ only)
+ *  - ```team``` the number of the team the player is part of
+ */
+declare const playerData: any;
 
 
 /* ---------- playerFilter ---------- */
@@ -265,7 +288,7 @@ interface BaseObject {
   type: ObjectTypeType;
 
   /** The unique ID of this object. */
-  id: string;
+  id: number;
 
   /** X position of the object in tiles. */
   x: number;
@@ -609,7 +632,7 @@ This type will be one of DROID, STRUCTURE, FEATURE, AREA, GROUP or POSITION.
 
 If no object is found, ```null``` is returned.
  */
-declare function getObject(type: ObjectTypeType, player: number, id: string): (DroidObject | StructureObject | FeatureObject | null);
+declare function getObject(type: ObjectTypeType, player: number, id: number): (DroidObject | StructureObject | FeatureObject | null);
 
 /**
 ## setTimer(functionName, milliseconds[, object])

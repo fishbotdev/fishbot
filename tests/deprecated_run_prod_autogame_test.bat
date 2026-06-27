@@ -7,7 +7,7 @@
 
 for /L %%i in (1,1,50) do (
 	echo iteration %%i
-	"Warzone 2100\bin\warzone2100.exe" --configdir="Warzone 2100\PRODCONFIG" --skirmish="GAMMA_INSANE_COBRA_T2.json" --enableconsole --headless --autogame
+	"Warzone 2100\bin\warzone2100.exe" --configdir="Warzone 2100\PRODCONFIG" --skirmish="GAMMA_HARD_COBRA_T2.json" --enableconsole --headless --autogame
 )
 
 :: json template:

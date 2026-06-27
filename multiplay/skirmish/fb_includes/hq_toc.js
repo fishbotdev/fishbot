@@ -125,26 +125,26 @@ class TacticalOperationsCenter {
 	/**
 	 * Note: This function shouldn't make decisions. It is the responsibility of higher command to determine which missions are worth doing.
 	 * @param {worldState} state 
-	 * @param {Array} aviationTargets 
+	 * @param {AirStrikeMissionRequest[]} aviationTargets 
 	 * @returns {void}
 	 */
 	assignAviationMissions(state, aviationTargets) {
 
-		for (let i=0; i<aviationTargets.length; i++) {
+		aviationTargets.forEach((newMissionRequest, tickUID) => {
 
-			const newMissionRequest = aviationTargets[i];
-
+			const target = newMissionRequest.target;
 			const missionType = newMissionRequest.missionType;
 			const priority = newMissionRequest.priority;
-			const NUM_UNITS = newMissionRequest.minAircraft;
+			const NUM_UNITS = newMissionRequest.numAircraft;
 
-			const missionData = this.createNewMission({missionType: missionType, priority: priority}, newMissionRequest, NUM_UNITS, i);
+			const missionData = this.createNewMission({missionType: missionType, priority: priority}, target, NUM_UNITS, tickUID);
 				
 			if (defined(missionData)) {
 				// debug(`Scheduled AIR_STRIKE (${missionType}) for:`, missionData.id, newMissionRequest.name, newMissionRequest.type, newMissionRequest.player, newMissionRequest.id);
 				state.activeMissions.push(missionData);
 			}
-		}
+
+		});
 	}
 
 	/**
@@ -178,17 +178,17 @@ class TacticalOperationsCenter {
 	 * @param {number[]?} missionFilter optional array for mission IDs e.g. [MISSION_TYPE.CONSTRUCT_OIL_DERRICK, MISSION_TYPE.CONSTRUCT_BASE_STRUCTURE]
 	 */
 	#printConstructionDebugOutput(task, missionID, missionFilter=null) {
-		let sectorID = '', structureID = '';
+		let structureID = '', coordinate = '';
 		if (defined(task.payload)) {
-			sectorID = `@ ${task.payload.id}`;
-			structureID = `-- ${task.structureID}`
+			structureID = `-- ${task.structureID}`;
+			coordinate = `(${task.payload.x}, ${task.payload.y})`
 		}
 
 		if (missionFilter == null) {
-			debug(`Scheduled BUILD (${task.missionType}) for: ${missionID} ${sectorID} ${structureID} ${sectorID}`);
+			debug(`\t${gameTime}: Scheduled BUILD (${task.missionType}) for: ${missionID} ${structureID} ${coordinate}`);
 		} else {
 			if (missionFilter.includes(task.missionType)) {
-				debug(`Scheduled BUILD (${task.missionType}) for: ${missionID} ${sectorID} ${structureID} ${sectorID}`);
+				debug(`\t${gameTime}: Scheduled BUILD (${task.missionType}) for: ${missionID} ${structureID} ${coordinate}`);
 			}
 		}		
 	};
@@ -206,7 +206,7 @@ class TacticalOperationsCenter {
 			const missionData = this.createNewMission({missionType: task.missionType, priority: PRIORITY}, task, i);		
 			if (missionData !== undefined) {
 				state.activeMissions.push(missionData);
-				// this.#printConstructionDebugOutput(task, missionData.id);
+				// this.#printConstructionDebugOutput(task, missionData.id, [MISSION_TYPE.DEMOLISH_REPAIR_CENTER, MISSION_TYPE.CONSTRUCT_REPAIR_CENTER]);
 			} 
 		});
 	}
@@ -414,15 +414,17 @@ class TacticalOperationsCenter {
 		const grid = state.grid.grid;
 		const cellSize = state.grid.cellSize;
 
+		const TEMP_GRID = newGrid;
+
 		for (let gx=0; gx<numXCells; gx++) {
 			for (let gy=0; gy<numYCells; gy++) {
-				state.fields['adaThreat'][gx][gy] = newGrid[gx][gy]['adaCount'];
-				state.fields['enemyUnitThreat'][gx][gy] = newGrid[gx][gy]['enemyDirectFireUnitCount'];				
-				state.fields['enemyStaticDefenceThreat'][gx][gy] = newGrid[gx][gy]['fixedDefenceCount'];
-				state.fields['unclaimedDerricksInCell'][gx][gy] = grid[gx][gy]['derricks'].length - newGrid[gx][gy]['claimedDerricks'].length;
+				state.fields['adaThreat'][gx][gy] = TEMP_GRID[gx][gy]['adaCount'];
+				state.fields['enemyUnitThreat'][gx][gy] = TEMP_GRID[gx][gy]['enemyDirectFireUnitCount'];				
+				state.fields['enemyStaticDefenceThreat'][gx][gy] = TEMP_GRID[gx][gy]['fixedDefenceCount'];
+				state.fields['unclaimedDerricksInCell'][gx][gy] = grid[gx][gy]['derricks'].length - TEMP_GRID[gx][gy]['claimedDerricks'].length;
 
 				let numFriendlyDerricks = 0, numEnemyDerricks = 0;
-				newGrid[gx][gy]['claimedDerricks'].forEach(d => {
+				TEMP_GRID[gx][gy]['claimedDerricks'].forEach(d => {
 					if (isEnemy(d.playerID)) {
 						numEnemyDerricks++;
 					} else {
@@ -430,10 +432,31 @@ class TacticalOperationsCenter {
 					}
 				});
 
-				const ts = newGrid[gx][gy]['targetStructures'].length - numEnemyDerricks;
-				state.fields['controlStability'][gx][gy] = newGrid[gx][gy]['friendlyStructures'].length - numFriendlyDerricks - (ts);				
+				const NUM_FRIENDLY_STRUCTURES = grid[gx][gy]['friendlyStructures'].length - numFriendlyDerricks;
+				const NUM_ENEMY_STRUCTURES = grid[gx][gy]['targetStructures'].length - numEnemyDerricks;
+				state.fields['controlStability'][gx][gy] = NUM_FRIENDLY_STRUCTURES - NUM_ENEMY_STRUCTURES;				
+
+				// Then update derrick information (updates the DerrickObject directly)
+				const claimed = TEMP_GRID[gx][gy]['claimedDerricks'];
+				const derricksInCell = state.grid.grid[gx][gy]['derricks'];
+				derricksInCell.forEach(d => {
+					for (let i=0; i<claimed.length; i++) {
+						// if (true) debug(`derrick d${d.id}, claimed.length; ${claimed.length}`);
+						if (d.id !== claimed[i].id) {
+							continue;
+						}
+
+						d['isClaimed'] = true;
+						d['playerID'] = claimed[i]['playerID'];
+						return;
+					}
+					// Else unclaimed
+					d['isClaimed'] = false;
+					d['playerID'] = undefined;
+					return;			
+				});
 			}	
-		}	
+		}
 
 		if (false) this.#debugPrintSpatialField(state.fields['adaThreat'], 'adaThreat - BEFORE FILTER');		
 		state.fields['adaThreat'] = this.#filterField(state.fields['adaThreat'], numXCells, numYCells);
@@ -464,52 +487,18 @@ class TacticalOperationsCenter {
 	}
 
 	/**
-	 * This function writes the result of blanket `enumDroid` and `enumStruct` calls to `state`.
+	 * 
 	 * @param {Object} state 
 	 * @param {any[][]} newGrid 
 	 * @param {Array} playerInfo 
-	 * @param {Array} allTargets 
 	 * @returns {void}
 	 */
-	setCoreIntelParameters(state, newGrid, playerInfo, allTargets) {
+	#printDebugGrid(state, newGrid, playerInfo) {
 		// Write updated units to grid (only overwriting "KEYS" defined below)
 		const numXCells = state.grid.numXCells;
 		const numYCells = state.grid.numYCells;
 
 		state.playerInfo = playerInfo;
-		state.allTargets = allTargets;
-
-		// Update grid 
-		// TODO: see if spatial fields should also be updated here for performance reasons
-		const CATEGORIES = ['friendlyUnits', 'targetUnits', 'friendlyStructures', 'targetStructures'];
-		for (let gx=0; gx<numXCells; gx++) {
-			for (let gy=0; gy<numYCells; gy++) {
-
-				CATEGORIES.forEach(category => {
-					state.grid.grid[gx][gy][category] = newGrid[gx][gy][category];
-				});
-
-				// Then update derrick information
-				const claimed = newGrid[gx][gy]['claimedDerricks'];
-				let derricksInCell = state.grid.grid[gx][gy]['derricks'];
-				derricksInCell.forEach(d => {
-					for (let i=0; i<claimed.length; i++) {
-						// if (true) debug(`derrick d${d.id}, claimed.length; ${claimed.length}`);
-						if (d.id !== claimed[i].id) {
-							continue;
-						}
-
-						d['isClaimed'] = true;
-						d['playerID'] = claimed[i]['playerID'];
-						return;
-					}
-					// Else unclaimed
-					d['isClaimed'] = false;
-					d['playerID'] = undefined;
-					return;			
-				});
-			}
-		}
 		
 		if (false) {
 			debug(`\nGrid-form derrickInfo @ ${gameTime}`);
@@ -535,13 +524,6 @@ class TacticalOperationsCenter {
 			// Test if grid['derricks'] & state.poi.derricks point to the same location in memory (yes)
 			debug(`List form - derrickInfo @ ${gameTime}`);
 			state.poi.derricks.forEach(d => debug(`	${d.id}\t\t${d.isClaimed ? `claimed by ${d.playerID}`: 'unclaimed'}`));
-		}
-
-		if (false) {
-			debug(`\n${gameTime} allTargets`);
-			state.allTargets.forEach(t => {
-				debug(`\t${t.name}  ${t.id}  (player ${t.player})	(flags ${toBinary20(t.flags)})`);
-			});
 		}
 
 		if (false) {
@@ -585,6 +567,241 @@ class TacticalOperationsCenter {
 	}
 
 	/**
+	 * Prints `playerInfo` to the console.
+	 * @param {*} p 
+	 */
+	#debugPrintPlayerInfo(p) {
+		
+		if (false) {
+			debug(`== ${p.playerID} UNIT STATS ==`);
+
+			// Print Unit stats
+			debug(`\nnumTotalUnits: ${p['numTotalUnits']}`); 
+			debug(`\tnumInfantryUnits: ${p['numInfantryUnits']}`); 
+			debug(`\tnumArmourUnits: ${p['numArmourUnits']}`); 
+            debug(`\tnumAirUnits: ${p['numAirUnits']}`);      
+			debug(``);
+            debug(`\tnumRocketUnits: ${p['numRocketUnits']}`);        
+            debug(`\tnumCannonUnits: ${p['numCannonUnits']}`);      
+            debug(`\tnumMGUnits: ${p['numMGUnits']}`);
+            debug(`\tnumShortRangeIndirectUnits: ${p['numShortRangeIndirectUnits']}`);
+            debug(`\tnumLongRangeIndirectUnits: ${p['numLongRangeIndirectUnits']}`);
+            debug(`\tnumVTOLBombUnits: ${p['numVTOLBombUnits']}`);
+            debug(`\tnumADAUnits: ${p['numADAUnits']}`); 
+            debug(`\tnumLaserUnits: ${p['numLaserUnits']}`);
+            debug(`\tnumFlamerUnits: ${p['numFlamerUnits']}`);
+		}
+	}
+
+	/**
+	 * 	This function performs multiple functions:
+	 * 	1. Gets all droids & structures on the map (like taking a satellite image of the whole map).
+	 * 	2. Classifies all droids & structures, writing a new `state.playerInfo` as well as `state.grid.grid`. 
+	 * 	3. Updates spatial fields (calls `this.updateSpatialFields`).
+	 * @param {worldState} state 
+	 * @param {PlayerInfoBucketObject[]} rawObjectData 
+	 * @returns {void}
+	 */
+	updateCoreIntel(state, rawObjectData) {
+
+		const grid = state.grid.grid;
+		const numXCells = state.grid.numXCells;		
+		const numYCells = state.grid.numYCells;
+		const cellSize = state.grid.cellSize;
+
+		const createNewCell = (gx, gy) => {
+			return {
+				'gx': gx,
+				'gy': gy,    
+				'adaCount': 0,						// for adaThreat      
+				'fixedDefenceCount': 0, 			// for enemyStaticDefences
+				'claimedDerricks': [],				// for updating of derrick information
+				'enemyDirectFireUnitCount': 0,		// for direct fire unit threat
+			}
+		}
+		const TEMP_GRID = create2DGrid(numXCells, numYCells, createNewCell);
+
+		const createNewClaimedDerrick = (x, y, playerID) => {       
+			// Reduced version of the function in `worldStateBuilder`.
+			return {
+				'id': `DERRICK_${x}_${y}`,				
+				'playerID': playerID,
+			}
+		};
+
+		const resetAllGridCells = () => {
+			const PROPERTIES_TO_ERASE = ['targetUnits', 'targetStructures', 'friendlyUnits', 'friendlyStructures'];
+			for (let gx=0; gx<numXCells; gx++) {
+				for (let gy=0; gy<numYCells; gy++) {
+					PROPERTIES_TO_ERASE.forEach(property => {grid[gx][gy][property].length = 0;});
+				}
+			}
+		};
+
+		resetAllGridCells();
+
+		// Write new grid cells
+		for (let i=0; i<rawObjectData.length; i++) {
+			const currPlayerEntry = rawObjectData[i];
+
+			const PLAYER_ID = currPlayerEntry['playerID'];
+			const p = createPlayerInfoEntry(PLAYER_ID);
+
+			const PLAYER_IS_ENEMY = !p['isFriendly'];
+			const PLAYER_IS_ME = (PLAYER_ID === me);
+
+
+			for (let j=0; j<currPlayerEntry['droids'].length; j++) {
+				const obj = currPlayerEntry['droids'][j];
+
+				const flags = classifyGameObject(obj);
+				const x = obj.x;
+				const y = obj.y;
+				const gx = Math.floor(x / cellSize);
+				const gy = Math.floor(y / cellSize);
+
+				const fbObject = createFbObject(obj, flags, x, y, gx, gy);
+
+				// Update player information
+				p['numTotalUnits']++;
+
+				// UNIT "BODY" (ARMOUR, CYBORGS, VTOLS)
+				const ARMOUR_FORBIDDEN_FLAGS = (OBJ_FLAGS.ADA | OBJ_FLAGS.INDIRECT_FIRE);
+
+				if (flags & OBJ_FLAGS.ARMOUR && !(flags & ARMOUR_FORBIDDEN_FLAGS)) {
+					p['numArmourUnits']++;
+				} else if (flags & OBJ_FLAGS.INFANTRY) {
+					p['numInfantryUnits']++;
+				} else if (flags & OBJ_FLAGS.AVIATION) {
+					p['numAirUnits']++;
+				}
+			
+				// UNIT "WEAPON"
+				if (flags & OBJ_FLAGS.CANNON_WEAPON) {
+					p['numCannonUnits']++;
+				} else if (flags & OBJ_FLAGS.AT_ROCKET_WEAPON) {
+					p['numRocketUnits']++;
+				} else if (flags & OBJ_FLAGS.MACHINEGUN_WEAPON) {
+					p['numMGUnits']++;
+				} else if (flags & OBJ_FLAGS.SHORT_RANGE_ARTILLERY_WEP) {
+					p['numShortRangeIndirectUnits']++;
+				} else if (flags & OBJ_FLAGS.LONG_RANGE_ARTILLERY_WEP) {
+					p['numLongRangeIndirectUnits']++;
+				} else if (flags & OBJ_FLAGS.VTOL_ARTILLERY_WEAPON) {
+					p['numVTOLBombUnits']++;
+				} else if (flags & (OBJ_FLAGS.AA_DIRECT_FIRE_WEAPON | OBJ_FLAGS.AA_ROCKET_WEAPON)) {
+					p['numADAUnits']++;
+				} else if (flags & OBJ_FLAGS.LASER_WEAPON) {
+					p['numLaserUnits']++;
+				} else if (flags & OBJ_FLAGS.FLAMER_WEAPON) {
+					p['numFlamerUnits']++;
+				} else if (flags & OBJ_FLAGS.CONSTRUCTOR) {
+					p['numTrucks']++;
+				}
+
+				if (PLAYER_IS_ENEMY) {
+					// Update grid
+					grid[gx][gy]['targetUnits'].push(fbObject);
+
+					// Update spatial field
+					if (flags & OBJ_FLAGS.ADA) {
+						TEMP_GRID[gx][gy]['adaCount']++;			
+					}
+
+					const LAND_UNITS = OBJ_FLAGS.ARMOUR | OBJ_FLAGS.INDIRECT_FIRE | OBJ_FLAGS.INFANTRY;
+					if (flags & LAND_UNITS) {						
+						TEMP_GRID[gx][gy]['enemyDirectFireUnitCount']++;
+					}
+
+				} else {
+					// Update grid
+					grid[gx][gy]['friendlyUnits'].push(fbObject);
+				}
+			}	
+
+
+			for (let j=0; j<currPlayerEntry['structs'].length; j++) {
+				const obj = currPlayerEntry['structs'][j];
+				
+				const flags = classifyGameObject(obj);
+				const x = obj.x;
+				const y = obj.y;
+				const gx = Math.floor(x / cellSize);
+				const gy = Math.floor(y / cellSize);
+
+				const fbObject = createFbObject(obj, flags, x, y, gx, gy);
+				
+				// Update player information
+				p['numStructs'] += 1;
+
+				if (flags & OBJ_FLAGS.RESOURCE_EXTRACTOR) {
+					p['numDerricks']++;
+					TEMP_GRID[gx][gy]['claimedDerricks'].push(createNewClaimedDerrick(obj.x, obj.y, obj.player));			
+				}
+
+
+				if (flags & OBJ_FLAGS.PRODUCTION) {
+					p['numFactories']++;
+
+					if (PLAYER_IS_ME) {
+						if (obj.stattype === FACTORY) {
+							// debug(`${p.playerID}: factory ${idx} `)
+							p["normalFactoryFbObjects"].push(fbObject);
+						} else if (obj.stattype === CYBORG_FACTORY) {
+							// debug(`${p.playerID}: cybfactory ${idx}`)
+							p["cyborgFactoryFbObjects"].push(fbObject);
+						} else if (obj.stattype === VTOL_FACTORY) {
+							// debug(`${p.playerID}: vtolfactory ${idx}`)
+							p["vtolFactoryFbObjects"].push(fbObject);
+						}
+					}
+				}
+
+				if (flags & OBJ_FLAGS.RESEARCH) {
+					if (PLAYER_IS_ME) {
+						p["researchFacilityFbObjects"].push(fbObject);
+					}
+				}
+
+				if (obj.stattype === HQ && obj.status === BUILT) {
+					// manual classification (outside of `classifyObject`) -> not required to track HQs
+					p['numConstructedHQs']++;
+				}
+				
+				if (flags & OBJ_FLAGS.REPAIR) {
+					p['numRepairFacilities']++;
+					if (PLAYER_IS_ME) {
+						p["repairFacilityFbObjects"].push(fbObject);
+					}
+				}
+
+				if (PLAYER_IS_ENEMY) {	
+					grid[gx][gy]['targetStructures'].push(fbObject);
+					
+					// ADA defences
+					if (flags & OBJ_FLAGS.ADA) {
+						TEMP_GRID[gx][gy]['adaCount']++;
+					}
+
+					// Ground defences
+					const BUILT_DEFENCE = OBJ_FLAGS.DEFENSIVE_STRUCTURE | OBJ_FLAGS.IS_BUILT;
+					if ((flags & BUILT_DEFENCE) === BUILT_DEFENCE && !(flags & OBJ_FLAGS.ADA)) {
+						TEMP_GRID[gx][gy]['fixedDefenceCount']++;
+					}
+				} else {
+					grid[gx][gy]['friendlyStructures'].push(fbObject);
+				}
+			}
+
+			// this.#debugPrintPlayerInfo(p);
+			state.playerInfo[PLAYER_ID] = p;		
+		}
+	
+		this.updateSpatialFields(state, TEMP_GRID);
+
+	}
+
+	/**
 	 * This function writes `oilDominance` to `state`.
 	 * @param {worldState} state
 	 * @param {boolean} isOilDominant
@@ -601,31 +818,65 @@ class TacticalOperationsCenter {
 	}
 
 	/**
-	 * This function writes `forceLocation` to `state`.
-	 * @param {worldState} state
-	 * @param {any[]} forceLocations
+	 * Updates `brigade.nearbyTargets`.
+	 * @param {worldState} state 
+	 * @param {number} brigadeID 
+	 * @param {NearbyTargets} newNearbyTargets 
 	 * @returns {void}
 	 */
-	setForceLocations(state, forceLocations) {
-		state.forceLocations = forceLocations;
+	addBrigadeTargets(state, brigadeID, newNearbyTargets) {
+		const currBrigadeTargets = state.brigades[brigadeID]['nearbyTargets'];
+
+		for (const [targetType, metadata] of Object.entries(newNearbyTargets)) {
+			currBrigadeTargets[targetType] = metadata;
+		}
 	}
 
 	/**
-	 * This function writes `nearbyGroundTargets` to `state`.
-	 * @param {worldState} state
-	 * @param {any[]} nearbyGroundTargets
+	 * This function writes `location` to `state.brigades[id].location`.
+	 * @param {worldState} state 
+	 * @param {number} brigadeID 
+	 * @param {PositionInfo} brigadeLocation
 	 * @returns {void}
 	 */
-	setNearbyGroundTargets(state, nearbyGroundTargets) {
-		state.nearbyGroundTargets = nearbyGroundTargets;
+	setBrigadeLocation(state, brigadeID, brigadeLocation) {
+		const currBrigade = state.brigades[brigadeID];
+		currBrigade['location'] = brigadeLocation;
+	}
+
+	/**
+	 * This function writes `strength` (percentage) to `state.brigades[id].strength`.
+	 * @param {worldState} state 
+	 * @param {number} brigadeID 
+	 * @param {number} strength
+	 * @returns {void}
+	 */
+	setBrigadeStrength(state, brigadeID, strength) {
+		const currBrigade = state.brigades[brigadeID];
+		currBrigade['strength'] = strength;
+	}
+
+	/**
+	 * This function overwrites `state.brigades[id].casStrikeRequests` with new CAS strike requests.
+	 * @param {worldState} state 
+	 * @param {number} brigadeID 
+	 * @param {AirStrikeMissionRequest[]} newCasRequests 
+	 */
+	setBrigadeCASStrikeRequests(state, brigadeID, newCasRequests) {
+		const currBrigade = state.brigades[brigadeID];
+		currBrigade['casStrikeRequests'].length = 0;
+		currBrigade['casStrikeRequests'] = newCasRequests;
 	}
 
 	/**
 	 * This function writes `aviationTargets` to `state`.
 	 * @param {worldState} state 
-	 * @param {Object} raidTargets 
-	 * @param {Object} productionTargets 
-	 * @param {Object} adaTargets 
+	 * @param {AirStrikeMissionRequest[]} raidTargets 
+	 * @param {AirStrikeMissionRequest[]} productionTargets 
+	 * @param {AirStrikeMissionRequest[]} adaTargets 
+	 * @param {AirStrikeMissionRequest[]} indirectFireTargets 
+	 * @param {AirStrikeMissionRequest[]} defensiveStructureTargets 
+	 * @returns {void}
 	 */
 	setAviationTargets(state, raidTargets, productionTargets, adaTargets, indirectFireTargets, defensiveStructureTargets) {
 		state.aviationTargets['raidTargets'] = raidTargets;
