@@ -137,9 +137,22 @@ function setupDebugMode() {
 	changePlayerColour(9, COLOURS["orange"]);
 	changePlayerColour(10, COLOURS["purple"]);
 	changePlayerColour(11, COLOURS["brown"]);
+	
+	const DIFFICULTY_LEVEL = ["Campaign", "Easy", "Medium", "Hard", "Insane"];
+	const get_difficulty_text = (difficulty) => DIFFICULTY_LEVEL[difficulty];
 
-	// remove default human player (force-added in challenge mode)
-	transformPlayerToSpectator(0);		
+	playerData.forEach(p => {
+		if (p.isHuman) {
+			// remove default human player (force-added in challenge mode)
+			transformPlayerToSpectator(p.position);
+			return;
+		}
+
+		const difficulty = get_difficulty_text(p.difficulty);
+		const playerInfo = `Player ${p.position}: ${p.name} (${difficulty})`;
+		chat(ALL_PLAYERS, playerInfo);
+		debug(playerInfo);
+	});
 }
 
 function eventStartLevel() {
