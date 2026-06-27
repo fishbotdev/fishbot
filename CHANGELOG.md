@@ -28,15 +28,17 @@ This file is used to record the changes to FishBot between each version.
         
 
 #### Test results (Warzone 2100 v4.7.0)
-FishBot `v0.4.1` (commit `1`) was automatically tested on: `Gamma 3P T2` 1v1. 
--  / 50 = **%** win rate: FishBot-v0.4.1 Medium vs Cobra **Medium** 
--  / 100 = **%** win rate: FishBot-v0.4.1 Medium vs Cobra **Hard** 
--  / 50 = **%** win rate: FishBot-v0.4.1 Medium vs Cobra **Insane** 
+FishBot `v0.4.1` (commit `03a99ae`) was tested 1v1 against Cobra. Sides are swapped mid-way through all tests to account for any map imbalances.
 
-It was also tested on `Monocot 3P T2` 1v1.
--  / 50 = **%** win rate: FishBot-v0.4.1 Medium vs Cobra **Medium** 
--  / 100 = **%** win rate: FishBot-v0.4.1 Medium vs Cobra **Hard** 
--  / 50 = **%** win rate: FishBot-v0.4.1 Medium vs Cobra **Insane** 
+`Gamma 3P T2`:
+- 100 / 100 = **100%** win rate: FishBot-v0.4.1 Medium vs Cobra **Medium** 
+- 93 / 100 = **93%** win rate: FishBot-v0.4.1 Medium vs Cobra **Hard** 
+- 43 / 100 = **43%** win rate: FishBot-v0.4.1 Medium vs Cobra **Insane** 
+
+`Monocot 3P T2`:
+- 100 / 100 = **100%** win rate: FishBot-v0.4.1 Medium vs Cobra **Medium** 
+- 91 / 100 = **91%** win rate: FishBot-v0.4.1 Medium vs Cobra **Hard** 
+- 54 / 100 = **54%** win rate: FishBot-v0.4.1 Medium vs Cobra **Insane** 
 
 ## Fishbot v0.4.0
 ### Changes in v0.4.0

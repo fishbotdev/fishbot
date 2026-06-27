@@ -80,8 +80,27 @@ MAP_SETTINGS_COBRA_1V1 = [
 #################################### USER CONFIG END ####################################
 
 #################################### HELPER FUNCTIONS ####################################
+
+def generate_1v1_cobra_med_3P():
+    """
+    Returns  1v1 config to test FishBot (@Medium Difficulty) vs Cobra (@Medium Difficulty) on 3P maps `Monocot` and `Gamma`.
+    """
+    COBRA_MED_SETTINGS = SKIRMISH_SETTINGS_COBRA_HARD_1V1
+    COBRA_MED_SETTINGS["opponentDifficulty"] = C.MEDIUM_DIFFICULTY
+    return COBRA_MED_SETTINGS, MAP_SETTINGS_COBRA_1V1
+
+
 def generate_1v1_cobra_hard_3P():
     """
     Returns  1v1 config to test FishBot (@Medium Difficulty) vs Cobra (@Hard Difficulty) on 3P maps `Monocot` and `Gamma`.
     """
     return SKIRMISH_SETTINGS_COBRA_HARD_1V1, MAP_SETTINGS_COBRA_1V1
+
+
+def generate_1v1_cobra_insane_3P():
+    """
+    Returns  1v1 config to test FishBot (@Medium Difficulty) vs Cobra (@Insane Difficulty) on 3P maps `Monocot` and `Gamma`.
+    """
+    COBRA_INSANE_SETTINGS = SKIRMISH_SETTINGS_COBRA_HARD_1V1
+    COBRA_INSANE_SETTINGS["opponentDifficulty"] = C.INSANE_DIFFICULTY
+    return COBRA_INSANE_SETTINGS, MAP_SETTINGS_COBRA_1V1
