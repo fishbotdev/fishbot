@@ -17,7 +17,7 @@
 
 /*
  * This file contains important type definitions & constants that are used throughout the code.
- * As it uses `baseLocation`, it should be included after `__wz_head.js`, but it precede inclusion of all other files.
+ * As it uses `baseLocation`, it should be included after `__wz_head.js`, but it should precede inclusion of all other files.
  */
 
 
@@ -29,7 +29,7 @@
 
 /**
  * @typedef {Object} FbObject
- * `TargetObject` is FishBot's implementation of a generic game object (naming could be better).
+ * `FbObject` is FishBot's lightweight implementation of a generic game object.
  * @property {string} name
  * @property {number} type
  * @property {number} player
@@ -120,9 +120,9 @@
  * @property {number} numAirUnits air units (e.g. VTOL)
  * 
  * // Weapons
- * @property {number} numRocketUnits anti-personnel units (e.g. MG)
+ * @property {number} numRocketUnits anti-tank units (e.g. rockets / missiles)
  * @property {number} numCannonUnits general-purpose (e.g. cannon)
- * @property {number} numMGUnits
+ * @property {number} numMGUnits anti-personnel units (e.g. MG)
  * @property {number} numShortRangeIndirectUnits short range indirect fires (e.g. mortar)
  * @property {number} numLongRangeIndirectUnits
  * @property {number} numVTOLBombUnits 
@@ -138,7 +138,7 @@
  * @property {number} numConstructedHQs
  * @property {number} numRepairFacilities
  * 
- * // Intended to be used for getting idle structures for Production & Research, and for demolishing Repair Facilities
+ * // These lists are intended to be used for getting idle structures for Production & Research, and for demolishing Repair Facilities (saves expensive `enumStruct` calls).
  * @property {FbObject[]} normalFactoryFbObjects
  * @property {FbObject[]} cyborgFactoryFbObjects
  * @property {FbObject[]} vtolFactoryFbObjects
@@ -304,7 +304,7 @@ const DIVISION = {
     AIR_DEFENCE_RESERVE: 2007,
 	SENSOR_RESERVE: 2008,
 	
-    FIRST_BCT: 3011,                 // this is a combined arms team; each brigade with ~26 units
+    FIRST_BCT: 3011,                 // this is a combined arms team; each BCT with ~26 units
     SECOND_BCT: 3012,
     THIRD_BCT: 3013,
     FOURTH_BCT: 3014,
