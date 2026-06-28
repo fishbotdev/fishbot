@@ -1,6 +1,12 @@
 # Changelog
 This file is used to record the changes to FishBot between each version.
 
+## Fishbot v0.4.2
+*Released **x 2026***
+### Changes in v0.4.2
+- Construction improvements
+    - Resolved some issues with defence construction (more reliable, takes lower risks).
+
 ## Fishbot v0.4.1
 *Released **27 Jun 2026***
 ### Changes in v0.4.1
