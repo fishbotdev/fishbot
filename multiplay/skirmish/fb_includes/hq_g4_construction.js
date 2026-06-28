@@ -1024,7 +1024,7 @@ class armyEngineering {
 			return undefined;
 		}
 
-		let preferredLoc = pickStructLocation3({structureID: buildTask.structureID, x: currDerrick.x, y: currDerrick.y});
+		let preferredLoc = pickStructLocation3(buildTask.structureID, currDerrick.x, currDerrick.y);
 		if (preferredLoc === undefined) {
 			debug(`createBuildNearbyDefenceTask(): pickStructLocation3() could not find a valid location`);
 			return undefined;
@@ -1081,7 +1081,7 @@ class armyEngineering {
 			return undefined;
 		}
 
-		let preferredLoc = pickStructLocation3({structureID: buildTask.structureID, x: loc.x, y: loc.y});
+		let preferredLoc = pickStructLocation3(buildTask.structureID, loc.x, loc.y);
 		if (preferredLoc === undefined) {
 			debug(`createBuildRepairCenterTask(): pickStructLocation3() could not find a valid location`);
 			return undefined;

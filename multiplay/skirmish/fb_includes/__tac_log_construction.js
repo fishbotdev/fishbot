@@ -37,11 +37,14 @@ walkableTiles.forEach(b => {
 	const y = b[1];
 	isWalkable[x][y] = true;
 });
-
+const isDerrickPosition = {};
+derrickPositions.forEach(d => {
+	isDerrickPosition[`${d.x},${d.y}`] = true;
+});
 
 /**
- * Iterates through ranged walkable tiles from the player's base to determine the position.
- * Unlike `pickStructLoc`, it takes into account obstacles.
+ * Iterates through ranged walkable tiles from the player's base to determine the position of base structures.
+ * Replaces the inbuilt `pickStructLocation`. Unlike `pickStructLocation`, it accounts for terrain obstacles.
  * @param {string} structureID 
  * @returns 
  */
@@ -93,11 +96,15 @@ function pickBaseStructLocation(structureID) {
 	return undefined;
 }
 
-/* 
-	pickStructLocation3: Intention is that this function is a deterministic & will reliably try to pick the same location. 
-	Searches nearby tiles based on Manhattan distance.
-*/
-function pickStructLocation3({structureID, x, y}) {
+/**
+ * pickStructLocation3: Replaces the inbuilt `pickStructLocation`. 
+ * Searches for nearby tiles based on Manhattan distance. A lookup table is used for speed.
+ * @param {string} structureID 
+ * @param {number} x 
+ * @param {number} y 
+ * @returns {PositionInfo | undefined}
+ */
+function pickStructLocation3(structureID, x, y) {
 
 	const specifiedHeight = MapTiles[y][x].height;		// Uses this to try the match the height.
 	const HEIGHT_TOLERANCE = 33;
@@ -107,8 +114,11 @@ function pickStructLocation3({structureID, x, y}) {
 		return undefined;
 	}
 
-	const outsideOfHeightTolerance = [];
+	const playerIsEnemy = [];
+	state.playerInfo.forEach(p => playerIsEnemy.push(p.isFriendly));		// TODO: Better way to access state than to access out of context?
 
+	const outsideOfHeightTolerance = [];
+	
 	for (let i=0; i<constructionSearchPattern.length; i++) {
 		const tX = constructionSearchPattern[i][0] + x;
 		const tY = constructionSearchPattern[i][1] + y;
@@ -118,18 +128,49 @@ function pickStructLocation3({structureID, x, y}) {
 			continue;
 		}
 
-		if (!structureCanFit(structureID, tX, tY)) {
+		if (isDerrickPosition[`${tX},${tY}`]) {
+			// For some reason - `structureCanFit` / the `enumRange` check below seem to miss friendly / enemy derricks.
 			continue;
 		}
 
-		const enemyUnits = enumRange(tX, tY, 1, ENEMIES, true).filter(obj => obj.type === DROID && isEnemy(obj.player));
-		if (enemyUnits.length > 0) {
+		if (!structureCanFit(structureID, tX, tY)) {		// required for structures with bounding box >= 1x1 
 			continue;
 		}
 
-		const loc = {'x': tX, 'y': tY};
+		// Reject tiles with structures or enemy droids on them 
+		// (Previous testing indicated that `structureCanFit` may not account for partially built structures)
+		const gameObjects = enumRange(tX, tY, 3, ALL_PLAYERS, false);
+		let positionBlocked = false;
+		for (let i=0; i<gameObjects.length; i++) {
+			const o = gameObjects[i];
+			
+			if (o.type === STRUCTURE) {
+				if (o.x === tX && o.y === tY) {
+					positionBlocked = true;
+					break;
+				}
+				continue;
+			}
 
-		if (Math.abs(MapTiles[tY][tX].height - specifiedHeight) > HEIGHT_TOLERANCE) {
+			if (o.type === DROID) {
+				if (playerIsEnemy[o.player]) {
+					if (o.x === tX && o.y === tY) {
+						positionBlocked = true;
+						break;
+					}
+				}
+				continue;
+			}
+		}
+
+		if (positionBlocked) {
+			continue;
+		}
+
+		const z = MapTiles[tY][tX].height;
+		const loc = {'x': tX, 'y': tY, 'z': z};
+
+		if (Math.abs(z - specifiedHeight) > HEIGHT_TOLERANCE) {
 			// debug(`	${gameTime}: psl2 rejected: (${tX}, ${tY}); height (${MapTiles[tY][tX].height} !== ${specifiedHeight})`);
 			outsideOfHeightTolerance.push(loc);
 			continue;
@@ -138,8 +179,7 @@ function pickStructLocation3({structureID, x, y}) {
 		return loc;	
 	}
 
-	for (let i=0; i<outsideOfHeightTolerance.length; i++) {
-		// For loop is used to ignore the cases in which the array is empty
+	for (let i=0; i<outsideOfHeightTolerance.length; i++) {		// if list is empty, this for-loop never runs
 		return outsideOfHeightTolerance[i];		
 	}
 
