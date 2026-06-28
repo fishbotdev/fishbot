@@ -42,7 +42,7 @@
 */
 
 
-const FISHBOT_VERSION = "0.4.1";
+const FISHBOT_VERSION = "0.4.2-dev";
 
 //	This file connects all remaining pieces of AI code together. It shouldn't contain any code itself.
 //	NOTE: order matters!
