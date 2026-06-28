@@ -188,7 +188,7 @@ class armyEngineering {
 		const enemyUnitThreat = state.fields.enemyUnitThreat;
 
 		const MAX_CONTROL = 5;
-		const PROXIMITY_RADIUS = 7;
+		const PROXIMITY_RADIUS = 9;
 
 		const makePrimaryDefence = (derrickObj) => this.translateIntoBuildRequest({
 			missionType: MISSION_TYPE.CONSTRUCT_NEARBY_DEFENCE, 
