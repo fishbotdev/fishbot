@@ -341,9 +341,9 @@ class CommandCenter {
 			return aDetour * aDist - bDetour * bDist;
 		}
 
-		const primaryDroidTargets = [...enemyArmor, ...enemyInfantry];
+		const primaryDroidTargets = [...enemyArmor, ...enemyInfantry, ...enemyDefenses];
 		primaryDroidTargets.sort((a,b) => directFireHeuristic(a,b));		
-		const secondaryDirectFireTargets = [ ...enemyDefenses, ...enemyIndirectFire, ...enemyADA, ...enemyIndustrial];
+		const secondaryDirectFireTargets = [...enemyIndirectFire, ...enemyADA, ...enemyIndustrial];
 		secondaryDirectFireTargets.sort((a,b) => directFireHeuristic(a,b));		
 		const tertiaryDirectFireTargets = [...enemyConstructor, ...enemyUtility];
 		const targetsOutOfRange = [];		// this will also be ordered in the priority order specified in `primaryDirectFireTargets`
