@@ -16,12 +16,22 @@
 */
 
 /**
-The functions in this class:
-- Have the authority to write to the global state (typically delegated to (and consolidated in) `hq_toc.js`)
-- Should make decisions on what course action to take, but should handle no direct execution (this should be delegated to other functions)
-- Should be informed by potential courses of action proposed by the staff functions `hq_gX_Y`.
-
-This models how a HQ at divisional level is structured in real life. Much of the terminology in this bot is borrowed from the real world.
+ * This file implements FishBot's *strategic* layer.
+ * 
+ * All of FishBot's reasoning and decision-making functions are implemented here:
+ * 	- runIntelligence (gathers information from the map & stores in `state`)
+ * 	- runCombatOperations (directs combat units to move around)
+ * 	- runConstructionLogistics (directs trucks to build / demolish stuff)
+ * 	- runResupplyLogistics (assigns newly produced units into combat groups)
+ * 	- runProductionLogistics (directs factories to build new units depending on supply requirements)
+ * 	- runResearchLogistics (directs labs to research)
+ * 
+ * Architecture notes:
+ * The functions in this class:
+ * - Have the authority to write to the global state (but the state writing is delegated to `hq_toc.js`)
+ * - Should make decisions on what course of action to take, but should handle no direct execution (this should be delegated to other functions)
+ * - Should make decisions informed by courses of action proposed by the staff functions `hq_gX_Y`.
+ * This models how a HQ at divisional level is structured in real life. Much of the terminology in this bot is borrowed from the real world.
  */
 class CommandCenter {
 	constructor() {
