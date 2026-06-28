@@ -1,6 +1,21 @@
 # FishBot, a capable T2 Warzone 2100 bot 
 FishBot is a Warzone 2100 AI bot compatible with Warzone 2100 **v4.6.1+**.
-It is designed for Tech Level 2, No-Base starts on the supported maps below.
+
+It is designed for Tech Level 2, No-Base starts on the supported maps below. Tech Level 1 is currently not supported.
+
+## Download
+
+1. Start Warzone 2100. Click Options.
+2. Click "Open Configuration Directory" in the bottom left corner.
+3. Download 📦fishbot-v0.4.1.zip from https://github.com/fishbotdev/fishbot/releases. Move to 📁mods/4.7.0/autoload/.
+4. Extract folder contents.
+5. Restart Warzone 2100.
+
+To check if the path is correct, you should be able to find `FishBot.js` in this location:
+
+**`%MY_WARZONE2100_CONFIG_DIRECTORY_PATH% \ mods \ 4.7.0 \ autoload \ fishbot \ multiplay \ skirmish \ FishBot.js`**
+
+If you can find `Fishbot.js` here, FishBot should automatically load on the next startup of Warzone 2100. It will then be available to select as an AI bot.
 
 ## List of supported technology levels
 Currently, only T2 (**Technology Level 2**) starts are supported. Further support for other technology levels might be added in a future version. 
@@ -32,17 +47,6 @@ The current method for determining whether or not a map is *supported* is:
 Official support for other maps will be included in future versions. The current limitations are:
 * On very small maps with very low oil, FishBot runs out of power (and gets stuck) due to a fixed rigid build order. It can also get stuck if it doesn't claim enough derricks in the early game.
 * FishBot attempts to build forward-defences around derricks which are too dangerous to go and capture.
-
-## How to load the mod into Warzone 2100 v4.6.1+
-1. Download the source code as .zip from GitHub: <https://github.com/fishbotdev/fishbot>.
-2. Unzip the .zip file.
-3. Place the unzipped folder contents into: **`%MY_WARZONE2100_CONFIG_DIRECTORY_PATH% \ mods \ 4.7.x \ autoload \ fishbot`**
-
-To check if the path is correct, you should be able to find `FishBot.js` in this location:
-
-**`%MY_WARZONE2100_CONFIG_DIRECTORY_PATH% \ mods \ 4.7.x \ autoload \ fishbot \ multiplay \ skirmish \ FishBot.js`**
-
-If you can find `Fishbot.js` here, FishBot should automatically load on the next startup of Warzone 2100. It will then be available to select as an AI bot.
 
 ## Recent updates
 * **v0.4.1** - *released **27 Jun 2026***
