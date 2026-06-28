@@ -53,7 +53,7 @@ const FB_INCLUDES = FISHBOT_PATH + "fb_includes/";
 //	 - Show some useful debug information in the console
 //	 - Automatically colour players 0, 1, 2
 //	 - Transform Player 0 (forced human player slot) to spectator mode (used for automated bot testing)
-const DEBUG_MODE_ON = false;
+const DEBUG_MODE_ON = true;
 
 
 /*
