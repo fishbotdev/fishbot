@@ -1,4 +1,7 @@
 # FishBot, a capable T2 Warzone 2100 bot 
+[![Hits](https://hits.sh/fishbotdev.github.io/fishbot.svg)](https://hits.sh/fishbotdev.github.io/fishbot/)
+![GitHub downloads (all releases)](https://img.shields.io/github/downloads/fishbotdev/fishbot/total)
+
 FishBot is a Warzone 2100 AI bot compatible with Warzone 2100 **v4.6.1+**.
 
 It is designed for Tech Level 2, No-Base starts on the supported maps below. Tech Level 1 is currently not supported.
