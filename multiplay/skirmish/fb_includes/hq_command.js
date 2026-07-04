@@ -890,8 +890,8 @@ class CommandCenter {
 			w_strategic = {
 				'heavyCavalry': 1,
 				'lightCavalry': 1,
-				'shortRangeArtillery': 0.75,
-				'ADA': 0.5,
+				'shortRangeArtillery': 1,
+				'ADA': 0.9,
 				'sensor': 0.2,
 			};
 		}
