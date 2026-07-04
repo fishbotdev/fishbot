@@ -81,6 +81,11 @@ function pickBaseStructLocation(structureID) {
 			const x1 = x + c[0]; 
 			const y1 = y + c[1];
 
+			if (x1 < 0 || x1 >= mapWidth || y1 < 0 || y1 >= mapHeight) {
+				boundingBoxTestFailed = true;		// will not build at the edge of the map
+				break;
+			}
+
 			if (!isWalkable[x1][y1]) {
 				boundingBoxTestFailed = true;
 				break;
