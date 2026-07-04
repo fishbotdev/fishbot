@@ -98,7 +98,7 @@ class armyEngineering {
 
 					// Check for existing mission
 					if (activeOilCapTaskIDs.indexOf(d.id) !== -1) continue; 									// found 'CONSTRUCT_OIL_DERRICK' task
-					if (activeOilCapTaskIDs.filter(id => id === grid[gx][gy].id).length >= 2) break;			// found at least 2 'CONSTRUCT_SECTOR_DERRICKS' tasks
+					if (activeOilCapTaskIDs.indexOf(grid[gx][gy].id) !== -1) continue;							// found the same 'CONSTRUCT_ALL_DERRICKS_IN_SECTOR' task
 
 					// if (tileIsBurning(d.x, d.y)) continue;		// seems to be worse
 
