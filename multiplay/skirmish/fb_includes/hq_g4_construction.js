@@ -410,11 +410,13 @@ class armyEngineering {
 
 		// PART 2: FIND CONSTRUCTION LOCATIONS
 		forceLocations.forEach(LOCATION => {
-			const x = LOCATION.x;
-			const y = LOCATION.y;
-			if (!isWalkable[x][y]) {		
+			const potentialLocation = pickStructLocation3(STRUCTURES["Repair Facility"].id, LOCATION.x, LOCATION.y);
+			if (potentialLocation == undefined) {
 				return;
 			}
+
+			const x = potentialLocation.x;
+			const y = potentialLocation.y;
 
 			const gx = Math.floor(x / cellSize);
 			const gy = Math.floor(y / cellSize);
@@ -471,7 +473,7 @@ class armyEngineering {
 			const buildRequest = this.translateIntoBuildRequest({
 				missionType: MISSION_TYPE.CONSTRUCT_REPAIR_CENTER, 
 				structureData: STRUCTURES["Repair Facility"],
-				payload: LOCATION
+				payload: potentialLocation
 			});
 
 			potentialRepairCenterLocations.push(buildRequest);
