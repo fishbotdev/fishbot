@@ -415,10 +415,10 @@ class CommandCenter {
 
 		// CAS Targeting (Close Air Support)
 		// Intent: `casTargets` should be a list of mission requests interpretable by a following call of `#prioritiseAviationTargets`.
-		const primaryCASTargets = [...enemyIndirectFire];
-		const secondaryCASTargets = [...enemyArmor, ...enemyDefenses];
+		const primaryCASTargets = [...enemyIndirectFire, ...enemyADA];
+		const secondaryCASTargets = [...enemyUtility, ...enemyArmor, ...enemyDefenses];
 
-		const isHealthy = (obj) => obj.health > 50;
+		const isHealthy = (obj) => obj.health > 25;
 		secondaryCASTargets.forEach(obj => {
 			if (isHealthy(obj)) {
 				brigadeTargets['casTargets'].unshift(aviation.translateIntoCASRequest(obj, MISSION_PRIORITY.VERY_HIGH));
@@ -890,8 +890,8 @@ class CommandCenter {
 			w_strategic = {
 				'heavyCavalry': 1,
 				'lightCavalry': 1,
-				'shortRangeArtillery': 0.75,
-				'ADA': 0.5,
+				'shortRangeArtillery': 1,
+				'ADA': 0.9,
 				'sensor': 0.2,
 			};
 		}

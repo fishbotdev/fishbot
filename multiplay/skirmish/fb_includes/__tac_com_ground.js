@@ -126,7 +126,7 @@ function returnUnitGroupsToBase(unitGroups) {
  */
 function moveReservesToShadow(reserveGroupIDs, x, y) {
 
-	const isTooFarAway = (droid) => distSq(droid.x, x, droid.y, y) > 10 ** 2;
+	const isTooFarAway = (droid) => distSq(droid.x, x, droid.y, y) > 5 ** 2;
 
 	const maintainPositionBehind = (droid) => {
 		if (isTooFarAway(droid)) {
@@ -251,10 +251,10 @@ function moveBrigadeToAttack(state, brigadeID, groundTargets) {
 
 	const closestDroidToTarget = findClosestDroidToTarget(ARMOUR_UNITS, DIRECT_FIRE_TARGET);
 	
-	const isTooFarFromBrigade = (droid) => distSq(droid.x, LOCATION_X, droid.y, LOCATION_Y) > 10 ** 2;
+	const isTooFarFromBrigade = (droid) => distSq(droid.x, LOCATION_X, droid.y, LOCATION_Y) > 9 ** 2;
 
 	const _distSqToClosestDroid = (droid) => distSq(droid.x, closestDroidToTarget.x, droid.y, closestDroidToTarget.y);
-	const isNearFrontLine = (droid) => _distSqToClosestDroid(droid) < 6 ** 2;
+	const isNearFrontLine = (droid) => _distSqToClosestDroid(droid) < 3 ** 2;
 
 	const moveToClosestDroid = (droid) => orderDroidLoc(droid, DORDER_MOVE, closestDroidToTarget.x, closestDroidToTarget.y);
 	
