@@ -327,6 +327,28 @@ function produceHeavyCavalry(factory) {
 	});
 }
 
+function produceHeavyRepair(factory) {
+	// A cool idea from another bot; with sufficient heavy repair mass, it is possible to keep a unit alive almost indefinitely.
+	// Order these by tech level if you want the most technologically advanced body to be used.
+	const heavyCavalryWeapons = [
+		WEAPONS['Heavy Repair Turret']
+	].reverse();
+	
+	const heavyCavalryPropulsions = [
+		PROPULSIONS["Wheels"], 
+		PROPULSIONS["Half-tracks"], 
+		PROPULSIONS["Tracks"]
+	].reverse();
+
+	return produceVehicle({
+		factory: factory, 
+		weaponList: heavyCavalryWeapons, 
+		propulsionList: heavyCavalryPropulsions,
+		maxBodyWeight: BODY_WEIGHT.HEAVY
+	});
+}
+
+
 function produceLandAPFireSupport(factory) {
 	// Order these by tech level if you want the most technologically advanced weapon to be used
 	const fireSupportWeapons = [

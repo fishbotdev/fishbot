@@ -615,6 +615,7 @@ WEAPONS["Cyborg Constructor"] = {id: "CyborgSpade", name: "Cyborg Constructor"};
 WEAPONS["Sensor Turret"] = {id: "SensorTurret1Mk1", name: "Sensor Turret"};
 WEAPONS["CB Radar Turret"] = {id: "Sys-CBTurret01", name: "CB Radar Turret"};
 WEAPONS["Wide Spectrum Sensor"] = {id: "Sensor-WideSpec", name: "Wide Spectrum Sensor"};
+WEAPONS["Heavy Repair Turret"] = {id: "HeavyRepair", name: "Heavy Repair Turret"};
 UNCLASSIFIED_WEAPONS.push(WEAPONS["Truck"], WEAPONS["Sensor Turret"], WEAPONS["CB Radar Turret"], WEAPONS["Wide Spectrum Sensor"]);
 Object.freeze(WEAPONS);
 
