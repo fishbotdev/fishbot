@@ -2,12 +2,13 @@
 This file is used to record the changes to FishBot between each version.
 
 ## Fishbot v0.4.2
-*Released **x 2026***
+*Released **- Jul 2026***
 ### Changes in v0.4.2
 - Combat improvements
-    - Resolved some units trying to bypass prepared defences in front of them.
+    - Resolved an issue where combat units would try to bypass prepared defences in front of them in favour of units behind.
 - Construction improvements
-    - Resolved some issues with defence construction (more reliable, takes lower risks).
+    - Resolved some issues with derrick & defence construction (more reliable, takes lower risks).
+    - Resolved an issue with 2x2 base structures (e.g. power generators, research labs) being built in locations with no clearance for units to get past.
 
 ## Fishbot v0.4.1
 *Released **27 Jun 2026***
