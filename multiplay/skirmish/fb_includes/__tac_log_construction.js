@@ -50,18 +50,19 @@ derrickPositions.forEach(d => {
  */
 function pickBaseStructLocation(structureID) {
 
-	const BBOX_CORNERS = [[-1, -1], [-1, 1], [1, -1], [1, 1]];
-	let boundingBoxRadius = 0;
-
 	const BBOX_3x3_STRUCTURES = [STRUCTURES["Factory"].id, STRUCTURES["VTOL Factory"].id, STRUCTURES["Laser Satellite Command Post"].id, STRUCTURES["Satellite Uplink Center"].id];
 	const BBOX_2x2_STRUCTURES = [STRUCTURES["Command Center"].id, STRUCTURES["Command Relay Center"].id, STRUCTURES["Power Generator"].id, STRUCTURES["Research Facility"].id];
 
+	let BBOX_CORNERS = [[-1, -1], [1, 1], [-1, 1], [1, -1]];
+	const BBOX_3X3_CORNERS = [[-2, -2], [-2, 2], [2, -2], [2, 2], [2, 0], [-2, 0], [0, 2], [0, -2]];
+	const BBOX_2X2_CORNERS = [[-2, -2], [-2, 1], [1, -2], [1, 1], [1, 0], [-2, 0], [0, 1], [0, -2]];
+	
 	if (BBOX_3x3_STRUCTURES.includes(structureID)) {
-		boundingBoxRadius = 2;		// coordinate for a 3x3 structure is the center of the structure
+		// coordinate for a 3x3 structure is the center tile of the structure
+		BBOX_CORNERS = BBOX_3X3_CORNERS;
 	} else if (BBOX_2x2_STRUCTURES.includes(structureID)) {
-		boundingBoxRadius = 1;		// coordinate for a 2x2 structure is the bottom right of the structure ((7, 16) center = (7, 15), (6, 15), (6, 16))
-	} else {
-		boundingBoxRadius = 1;
+		// coordinate for a 2x2 structure is the bottom right tile of the structure ((7, 16) center = (7, 15), (6, 15), (6, 16))
+		BBOX_CORNERS = BBOX_2X2_CORNERS
 	}
 	
 	for (let i=0; i<walkableTiles.length; i++) {
@@ -77,8 +78,8 @@ function pickBaseStructLocation(structureID) {
 		let boundingBoxTestFailed = false;
 		for (let j=0; j<BBOX_CORNERS.length; j++) {
 			const c = BBOX_CORNERS[j];
-			const x1 = x + boundingBoxRadius * c[0]; 
-			const y1 = y + boundingBoxRadius * c[1];
+			const x1 = x + c[0]; 
+			const y1 = y + c[1];
 
 			if (!isWalkable[x1][y1]) {
 				boundingBoxTestFailed = true;
