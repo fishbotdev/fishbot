@@ -282,7 +282,7 @@ function moveBrigadeToAttack(state, brigadeID, groundTargets) {
 				}
 
 				if (obj.health < 99) {
-					orderDroidObj(droid, DORDER_REPAIR, closestDroidToTarget);
+					orderDroidObj(droid, DORDER_REPAIR, obj);
 					return;
 				}
 			}
