@@ -330,11 +330,11 @@ function produceHeavyCavalry(factory) {
 function produceHeavyRepair(factory) {
 	// A cool idea from another bot; with sufficient heavy repair mass, it is possible to keep a unit alive almost indefinitely.
 	// Order these by tech level if you want the most technologically advanced body to be used.
-	const heavyCavalryWeapons = [
+	const repairTurrets = [
 		WEAPONS['Heavy Repair Turret']
 	].reverse();
 	
-	const heavyCavalryPropulsions = [
+	const heavyRepairPropulsion = [
 		PROPULSIONS["Wheels"], 
 		PROPULSIONS["Half-tracks"], 
 		PROPULSIONS["Tracks"]
@@ -342,8 +342,8 @@ function produceHeavyRepair(factory) {
 
 	return produceVehicle({
 		factory: factory, 
-		weaponList: heavyCavalryWeapons, 
-		propulsionList: heavyCavalryPropulsions,
+		weaponList: repairTurrets, 
+		propulsionList: heavyRepairPropulsion,
 		maxBodyWeight: BODY_WEIGHT.HEAVY
 	});
 }
@@ -522,7 +522,6 @@ function produceLandUnitCategory(category, factory) {
 			factoryInProduction = factoryInProduction || produceLandRecon(factory);
 			break;
 		case 'repair':
-			debug(`${gameTime}: heavy repair`);
 			factoryInProduction = factoryInProduction || produceHeavyRepair(factory);
 			break;
 		default:
