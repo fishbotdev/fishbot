@@ -5,13 +5,15 @@ This file is used to record the changes to FishBot between each version.
 *Released **- Jul 2026***
 ### Changes in v0.4.2
 - Combat improvements
-    - Resolved an issue where combat units would try to bypass prepared defences in front of them in favour of units behind.
+    - Resolved an issue where combat units would try to bypass prepared defences in front of them in favour of units behind them.
     - Improved positioning of AA units & reserves within the combat group to improve effectiveness.
+    - Added Heavy Repair Turret units to the combat group.
 - Production improvements
     - ADA & indirect fire units increased in priority.
 - Construction improvements
-    - Resolved some issues with construction of derricks, defences and repair centers (more reliable, takes lower risks).
     - Resolved an issue with 2x2 base structures (e.g. power generators, research labs) being built in locations with no clearance for units to get past.
+- Infrastructure improvements
+    - Improved the reliability of construction drivers (trucks are less likely to get stuck trying to perform an illegal action).
 
 ## Fishbot v0.4.1
 *Released **27 Jun 2026***
