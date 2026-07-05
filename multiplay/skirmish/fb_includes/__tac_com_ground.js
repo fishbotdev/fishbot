@@ -271,7 +271,11 @@ function moveBrigadeToAttack(state, brigadeID, groundTargets) {
 	};
 
 	const fixNearestDamaged = (droid) => {
-		if (!isNearFrontLine(droid)) {
+		if (droid.order === DROID_REPAIR) {		// do not interrupt a repair in progress
+			return;	
+		}
+
+		if (_distSqToClosestDroid(droid) > 6 ** 2) {
 			moveToClosestDroid(droid);
 		} else {
 			const nearby = enumRange(droid.x, droid.y, 4, ALLIES);
