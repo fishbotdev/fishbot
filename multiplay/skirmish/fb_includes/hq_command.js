@@ -55,7 +55,8 @@ class CommandCenter {
 			'MAX_MORTAR': 6,
 			'MAX_ADA': 2,
 			'MAX_SENSOR': 1,
-			'MAX_INFANTRY': 6
+			'MAX_INFANTRY': 6,
+			'MAX_REPAIR': 1,
 		}
 		this.TOTAL_UNITS_PER_BRIGADE = Object.values(this.FISHBOT_BRIGADE_COMPOSITION).reduce((a, b) => a + b, 0);
 
@@ -847,7 +848,7 @@ class CommandCenter {
 	 */
     #prioritiseLandVehicleCategory(state, deficit) {
         
-		const CATEGORIES = ['heavyCavalry', 'lightCavalry', 'shortRangeArtillery', 'ADA', 'sensor'];
+		const CATEGORIES = ['heavyCavalry', 'lightCavalry', 'shortRangeArtillery', 'ADA', 'sensor', 'repair'];
         let vehicleCategories = [];
 
 		let w_deficit = {
@@ -856,6 +857,7 @@ class CommandCenter {
             'shortRangeArtillery': 1,
             'ADA': 1,
             'sensor': 1,
+			'repair': 1
 		};
 		let w_strategic = {
 			'heavyCavalry': 1,
@@ -863,6 +865,7 @@ class CommandCenter {
             'shortRangeArtillery': 0.75,
             'ADA': 0.001,
             'sensor': 0.001,
+			'repair': 0.001,
 		};
 
 		const calculateSurplus = (category) => {return -1 * deficit[category]['normBaseDeficit']};
@@ -893,6 +896,7 @@ class CommandCenter {
 				'shortRangeArtillery': 1,
 				'ADA': 0.9,
 				'sensor': 0.2,
+				'repair': 0.9,
 			};
 		}
 
@@ -908,6 +912,7 @@ class CommandCenter {
 				'shortRangeArtillery': 1,
 				'ADA': 3,
 				'sensor': 10,
+				'repair': 2,
 			};
 		}
 
@@ -977,11 +982,16 @@ class CommandCenter {
 			'shortRangeArtillery': createCategory(DIVISION.SHORT_RANGE_FIRE_SUPPORT_RESERVE), 
 			'ADA': createCategory(DIVISION.AIR_DEFENCE_RESERVE), 
 			'sensor': createCategory(DIVISION.SENSOR_RESERVE),
+			'repair': createCategory(DIVISION.MAINTENANCE_RESERVE),
 		};		
 	}
 
+	/**
+	 * Categories must match `supply / getBrigadeSupplyStatus()`.
+	 * @param {worldState} state 
+	 * @returns 
+	 */
 	#getReserveForceUnits(state) {
-		// Note: categories must match `supply / getBrigadeSupplyStatus()`.
 		return {
 			'heavyCavalry': state.g.enumGroup(DIVISION.HEAVY_CAV_RESERVE), 
 			'lightCavalry': state.g.enumGroup(DIVISION.LIGHT_CAV_RESERVE), 
@@ -989,6 +999,7 @@ class CommandCenter {
 			'shortRangeArtillery': state.g.enumGroup(DIVISION.SHORT_RANGE_FIRE_SUPPORT_RESERVE), 
 			'ADA': state.g.enumGroup(DIVISION.AIR_DEFENCE_RESERVE), 
 			'sensor': state.g.enumGroup(DIVISION.SENSOR_RESERVE),
+			'repair': state.g.enumGroup(DIVISION.MAINTENANCE_RESERVE),
 		};
 	}
 

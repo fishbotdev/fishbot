@@ -521,6 +521,10 @@ function produceLandUnitCategory(category, factory) {
 		case 'sensor': 
 			factoryInProduction = factoryInProduction || produceLandRecon(factory);
 			break;
+		case 'repair':
+			debug(`${gameTime}: heavy repair`);
+			factoryInProduction = factoryInProduction || produceHeavyRepair(factory);
+			break;
 		default:
 			factoryInProduction = factoryInProduction || produceLightCavalry(factory);
 	}
@@ -573,6 +577,10 @@ function getDroidFbGroupClassification(droid) {
 		return DIVISION.AIR_DEFENCE_RESERVE;
 	}
 
+	if (flags & OBJ_FLAGS.REPAIR) {
+		return DIVISION.MAINTENANCE_RESERVE;
+	}
+ 
 	if (droid.droidType === DROID_SENSOR) {
 		// manually accessing the DroidObject properties as I have run out of bits in OBJ_FLAGS.
 		return DIVISION.SENSOR_RESERVE;		
