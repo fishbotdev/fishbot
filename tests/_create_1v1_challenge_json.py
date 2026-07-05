@@ -77,13 +77,12 @@ def create_fishbot_player(team: int, difficulty: int):
     }
 
 
-def create_cobra_player(team: int, difficulty: int):
+def create_opponent_player(team: int, difficulty: int, ai_name: str):
     return {
         "difficulty": difficulty,
         "team": team,
-        "ai": C.COBRA_AI
+        "ai": ai_name
     }
-
 
 def create_challenge_from_template(challenge_name: str, challenge_version: int, map_name: str, total_players: int,
                                    bases: int, power_level: int, scavengers: int, tech_level: int,
@@ -144,7 +143,7 @@ def generate_json_test_data(skirmish_settings, map_settings):
     # 'OPPONENT' INFO
     OPPONENT_NAME: str = get_uppercase_ai_name(skirmish_settings['opponentName'])
     OPPONENT_DIFFICULTY: str = skirmish_settings['opponentDifficulty']
-    opponent_factory = create_cobra_player         # todo -> extend cobra factory into others
+    opponent_factory = lambda team, difficulty: create_opponent_player(team, difficulty, skirmish_settings['opponentName'])
 
     for m in map_settings:
         # MAP INFO
