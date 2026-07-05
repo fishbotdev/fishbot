@@ -112,3 +112,12 @@ def generate_1v1_peacemaker_hard_3P():
     PEACEMAKER_HARD_SETTINGS = SKIRMISH_SETTINGS_COBRA_HARD_1V1
     PEACEMAKER_HARD_SETTINGS["opponentName"] = C.PEACEMAKER_AI
     return PEACEMAKER_HARD_SETTINGS, MAP_SETTINGS_COBRA_1V1
+
+def generate_1v1_peacemaker_med_3P():
+    """
+    Returns  1v1 config to test FishBot (@Medium Difficulty) vs Peacemaker (@Medium Difficulty) on 3P maps `Monocot` and `Gamma`.
+    """
+    PEACEMAKER_HARD_SETTINGS = SKIRMISH_SETTINGS_COBRA_HARD_1V1
+    PEACEMAKER_HARD_SETTINGS["opponentName"] = C.PEACEMAKER_AI
+    PEACEMAKER_HARD_SETTINGS["opponentDifficulty"] = C.MEDIUM_DIFFICULTY
+    return PEACEMAKER_HARD_SETTINGS, MAP_SETTINGS_COBRA_1V1
