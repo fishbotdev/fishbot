@@ -327,6 +327,28 @@ function produceHeavyCavalry(factory) {
 	});
 }
 
+function produceHeavyRepair(factory) {
+	// A cool idea from the 'Peacemaker' bot (by 'duckfood'). 
+	// With enough nearby repair turrets, it is possible to greatly to extend the lifespan of a frontline unit.
+	const repairTurrets = [
+		WEAPONS['Heavy Repair Turret']
+	].reverse();
+	
+	const heavyRepairPropulsion = [
+		PROPULSIONS["Wheels"], 
+		PROPULSIONS["Half-tracks"], 
+		PROPULSIONS["Tracks"]
+	].reverse();
+
+	return produceVehicle({
+		factory: factory, 
+		weaponList: repairTurrets, 
+		propulsionList: heavyRepairPropulsion,
+		maxBodyWeight: BODY_WEIGHT.HEAVY
+	});
+}
+
+
 function produceLandAPFireSupport(factory) {
 	// Order these by tech level if you want the most technologically advanced weapon to be used
 	const fireSupportWeapons = [
@@ -499,6 +521,9 @@ function produceLandUnitCategory(category, factory) {
 		case 'sensor': 
 			factoryInProduction = factoryInProduction || produceLandRecon(factory);
 			break;
+		case 'repair':
+			factoryInProduction = factoryInProduction || produceHeavyRepair(factory);
+			break;
 		default:
 			factoryInProduction = factoryInProduction || produceLightCavalry(factory);
 	}
@@ -551,6 +576,10 @@ function getDroidFbGroupClassification(droid) {
 		return DIVISION.AIR_DEFENCE_RESERVE;
 	}
 
+	if (flags & OBJ_FLAGS.REPAIR) {
+		return DIVISION.MAINTENANCE_RESERVE;
+	}
+ 
 	if (droid.droidType === DROID_SENSOR) {
 		// manually accessing the DroidObject properties as I have run out of bits in OBJ_FLAGS.
 		return DIVISION.SENSOR_RESERVE;		

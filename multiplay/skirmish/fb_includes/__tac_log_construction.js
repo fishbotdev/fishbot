@@ -253,7 +253,7 @@ function buildBaseStructure(taskForceID, structureID, x, y) {
 	// Case 1: Nothing exists yet -> build
 	if (struct.length === 0) {
 		if (!structureCanFit(structureID, x, y)) {
-			return {status: MISSION_STATUS.FAILED};				// sometimes, other builds can render the location invalid
+			return {status: MISSION_STATUS.FAILED};				// sometimes, other builds can render the original location invalid
 		}
 
 		// debug(`buildBaseStructure(): Nothing exists at ${x}, ${y} yet; building...`);
