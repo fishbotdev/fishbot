@@ -328,8 +328,8 @@ function produceHeavyCavalry(factory) {
 }
 
 function produceHeavyRepair(factory) {
-	// A cool idea from another bot; with sufficient heavy repair mass, it is possible to keep a unit alive almost indefinitely.
-	// Order these by tech level if you want the most technologically advanced body to be used.
+	// A cool idea from the 'Peacemaker' bot (by 'duckfood'). 
+	// With enough nearby repair turrets, it is possible to greatly to extend the lifespan of a frontline unit.
 	const repairTurrets = [
 		WEAPONS['Heavy Repair Turret']
 	].reverse();

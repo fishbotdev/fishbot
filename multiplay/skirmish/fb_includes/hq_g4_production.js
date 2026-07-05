@@ -62,6 +62,7 @@ class armySupply {
         const damagedShortRangeFireSupport = [];
         const damagedAirDefence = [];
         const damagedSensor = [];
+        const damagedRepairUnits = [];       // repair units do not retreat for repair (they can repair themselves)
 
         const VEHICLE_UNIT_TYPES = [DIVISION.HEAVY_CAV_RESERVE, DIVISION.LIGHT_CAV_RESERVE, DIVISION.SHORT_RANGE_FIRE_SUPPORT_RESERVE, DIVISION.AIR_DEFENCE_RESERVE, DIVISION.SENSOR_RESERVE];
         const needsRepair = (unit, category) => {
@@ -120,7 +121,7 @@ class armySupply {
                     }
                     break;
                 case DIVISION.MAINTENANCE_RESERVE:
-                    repairCount++;      // does not repair because it can repair itself
+                    repairCount++;      // will not retreat for repair, because it can repair itself
                     break;
                 default:
                     debug(`WARNING: ${brigadeUnits[i].name} was unclassified! Classifying as heavy cav.`);
@@ -156,7 +157,7 @@ class armySupply {
             'shortRangeArtillery': getSupplyStatus(DIVISION.SHORT_RANGE_FIRE_SUPPORT_RESERVE, MAX_MORTAR, shortRangeFireSupportCount, damagedShortRangeFireSupport),
             'ADA': getSupplyStatus(DIVISION.AIR_DEFENCE_RESERVE, MAX_ADA, airDefenceCount, damagedAirDefence),
             'sensor': getSupplyStatus(DIVISION.SENSOR_RESERVE, MAX_SENSOR, sensorCount, damagedSensor),
-            'repair': getSupplyStatus(DIVISION.MAINTENANCE_RESERVE, MAX_REPAIR, repairCount, []),
+            'repair': getSupplyStatus(DIVISION.MAINTENANCE_RESERVE, MAX_REPAIR, repairCount, damagedRepairUnits),
 		}
 	}
 
