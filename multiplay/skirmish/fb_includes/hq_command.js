@@ -305,7 +305,7 @@ class CommandCenter {
 		}
 
 		// Direct Fire Targeting
-		const IMMEDIATE_RADIUS = 7;
+		const IMMEDIATE_RADIUS = 8;
 
 		const directFireHeuristic = (a,b) => {
 			const aDist = distSq(x, a.x, y, a.y);
@@ -343,10 +343,9 @@ class CommandCenter {
 		}
 
 		const primaryDroidTargets = [...enemyArmor, ...enemyInfantry, ...enemyDefenses];
-		primaryDroidTargets.sort((a,b) => directFireHeuristic(a,b));		
 		const secondaryDirectFireTargets = [...enemyIndirectFire, ...enemyADA, ...enemyIndustrial];
-		secondaryDirectFireTargets.sort((a,b) => directFireHeuristic(a,b));		
 		const tertiaryDirectFireTargets = [...enemyConstructor, ...enemyUtility];
+
 		const targetsOutOfRange = [];		// this will also be ordered in the priority order specified in `primaryDirectFireTargets`
 
 		/** @param {(DroidObject | StructureObject | FeatureObject)[]} targetList */
@@ -362,6 +361,8 @@ class CommandCenter {
 		addDirectFireTargetByProximity(primaryDroidTargets);
 		addDirectFireTargetByProximity(secondaryDirectFireTargets);
 		addDirectFireTargetByProximity(tertiaryDirectFireTargets);
+
+		brigadeTargets["directFireTargets"].sort((a,b) => directFireHeuristic(a,b));		// this ignores the primary/secondary/tertiary ordering above
 
 		const MAX_DIRECT_FIRE_TARGETS = 8;
 		const FURTHER_TARGETS_REQUIRED = MAX_DIRECT_FIRE_TARGETS - brigadeTargets['directFireTargets'].length;
