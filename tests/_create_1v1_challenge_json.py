@@ -163,7 +163,7 @@ def generate_json_test_data(skirmish_settings, map_settings):
             FISHBOT_POSITION = POSITIONS[i % NUM_POSITIONS]
             OPPONENT_POSITION = POSITIONS[(i+1) % NUM_POSITIONS]
 
-            FILE_NAME = f"{MAP_NAME.upper()}_{FISHBOT_POSITION}_{OPPONENT_POSITION}_{OPPONENT_NAME}_{OPPONENT_DIFFICULTY.upper()}_T{TECH_LEVEL}.json"
+            FILE_NAME = f"{MAP_NAME.upper()}_{FISHBOT_POSITION}_{OPPONENT_POSITION}_{OPPONENT_NAME}_{OPPONENT_DIFFICULTY.upper()}_T{TECH_LEVEL}"
             FILE_VER = 1
 
             challenge_data = create_challenge_from_template(
@@ -195,7 +195,7 @@ def save_challenge_files(generated_test_data: list, output_folder_path: str):
     for d in generated_test_data:
         FILE_NAME, DATA = extract_file_name_and_data(d)
 
-        FILE_PATH = rf"{output_folder_path}/{FILE_NAME}"
+        FILE_PATH = rf"{output_folder_path}/{FILE_NAME}.json"
 
         with open(FILE_PATH, "w") as f:
             json.dump(DATA, f, indent=4)
