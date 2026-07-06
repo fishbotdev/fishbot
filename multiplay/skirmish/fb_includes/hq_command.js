@@ -248,7 +248,7 @@ class CommandCenter {
 	 * @param {number} brigadeID 
 	 * @returns {BrigadeTargets} Intent: (DroidObject | StructureObject)[]	
 	 */
-	#prioritiseBrigadeTargets(state, brigadeID, closestEnemyBasePosition) {
+	#prioritiseBrigadeTargets(state, brigadeID) {
 
 		/** @type {BrigadeTargets} */
 		const brigadeTargets = {
@@ -641,13 +641,13 @@ class CommandCenter {
 
 			this.BRIGADE_DESIGNATIONS.forEach((brigadeID) => {
 
-				const brigadeStrength = state.brigades[brigadeID]['strength'];
+				// const brigadeStrength = state.brigades[brigadeID]['strength'];
 				const brigadeLocation = state.brigades[brigadeID]['location'];
 				brigadeLocations.push(brigadeLocation);
 
-				const CLOSEST_ENEMY_BASE = intelligence.findClosestEnemyBase(state, brigadeLocation.x, brigadeLocation.y); 			
+				// const CLOSEST_ENEMY_BASE = intelligence.findClosestEnemyBase(state, brigadeLocation.x, brigadeLocation.y); 			
 
-				const groundTargets = this.#prioritiseBrigadeTargets(state, brigadeID, CLOSEST_ENEMY_BASE);
+				const groundTargets = this.#prioritiseBrigadeTargets(state, brigadeID);
 				this.toc.setBrigadeCASStrikeRequests(state, brigadeID, groundTargets['casTargets']);
 
 				if (this.#noTargetsAvailable(groundTargets)) {
