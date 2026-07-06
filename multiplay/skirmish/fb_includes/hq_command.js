@@ -657,8 +657,9 @@ class CommandCenter {
 						return;
 					} 
 					moveBrigadeToLocation(state, brigadeID, CLOSEST_TARGET.x, CLOSEST_TARGET.y);
+					return;
 				}
-
+				
 				moveBrigadeToAttack(state, brigadeID, groundTargets);				
 			});
 
