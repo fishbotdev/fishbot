@@ -15,6 +15,21 @@ This file is used to record the changes to FishBot between each version.
 - Infrastructure improvements
     - Improved the reliability of construction drivers (trucks are less likely to get stuck trying to perform an illegal action).
 
+#### Test results (Warzone 2100 v4.7.0)
+FishBot `v0.4.2` (commit `e277ebd`) was tested 1v1 against Cobra & PeacemakerAI. Sides are swapped mid-way through all tests to account for any map imbalances.
+
+`Gamma 3P T2-NoBase`:
+- 99 / 100 = **99%** win rate: FishBot-v0.4.2 Medium vs PeacemakerAI v0.8 **Medium** 
+- 53 / 100 = **53%** win rate: FishBot-v0.4.2 Medium vs PeacemakerAI v0.8 **Hard** 
+- 97 / 100 = **97%** win rate: FishBot-v0.4.2 Medium vs Cobra **Hard** 
+-  / 100 = **%** win rate: FishBot-v0.4.2 Medium vs Cobra **Insane** 
+
+`Monocot 3P T2-NoBase`:
+- 67 / 100 = **67%** win rate: FishBot-v0.4.2 Medium vs PeacemakerAI v0.8 **Medium** 
+- 9 / 100 = **9%** win rate: FishBot-v0.4.2 Medium vs PeacemakerAI v0.8 **Hard** 
+- 94 / 100 = **94%** win rate: FishBot-v0.4.2 Medium vs Cobra **Hard** 
+-  / 100 = **%** win rate: FishBot-v0.4.2 Medium vs Cobra **Insane** 
+
 ## Fishbot v0.4.1
 *Released **27 Jun 2026***
 ### Changes in v0.4.1
