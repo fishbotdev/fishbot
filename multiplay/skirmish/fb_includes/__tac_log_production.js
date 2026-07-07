@@ -415,7 +415,7 @@ function produceHighVolumeAAUnit(factory) {
 		factory: factory, 
 		weaponList: shortRangeAAWeapons, 
 		propulsionList: airDefenceArtilleryPropulsions, 
-		maxBodyWeight: BODY_WEIGHT.MEDIUM
+		maxBodyWeight: BODY_WEIGHT.HEAVY
 	});
 }
 
@@ -509,7 +509,7 @@ function produceLandUnitCategory(category, factory) {
 			factoryInProduction = factoryInProduction || produceLightCavalry(factory);
 			break;
 		case 'shortRangeArtillery':
-			factoryInProduction = factoryInProduction || produceLandFireSupportGeneric(factory);
+			factoryInProduction = factoryInProduction || produceLandAPFireSupport(factory);
 			break;
 		case 'ADA':
 			if (r === 0) {
