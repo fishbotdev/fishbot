@@ -20,13 +20,13 @@ FishBot `v0.4.2` (commit `e277ebd`) was tested 1v1 against Cobra & PeacemakerAI.
 
 `Gamma 3P T2-NoBase`:
 - 99 / 100 = **99%** win rate: FishBot-v0.4.2 Medium vs PeacemakerAI v0.8 **Medium** 
-- 53 / 100 = **53%** win rate: FishBot-v0.4.2 Medium vs PeacemakerAI v0.8 **Hard** 
+- 10 / 20 = **50%** win rate: FishBot-v0.4.2 Medium vs PeacemakerAI v0.8 **Hard** 
 - 97 / 100 = **97%** win rate: FishBot-v0.4.2 Medium vs Cobra **Hard** 
 -  / 100 = **%** win rate: FishBot-v0.4.2 Medium vs Cobra **Insane** 
 
 `Monocot 3P T2-NoBase`:
 - 67 / 100 = **67%** win rate: FishBot-v0.4.2 Medium vs PeacemakerAI v0.8 **Medium** 
-- 9 / 100 = **9%** win rate: FishBot-v0.4.2 Medium vs PeacemakerAI v0.8 **Hard** 
+- 2 / 20 = **10%** win rate: FishBot-v0.4.2 Medium vs PeacemakerAI v0.8 **Hard** 
 - 94 / 100 = **94%** win rate: FishBot-v0.4.2 Medium vs Cobra **Hard** 
 -  / 100 = **%** win rate: FishBot-v0.4.2 Medium vs Cobra **Insane** 
 
