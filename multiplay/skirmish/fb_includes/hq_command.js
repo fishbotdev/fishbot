@@ -1368,17 +1368,18 @@ class CommandCenter {
 
 		const FISHBOT_T2_CANNON_RESEARCH_PRIORITIES = [
 			RESEARCHES["APFSDS Cannon Rounds Mk3"].id,
-			RESEARCHES["Twin Assault Cannon"].id,
-			RESEARCHES["Heavy Body - Tiger"].id,
-			RESEARCHES["Dedicated Synaptic Link Data Analysis Mk3"].id,
 			"R-Struc-Power",
-			RESEARCHES["Dense Composite Alloys Mk2"].id,
+			RESEARCHES["Dedicated Synaptic Link Data Analysis Mk3"].id,
+
+			RESEARCHES["Twin Assault Cannon"].id,
 			"R-Wpn-Cannon-Damage",
-			"R-Wpn-Mortar-Damage", 	
-			RESEARCHES["Neural Synapse Research Brain"].id,
 			"R-Wpn-Cannon-ROF", 
-			"R-Vehicle-Metals",
-			"R-Wpn-Mortar-ROF",
+			RESEARCHES["Whirlwind AA Turret"].id,
+			RESEARCHES["Twin Assault Gun"].id,
+			RESEARCHES["Heavy Body - Tiger"].id,
+
+			RESEARCHES["Neural Synapse Research Brain"].id,
+			RESEARCHES["Dense Composite Alloys Mk2"].id,
 
 			// Gauss Cannon researches added here
 			RESEARCHES["Needle Gun"].id,
@@ -1388,23 +1389,24 @@ class CommandCenter {
 			"R-Wpn-Rail-Accuracy",
 			"R-Wpn-Rail-Damage",
 
-			RESEARCHES["Advanced Engineering"].id,
-			RESEARCHES["Advanced Repair Facility"].id,
+			"R-Wpn-Mortar-Damage", 	
+			"R-Wpn-Mortar-ROF",
+			"R-Vehicle-Metals",
+
+			// RESEARCHES["Advanced Engineering"].id,
+			// RESEARCHES["Advanced Repair Facility"].id,
 			RESEARCHES["Auto-Repair"].id,
 			RESEARCHES["Neural Synapse Research Brain Mk2"].id,
 
-			"R-Cyborg-Metals", 
+			// "R-Cyborg-Metals", 
 			"R-Struc-VTOLPad-Upgrade",
-
-			RESEARCHES["Twin Assault Gun"].id,
-			RESEARCHES["Whirlwind AA Turret"].id,
 
 			"R-Struc-Factory-Upgrade",
 			RESEARCHES["Neural Synapse Research Brain Mk3"].id,
 			
 			// RESEARCHES["Howitzer"].id,
-			RESEARCHES["Heavy Cannon"].id, 
-			RESEARCHES["AA Cyclone Flak Cannon"].id, 		
+			// RESEARCHES["Heavy Cannon"].id, 
+			// RESEARCHES["AA Cyclone Flak Cannon"].id, 		
 		];
 
 		const FISHBOT_T2_CANNON_RESEARCH_BLACKLIST = [
@@ -1420,8 +1422,7 @@ class CommandCenter {
 			for (let j=positionInResearchOrder; j<researchOrder.length; j++) {
 				if (pursueResearch(idleLabs[i], researchOrder[j].id)) {
 					positionInResearchOrder++;
-					// debug(`${gameTime} (FishBot ${me}): ${researchOrder[j].name}`);		
-					// debug(`${gameTime}\t ${researchOrder[j].name}`);		
+					debug(`  ${gameTime} (FishBot ${me}): researching ${researchOrder[j].name}`);		
 					break;
 				}
 			}
