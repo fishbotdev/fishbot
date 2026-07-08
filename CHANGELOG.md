@@ -5,15 +5,21 @@ This file is used to record the changes to FishBot between each version.
 *Released **- Jul 2026***
 ### Changes in v0.4.2
 - Combat improvements
-    - Resolved an issue where combat units would try to bypass prepared defences in front of them in favour of units behind them.
-    - Improved positioning of AA units & reserves within the combat group to improve effectiveness.
+    - Fixed combat units attempting to bypass prepared defences in front of them.
+    - Fixed AA units trying to attack VTOLs on the ground.
+    - Improved positioning of AA units & reserves within the combat group for greater combat effectiveness.
     - Added Heavy Repair Turret units to the combat group.
 - Production improvements
-    - ADA & indirect fire units increased in priority.
+    - AA & indirect fire units increased in priority.
+    - AA units modified to counter bots which use VTOLs.
+- Research improvements
+    - Improved focus on the Cannon research tree. 
+    - Increased priority of Whirlwind AA.
 - Construction improvements
     - Resolved an issue with 2x2 base structures (e.g. power generators, research labs) being built in locations with no clearance for units to get past.
 - Infrastructure improvements
     - Improved the reliability of construction drivers (trucks are less likely to get stuck trying to perform an illegal action).
+    - Included PeacemakerAI in benchmarking.
 
 #### Test results (Warzone 2100 v4.7.0)
 FishBot `v0.4.2` (commit `e277ebd`) was tested 1v1 against Cobra & PeacemakerAI. Sides are swapped mid-way through all tests to account for any map imbalances.

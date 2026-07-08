@@ -1422,7 +1422,7 @@ class CommandCenter {
 			for (let j=positionInResearchOrder; j<researchOrder.length; j++) {
 				if (pursueResearch(idleLabs[i], researchOrder[j].id)) {
 					positionInResearchOrder++;
-					debug(`  ${gameTime} (FishBot ${me}): researching ${researchOrder[j].name}`);		
+					// debug(`  ${gameTime} (FishBot ${me}): researching ${researchOrder[j].name}`);		
 					break;
 				}
 			}
