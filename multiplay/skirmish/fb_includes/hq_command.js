@@ -56,7 +56,7 @@ class CommandCenter {
 			'MAX_ADA': 3,
 			'MAX_SENSOR': 1,
 			'MAX_INFANTRY': 6,
-			'MAX_REPAIR': 3,
+			'MAX_REPAIR': 1,
 		}
 		this.TOTAL_UNITS_PER_BRIGADE = Object.values(this.FISHBOT_BRIGADE_COMPOSITION).reduce((a, b) => a + b, 0);
 
@@ -894,11 +894,11 @@ class CommandCenter {
 		if (SUFFICIENT_CAVALRY) {
 			w_strategic = {
 				'heavyCavalry': 1,
-				'lightCavalry': 1,
+				'lightCavalry': 0.95,
 				'shortRangeArtillery': 1,
 				'ADA': 0.9,
 				'sensor': 0.2,
-				'repair': 0.9,
+				'repair': 0.85,
 			};
 		}
 
