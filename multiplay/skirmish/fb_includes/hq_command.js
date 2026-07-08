@@ -665,7 +665,7 @@ class CommandCenter {
 
 			// Manage reserves
 			// Temporary: Move reserves to pre-emptively reinforce BCT0
-			const reserveGroupIDs = [DIVISION.HEAVY_CAV_RESERVE, DIVISION.LIGHT_CAV_RESERVE, DIVISION.INFANTRY_RESERVE, DIVISION.SHORT_RANGE_FIRE_SUPPORT_RESERVE, DIVISION.SENSOR_RESERVE, DIVISION.AIR_DEFENCE_RESERVE];
+			const reserveGroupIDs = [DIVISION.HEAVY_CAV_RESERVE, DIVISION.LIGHT_CAV_RESERVE, DIVISION.INFANTRY_RESERVE, DIVISION.SHORT_RANGE_FIRE_SUPPORT_RESERVE, DIVISION.SENSOR_RESERVE, DIVISION.AIR_DEFENCE_RESERVE, DIVISION.MAINTENANCE_RESERVE];
 			const x = brigadeLocations[0].x;
 			const y = brigadeLocations[0].y;
 			moveReservesToShadow(reserveGroupIDs, x, y);
@@ -910,11 +910,11 @@ class CommandCenter {
 			// This is because the algorithm greedily checks for "largest deficit". When the deficit is negative, "largest deficit" = least negative number.
 			w_deficit = {
 				'heavyCavalry': 1,
-				'lightCavalry': 1,
-				'shortRangeArtillery': 1,
-				'ADA': 3,
+				'lightCavalry': 2,
+				'shortRangeArtillery': 4,
+				'ADA': 2,
 				'sensor': 10,
-				'repair': 5,
+				'repair': 8,
 			};
 		}
 

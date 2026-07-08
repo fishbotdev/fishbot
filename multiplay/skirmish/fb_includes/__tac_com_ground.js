@@ -126,7 +126,7 @@ function returnUnitGroupsToBase(unitGroups) {
  */
 function moveReservesToShadow(reserveGroupIDs, x, y) {
 
-	const isTooFarAway = (droid) => distSq(droid.x, x, droid.y, y) > 5 ** 2;
+	const isTooFarAway = (droid) => distSq(droid.x, x, droid.y, y) > 8 ** 2;
 
 	const maintainPositionBehind = (droid) => {
 		if (isTooFarAway(droid)) {
