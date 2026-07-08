@@ -1,5 +1,5 @@
 # FishBot, a capable T2 Warzone 2100 bot 
-[![Hits](https://hits.sh/fishbotdev.github.io/fishbot.svg)](https://hits.sh/fishbotdev.github.io/fishbot/)
+![Badge](https://hitscounter.dev/api/hit?url=https%3A%2F%2Fgithub.com%2Ffishbotdev%2Ffishbot&label=Hits&icon=github&color=%23198754&message=&style=flat&tz=UTC)
 ![GitHub downloads (all releases)](https://img.shields.io/github/downloads/fishbotdev/fishbot/total)
 
 FishBot is a Warzone 2100 AI bot compatible with Warzone 2100 **v4.6.1+**.
