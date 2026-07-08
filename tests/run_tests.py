@@ -54,7 +54,7 @@ TEST_RESULTS_FOLDER_PATH = getcwd()
 
 # Test metadata
 COMMIT_SHA = r"""
-f17cdeefd72897c46d3d806b18539171c25bd5cc
+abbd4907ea5e2d8e407b0008849b4d12c5d78fb8
 """
 
 #################################### USER CONFIG END ####################################

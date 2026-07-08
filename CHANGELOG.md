@@ -22,19 +22,19 @@ This file is used to record the changes to FishBot between each version.
     - Included PeacemakerAI in benchmarking.
 
 #### Test results (Warzone 2100 v4.7.0)
-FishBot `v0.4.2` (commit `f17cdee`) was tested 1v1 against Cobra & PeacemakerAI. Sides are swapped mid-way through all tests to account for map-induced imbalances (i.e. 50 games as Player 1, and then 50 games as Player 2).
+FishBot `v0.4.2` (commit `abbd490`) was tested 1v1 against Cobra & PeacemakerAI. Sides are swapped mid-way through all tests to account for map-induced imbalances (i.e. 50 games as Player 1, and then 50 games as Player 2).
 
 `Monocot 3P T2-NoBase`:
-- **89%** win rate: FishBot-v0.4.2 Medium vs Cobra **Hard** 
-- **43.2%** win rate: FishBot-v0.4.2 Medium vs Cobra **Insane** 
-- **75%** win rate: FishBot-v0.4.2 Medium vs PeacemakerAI v0.8 **Medium** 
-- **18.9%** win rate: FishBot-v0.4.2 Medium vs PeacemakerAI v0.8 **Hard** 
+- **%** win rate: FishBot-v0.4.2 Medium vs Cobra **Hard** 
+- **%** win rate: FishBot-v0.4.2 Medium vs Cobra **Insane** 
+- **%** win rate: FishBot-v0.4.2 Medium vs PeacemakerAI v0.8 **Medium** 
+- **%** win rate: FishBot-v0.4.2 Medium vs PeacemakerAI v0.8 **Hard** 
 
 `Gamma 3P T2-NoBase`:
-- **97%** win rate: FishBot-v0.4.2 Medium vs Cobra **Hard** 
-- **35%** win rate: FishBot-v0.4.2 Medium vs Cobra **Insane** 
-- **100%** win rate: FishBot-v0.4.2 Medium vs PeacemakerAI v0.8 **Medium** 
-- **81%** win rate: FishBot-v0.4.2 Medium vs PeacemakerAI v0.8 **Hard** 
+- **%** win rate: FishBot-v0.4.2 Medium vs Cobra **Hard** 
+- **%** win rate: FishBot-v0.4.2 Medium vs Cobra **Insane** 
+- **%** win rate: FishBot-v0.4.2 Medium vs PeacemakerAI v0.8 **Medium** 
+- **%** win rate: FishBot-v0.4.2 Medium vs PeacemakerAI v0.8 **Hard** 
 
 ## Fishbot v0.4.1
 *Released **27 Jun 2026***

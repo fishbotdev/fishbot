@@ -255,8 +255,9 @@ def append_match(df: pd.DataFrame, path: str) -> None:
 
 def run_autogame(commands: List[str]) -> List[str]:
     # Execute normally (let WZ write directly to the console)
-    subprocess.run(commands, timeout=120)        # blocking (only returns once the process is finished); times out in 120seconds = 2 mins
-    del commands
+    TIMEOUT_SECONDS = 180
+    subprocess.run(commands, timeout=TIMEOUT_SECONDS)        # blocking (only returns once the process is finished)
+    del TIMEOUT_SECONDS, commands
 
     # Scrapes the console output and stores it into `console_history`, then clears the console in prep for further processing
     console_history = windows_scrape_terminal_history(lines_to_read=1000)
