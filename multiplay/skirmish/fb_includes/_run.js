@@ -144,7 +144,8 @@ function setupDebugMode() {
 	playerData.forEach(p => {
 		if (p.isHuman) {
 			// remove default human player (force-added in challenge mode)
-			transformPlayerToSpectator(p.position);
+			debug(`Forcing ${p.position} to spec`);
+			transformPlayerToSpectator(p.position);		// this function appears to just force player 0 to spec
 			return;
 		}
 
