@@ -81,7 +81,8 @@ class armyEngineering {
 
 		const DEBUG_ON = false;
 		let debugGrid = create2DGrid(numXCells, numYCells, (...args) => {return "_";});
-		let valid = [];
+		const normalPriorityDerricks = [];
+		const highPriorityDerricks = [];
 
 		// Iterate through the grid, find & remember valid cells
 		for (let gx=0; gx<numXCells; gx++) {
@@ -108,7 +109,7 @@ class armyEngineering {
 							structureData: STRUCTURES["Oil Derrick"],
 							payload: grid[gx][gy]		// needs to have the '.derricks' property to work with the existing system
 						});
-						valid.push([d.id, br]);
+						highPriorityDerricks.push(br);
 						if (DEBUG_ON) debugGrid[gx][gy] = "X";
 						break;
 					} else {
@@ -117,7 +118,7 @@ class armyEngineering {
 							structureData: STRUCTURES["Oil Derrick"],
 							payload: d
 						});
-						valid.push([d.id, br]);
+						normalPriorityDerricks.push([d.id, br]);
 						if (DEBUG_ON) debugGrid[gx][gy] = "X";
 					}
 				}
@@ -137,29 +138,20 @@ class armyEngineering {
 			}
 		}
 
-		let result = [];
-		if (valid.length === 0) {
+		const result = [...highPriorityDerricks];
+		if (normalPriorityDerricks.length === 0) {
 			return result;
 		}
 		
-		// Order the tasks in order of decreasing distance from base
-		let count = 0;
+		// Else, order the tasks in order of decreasing distance from base (assumes state.poi.derricks is in order).
 		state.poi.derricks.forEach(d => {
-			for (let i=0; i<valid.length; i++) {
-				if (d.id === valid[i][0]) {
-					result.push(valid[i][1]);
-					count++;
+			for (let i=0; i<normalPriorityDerricks.length; i++) {
+				if (d.id === normalPriorityDerricks[i][0]) {
+					result.push(normalPriorityDerricks[i][1]);
 					return;
 				}
 			}
 		});
-
-		if (count !== valid.length) {
-			debug(`WARNING: prioritiseOilCapTasks(): count !== valid.length!`);
-		} else {
-			if (DEBUG_ON) result.forEach(br => debug (`\t${br.payload.id}`));
-		}
-
 		return result;
 	}
 
