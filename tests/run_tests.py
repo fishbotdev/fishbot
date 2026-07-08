@@ -44,9 +44,9 @@ PRODUCTION_TEST_FOLDER_PATH = r"..\Warzone 2100\PRODCONFIG\tests"
 REGENERATE_TESTS = True
 # config_generator = cfg.generate_1v1_cobra_med_3P
 # config_generator = cfg.generate_1v1_cobra_hard_3P
-config_generator = cfg.generate_1v1_peacemaker_hard_3P
-# config_generator = cfg.generate_1v1_peacemaker_med_3P
 # config_generator = cfg.generate_1v1_cobra_insane_3P
+config_generator = cfg.generate_1v1_peacemaker_med_3P
+# config_generator = cfg.generate_1v1_peacemaker_hard_3P
 
 RUN_TESTS = True               # Please see `__main__` in `_run_and_save_autogames.py` for how to set up your console.
 NUM_CYCLES_PER_TEST = 50
@@ -54,7 +54,7 @@ TEST_RESULTS_FOLDER_PATH = getcwd()
 
 # Test metadata
 COMMIT_SHA = r"""
-a9ca350d5f53ef8fb133c329780b542366d4aa91
+f17cdeefd72897c46d3d806b18539171c25bd5cc
 """
 
 #################################### USER CONFIG END ####################################
