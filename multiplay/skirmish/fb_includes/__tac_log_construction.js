@@ -15,20 +15,17 @@
 	If not, see <https://www.gnu.org/licenses/>.
 */
 
-const constructionSearchPattern = [
-	// Distance 0
-	[0, 0],
-	// Distance 1
-	[-1, 0], [0, -1], [0, 1], [1, 0],
-	// Distance 2
-	[-2, 0], [-1, -1], [-1, 1], [0, -2], [0, 2], [1, -1], [1, 1], [2, 0],
-	// Distance 3
-	[-3, 0], [-2, -1], [-2, 1], [-1, -2], [-1, 2], [0, -3], [0, 3], [1, -2], [1, 2], [2, -1], [2, 1], [3, 0],
-	// Distance 4
-	[-4, 0], [-3, -1], [-3, 1], [-2, -2], [-2, 2], [-1, -3], [-1, 3], [0, -4], [0, 4], [1, -3], [1, 3], [2, -2], [2, 2], [3, -1], [3, 1], [4, 0],
-	// Distance 5
-	[-5, 0], [-4, -1], [-4, 1], [-3, -2], [-3, 2], [-2, -3], [-2, 3], [-1, -4], [-1, 4], [0, -5], [0, 5], [1, -4], [1, 4], [2, -3], [2, 3], [3, -2], [3, 2], [4, -1], [4, 1], [5, 0]
+const QUADRANT_SEARCH_PATTERN = [
+	// This pattern: up and to the right (Q3)
+	[0, 0], 
+	[1, 0], [0, 1], 
+	[1, 1], [2, 0], [0, 2],
+	[1, 2], [2, 1], [3, 0], [0, 3],
+	[2, 2], [1, 3], [3, 1], [4, 0], [0, 4],
+	[3, 2], [2, 3], [1, 4], [4, 1], [5, 0], [0, 5]
 ];
+const HALF_MAP_WIDTH = Math.floor(mapWidth / 2);
+const HALF_MAP_HEIGHT = Math.floor(mapHeight / 2);
 
 const walkableTiles = getWalkableTiles();
 const isWalkable = create2DGrid(mapWidth, mapHeight, () => {return false;});
@@ -124,11 +121,18 @@ function pickStructLocation3(structureID, x, y) {
 	state.playerInfo.forEach(p => playerIsEnemy.push(p.isFriendly));		// TODO: Better way to access state than to access out of context?
 
 	const outsideOfHeightTolerance = [];
-	
-	for (let i=0; i<constructionSearchPattern.length; i++) {
-		const tX = constructionSearchPattern[i][0] + x;
-		const tY = constructionSearchPattern[i][1] + y;
 
+	const xDirection = (x > HALF_MAP_WIDTH) ? -1 : 1;
+	const yDirection = (y > HALF_MAP_HEIGHT) ? -1 : 1;
+
+	for (let i=0; i<QUADRANT_SEARCH_PATTERN.length; i++) {
+		const tX = x + xDirection * QUADRANT_SEARCH_PATTERN[i][0];
+		const tY = y + yDirection * QUADRANT_SEARCH_PATTERN[i][1];
+
+		if (tX < 0 || tX >= mapWidth || tY < 0 || tY >= mapHeight) {
+			continue;
+		}
+			
 		if (!isWalkable[tX][tY]) {
 			// debug(`	${gameTime}: psl2 rejected: (${tX}, ${tY}); not reachable`);
 			continue;
