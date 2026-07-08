@@ -2,7 +2,7 @@
 This file is used to record the changes to FishBot between each version.
 
 ## Fishbot v0.4.2
-*Released **8 Jul 2026***
+*Released **- Jul 2026***
 ### Changes in v0.4.2
 - Combat improvements
     - Fixed combat units attempting to bypass prepared defences in front of them.
