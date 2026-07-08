@@ -53,7 +53,7 @@ class CommandCenter {
 			'MAX_HEAVY_CAVALRY': 8,
 			'MAX_LIGHT_CAVALRY': 3,
 			'MAX_MORTAR': 6,
-			'MAX_ADA': 2,
+			'MAX_ADA': 3,
 			'MAX_SENSOR': 1,
 			'MAX_INFANTRY': 6,
 			'MAX_REPAIR': 3,
@@ -898,7 +898,7 @@ class CommandCenter {
 				'shortRangeArtillery': 1,
 				'ADA': 0.9,
 				'sensor': 0.2,
-				'repair': 0.7,
+				'repair': 0.9,
 			};
 		}
 
