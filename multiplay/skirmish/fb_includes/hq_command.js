@@ -898,7 +898,7 @@ class CommandCenter {
 				'shortRangeArtillery': 1,
 				'ADA': 0.9,
 				'sensor': 0.2,
-				'repair': 0.9,
+				'repair': 0.7,
 			};
 		}
 
