@@ -44,6 +44,24 @@ SKIRMISH_SETTINGS_COBRA_HARD_1V1 = {
     "techLevel": 2,
 }
 
+MONOCOT_SETTINGS_1V1_3P = [
+    {
+        "mapName": "Monocot",
+        "maxPlayers": 3,
+        "fishbot_position": 1,
+        "opponent_position": 2
+    },
+]
+
+GAMMA_SETTINGS_1V1_3P = [
+    {
+        "mapName": "Gamma",
+        "maxPlayers": 3,
+        "fishbot_position": 1,
+        "opponent_position": 2
+    },
+]
+
 MAP_SETTINGS_COBRA_1V1 = [
 
     # 2p maps (note: these are not included because challenge maps force add a human player as Player 0).
