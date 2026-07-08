@@ -2,7 +2,7 @@
 This file is used to record the changes to FishBot between each version.
 
 ## Fishbot v0.4.2
-*Released **8 Jul 2026***
+*Released **9 Jul 2026***
 ### Changes in v0.4.2
 - Combat improvements
     - Fixed combat units attempting to bypass prepared defences in front of them.
@@ -11,18 +11,19 @@ This file is used to record the changes to FishBot between each version.
     - Added Heavy Repair Turret units to the combat group.
 - Production improvements
     - AA & indirect fire units increased in production priority.
-    - AA units modified to counter bots which use VTOLs.
+    - AA units modified to counter bots which use VTOLs (AA units now use heavy bodies).
 - Research improvements
     - Improved focus on the Cannon research tree. 
     - Increased priority of Whirlwind AA.
 - Construction improvements
     - Resolved an issue with 2x2 base structures (e.g. power generators, research labs) being built in locations with no clearance for units to get past.
+    - Improved initial oil capture.
 - Infrastructure improvements
     - Improved the reliability of construction drivers (trucks are less likely to get stuck trying to perform an illegal action).
-    - Included PeacemakerAI in benchmarking.
+    - Included PeacemakerAI in FishBot benchmarking.
 
 #### Test results (Warzone 2100 v4.7.0)
-FishBot `v0.4.2` (commit `abbd490`) was tested 1v1 against Cobra & PeacemakerAI. Sides are swapped mid-way through all tests to account for map-induced imbalances (i.e. 50 games as Player 1, and then 50 games as Player 2).
+FishBot `v0.4.2` (commit `2d98d12`) was tested 1v1 against Cobra & PeacemakerAI. Sides were swapped mid-way through all tests to account for map-induced imbalances (i.e. 50 games as Player 1, and then 50 games as Player 2). The average is taken as the final win percentage.
 
 `Monocot 3P T2-NoBase`:
 - **88%** win rate: FishBot-v0.4.2 Medium vs Cobra **Hard** 
@@ -64,7 +65,7 @@ FishBot `v0.4.2` (commit `abbd490`) was tested 1v1 against Cobra & PeacemakerAI.
         
 
 #### Test results (Warzone 2100 v4.7.0)
-FishBot `v0.4.1` (commit `03a99ae`) was tested 1v1 against Cobra. Sides are swapped mid-way through all tests to account for any map imbalances.
+FishBot `v0.4.1` (commit `03a99ae`) was tested 1v1 against Cobra. Sides were swapped mid-way through all tests to account for map-induced imbalances (i.e. 50 games as Player 1, and then 50 games as Player 2).
 
 `Gamma 3P T2`:
 - 100 / 100 = **100%** win rate: FishBot-v0.4.1 Medium vs Cobra **Medium** 

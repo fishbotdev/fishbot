@@ -39,10 +39,11 @@
 	- 4437 JS @ 07 Apr 2026: v0.3.3 release (commit `b6c85a5`)
 	- 5097 JS @ 02 May 2026: v0.4.0 release (commit `2c79f5f`)
 	- 5237 JS @ 27 Jun 2026: v0.4.1 release (commit `03a99ae`)
+	- 5329 JS @ 09 Jul 2026: v0.4.2 release (commit `2d98d12`)
 */
 
 
-const FISHBOT_VERSION = "0.4.2-dev";
+const FISHBOT_VERSION = "0.4.2";
 
 //	This file connects all remaining pieces of AI code together. It shouldn't contain any code itself.
 //	NOTE: order matters!
@@ -53,7 +54,7 @@ const FB_INCLUDES = FISHBOT_PATH + "fb_includes/";
 //	 - Show some useful debug information in the console
 //	 - Automatically colour players 0, 1, 2
 //	 - Transform Player 0 (forced human player slot) to spectator mode (used for automated bot testing)
-const DEBUG_MODE_ON = true;
+const DEBUG_MODE_ON = false;
 
 
 /*
