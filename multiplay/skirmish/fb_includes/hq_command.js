@@ -418,7 +418,7 @@ class CommandCenter {
 		// CAS Targeting (Close Air Support)
 		// Intent: `casTargets` should be a list of mission requests interpretable by a following call of `#prioritiseAviationTargets`.
 		const primaryCASTargets = [...enemyIndirectFire, ...enemyADA];
-		const secondaryCASTargets = [...enemyUtility, ...enemyArmor, ...enemyDefenses];
+		const secondaryCASTargets = [...enemyArmor, ...enemyDefenses];
 
 		const isHealthy = (obj) => obj.health > 25;
 		secondaryCASTargets.forEach(obj => {
