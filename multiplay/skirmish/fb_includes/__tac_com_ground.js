@@ -126,7 +126,7 @@ function returnUnitGroupsToBase(unitGroups) {
  */
 function moveReservesToShadow(reserveGroupIDs, x, y) {
 
-	const isTooFarAway = (droid) => distSq(droid.x, x, droid.y, y) > 5 ** 2;
+	const isTooFarAway = (droid) => distSq(droid.x, x, droid.y, y) > 8 ** 2;
 
 	const maintainPositionBehind = (droid) => {
 		if (isTooFarAway(droid)) {
@@ -258,6 +258,7 @@ function moveBrigadeToAttack(state, brigadeID, groundTargets) {
 	const isTooFarFromBrigade = (droid) => distSq(droid.x, LOCATION_X, droid.y, LOCATION_Y) > 9 ** 2;
 
 	const _distSqToClosestDroid = (droid) => distSq(droid.x, closestDroidToTarget.x, droid.y, closestDroidToTarget.y);
+	const dfDsqToTarget = _distSqToClosestDroid(DIRECT_FIRE_TARGET);
 	const isNearFrontLine = (droid) => _distSqToClosestDroid(droid) < 3 ** 2;
 
 	const moveToClosestDroid = (droid) => orderDroidLoc(droid, DORDER_MOVE, closestDroidToTarget.x, closestDroidToTarget.y);
@@ -271,24 +272,28 @@ function moveBrigadeToAttack(state, brigadeID, groundTargets) {
 	};
 
 	const fixNearestDamaged = (droid) => {
-		if (droid.order === DROID_REPAIR) {		// do not interrupt a repair in progress
+		const droidDsqToTarget = distSq(droid.x, DIRECT_FIRE_TARGET.x, droid.y, DIRECT_FIRE_TARGET.y);
+		if (droidDsqToTarget <= dfDsqToTarget) {	// Too close to enemy
+			returnUnitToBase(droid);
+			return;
+		}
+		if (droid.order === DROID_REPAIR) {			// do not interrupt a repair in progress
 			return;	
 		}
-
 		if (_distSqToClosestDroid(droid) > 6 ** 2) {
 			moveToClosestDroid(droid);
-		} else {
-			const nearby = enumRange(droid.x, droid.y, 4, ALLIES);
-			for (let i=0; i<nearby.length; i++) {
-				const obj = nearby[i];
-				if (obj.type !== DROID) {
-					continue;
-				}
+			return;
+		} 
+		const nearby = enumRange(droid.x, droid.y, 4, ALLIES);
+		for (let i=0; i<nearby.length; i++) {
+			const obj = nearby[i];
+			if (obj.type !== DROID) {
+				continue;
+			}
 
-				if (obj.health < 99) {
-					orderDroidObj(droid, DORDER_REPAIR, obj);
-					return;
-				}
+			if (obj.health < 99) {
+				orderDroidObj(droid, DORDER_REPAIR, obj);
+				return;
 			}
 		}
 	};

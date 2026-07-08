@@ -415,7 +415,7 @@ function produceHighVolumeAAUnit(factory) {
 		factory: factory, 
 		weaponList: shortRangeAAWeapons, 
 		propulsionList: airDefenceArtilleryPropulsions, 
-		maxBodyWeight: BODY_WEIGHT.MEDIUM
+		maxBodyWeight: BODY_WEIGHT.HEAVY
 	});
 }
 
@@ -497,9 +497,7 @@ function produceInfantry(factory) {
 }
 
 function produceLandUnitCategory(category, factory) {
-	let factoryInProduction = false;   
-
-	let r = Math.floor(Math.random() * 4);		// this should be one of the few (if any) Math.random() calls in FishBot.
+	let factoryInProduction = false;  
 	
 	switch (category) {
 		case 'heavyCavalry':
@@ -509,14 +507,10 @@ function produceLandUnitCategory(category, factory) {
 			factoryInProduction = factoryInProduction || produceLightCavalry(factory);
 			break;
 		case 'shortRangeArtillery':
-			factoryInProduction = factoryInProduction || produceLandFireSupportGeneric(factory);
+			factoryInProduction = factoryInProduction || produceLandAPFireSupport(factory);
 			break;
 		case 'ADA':
-			if (r === 0) {
-				factoryInProduction = factoryInProduction || produceAAFlakUnit(factory);
-			} else {
-				factoryInProduction = factoryInProduction || produceHighVolumeAAUnit(factory);
-			}
+			factoryInProduction = factoryInProduction || produceHighVolumeAAUnit(factory);
 			break;
 		case 'sensor': 
 			factoryInProduction = factoryInProduction || produceLandRecon(factory);

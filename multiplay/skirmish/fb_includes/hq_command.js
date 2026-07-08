@@ -248,7 +248,7 @@ class CommandCenter {
 	 * @param {number} brigadeID 
 	 * @returns {BrigadeTargets} Intent: (DroidObject | StructureObject)[]	
 	 */
-	#prioritiseBrigadeTargets(state, brigadeID, closestEnemyBasePosition) {
+	#prioritiseBrigadeTargets(state, brigadeID) {
 
 		/** @type {BrigadeTargets} */
 		const brigadeTargets = {
@@ -442,10 +442,10 @@ class CommandCenter {
 		const enemyAircraft = getObjectList(TARGETS['enemyAviation']);		// todo: remove if no ADA available
 		enemyAircraft.forEach(obj => {
 			if (outsideOfRadius(obj, EFFECTIVE_ADA_RADIUS)) return;
+			if (obj.isFlying !== true) return;
 			brigadeTargets["adaTargets"].push(obj);
 		});		
 		brigadeTargets["adaTargets"].sort((a,b) => a.health - b.health);			
-	
 
 		return brigadeTargets;
 	}
@@ -641,13 +641,13 @@ class CommandCenter {
 
 			this.BRIGADE_DESIGNATIONS.forEach((brigadeID) => {
 
-				const brigadeStrength = state.brigades[brigadeID]['strength'];
+				// const brigadeStrength = state.brigades[brigadeID]['strength'];
 				const brigadeLocation = state.brigades[brigadeID]['location'];
 				brigadeLocations.push(brigadeLocation);
 
-				const CLOSEST_ENEMY_BASE = intelligence.findClosestEnemyBase(state, brigadeLocation.x, brigadeLocation.y); 			
+				// const CLOSEST_ENEMY_BASE = intelligence.findClosestEnemyBase(state, brigadeLocation.x, brigadeLocation.y); 			
 
-				const groundTargets = this.#prioritiseBrigadeTargets(state, brigadeID, CLOSEST_ENEMY_BASE);
+				const groundTargets = this.#prioritiseBrigadeTargets(state, brigadeID);
 				this.toc.setBrigadeCASStrikeRequests(state, brigadeID, groundTargets['casTargets']);
 
 				if (this.#noTargetsAvailable(groundTargets)) {
@@ -657,14 +657,15 @@ class CommandCenter {
 						return;
 					} 
 					moveBrigadeToLocation(state, brigadeID, CLOSEST_TARGET.x, CLOSEST_TARGET.y);
+					return;
 				}
-
+				
 				moveBrigadeToAttack(state, brigadeID, groundTargets);				
 			});
 
 			// Manage reserves
 			// Temporary: Move reserves to pre-emptively reinforce BCT0
-			const reserveGroupIDs = [DIVISION.HEAVY_CAV_RESERVE, DIVISION.LIGHT_CAV_RESERVE, DIVISION.INFANTRY_RESERVE, DIVISION.SHORT_RANGE_FIRE_SUPPORT_RESERVE, DIVISION.SENSOR_RESERVE, DIVISION.AIR_DEFENCE_RESERVE];
+			const reserveGroupIDs = [DIVISION.HEAVY_CAV_RESERVE, DIVISION.LIGHT_CAV_RESERVE, DIVISION.INFANTRY_RESERVE, DIVISION.SHORT_RANGE_FIRE_SUPPORT_RESERVE, DIVISION.SENSOR_RESERVE, DIVISION.AIR_DEFENCE_RESERVE, DIVISION.MAINTENANCE_RESERVE];
 			const x = brigadeLocations[0].x;
 			const y = brigadeLocations[0].y;
 			moveReservesToShadow(reserveGroupIDs, x, y);
@@ -897,7 +898,7 @@ class CommandCenter {
 				'shortRangeArtillery': 1,
 				'ADA': 0.9,
 				'sensor': 0.2,
-				'repair': 0.9,
+				'repair': 0.7,
 			};
 		}
 
@@ -909,11 +910,11 @@ class CommandCenter {
 			// This is because the algorithm greedily checks for "largest deficit". When the deficit is negative, "largest deficit" = least negative number.
 			w_deficit = {
 				'heavyCavalry': 1,
-				'lightCavalry': 1,
-				'shortRangeArtillery': 1,
-				'ADA': 3,
+				'lightCavalry': 2,
+				'shortRangeArtillery': 4,
+				'ADA': 2,
 				'sensor': 10,
-				'repair': 2,
+				'repair': 8,
 			};
 		}
 
@@ -1367,17 +1368,18 @@ class CommandCenter {
 
 		const FISHBOT_T2_CANNON_RESEARCH_PRIORITIES = [
 			RESEARCHES["APFSDS Cannon Rounds Mk3"].id,
-			RESEARCHES["Twin Assault Cannon"].id,
-			RESEARCHES["Heavy Body - Tiger"].id,
-			RESEARCHES["Dedicated Synaptic Link Data Analysis Mk3"].id,
 			"R-Struc-Power",
-			RESEARCHES["Dense Composite Alloys Mk2"].id,
+			RESEARCHES["Dedicated Synaptic Link Data Analysis Mk3"].id,
+
+			RESEARCHES["Twin Assault Cannon"].id,
 			"R-Wpn-Cannon-Damage",
-			"R-Wpn-Mortar-Damage", 	
-			RESEARCHES["Neural Synapse Research Brain"].id,
 			"R-Wpn-Cannon-ROF", 
-			"R-Vehicle-Metals",
-			"R-Wpn-Mortar-ROF",
+			RESEARCHES["Whirlwind AA Turret"].id,
+			RESEARCHES["Twin Assault Gun"].id,
+			RESEARCHES["Heavy Body - Tiger"].id,
+
+			RESEARCHES["Neural Synapse Research Brain"].id,
+			RESEARCHES["Dense Composite Alloys Mk2"].id,
 
 			// Gauss Cannon researches added here
 			RESEARCHES["Needle Gun"].id,
@@ -1387,23 +1389,24 @@ class CommandCenter {
 			"R-Wpn-Rail-Accuracy",
 			"R-Wpn-Rail-Damage",
 
-			RESEARCHES["Advanced Engineering"].id,
-			RESEARCHES["Advanced Repair Facility"].id,
+			"R-Wpn-Mortar-Damage", 	
+			"R-Wpn-Mortar-ROF",
+			"R-Vehicle-Metals",
+
+			// RESEARCHES["Advanced Engineering"].id,
+			// RESEARCHES["Advanced Repair Facility"].id,
 			RESEARCHES["Auto-Repair"].id,
 			RESEARCHES["Neural Synapse Research Brain Mk2"].id,
 
-			"R-Cyborg-Metals", 
+			// "R-Cyborg-Metals", 
 			"R-Struc-VTOLPad-Upgrade",
-
-			RESEARCHES["Twin Assault Gun"].id,
-			RESEARCHES["Whirlwind AA Turret"].id,
 
 			"R-Struc-Factory-Upgrade",
 			RESEARCHES["Neural Synapse Research Brain Mk3"].id,
 			
 			// RESEARCHES["Howitzer"].id,
-			RESEARCHES["Heavy Cannon"].id, 
-			RESEARCHES["AA Cyclone Flak Cannon"].id, 		
+			// RESEARCHES["Heavy Cannon"].id, 
+			// RESEARCHES["AA Cyclone Flak Cannon"].id, 		
 		];
 
 		const FISHBOT_T2_CANNON_RESEARCH_BLACKLIST = [
@@ -1419,8 +1422,7 @@ class CommandCenter {
 			for (let j=positionInResearchOrder; j<researchOrder.length; j++) {
 				if (pursueResearch(idleLabs[i], researchOrder[j].id)) {
 					positionInResearchOrder++;
-					// debug(`${gameTime} (FishBot ${me}): ${researchOrder[j].name}`);		
-					// debug(`${gameTime}\t ${researchOrder[j].name}`);		
+					// debug(`  ${gameTime} (FishBot ${me}): researching ${researchOrder[j].name}`);		
 					break;
 				}
 			}
