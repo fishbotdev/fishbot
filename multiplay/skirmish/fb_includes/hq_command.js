@@ -311,7 +311,7 @@ class CommandCenter {
 			const aDist = distSq(x, a.x, y, a.y);
 			const bDist = distSq(x, b.x, y, b.y);
 
-			const MIN_DIRECT_FIRE_RANGE_SQ = 12 ** 2;
+			const MIN_DIRECT_FIRE_RANGE_SQ = 20 ** 2;
 			if (aDist > MIN_DIRECT_FIRE_RANGE_SQ || bDist > MIN_DIRECT_FIRE_RANGE_SQ) {
 				return aDist - bDist;
 			}
