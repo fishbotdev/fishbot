@@ -1,5 +1,5 @@
 # FishBot, a capable T2 Warzone 2100 bot 
-[![Hits](https://hits.sh/fishbotdev.github.io/fishbot.svg)](https://hits.sh/fishbotdev.github.io/fishbot/)
+![Badge](https://hitscounter.dev/api/hit?url=https%3A%2F%2Fgithub.com%2Ffishbotdev%2Ffishbot&label=Hits&icon=github&color=%23198754&message=&style=flat&tz=UTC)
 ![GitHub downloads (all releases)](https://img.shields.io/github/downloads/fishbotdev/fishbot/total)
 
 FishBot is a Warzone 2100 AI bot compatible with Warzone 2100 **v4.6.1+**.
@@ -52,6 +52,12 @@ Official support for other maps will be included in future versions. The current
 * FishBot attempts to build forward-defences around derricks which are too dangerous to go and capture.
 
 ## Recent updates
+* **v0.4.2** - *released **10 Jul 2026***
+    * Combat improvements:
+        * Improved direct-fire targeting and the effectiveness of AA units.
+        * Added support for Heavy Repair Turret units.
+    * Slightly improved research order and construction reliability.
+
 * **v0.4.1** - *released **27 Jun 2026***
     * Increased combat group cohesion.
     * Construction fixes:
@@ -66,10 +72,7 @@ Official support for other maps will be included in future versions. The current
     * Production is no longer randomised (now depends on current brigade demand).
     * Various construction fixes and improvements (please see [`CHANGELOG.md`](CHANGELOG.md) for a full list of changes).
 
-* **v0.3.3** -- *released **07 Apr 2026***
-    * Fixed research collisions: FishBot will now try to research other technologies if they are already being researched by an ally.
-
-Please see [`CHANGELOG.md`](CHANGELOG.md) for a detailed list of past changes.
+Please see [`CHANGELOG.md`](CHANGELOG.md) for a detailed list of all past changes.
 
 ## Upcoming features
 The current areas for improvement are:

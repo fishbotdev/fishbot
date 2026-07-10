@@ -81,7 +81,8 @@ class armyEngineering {
 
 		const DEBUG_ON = false;
 		let debugGrid = create2DGrid(numXCells, numYCells, (...args) => {return "_";});
-		let valid = [];
+		const normalPriorityDerricks = [];
+		const highPriorityDerricks = [];
 
 		// Iterate through the grid, find & remember valid cells
 		for (let gx=0; gx<numXCells; gx++) {
@@ -98,7 +99,7 @@ class armyEngineering {
 
 					// Check for existing mission
 					if (activeOilCapTaskIDs.indexOf(d.id) !== -1) continue; 									// found 'CONSTRUCT_OIL_DERRICK' task
-					if (activeOilCapTaskIDs.filter(id => id === grid[gx][gy].id).length >= 2) break;			// found at least 2 'CONSTRUCT_SECTOR_DERRICKS' tasks
+					if (activeOilCapTaskIDs.indexOf(grid[gx][gy].id) !== -1) continue;							// found the same 'CONSTRUCT_ALL_DERRICKS_IN_SECTOR' task
 
 					// if (tileIsBurning(d.x, d.y)) continue;		// seems to be worse
 
@@ -108,7 +109,7 @@ class armyEngineering {
 							structureData: STRUCTURES["Oil Derrick"],
 							payload: grid[gx][gy]		// needs to have the '.derricks' property to work with the existing system
 						});
-						valid.push([d.id, br]);
+						highPriorityDerricks.push(br);
 						if (DEBUG_ON) debugGrid[gx][gy] = "X";
 						break;
 					} else {
@@ -117,7 +118,7 @@ class armyEngineering {
 							structureData: STRUCTURES["Oil Derrick"],
 							payload: d
 						});
-						valid.push([d.id, br]);
+						normalPriorityDerricks.push([d.id, br]);
 						if (DEBUG_ON) debugGrid[gx][gy] = "X";
 					}
 				}
@@ -137,29 +138,20 @@ class armyEngineering {
 			}
 		}
 
-		let result = [];
-		if (valid.length === 0) {
+		const result = [...highPriorityDerricks];
+		if (normalPriorityDerricks.length === 0) {
 			return result;
 		}
 		
-		// Order the tasks in order of decreasing distance from base
-		let count = 0;
+		// Else, order the tasks in order of decreasing distance from base (assumes state.poi.derricks is in order).
 		state.poi.derricks.forEach(d => {
-			for (let i=0; i<valid.length; i++) {
-				if (d.id === valid[i][0]) {
-					result.push(valid[i][1]);
-					count++;
+			for (let i=0; i<normalPriorityDerricks.length; i++) {
+				if (d.id === normalPriorityDerricks[i][0]) {
+					result.push(normalPriorityDerricks[i][1]);
 					return;
 				}
 			}
 		});
-
-		if (count !== valid.length) {
-			debug(`WARNING: prioritiseOilCapTasks(): count !== valid.length!`);
-		} else {
-			if (DEBUG_ON) result.forEach(br => debug (`\t${br.payload.id}`));
-		}
-
 		return result;
 	}
 
@@ -188,7 +180,7 @@ class armyEngineering {
 		const enemyUnitThreat = state.fields.enemyUnitThreat;
 
 		const MAX_CONTROL = 5;
-		const PROXIMITY_RADIUS = 7;
+		const PROXIMITY_RADIUS = 9;
 
 		const makePrimaryDefence = (derrickObj) => this.translateIntoBuildRequest({
 			missionType: MISSION_TYPE.CONSTRUCT_NEARBY_DEFENCE, 
@@ -410,11 +402,13 @@ class armyEngineering {
 
 		// PART 2: FIND CONSTRUCTION LOCATIONS
 		forceLocations.forEach(LOCATION => {
-			const x = LOCATION.x;
-			const y = LOCATION.y;
-			if (!isWalkable[x][y]) {		
+			const potentialLocation = pickStructLocation3(STRUCTURES["Repair Facility"].id, LOCATION.x, LOCATION.y);
+			if (potentialLocation == undefined) {
 				return;
 			}
+
+			const x = potentialLocation.x;
+			const y = potentialLocation.y;
 
 			const gx = Math.floor(x / cellSize);
 			const gy = Math.floor(y / cellSize);
@@ -471,7 +465,7 @@ class armyEngineering {
 			const buildRequest = this.translateIntoBuildRequest({
 				missionType: MISSION_TYPE.CONSTRUCT_REPAIR_CENTER, 
 				structureData: STRUCTURES["Repair Facility"],
-				payload: LOCATION
+				payload: potentialLocation
 			});
 
 			potentialRepairCenterLocations.push(buildRequest);
@@ -495,7 +489,7 @@ class armyEngineering {
 			STRUCTURES["Command Center"],
 			STRUCTURES["Power Generator"],	
 			STRUCTURES["Power Generator"],	
-			STRUCTURES["Power Generator"],
+			STRUCTURES["Power Generator"],		
 			STRUCTURES["Power Module"],
 			STRUCTURES["Power Generator"],
 			STRUCTURES["Cyborg Factory"],		
@@ -1024,7 +1018,7 @@ class armyEngineering {
 			return undefined;
 		}
 
-		let preferredLoc = pickStructLocation3({structureID: buildTask.structureID, x: currDerrick.x, y: currDerrick.y});
+		let preferredLoc = pickStructLocation3(buildTask.structureID, currDerrick.x, currDerrick.y);
 		if (preferredLoc === undefined) {
 			debug(`createBuildNearbyDefenceTask(): pickStructLocation3() could not find a valid location`);
 			return undefined;
@@ -1081,7 +1075,7 @@ class armyEngineering {
 			return undefined;
 		}
 
-		let preferredLoc = pickStructLocation3({structureID: buildTask.structureID, x: loc.x, y: loc.y});
+		let preferredLoc = pickStructLocation3(buildTask.structureID, loc.x, loc.y);
 		if (preferredLoc === undefined) {
 			debug(`createBuildRepairCenterTask(): pickStructLocation3() could not find a valid location`);
 			return undefined;

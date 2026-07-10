@@ -44,15 +44,17 @@ PRODUCTION_TEST_FOLDER_PATH = r"..\Warzone 2100\PRODCONFIG\tests"
 REGENERATE_TESTS = True
 # config_generator = cfg.generate_1v1_cobra_med_3P
 # config_generator = cfg.generate_1v1_cobra_hard_3P
-config_generator = cfg.generate_1v1_cobra_insane_3P
+# config_generator = cfg.generate_1v1_cobra_insane_3P
+# config_generator = cfg.generate_1v1_peacemaker_med_3P
+config_generator = cfg.generate_1v1_peacemaker_hard_3P
 
 RUN_TESTS = True               # Please see `__main__` in `_run_and_save_autogames.py` for how to set up your console.
-NUM_CYCLES_PER_TEST = 50
+NUM_CYCLES_PER_TEST = 100
 TEST_RESULTS_FOLDER_PATH = getcwd()
 
 # Test metadata
 COMMIT_SHA = r"""
-03a99aea916da784c6f9ebd2b37fbcb185244fc4
+3781360b96ba82f5e096bdde6868a8764f3522fb
 """
 
 #################################### USER CONFIG END ####################################
@@ -74,17 +76,22 @@ if REGENERATE_TESTS:
 
 wip_file_names = []
 
+total_test_time_mins = 0.0
+
 for test_file_name in test_file_names:
     TEMP_FILE_NAME = f"{SHORT_SHA},{test_file_name},{NUM_CYCLES_PER_TEST}G.jsonl"
     wip_file_names.append(TEMP_FILE_NAME)
 
     if RUN_TESTS:
-        test_runner.run_tests(
+        mins_to_complete = test_runner.run_tests(
             test_file_name=test_file_name,
             in_progress_file_name=TEMP_FILE_NAME,
             cycles=NUM_CYCLES_PER_TEST
         )
 
+        total_test_time_mins += mins_to_complete
+
 # Now loop through WIP filenames
+print(f"Total test time: {round(total_test_time_mins, 2)} mins.")
 for file_name in wip_file_names:
     test_processor.print_test_summary(test_results_folder_path=TEST_RESULTS_FOLDER_PATH, test_file_name=file_name)

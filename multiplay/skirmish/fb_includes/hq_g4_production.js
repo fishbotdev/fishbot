@@ -46,6 +46,7 @@ class armySupply {
         const MAX_ADA = brigadeComposition.MAX_ADA;
         const MAX_SENSOR = brigadeComposition.MAX_SENSOR;
         const MAX_INFANTRY = brigadeComposition.MAX_INFANTRY;
+        const MAX_REPAIR = brigadeComposition.MAX_REPAIR;
 
         let heavyCavalryCount = 0;
         let lightCavalryCount = 0;
@@ -53,6 +54,7 @@ class armySupply {
         let shortRangeFireSupportCount = 0;
         let airDefenceCount = 0;
         let sensorCount = 0;
+        let repairCount = 0;
 
         const damagedHeavyCavalry = [];
         const damagedLightCavalry = [];
@@ -60,8 +62,9 @@ class armySupply {
         const damagedShortRangeFireSupport = [];
         const damagedAirDefence = [];
         const damagedSensor = [];
+        const damagedRepairUnits = [];       // repair units do not retreat for repair (they can repair themselves)
 
-        const VEHICLE_UNIT_TYPES = [DIVISION.HEAVY_CAV_RESERVE, DIVISION.LIGHT_CAV_RESERVE, DIVISION.SHORT_RANGE_FIRE_SUPPORT_RESERVE, DIVISION.AIR_DEFENCE_RESERVE];
+        const VEHICLE_UNIT_TYPES = [DIVISION.HEAVY_CAV_RESERVE, DIVISION.LIGHT_CAV_RESERVE, DIVISION.SHORT_RANGE_FIRE_SUPPORT_RESERVE, DIVISION.AIR_DEFENCE_RESERVE, DIVISION.SENSOR_RESERVE];
         const needsRepair = (unit, category) => {
             if (VEHICLE_UNIT_TYPES.includes(category)) {
                 if (unit.health < repairThreshold) {
@@ -117,6 +120,9 @@ class armySupply {
                         damagedSensor.push(unit);
                     }
                     break;
+                case DIVISION.MAINTENANCE_RESERVE:
+                    repairCount++;      // will not retreat for repair, because it can repair itself
+                    break;
                 default:
                     debug(`WARNING: ${brigadeUnits[i].name} was unclassified! Classifying as heavy cav.`);
                     heavyCavalryCount++;
@@ -151,6 +157,7 @@ class armySupply {
             'shortRangeArtillery': getSupplyStatus(DIVISION.SHORT_RANGE_FIRE_SUPPORT_RESERVE, MAX_MORTAR, shortRangeFireSupportCount, damagedShortRangeFireSupport),
             'ADA': getSupplyStatus(DIVISION.AIR_DEFENCE_RESERVE, MAX_ADA, airDefenceCount, damagedAirDefence),
             'sensor': getSupplyStatus(DIVISION.SENSOR_RESERVE, MAX_SENSOR, sensorCount, damagedSensor),
+            'repair': getSupplyStatus(DIVISION.MAINTENANCE_RESERVE, MAX_REPAIR, repairCount, damagedRepairUnits),
 		}
 	}
 

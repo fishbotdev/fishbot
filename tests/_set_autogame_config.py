@@ -44,6 +44,24 @@ SKIRMISH_SETTINGS_COBRA_HARD_1V1 = {
     "techLevel": 2,
 }
 
+MONOCOT_SETTINGS_1V1_3P = [
+    {
+        "mapName": "Monocot",
+        "maxPlayers": 3,
+        "fishbot_position": 1,
+        "opponent_position": 2
+    },
+]
+
+GAMMA_SETTINGS_1V1_3P = [
+    {
+        "mapName": "Gamma",
+        "maxPlayers": 3,
+        "fishbot_position": 1,
+        "opponent_position": 2
+    },
+]
+
 MAP_SETTINGS_COBRA_1V1 = [
 
     # 2p maps (note: these are not included because challenge maps force add a human player as Player 0).
@@ -104,3 +122,20 @@ def generate_1v1_cobra_insane_3P():
     COBRA_INSANE_SETTINGS = SKIRMISH_SETTINGS_COBRA_HARD_1V1
     COBRA_INSANE_SETTINGS["opponentDifficulty"] = C.INSANE_DIFFICULTY
     return COBRA_INSANE_SETTINGS, MAP_SETTINGS_COBRA_1V1
+
+def generate_1v1_peacemaker_hard_3P():
+    """
+    Returns  1v1 config to test FishBot (@Medium Difficulty) vs Peacemaker (@Hard Difficulty) on 3P maps `Monocot` and `Gamma`.
+    """
+    PEACEMAKER_HARD_SETTINGS = SKIRMISH_SETTINGS_COBRA_HARD_1V1
+    PEACEMAKER_HARD_SETTINGS["opponentName"] = C.PEACEMAKER_AI
+    return PEACEMAKER_HARD_SETTINGS, MAP_SETTINGS_COBRA_1V1
+
+def generate_1v1_peacemaker_med_3P():
+    """
+    Returns  1v1 config to test FishBot (@Medium Difficulty) vs Peacemaker (@Medium Difficulty) on 3P maps `Monocot` and `Gamma`.
+    """
+    PEACEMAKER_HARD_SETTINGS = SKIRMISH_SETTINGS_COBRA_HARD_1V1
+    PEACEMAKER_HARD_SETTINGS["opponentName"] = C.PEACEMAKER_AI
+    PEACEMAKER_HARD_SETTINGS["opponentDifficulty"] = C.MEDIUM_DIFFICULTY
+    return PEACEMAKER_HARD_SETTINGS, MAP_SETTINGS_COBRA_1V1

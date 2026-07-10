@@ -39,10 +39,11 @@
 	- 4437 JS @ 07 Apr 2026: v0.3.3 release (commit `b6c85a5`)
 	- 5097 JS @ 02 May 2026: v0.4.0 release (commit `2c79f5f`)
 	- 5237 JS @ 27 Jun 2026: v0.4.1 release (commit `03a99ae`)
+	- 5330 JS @ 10 Jul 2026: v0.4.2 release (commit `3781360`)
 */
 
 
-const FISHBOT_VERSION = "0.4.1";
+const FISHBOT_VERSION = "0.4.2";
 
 //	This file connects all remaining pieces of AI code together. It shouldn't contain any code itself.
 //	NOTE: order matters!
@@ -68,13 +69,13 @@ const DEBUG_MODE_ON = false;
 8. Update `README.md` with summary of changes.
 9. Update `CHANGELOG.md`.
 10. Commit all changes as the latest commit on the `vx.y.z-development` branch.
-10. Open a PR on GitHub (titled 'FishBot vx.y.z Release') & merge into `main`.
-11. On the main branch, add tag: `fishbot-vx.y.z` and push to origin.
-12. .zip the completed mod files as: `fishbot-vx.y.z/multiplay/skirmish/[bot-files-here]` and move this .zip file to the `.\releases` folder.
-13. Create a new "Release" on GitHub titled "FishBot vx.y.z". 
-	13a. Set the release tag to the tag created two steps before.
-	13b. Copy-paste the `CHANGELOG.md` description for the new release into the "Release notes" section.
-	13c. Attach the .zip file from Step 12 into the field labeled: "Attach binaries by dropping them here or selecting them". 
+11. Open a PR on GitHub (titled 'FishBot vx.y.z Release') & merge into `main`.
+12. On the main branch, add tag: `fishbot-vx.y.z` and push to origin.
+13. .zip the completed mod files as: `fishbot-vx.y.z/multiplay/skirmish/[bot-files-here]` and move this .zip file to the `.\releases` folder.
+14. Create a new "Release" on GitHub titled "FishBot vx.y.z". 
+	a. Set the release tag to the tag created two steps before.
+	b. Copy-paste the `CHANGELOG.md` description for the new release into the "Release notes" section.
+	c. Attach the .zip file from Step 12 into the field labeled: "Attach binaries by dropping them here or selecting them". 
 */
 
 ////////////////////////////////////////////////////////////////////////////////////////////

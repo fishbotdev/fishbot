@@ -77,13 +77,12 @@ def create_fishbot_player(team: int, difficulty: int):
     }
 
 
-def create_cobra_player(team: int, difficulty: int):
+def create_opponent_player(team: int, difficulty: int, ai_name: str):
     return {
         "difficulty": difficulty,
         "team": team,
-        "ai": C.COBRA_AI
+        "ai": ai_name
     }
-
 
 def create_challenge_from_template(challenge_name: str, challenge_version: int, map_name: str, total_players: int,
                                    bases: int, power_level: int, scavengers: int, tech_level: int,
@@ -144,7 +143,7 @@ def generate_json_test_data(skirmish_settings, map_settings):
     # 'OPPONENT' INFO
     OPPONENT_NAME: str = get_uppercase_ai_name(skirmish_settings['opponentName'])
     OPPONENT_DIFFICULTY: str = skirmish_settings['opponentDifficulty']
-    opponent_factory = create_cobra_player         # todo -> extend cobra factory into others
+    opponent_factory = lambda team, difficulty: create_opponent_player(team, difficulty, skirmish_settings['opponentName'])
 
     for m in map_settings:
         # MAP INFO
@@ -164,7 +163,7 @@ def generate_json_test_data(skirmish_settings, map_settings):
             FISHBOT_POSITION = POSITIONS[i % NUM_POSITIONS]
             OPPONENT_POSITION = POSITIONS[(i+1) % NUM_POSITIONS]
 
-            FILE_NAME = f"{MAP_NAME.upper()}_{FISHBOT_POSITION}_{OPPONENT_POSITION}_{OPPONENT_NAME}_{OPPONENT_DIFFICULTY.upper()}_T{TECH_LEVEL}.json"
+            FILE_NAME = f"{MAP_NAME.upper()}_{FISHBOT_POSITION}_{OPPONENT_POSITION}_{OPPONENT_NAME}_{OPPONENT_DIFFICULTY.upper()}_T{TECH_LEVEL}"
             FILE_VER = 1
 
             challenge_data = create_challenge_from_template(
@@ -196,7 +195,7 @@ def save_challenge_files(generated_test_data: list, output_folder_path: str):
     for d in generated_test_data:
         FILE_NAME, DATA = extract_file_name_and_data(d)
 
-        FILE_PATH = rf"{output_folder_path}/{FILE_NAME}"
+        FILE_PATH = rf"{output_folder_path}/{FILE_NAME}.json"
 
         with open(FILE_PATH, "w") as f:
             json.dump(DATA, f, indent=4)

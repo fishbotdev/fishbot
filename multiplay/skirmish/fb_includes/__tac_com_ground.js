@@ -126,7 +126,7 @@ function returnUnitGroupsToBase(unitGroups) {
  */
 function moveReservesToShadow(reserveGroupIDs, x, y) {
 
-	const isTooFarAway = (droid) => distSq(droid.x, x, droid.y, y) > 10 ** 2;
+	const isTooFarAway = (droid) => distSq(droid.x, x, droid.y, y) > 8 ** 2;
 
 	const maintainPositionBehind = (droid) => {
 		if (isTooFarAway(droid)) {
@@ -211,6 +211,7 @@ function moveBrigadeToAttack(state, brigadeID, groundTargets) {
 	const SHORT_RANGE_FIRE_SUPPORT = [];
 	const AA_UNITS = [];
 	const SENSOR_UNITS = [];
+	const REPAIR_UNITS = [];
 
 	const brigadeUnits = state.g.enumGroup(brigadeID);
 	brigadeUnits.forEach(droid => {
@@ -232,6 +233,9 @@ function moveBrigadeToAttack(state, brigadeID, groundTargets) {
 			case DIVISION.AIR_DEFENCE_RESERVE:
 				AA_UNITS.push(droid);
 				break;
+			case DIVISION.MAINTENANCE_RESERVE:
+				REPAIR_UNITS.push(droid);
+				break;
 			default:
 				debug(`tac_com_ground -> brigadeUnit classifier failed for ${droid.name} (${droid.id})`);
 				break;
@@ -251,10 +255,11 @@ function moveBrigadeToAttack(state, brigadeID, groundTargets) {
 
 	const closestDroidToTarget = findClosestDroidToTarget(ARMOUR_UNITS, DIRECT_FIRE_TARGET);
 	
-	const isTooFarFromBrigade = (droid) => distSq(droid.x, LOCATION_X, droid.y, LOCATION_Y) > 10 ** 2;
+	const isTooFarFromBrigade = (droid) => distSq(droid.x, LOCATION_X, droid.y, LOCATION_Y) > 9 ** 2;
 
 	const _distSqToClosestDroid = (droid) => distSq(droid.x, closestDroidToTarget.x, droid.y, closestDroidToTarget.y);
-	const isNearFrontLine = (droid) => _distSqToClosestDroid(droid) < 6 ** 2;
+	const dfDsqToTarget = _distSqToClosestDroid(DIRECT_FIRE_TARGET);
+	const isNearFrontLine = (droid) => _distSqToClosestDroid(droid) < 3 ** 2;
 
 	const moveToClosestDroid = (droid) => orderDroidLoc(droid, DORDER_MOVE, closestDroidToTarget.x, closestDroidToTarget.y);
 	
@@ -263,6 +268,33 @@ function moveBrigadeToAttack(state, brigadeID, groundTargets) {
 			moveToClosestDroid(droid);
 		} else {
 			returnUnitToBase(droid);
+		}
+	};
+
+	const fixNearestDamaged = (droid) => {
+		const droidDsqToTarget = distSq(droid.x, DIRECT_FIRE_TARGET.x, droid.y, DIRECT_FIRE_TARGET.y);
+		if (droidDsqToTarget <= dfDsqToTarget) {	// Too close to enemy
+			returnUnitToBase(droid);
+			return;
+		}
+		if (droid.order === DROID_REPAIR) {			// do not interrupt a repair in progress
+			return;	
+		}
+		if (_distSqToClosestDroid(droid) > 6 ** 2) {
+			moveToClosestDroid(droid);
+			return;
+		} 
+		const nearby = enumRange(droid.x, droid.y, 4, ALLIES);
+		for (let i=0; i<nearby.length; i++) {
+			const obj = nearby[i];
+			if (obj.type !== DROID) {
+				continue;
+			}
+
+			if (obj.health < 99) {
+				orderDroidObj(droid, DORDER_REPAIR, obj);
+				return;
+			}
 		}
 	};
 
@@ -333,6 +365,8 @@ function moveBrigadeToAttack(state, brigadeID, groundTargets) {
 		}
 	});
 
+	// MECHANIC (REPAIR) UNITS
+	REPAIR_UNITS.forEach(droid => fixNearestDamaged(droid));
 
 	// DEBUG
 	if (false) {

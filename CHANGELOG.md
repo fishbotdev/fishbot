@@ -1,6 +1,43 @@
 # Changelog
 This file is used to record the changes to FishBot between each version.
 
+## Fishbot v0.4.2
+*Released **10 Jul 2026***
+### Changes in v0.4.2
+- Combat improvements
+    - Fixed combat units attempting to bypass prepared defences in front of them.
+    - Fixed AA units trying to attack VTOLs on the ground.
+    - Improved positioning of AA units & reserves within the combat group.
+    - Added Heavy Repair Turret units to the combat group.
+- Production improvements
+    - AA & indirect fire units increased in production priority.
+    - AA units modified to counter bots which use VTOLs (AA units now use heavy bodies).
+- Research improvements
+    - Improved focus on the Cannon research tree. 
+    - Increased priority of Whirlwind AA.
+- Construction improvements
+    - Resolved an issue with 2x2 base structures (e.g. power generators, research labs) being built in locations with no clearance for units to get past.
+    - Improved initial oil capture.
+- Infrastructure improvements
+    - Improved the reliability of construction drivers (trucks are less likely to get stuck trying to perform an illegal action).
+    - Included PeacemakerAI in FishBot benchmarking.
+
+#### Test results (Warzone 2100 v4.7.0)
+FishBot `v0.4.2` (commit `c21f69e`) was tested 1v1 against Cobra & PeacemakerAI. Sides were swapped mid-way through all tests to account for map-induced imbalances (i.e. 100 games as Player 1, and then 100 games as Player 2). The average is taken as the final win percentage.
+
+`Monocot 3P T2-NoBase`:
+- **94%** win rate: FishBot-v0.4.2 Medium vs Cobra **Hard** 
+- **60.7%** win rate: FishBot-v0.4.2 Medium vs Cobra **Insane** 
+- **76%** win rate: FishBot-v0.4.2 Medium vs PeacemakerAI v0.8 **Medium** 
+- **31.5%** win rate: FishBot-v0.4.2 Medium vs PeacemakerAI v0.8 **Hard** 
+
+`Gamma 3P T2-NoBase`:
+- **89.5%** win rate: FishBot-v0.4.2 Medium vs Cobra **Hard** 
+- **34%** win rate: FishBot-v0.4.2 Medium vs Cobra **Insane** 
+- **97.5%** win rate: FishBot-v0.4.2 Medium vs PeacemakerAI v0.8 **Medium** 
+- **77%** win rate: FishBot-v0.4.2 Medium vs PeacemakerAI v0.8 **Hard** 
+
+
 ## Fishbot v0.4.1
 *Released **27 Jun 2026***
 ### Changes in v0.4.1
@@ -29,7 +66,7 @@ This file is used to record the changes to FishBot between each version.
         
 
 #### Test results (Warzone 2100 v4.7.0)
-FishBot `v0.4.1` (commit `03a99ae`) was tested 1v1 against Cobra. Sides are swapped mid-way through all tests to account for any map imbalances.
+FishBot `v0.4.1` (commit `03a99ae`) was tested 1v1 against Cobra. Sides were swapped mid-way through all tests to account for map-induced imbalances (i.e. 50 games as Player 1, and then 50 games as Player 2).
 
 `Gamma 3P T2`:
 - 100 / 100 = **100%** win rate: FishBot-v0.4.1 Medium vs Cobra **Medium** 

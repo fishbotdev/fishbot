@@ -15,20 +15,17 @@
 	If not, see <https://www.gnu.org/licenses/>.
 */
 
-const constructionSearchPattern = [
-	// Distance 0
-	[0, 0],
-	// Distance 1
-	[-1, 0], [0, -1], [0, 1], [1, 0],
-	// Distance 2
-	[-2, 0], [-1, -1], [-1, 1], [0, -2], [0, 2], [1, -1], [1, 1], [2, 0],
-	// Distance 3
-	[-3, 0], [-2, -1], [-2, 1], [-1, -2], [-1, 2], [0, -3], [0, 3], [1, -2], [1, 2], [2, -1], [2, 1], [3, 0],
-	// Distance 4
-	[-4, 0], [-3, -1], [-3, 1], [-2, -2], [-2, 2], [-1, -3], [-1, 3], [0, -4], [0, 4], [1, -3], [1, 3], [2, -2], [2, 2], [3, -1], [3, 1], [4, 0],
-	// Distance 5
-	[-5, 0], [-4, -1], [-4, 1], [-3, -2], [-3, 2], [-2, -3], [-2, 3], [-1, -4], [-1, 4], [0, -5], [0, 5], [1, -4], [1, 4], [2, -3], [2, 3], [3, -2], [3, 2], [4, -1], [4, 1], [5, 0]
+const QUADRANT_SEARCH_PATTERN = [
+	// This pattern: up and to the right (Q3)
+	[0, 0], 
+	[1, 0], [0, 1], 
+	[1, 1], [2, 0], [0, 2],
+	[1, 2], [2, 1], [3, 0], [0, 3],
+	[2, 2], [1, 3], [3, 1], [4, 0], [0, 4],
+	[3, 2], [2, 3], [1, 4], [4, 1], [5, 0], [0, 5]
 ];
+const HALF_MAP_WIDTH = Math.floor(mapWidth / 2);
+const HALF_MAP_HEIGHT = Math.floor(mapHeight / 2);
 
 const walkableTiles = getWalkableTiles();
 const isWalkable = create2DGrid(mapWidth, mapHeight, () => {return false;});
@@ -37,28 +34,32 @@ walkableTiles.forEach(b => {
 	const y = b[1];
 	isWalkable[x][y] = true;
 });
-
+const isDerrickPosition = {};
+derrickPositions.forEach(d => {
+	isDerrickPosition[`${d.x},${d.y}`] = true;
+});
 
 /**
- * Iterates through ranged walkable tiles from the player's base to determine the position.
- * Unlike `pickStructLoc`, it takes into account obstacles.
+ * Iterates through ranged walkable tiles from the player's base to determine the position of base structures.
+ * Replaces the inbuilt `pickStructLocation`. Unlike `pickStructLocation`, it accounts for terrain obstacles.
  * @param {string} structureID 
  * @returns 
  */
 function pickBaseStructLocation(structureID) {
 
-	const BBOX_CORNERS = [[-1, -1], [-1, 1], [1, -1], [1, 1]];
-	let boundingBoxRadius = 0;
-
 	const BBOX_3x3_STRUCTURES = [STRUCTURES["Factory"].id, STRUCTURES["VTOL Factory"].id, STRUCTURES["Laser Satellite Command Post"].id, STRUCTURES["Satellite Uplink Center"].id];
 	const BBOX_2x2_STRUCTURES = [STRUCTURES["Command Center"].id, STRUCTURES["Command Relay Center"].id, STRUCTURES["Power Generator"].id, STRUCTURES["Research Facility"].id];
 
+	let BBOX_CORNERS = [[-1, -1], [1, 1], [-1, 1], [1, -1]];
+	const BBOX_3X3_CORNERS = [[-2, -2], [-2, 2], [2, -2], [2, 2], [2, 0], [-2, 0], [0, 2], [0, -2]];
+	const BBOX_2X2_CORNERS = [[-2, -2], [-2, 1], [1, -2], [1, 1], [1, 0], [-2, 0], [0, 1], [0, -2]];
+	
 	if (BBOX_3x3_STRUCTURES.includes(structureID)) {
-		boundingBoxRadius = 2;		// coordinate for a 3x3 structure is the center of the structure
+		// coordinate for a 3x3 structure is the center tile of the structure
+		BBOX_CORNERS = BBOX_3X3_CORNERS;
 	} else if (BBOX_2x2_STRUCTURES.includes(structureID)) {
-		boundingBoxRadius = 1;		// coordinate for a 2x2 structure is the bottom right of the structure ((7, 16) center = (7, 15), (6, 15), (6, 16))
-	} else {
-		boundingBoxRadius = 1;
+		// coordinate for a 2x2 structure is the bottom right tile of the structure ((7, 16) center = (7, 15), (6, 15), (6, 16))
+		BBOX_CORNERS = BBOX_2X2_CORNERS
 	}
 	
 	for (let i=0; i<walkableTiles.length; i++) {
@@ -74,8 +75,13 @@ function pickBaseStructLocation(structureID) {
 		let boundingBoxTestFailed = false;
 		for (let j=0; j<BBOX_CORNERS.length; j++) {
 			const c = BBOX_CORNERS[j];
-			const x1 = x + boundingBoxRadius * c[0]; 
-			const y1 = y + boundingBoxRadius * c[1];
+			const x1 = x + c[0]; 
+			const y1 = y + c[1];
+
+			if (x1 < 0 || x1 >= mapWidth || y1 < 0 || y1 >= mapHeight) {
+				boundingBoxTestFailed = true;		// will not build at the edge of the map
+				break;
+			}
 
 			if (!isWalkable[x1][y1]) {
 				boundingBoxTestFailed = true;
@@ -93,11 +99,15 @@ function pickBaseStructLocation(structureID) {
 	return undefined;
 }
 
-/* 
-	pickStructLocation3: Intention is that this function is a deterministic & will reliably try to pick the same location. 
-	Searches nearby tiles based on Manhattan distance.
-*/
-function pickStructLocation3({structureID, x, y}) {
+/**
+ * pickStructLocation3: Replaces the inbuilt `pickStructLocation`. 
+ * Searches for nearby tiles based on Manhattan distance. A lookup table is used for speed.
+ * @param {string} structureID 
+ * @param {number} x 
+ * @param {number} y 
+ * @returns {PositionInfo | undefined}
+ */
+function pickStructLocation3(structureID, x, y) {
 
 	const specifiedHeight = MapTiles[y][x].height;		// Uses this to try the match the height.
 	const HEIGHT_TOLERANCE = 33;
@@ -107,29 +117,70 @@ function pickStructLocation3({structureID, x, y}) {
 		return undefined;
 	}
 
+	const playerIsEnemy = [];
+	state.playerInfo.forEach(p => playerIsEnemy.push(p.isFriendly));		// TODO: Better way to access state than to access out of context?
+
 	const outsideOfHeightTolerance = [];
 
-	for (let i=0; i<constructionSearchPattern.length; i++) {
-		const tX = constructionSearchPattern[i][0] + x;
-		const tY = constructionSearchPattern[i][1] + y;
+	const xDirection = (x > HALF_MAP_WIDTH) ? -1 : 1;
+	const yDirection = (y > HALF_MAP_HEIGHT) ? -1 : 1;
 
+	for (let i=0; i<QUADRANT_SEARCH_PATTERN.length; i++) {
+		const tX = x + xDirection * QUADRANT_SEARCH_PATTERN[i][0];
+		const tY = y + yDirection * QUADRANT_SEARCH_PATTERN[i][1];
+
+		if (tX < 0 || tX >= mapWidth || tY < 0 || tY >= mapHeight) {
+			continue;
+		}
+			
 		if (!isWalkable[tX][tY]) {
 			// debug(`	${gameTime}: psl2 rejected: (${tX}, ${tY}); not reachable`);
 			continue;
 		}
 
-		if (!structureCanFit(structureID, tX, tY)) {
+		if (isDerrickPosition[`${tX},${tY}`]) {
+			// For some reason - `structureCanFit` / the `enumRange` check below seem to miss friendly / enemy derricks.
 			continue;
 		}
 
-		const enemyUnits = enumRange(tX, tY, 1, ENEMIES, true).filter(obj => obj.type === DROID && isEnemy(obj.player));
-		if (enemyUnits.length > 0) {
+		if (!structureCanFit(structureID, tX, tY)) {		// required for structures with bounding box >= 1x1 
 			continue;
 		}
 
-		const loc = {'x': tX, 'y': tY};
+		// Reject tiles with structures or enemy droids on them 
+		// (Previous testing indicated that `structureCanFit` may not account for partially built structures)
+		const gameObjects = enumRange(tX, tY, 3, ALL_PLAYERS, false);
+		let positionBlocked = false;
+		for (let i=0; i<gameObjects.length; i++) {
+			const o = gameObjects[i];
+			
+			if (o.type === STRUCTURE) {
+				if (o.x === tX && o.y === tY) {
+					positionBlocked = true;
+					break;
+				}
+				continue;
+			}
 
-		if (Math.abs(MapTiles[tY][tX].height - specifiedHeight) > HEIGHT_TOLERANCE) {
+			if (o.type === DROID) {
+				if (playerIsEnemy[o.player]) {
+					if (o.x === tX && o.y === tY) {
+						positionBlocked = true;
+						break;
+					}
+				}
+				continue;
+			}
+		}
+
+		if (positionBlocked) {
+			continue;
+		}
+
+		const z = MapTiles[tY][tX].height;
+		const loc = {'x': tX, 'y': tY, 'z': z};
+
+		if (Math.abs(z - specifiedHeight) > HEIGHT_TOLERANCE) {
 			// debug(`	${gameTime}: psl2 rejected: (${tX}, ${tY}); height (${MapTiles[tY][tX].height} !== ${specifiedHeight})`);
 			outsideOfHeightTolerance.push(loc);
 			continue;
@@ -138,8 +189,7 @@ function pickStructLocation3({structureID, x, y}) {
 		return loc;	
 	}
 
-	for (let i=0; i<outsideOfHeightTolerance.length; i++) {
-		// For loop is used to ignore the cases in which the array is empty
+	for (let i=0; i<outsideOfHeightTolerance.length; i++) {		// if list is empty, this for-loop never runs
 		return outsideOfHeightTolerance[i];		
 	}
 

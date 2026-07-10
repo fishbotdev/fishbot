@@ -303,6 +303,7 @@ const DIVISION = {
     LONG_RANGE_FIRE_SUPPORT_RESERVE: 2006,
     AIR_DEFENCE_RESERVE: 2007,
 	SENSOR_RESERVE: 2008,
+	MAINTENANCE_RESERVE: 2009,
 	
     FIRST_BCT: 3011,                 // this is a combined arms team; each BCT with ~26 units
     SECOND_BCT: 3012,

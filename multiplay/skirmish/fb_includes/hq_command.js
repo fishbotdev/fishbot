@@ -16,12 +16,22 @@
 */
 
 /**
-The functions in this class:
-- Have the authority to write to the global state (typically delegated to (and consolidated in) `hq_toc.js`)
-- Should make decisions on what course action to take, but should handle no direct execution (this should be delegated to other functions)
-- Should be informed by potential courses of action proposed by the staff functions `hq_gX_Y`.
-
-This models how a HQ at divisional level is structured in real life. Much of the terminology in this bot is borrowed from the real world.
+ * This file implements FishBot's *strategic* layer.
+ * 
+ * All of FishBot's reasoning and decision-making functions are implemented here:
+ * 	- runIntelligence (gathers information from the map & stores in `state`)
+ * 	- runCombatOperations (directs combat units to move around)
+ * 	- runConstructionLogistics (directs trucks to build / demolish stuff)
+ * 	- runResupplyLogistics (assigns newly produced units into combat groups)
+ * 	- runProductionLogistics (directs factories to build new units depending on supply requirements)
+ * 	- runResearchLogistics (directs labs to research)
+ * 
+ * Architecture notes:
+ * The functions in this class:
+ * - Have the authority to write to the global state (but the state writing is delegated to `hq_toc.js`)
+ * - Should make decisions on what course of action to take, but should handle no direct execution (this should be delegated to other functions)
+ * - Should make decisions informed by courses of action proposed by the staff functions `hq_gX_Y`.
+ * This models how a HQ at divisional level is structured in real life. Much of the terminology in this bot is borrowed from the real world.
  */
 class CommandCenter {
 	constructor() {
@@ -43,9 +53,10 @@ class CommandCenter {
 			'MAX_HEAVY_CAVALRY': 8,
 			'MAX_LIGHT_CAVALRY': 3,
 			'MAX_MORTAR': 6,
-			'MAX_ADA': 2,
+			'MAX_ADA': 3,
 			'MAX_SENSOR': 1,
-			'MAX_INFANTRY': 6
+			'MAX_INFANTRY': 6,
+			'MAX_REPAIR': 1,
 		}
 		this.TOTAL_UNITS_PER_BRIGADE = Object.values(this.FISHBOT_BRIGADE_COMPOSITION).reduce((a, b) => a + b, 0);
 
@@ -237,7 +248,7 @@ class CommandCenter {
 	 * @param {number} brigadeID 
 	 * @returns {BrigadeTargets} Intent: (DroidObject | StructureObject)[]	
 	 */
-	#prioritiseBrigadeTargets(state, brigadeID, closestEnemyBasePosition) {
+	#prioritiseBrigadeTargets(state, brigadeID) {
 
 		/** @type {BrigadeTargets} */
 		const brigadeTargets = {
@@ -294,13 +305,13 @@ class CommandCenter {
 		}
 
 		// Direct Fire Targeting
-		const IMMEDIATE_RADIUS = 10;
+		const IMMEDIATE_RADIUS = 8;
 
 		const directFireHeuristic = (a,b) => {
 			const aDist = distSq(x, a.x, y, a.y);
 			const bDist = distSq(x, b.x, y, b.y);
 
-			const MIN_DIRECT_FIRE_RANGE_SQ = 12 ** 2;
+			const MIN_DIRECT_FIRE_RANGE_SQ = 16 ** 2;
 			if (aDist > MIN_DIRECT_FIRE_RANGE_SQ || bDist > MIN_DIRECT_FIRE_RANGE_SQ) {
 				return aDist - bDist;
 			}
@@ -331,11 +342,10 @@ class CommandCenter {
 			return aDetour * aDist - bDetour * bDist;
 		}
 
-		const primaryDroidTargets = [...enemyArmor, ...enemyInfantry];
-		primaryDroidTargets.sort((a,b) => directFireHeuristic(a,b));		
-		const secondaryDirectFireTargets = [ ...enemyDefenses, ...enemyIndirectFire, ...enemyADA, ...enemyIndustrial];
-		secondaryDirectFireTargets.sort((a,b) => directFireHeuristic(a,b));		
+		const primaryDroidTargets = [...enemyArmor, ...enemyInfantry, ...enemyDefenses];
+		const secondaryDirectFireTargets = [...enemyIndirectFire, ...enemyADA, ...enemyIndustrial];
 		const tertiaryDirectFireTargets = [...enemyConstructor, ...enemyUtility];
+
 		const targetsOutOfRange = [];		// this will also be ordered in the priority order specified in `primaryDirectFireTargets`
 
 		/** @param {(DroidObject | StructureObject | FeatureObject)[]} targetList */
@@ -351,6 +361,8 @@ class CommandCenter {
 		addDirectFireTargetByProximity(primaryDroidTargets);
 		addDirectFireTargetByProximity(secondaryDirectFireTargets);
 		addDirectFireTargetByProximity(tertiaryDirectFireTargets);
+
+		brigadeTargets["directFireTargets"].sort((a,b) => directFireHeuristic(a,b));		// this ignores the primary/secondary/tertiary ordering above
 
 		const MAX_DIRECT_FIRE_TARGETS = 8;
 		const FURTHER_TARGETS_REQUIRED = MAX_DIRECT_FIRE_TARGETS - brigadeTargets['directFireTargets'].length;
@@ -405,10 +417,10 @@ class CommandCenter {
 
 		// CAS Targeting (Close Air Support)
 		// Intent: `casTargets` should be a list of mission requests interpretable by a following call of `#prioritiseAviationTargets`.
-		const primaryCASTargets = [...enemyIndirectFire];
+		const primaryCASTargets = [...enemyIndirectFire, ...enemyADA];
 		const secondaryCASTargets = [...enemyArmor, ...enemyDefenses];
 
-		const isHealthy = (obj) => obj.health > 50;
+		const isHealthy = (obj) => obj.health > 25;
 		secondaryCASTargets.forEach(obj => {
 			if (isHealthy(obj)) {
 				brigadeTargets['casTargets'].unshift(aviation.translateIntoCASRequest(obj, MISSION_PRIORITY.VERY_HIGH));
@@ -430,10 +442,10 @@ class CommandCenter {
 		const enemyAircraft = getObjectList(TARGETS['enemyAviation']);		// todo: remove if no ADA available
 		enemyAircraft.forEach(obj => {
 			if (outsideOfRadius(obj, EFFECTIVE_ADA_RADIUS)) return;
+			if (obj.isFlying !== true) return;
 			brigadeTargets["adaTargets"].push(obj);
 		});		
 		brigadeTargets["adaTargets"].sort((a,b) => a.health - b.health);			
-	
 
 		return brigadeTargets;
 	}
@@ -629,13 +641,13 @@ class CommandCenter {
 
 			this.BRIGADE_DESIGNATIONS.forEach((brigadeID) => {
 
-				const brigadeStrength = state.brigades[brigadeID]['strength'];
+				// const brigadeStrength = state.brigades[brigadeID]['strength'];
 				const brigadeLocation = state.brigades[brigadeID]['location'];
 				brigadeLocations.push(brigadeLocation);
 
-				const CLOSEST_ENEMY_BASE = intelligence.findClosestEnemyBase(state, brigadeLocation.x, brigadeLocation.y); 			
+				// const CLOSEST_ENEMY_BASE = intelligence.findClosestEnemyBase(state, brigadeLocation.x, brigadeLocation.y); 			
 
-				const groundTargets = this.#prioritiseBrigadeTargets(state, brigadeID, CLOSEST_ENEMY_BASE);
+				const groundTargets = this.#prioritiseBrigadeTargets(state, brigadeID);
 				this.toc.setBrigadeCASStrikeRequests(state, brigadeID, groundTargets['casTargets']);
 
 				if (this.#noTargetsAvailable(groundTargets)) {
@@ -645,14 +657,15 @@ class CommandCenter {
 						return;
 					} 
 					moveBrigadeToLocation(state, brigadeID, CLOSEST_TARGET.x, CLOSEST_TARGET.y);
+					return;
 				}
-
+				
 				moveBrigadeToAttack(state, brigadeID, groundTargets);				
 			});
 
 			// Manage reserves
 			// Temporary: Move reserves to pre-emptively reinforce BCT0
-			const reserveGroupIDs = [DIVISION.HEAVY_CAV_RESERVE, DIVISION.LIGHT_CAV_RESERVE, DIVISION.INFANTRY_RESERVE, DIVISION.SHORT_RANGE_FIRE_SUPPORT_RESERVE, DIVISION.SENSOR_RESERVE, DIVISION.AIR_DEFENCE_RESERVE];
+			const reserveGroupIDs = [DIVISION.HEAVY_CAV_RESERVE, DIVISION.LIGHT_CAV_RESERVE, DIVISION.INFANTRY_RESERVE, DIVISION.SHORT_RANGE_FIRE_SUPPORT_RESERVE, DIVISION.SENSOR_RESERVE, DIVISION.AIR_DEFENCE_RESERVE, DIVISION.MAINTENANCE_RESERVE];
 			const x = brigadeLocations[0].x;
 			const y = brigadeLocations[0].y;
 			moveReservesToShadow(reserveGroupIDs, x, y);
@@ -837,7 +850,7 @@ class CommandCenter {
 	 */
     #prioritiseLandVehicleCategory(state, deficit) {
         
-		const CATEGORIES = ['heavyCavalry', 'lightCavalry', 'shortRangeArtillery', 'ADA', 'sensor'];
+		const CATEGORIES = ['heavyCavalry', 'lightCavalry', 'shortRangeArtillery', 'ADA', 'sensor', 'repair'];
         let vehicleCategories = [];
 
 		let w_deficit = {
@@ -846,6 +859,7 @@ class CommandCenter {
             'shortRangeArtillery': 1,
             'ADA': 1,
             'sensor': 1,
+			'repair': 1
 		};
 		let w_strategic = {
 			'heavyCavalry': 1,
@@ -853,6 +867,7 @@ class CommandCenter {
             'shortRangeArtillery': 0.75,
             'ADA': 0.001,
             'sensor': 0.001,
+			'repair': 0.001,
 		};
 
 		const calculateSurplus = (category) => {return -1 * deficit[category]['normBaseDeficit']};
@@ -879,10 +894,11 @@ class CommandCenter {
 		if (SUFFICIENT_CAVALRY) {
 			w_strategic = {
 				'heavyCavalry': 1,
-				'lightCavalry': 1,
-				'shortRangeArtillery': 0.75,
-				'ADA': 0.5,
+				'lightCavalry': 0.95,
+				'shortRangeArtillery': 1,
+				'ADA': 0.9,
 				'sensor': 0.2,
+				'repair': 0.85,
 			};
 		}
 
@@ -894,10 +910,11 @@ class CommandCenter {
 			// This is because the algorithm greedily checks for "largest deficit". When the deficit is negative, "largest deficit" = least negative number.
 			w_deficit = {
 				'heavyCavalry': 1,
-				'lightCavalry': 1,
-				'shortRangeArtillery': 1,
-				'ADA': 3,
+				'lightCavalry': 2,
+				'shortRangeArtillery': 4,
+				'ADA': 2,
 				'sensor': 10,
+				'repair': 8,
 			};
 		}
 
@@ -967,11 +984,16 @@ class CommandCenter {
 			'shortRangeArtillery': createCategory(DIVISION.SHORT_RANGE_FIRE_SUPPORT_RESERVE), 
 			'ADA': createCategory(DIVISION.AIR_DEFENCE_RESERVE), 
 			'sensor': createCategory(DIVISION.SENSOR_RESERVE),
+			'repair': createCategory(DIVISION.MAINTENANCE_RESERVE),
 		};		
 	}
 
+	/**
+	 * Categories must match `supply / getBrigadeSupplyStatus()`.
+	 * @param {worldState} state 
+	 * @returns 
+	 */
 	#getReserveForceUnits(state) {
-		// Note: categories must match `supply / getBrigadeSupplyStatus()`.
 		return {
 			'heavyCavalry': state.g.enumGroup(DIVISION.HEAVY_CAV_RESERVE), 
 			'lightCavalry': state.g.enumGroup(DIVISION.LIGHT_CAV_RESERVE), 
@@ -979,6 +1001,7 @@ class CommandCenter {
 			'shortRangeArtillery': state.g.enumGroup(DIVISION.SHORT_RANGE_FIRE_SUPPORT_RESERVE), 
 			'ADA': state.g.enumGroup(DIVISION.AIR_DEFENCE_RESERVE), 
 			'sensor': state.g.enumGroup(DIVISION.SENSOR_RESERVE),
+			'repair': state.g.enumGroup(DIVISION.MAINTENANCE_RESERVE),
 		};
 	}
 
@@ -1345,17 +1368,18 @@ class CommandCenter {
 
 		const FISHBOT_T2_CANNON_RESEARCH_PRIORITIES = [
 			RESEARCHES["APFSDS Cannon Rounds Mk3"].id,
-			RESEARCHES["Twin Assault Cannon"].id,
-			RESEARCHES["Heavy Body - Tiger"].id,
-			RESEARCHES["Dedicated Synaptic Link Data Analysis Mk3"].id,
 			"R-Struc-Power",
-			RESEARCHES["Dense Composite Alloys Mk2"].id,
+			RESEARCHES["Dedicated Synaptic Link Data Analysis Mk3"].id,
+
+			RESEARCHES["Twin Assault Cannon"].id,
 			"R-Wpn-Cannon-Damage",
-			"R-Wpn-Mortar-Damage", 	
-			RESEARCHES["Neural Synapse Research Brain"].id,
 			"R-Wpn-Cannon-ROF", 
-			"R-Vehicle-Metals",
-			"R-Wpn-Mortar-ROF",
+			RESEARCHES["Whirlwind AA Turret"].id,
+			RESEARCHES["Twin Assault Gun"].id,
+			RESEARCHES["Heavy Body - Tiger"].id,
+
+			RESEARCHES["Neural Synapse Research Brain"].id,
+			RESEARCHES["Dense Composite Alloys Mk2"].id,
 
 			// Gauss Cannon researches added here
 			RESEARCHES["Needle Gun"].id,
@@ -1365,23 +1389,24 @@ class CommandCenter {
 			"R-Wpn-Rail-Accuracy",
 			"R-Wpn-Rail-Damage",
 
-			RESEARCHES["Advanced Engineering"].id,
-			RESEARCHES["Advanced Repair Facility"].id,
+			"R-Wpn-Mortar-Damage", 	
+			"R-Wpn-Mortar-ROF",
+			"R-Vehicle-Metals",
+
+			// RESEARCHES["Advanced Engineering"].id,
+			// RESEARCHES["Advanced Repair Facility"].id,
 			RESEARCHES["Auto-Repair"].id,
 			RESEARCHES["Neural Synapse Research Brain Mk2"].id,
 
-			"R-Cyborg-Metals", 
+			// "R-Cyborg-Metals", 
 			"R-Struc-VTOLPad-Upgrade",
-
-			RESEARCHES["Twin Assault Gun"].id,
-			RESEARCHES["Whirlwind AA Turret"].id,
 
 			"R-Struc-Factory-Upgrade",
 			RESEARCHES["Neural Synapse Research Brain Mk3"].id,
 			
 			// RESEARCHES["Howitzer"].id,
-			RESEARCHES["Heavy Cannon"].id, 
-			RESEARCHES["AA Cyclone Flak Cannon"].id, 		
+			// RESEARCHES["Heavy Cannon"].id, 
+			// RESEARCHES["AA Cyclone Flak Cannon"].id, 		
 		];
 
 		const FISHBOT_T2_CANNON_RESEARCH_BLACKLIST = [
@@ -1397,8 +1422,7 @@ class CommandCenter {
 			for (let j=positionInResearchOrder; j<researchOrder.length; j++) {
 				if (pursueResearch(idleLabs[i], researchOrder[j].id)) {
 					positionInResearchOrder++;
-					// debug(`${gameTime} (FishBot ${me}): ${researchOrder[j].name}`);		
-					// debug(`${gameTime}\t ${researchOrder[j].name}`);		
+					// debug(`  ${gameTime} (FishBot ${me}): researching ${researchOrder[j].name}`);		
 					break;
 				}
 			}

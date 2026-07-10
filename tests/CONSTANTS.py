@@ -24,6 +24,7 @@ INSANE_DIFFICULTY = "Insane"
 
 FISHBOT_AI = "fishbot/multiplay/skirmish/FishBot.js"
 COBRA_AI = "Cobra.js"
+PEACEMAKER_AI = "PeacemakerAI.js"
 SPECTATOR_AI = "Spectator.js"       # this is a custom spectator AI script with details below:
 """
 
