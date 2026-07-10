@@ -23,7 +23,7 @@ This file is used to record the changes to FishBot between each version.
     - Included PeacemakerAI in FishBot benchmarking.
 
 #### Test results (Warzone 2100 v4.7.0)
-FishBot `v0.4.2` (commit `3781360`) was tested 1v1 against Cobra & PeacemakerAI. Sides were swapped mid-way through all tests to account for map-induced imbalances (i.e. 100 games as Player 1, and then 100 games as Player 2). The average is taken as the final win percentage.
+FishBot `v0.4.2` (commit `c21f69e`) was tested 1v1 against Cobra & PeacemakerAI. Sides were swapped mid-way through all tests to account for map-induced imbalances (i.e. 100 games as Player 1, and then 100 games as Player 2). The average is taken as the final win percentage.
 
 `Monocot 3P T2-NoBase`:
 - **94%** win rate: FishBot-v0.4.2 Medium vs Cobra **Hard** 
