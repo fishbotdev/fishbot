@@ -270,7 +270,7 @@ def run_autogame(commands: List[str]) -> List[str]:
     return final_game_summary_table
 
 
-def run_tests(test_file_name: str, in_progress_file_name: str, cycles: int, debug_mode: bool=False):
+def run_tests(test_file_name: str, in_progress_file_name: str, cycles: int, debug_mode: bool=False) -> float:
     AUTOGAME_COMMAND = [
         rf"..\Warzone 2100\bin\warzone2100.exe",        # assumes WZ2100 is installed in `fishbot/Warzone 2100`
         rf'--configdir="..\Warzone 2100\PRODCONFIG"',   # assumes that the mod is loaded in a "PRODCONFIG" subfolder of the WZ2100 install location e.g. `fishbot/Warzone 2100/PRODCONFIG`
@@ -319,6 +319,7 @@ def run_tests(test_file_name: str, in_progress_file_name: str, cycles: int, debu
     MINS_TO_COMPLETE = round_to_2dp(SECS_TO_COMPLETE / 60.0)
     print(f"\nFinished {cycles} tests in {SECS_TO_COMPLETE} seconds ({MINS_TO_COMPLETE} minutes)")
 
+    return MINS_TO_COMPLETE
 
 #################################### MAIN ####################################
 
@@ -342,12 +343,12 @@ if __name__ == "__main__":
 
     ######## PROGRAM CONFIGURATION ########
 
-    TEST_FILE_NAME = "GAMMA_1_2_COBRA_HARD_T2.json"        # make sure to include .json
+    TEST_FILE_NAME = "GAMMA_1_2_COBRA_HARD_T2"        # make sure to include .json
     NUM_CYCLES_PER_TEST = 2
     DEBUG_ON = False
 
     COMMIT_SHA = """
-    f69d37b32e4e300762209d57374e369b15e8280e
+    3781360b96ba82f5e096bdde6868a8764f3522fb
     """
 
     # Reminder: remove any previous .jsonl files if necessary
@@ -371,9 +372,11 @@ if __name__ == "__main__":
     SHORT_SHA = COMMIT_SHA.lstrip()[:7]
     OUTPUT_FILE_NAME = f"{SHORT_SHA},{TEST_FILE_NAME},{NUM_CYCLES_PER_TEST}G.jsonl"
 
-    run_tests(
+    mins_to_complete = run_tests(
         test_file_name=TEST_FILE_NAME,
         in_progress_file_name=OUTPUT_FILE_NAME,
         cycles=NUM_CYCLES_PER_TEST,
         debug_mode=DEBUG_ON
     )
+
+    print(f"Caller: completed in {mins_to_complete} minutes")

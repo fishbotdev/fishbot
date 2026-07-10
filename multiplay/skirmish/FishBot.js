@@ -39,7 +39,7 @@
 	- 4437 JS @ 07 Apr 2026: v0.3.3 release (commit `b6c85a5`)
 	- 5097 JS @ 02 May 2026: v0.4.0 release (commit `2c79f5f`)
 	- 5237 JS @ 27 Jun 2026: v0.4.1 release (commit `03a99ae`)
-	- 5329 JS @ 09 Jul 2026: v0.4.2 release (commit `2d98d12`)
+	- 5330 JS @ 10 Jul 2026: v0.4.2 release (commit `3781360`)
 */
 
 
