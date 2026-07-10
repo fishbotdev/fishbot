@@ -11,7 +11,7 @@ It is designed for Tech Level 2, No-Base starts on the supported maps below. Tec
 1. Start Warzone 2100. Click Options.
 2. Click "Open Configuration Directory" in the bottom left corner.
 3. Download 📦fishbot.zip from https://github.com/fishbotdev/fishbot/releases. 
-4. Move the .zip file to 📁`mods/4.7.0/autoload/`.
+4. Move the .zip file to 📁`mods/4.7.0/autoload/`. **To avoid any version conflicts, please remove all previous versions of FishBot**.
 5. Restart Warzone 2100.
 
 To check if the path is correct, you should be able to find `FishBot.js` in this location:
