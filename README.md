@@ -52,11 +52,11 @@ Official support for other maps will be included in future versions. The current
 * FishBot attempts to build forward-defences around derricks which are too dangerous to go and capture.
 
 ## Recent updates
-* **v0.4.2** - *released **9 Jul 2026***
+* **v0.4.2** - *released **10 Jul 2026***
     * Combat improvements:
         * Improved direct-fire targeting and the effectiveness of AA units.
         * Added support for Heavy Repair Turret units.
-    * Slightly improved research order, build order and construction reliability.
+    * Slightly improved research order and construction reliability.
 
 * **v0.4.1** - *released **27 Jun 2026***
     * Increased combat group cohesion.
