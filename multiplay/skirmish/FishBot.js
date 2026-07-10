@@ -43,7 +43,7 @@
 */
 
 
-const FISHBOT_VERSION = "0.4.2";
+const FISHBOT_VERSION = "0.4.3dev";
 
 //	This file connects all remaining pieces of AI code together. It shouldn't contain any code itself.
 //	NOTE: order matters!
@@ -54,7 +54,7 @@ const FB_INCLUDES = FISHBOT_PATH + "fb_includes/";
 //	 - Show some useful debug information in the console
 //	 - Automatically colour players 0, 1, 2
 //	 - Transform Player 0 (forced human player slot) to spectator mode (used for automated bot testing)
-const DEBUG_MODE_ON = false;
+const DEBUG_MODE_ON = true;
 
 
 /*
