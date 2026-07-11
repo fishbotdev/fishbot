@@ -429,7 +429,7 @@ def repackage_map(
     metadata["map_width"] = map_width
     metadata["map_height"] = map_height
     metadata["tileset"] = __tp.parse_tileset_from_lev(
-        lev_path=WZ2100_ADDON_LEV_FILEPATH,
+        addon_lev_path=WZ2100_ADDON_LEV_FILEPATH,
         map_folder_name=source_dir.name,
     )
 

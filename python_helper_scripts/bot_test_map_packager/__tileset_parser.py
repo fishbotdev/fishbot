@@ -106,7 +106,7 @@ def parse_tileset_from_dataset(dataset: str) -> str:
     return "arizona"
 
 
-def parse_tileset_from_lev(lev_path: Path, map_folder_name: str) -> str:
+def parse_tileset_from_lev(addon_lev_path: Path, map_folder_name: str) -> str:
     """
     Extract tileset from addon.lev using the map folder name.
 
@@ -118,7 +118,7 @@ def parse_tileset_from_lev(lev_path: Path, map_folder_name: str) -> str:
 
     game_filename = f"{map_folder_name}.gam"
 
-    lines = lev_path.read_text().splitlines()
+    lines = addon_lev_path.read_text().splitlines()
 
     for index, line in enumerate(lines):
         line = line.strip()
