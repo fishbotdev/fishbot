@@ -30,8 +30,11 @@ import tempfile
 import zipfile
 import re
 import copy
+import struct
+
 
 POSITION_OFFSET = 0       # To move by "1" WZ2100 game tile, enter "128".
+
 
 def write_json(path: Path, obj: dict) -> None:
     """Write a JSON file with consistent formatting."""
@@ -184,6 +187,32 @@ def parse_map_folder_name(source_dir: Path) -> dict:
     }
 
 
+def parse_game_map(path: Path) -> tuple[int, int]:
+    """
+    Extract map dimensions from game.map.
+    """
+
+    with open(path, "rb") as f:
+        header = f.read(16)
+
+    if len(header) != 16:
+        raise ValueError("game.map header is too short")
+
+    magic = header[:4]
+
+    if magic != b"map ":
+        raise ValueError(
+            f"Unexpected game.map header: {magic}"
+        )
+
+    version, width, height = struct.unpack(
+        "<III",
+        header[4:16],
+    )
+
+    return width, height
+
+
 def copy_static_assets(source_dir: Path, build_dir: Path) -> None:
     """Copy assets that are not modified."""
 
@@ -293,13 +322,12 @@ def generate_metadata(build_dir: Path, metadata: dict) -> None:
     Generate level.json and gam.json.
     """
 
-    # TODO: Replace with actual map dimensions later.
-    MAP_WIDTH = 256
-    MAP_HEIGHT = 256
-
     write_json(
         build_dir / "gam.json",
-        create_gam_json(MAP_WIDTH, MAP_HEIGHT),
+        create_gam_json(
+            metadata["map_width"],
+            metadata["map_height"],
+        )
     )
 
     write_json(
@@ -389,6 +417,13 @@ def repackage_map(
     output_dir.mkdir(parents=True, exist_ok=True)
 
     metadata = parse_map_folder_name(source_dir)
+
+    map_width, map_height = parse_game_map(
+        source_dir / "game.map"
+    )
+
+    metadata["map_width"] = map_width
+    metadata["map_height"] = map_height
 
     with tempfile.TemporaryDirectory() as temp_dir:
         build_dir = Path(temp_dir)
