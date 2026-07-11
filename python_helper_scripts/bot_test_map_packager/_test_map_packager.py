@@ -294,8 +294,8 @@ def generate_metadata(build_dir: Path, metadata: dict) -> None:
     """
 
     # TODO: Replace with actual map dimensions later.
-    MAP_WIDTH = 96
-    MAP_HEIGHT = 96
+    MAP_WIDTH = 256
+    MAP_HEIGHT = 256
 
     write_json(
         build_dir / "gam.json",
