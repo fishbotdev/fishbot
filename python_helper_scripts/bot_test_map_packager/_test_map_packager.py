@@ -167,14 +167,14 @@ def parse_map_folder_name(source_dir: Path) -> dict:
                 f"missing: {', '.join(sorted(missing))}"
             )
 
+            raise ValueError(
+                f"Invalid contents for '{source_dir.name}' ({'; '.join(messages)})."
+            )
+
         if extra:
             messages.append(
                 f"unexpected: {', '.join(sorted(extra))}"
             )
-
-        raise ValueError(
-            f"Invalid contents for '{source_dir.name}' ({'; '.join(messages)})."
-        )
 
     return {
         "source_name": source_dir.name,
