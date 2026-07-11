@@ -29,6 +29,20 @@ import shutil
 import tempfile
 import zipfile
 import re
+import copy
+
+POSITION_OFFSET = 0       # To move by "1" WZ2100 game tile, enter "128".
+
+def write_json(path: Path, obj: dict) -> None:
+    """Write a JSON file with consistent formatting."""
+    with open(path, "w", encoding="utf-8") as f:
+        json.dump(obj, f, indent=4)
+        f.write("\n")
+
+
+def read_json(path: Path) -> dict:
+    with open(path, "r", encoding="utf-8") as f:
+        return json.load(f)
 
 
 def create_gam_json(map_width: int, map_height: int) -> dict:
@@ -65,17 +79,12 @@ def create_level_json(name: str, players: int) -> dict:
 
     The map name and player count are incremented by one.
     For example:
-        "UrbanChasm-3p" -> "UrbanChasm-4p"
-        players=3 -> 4
+        "2c-UrbanChasm" -> "3c-UrbanChasm"
+        players=2 -> 3
     """
     new_players = players + 1
+    new_name = f"{new_players}c-{name}"
 
-    # Replace an existing "-Np" suffix if present.
-    suffix = f"-{players}p"
-    if name.endswith(suffix):
-        new_name = name[:-len(suffix)] + f"-{new_players}p"
-    else:
-        new_name = f"{new_players}c-{name}"
     return {
         "name": new_name,
         "type": "skirmish",
@@ -90,17 +99,9 @@ def create_level_json(name: str, players: int) -> dict:
         "prior-generator": "flaME v1.10"
     }
 
-
-def write_json(path: Path, obj: dict) -> None:
-    """Write a JSON file with consistent formatting."""
-    with open(path, "w", encoding="utf-8") as f:
-        json.dump(obj, f, indent=4)
-        f.write("\n")
-
-
 def create_test_json():
     ### The purpose of this function is to generate custom 'gam.json' and 'level.json' files which are packaged with
-    ###  the existing Warzone2100 v4.7.0 map files.
+    ###  the existing Warzone2100 v4.7.0 map files. It's just a test, it can be deleted.
 
     gam = create_gam_json(96, 96)
     level = create_level_json("UrbanChasm", 3)
@@ -197,18 +198,94 @@ def copy_static_assets(source_dir: Path, build_dir: Path) -> None:
         )
 
 
+def duplicate_start_position(
+    data: dict,
+    source_startpos: int,
+    new_startpos: int,
+    key_prefix: str,
+) -> None:
+    """
+    Duplicate all entries belonging to one start position.
+    """
+
+    next_id = 8888
+
+    for item in list(data.values()):
+        if item.get("startpos") != source_startpos:
+            continue
+
+        new_item = copy.deepcopy(item)
+
+        new_item["startpos"] = new_startpos
+
+        # Update internal ID if the object has one (e.g. droids)
+        if "id" in new_item:
+            new_item["id"] = next_id
+
+        data[f"{key_prefix}_{next_id:04d}"] = new_item
+
+        next_id += 1
+
+def translate_start_position(
+    data: dict,
+    startpos: int,
+    dx: int,
+    dy: int,
+) -> None:
+    """
+    Translate all structures belonging to a start position.
+    """
+
+    for structure in data.values():
+        if structure.get("startpos") != startpos:
+            continue
+
+        structure["position"][0] += dx
+        structure["position"][1] += dy
+
+
 def process_struct_json(src: Path, dst: Path, metadata: dict) -> None:
-    """
-    Placeholder for future structure processing.
-    """
-    shutil.copy2(src, dst)
+    data = read_json(src)
+
+    new_player_id = metadata["source_players"]
+
+    duplicate_start_position(
+        data,
+        source_startpos=0,
+        new_startpos=new_player_id,
+        key_prefix="structure",
+    )
+
+    translate_start_position(
+        data,
+        startpos=new_player_id,
+        dx=POSITION_OFFSET,
+        dy=POSITION_OFFSET,
+    )
+
+    write_json(dst, data)
 
 
 def process_droid_json(src: Path, dst: Path, metadata: dict) -> None:
-    """
-    Placeholder for future droid processing.
-    """
-    shutil.copy2(src, dst)
+    data = read_json(src)
+
+    new_player_id = metadata["source_players"]
+
+    duplicate_start_position(
+        data,
+        source_startpos=0,
+        new_startpos=new_player_id,
+        key_prefix="droid",
+    )
+
+    translate_start_position(
+        data,
+        startpos=new_player_id,
+        dx=POSITION_OFFSET,
+        dy=POSITION_OFFSET,
+    )
+
+    write_json(dst, data)
 
 
 def generate_metadata(build_dir: Path, metadata: dict) -> None:
@@ -284,7 +361,7 @@ def package_map(
     return output_path
 
 
-def process_map(
+def repackage_map(
     source_dir: Path,
     output_dir: Path,
 ) -> str:
@@ -354,7 +431,7 @@ if __name__ == "__main__":
     first_source_dir = Path.cwd() / 'v4.7.0_base_maps/2c-highground'
 
     try:
-        output = process_map(first_source_dir, output_dir=Path.cwd() / 'custom_v4.7.0_test_maps')
+        output = repackage_map(first_source_dir, output_dir=Path.cwd())
         report.append({
             "map": first_source_dir.name,
             "success": True,

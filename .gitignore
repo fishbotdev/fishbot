@@ -13,3 +13,5 @@ python_helper_scripts/map_analysis/*.json
 *.pyc
 *.lprof
 
+python_helper_scripts/bot_test_map_packager/custom_v4.7.0_base_maps/
+python_helper_scripts/bot_test_map_packager/v4.7.0_base_maps/

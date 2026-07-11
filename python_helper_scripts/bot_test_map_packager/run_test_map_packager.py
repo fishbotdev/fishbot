@@ -16,40 +16,13 @@
 """
 
 """
+This runs the custom-map packager pipeline which enables automatic bot-vs-bot testing.
 For docs: please see `README(test_map_packager).md`.
-
 """
+
 import _test_map_packager as packager
 
 from pathlib import Path
-
-
-def run_batch_map_packaging(source_dir: Path, output_dir: Path) -> list:
-    results = []
-
-    folder_names = sorted(
-        p for p in source_dir.iterdir()
-        if p.is_dir()
-    )
-
-    for folder_name in folder_names:
-        try:
-            output = packager.process_map(folder_name, output_dir)
-            results.append({
-                "map": folder_name.name,
-                "success": True,
-                "error": None,
-                "output": output,
-            })
-        except ValueError as e:
-            results.append({
-                "map": folder_name.name,
-                "success": False,
-                "error": str(e),
-                "output": None,
-            })
-
-    return results
 
 
 def _print_report_pretty(report) -> None:
@@ -83,6 +56,34 @@ def _print_report_pretty(report) -> None:
         print(f"    {item['error']}")
 
     print("=" * 60)
+
+
+def run_batch_map_packaging(source_dir: Path, output_dir: Path) -> list:
+    results = []
+
+    folder_names = sorted(
+        p for p in source_dir.iterdir()
+        if p.is_dir()
+    )
+
+    for folder_name in folder_names:
+        try:
+            output = packager.repackage_map(folder_name, output_dir)
+            results.append({
+                "map": folder_name.name,
+                "success": True,
+                "error": None,
+                "output": output,
+            })
+        except ValueError as e:
+            results.append({
+                "map": folder_name.name,
+                "success": False,
+                "error": str(e),
+                "output": None,
+            })
+
+    return results
 
 
 if __name__ == "__main__":
