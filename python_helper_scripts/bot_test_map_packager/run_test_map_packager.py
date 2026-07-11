@@ -20,7 +20,7 @@ This runs the custom-map packager pipeline which enables automatic bot-vs-bot te
 For docs: please see `README(test_map_packager).md`.
 """
 
-import _test_map_packager as packager
+import _map_packager as packager
 
 from pathlib import Path
 
