@@ -19,13 +19,19 @@
 This runs the custom-map packager pipeline which enables automatic bot-vs-bot testing.
 For docs: please see `README(test_map_packager).md`.
 """
+try:
+    import _map_packager as packager
+except ImportError:
+    try:
+        from . import _map_packager as packager
+    except ImportError:
+        raise ImportError("Failed to import `_map_packager.py`")
 
-import _map_packager as packager
 
 from pathlib import Path
 
 
-def _print_report_pretty(report) -> None:
+def print_report_pretty(report) -> None:
     """
     Pretty-print a batch processing report.
     """
@@ -93,8 +99,8 @@ if __name__ == "__main__":
     # output_directory = Path.cwd() / f'custom_{SOURCE_DIRECTORY_NAME}'
 
     # Write directly to the dev/maps library
-    output_directory = path = Path("~/OneDrive/Documents/wz2100_config_dir/maps").expanduser()
+    output_directory = Path("~/OneDrive/Documents/wz2100_config_dir/maps").expanduser()
 
     batch_report = run_batch_map_packaging(source_directory, output_directory)
 
-    _print_report_pretty(batch_report)
+    print_report_pretty(batch_report)
