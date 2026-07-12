@@ -51,17 +51,18 @@ Note: This code defines what the fields under "challenge" look like: https://git
 
 """
 
+from typing import List
 import json
 import CONSTANTS as C
 
 #################################### GENERATOR FUNCTIONS ####################################
 
-def get_uppercase_ai_name(script_name: str):
+def get_uppercase_ai_name(script_name: str) -> dict:
     # Turns `Cobra.js` -> `COBRA`
     return (script_name.split(".")[0]).upper()
 
 
-def create_empty_player(team: int):
+def create_spectator_player(team: int) -> dict:
     return {
         "difficulty": C.EASY_DIFFICULTY,
         "team": team,
@@ -69,7 +70,7 @@ def create_empty_player(team: int):
     }
 
 
-def create_fishbot_player(team: int, difficulty: int):
+def create_fishbot_player(team: int, difficulty: int) -> dict:
     return {
         "difficulty": difficulty,
         "team": team,
@@ -109,7 +110,7 @@ def create_challenge_from_template(challenge_name: str, challenge_version: int, 
 
     # Fill all slots with empty players
     for i in range(total_players):
-        data[f"player_{i}"] = create_empty_player(team=FISHBOT_TEAM)
+        data[f"player_{i}"] = create_spectator_player(team=FISHBOT_TEAM)
 
     # Insert FishBot
     data[f"player_{fishbot_position}"] = fishbot_factory(
