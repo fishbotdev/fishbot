@@ -17,7 +17,7 @@ Figure 3: This diagram shows the normal entry path for the bot code to begin exe
 ## Automatic Testing Pipeline
 FishBot is automatically tested 1v1 vs Cobra @ Hard / Medium difficulty on T2-NoBase maps.
 
-![Architecture diagram of FishBot's automated testing pipeline.](images/tests-v0.4.3-automated-test-architecture-1.png)
+![Architecture diagram of FishBot's automated testing pipeline.](images/tests-v0.4.3-automated-test-architecture-2.png)
 Figure 4: FishBot automated testing pipeline.
 
 ### Block details - Test Runner
