@@ -51,8 +51,9 @@ Note: This code defines what the fields under "challenge" look like: https://git
 
 """
 
-from typing import List
+from pathlib import Path
 import json
+from copy import deepcopy
 import CONSTANTS as C
 
 #################################### GENERATOR FUNCTIONS ####################################
@@ -85,144 +86,237 @@ def create_opponent_player(team: int, difficulty: int, ai_name: str):
         "ai": ai_name
     }
 
-def create_challenge_from_template(challenge_name: str, challenge_version: int, map_name: str, total_players: int,
-                                   bases: int, power_level: int, scavengers: int, tech_level: int,
-                                   fishbot_position: int, fishbot_difficulty: str, fishbot_factory,
-                                   opponent_position: int, opponent_difficulty: str, opponent_factory):
-    data = {
-        "challenge": {
-            "bases": bases,
-            "map": map_name,
-            "powerLevel": power_level,
-            "scavengers": scavengers,
-            "techLevel": tech_level,
 
-            "name": challenge_name,
-            "version": challenge_version
+def build_all_base_map_configs(
+    map_settings: list,
+    *,                  # this parameter enforces the rest of the parameters are kwargs (documentation reasons)
+    bases: int,
+    power_level: int,
+    scavengers: int,
+    tech_level: int,
+) -> list:
+
+    configs = []
+
+    for map_info in map_settings:
+        config = {
+            "challenge": {
+                "bases": bases,
+                "map": map_info["mapName"],
+                "powerLevel": power_level,
+                "scavengers": scavengers,
+                "techLevel": tech_level,
+            },
+            "player_0": create_spectator_player(team=C.DEFAULT_FISHBOT_TEAM)
         }
+
+        # Rest of slots are filled with Spectator bots.
+        # Note: the team should be "FISHBOT_DEFAULT_TEAM" else other bots may adapt to use weaker weapons to support a non-existent teammate.
+        for player_id in range(1, map_info["maxPlayers"]):
+            config[f"player_{player_id}"] = create_spectator_player(team=C.DEFAULT_FISHBOT_TEAM)
+
+        configs.append(config)
+
+    return configs
+
+
+def generate_ffa_configs(base_config: dict) -> list:
+    """
+    Generate one FFA test for every FishBot starting position
+    on a single base configuration.
+    """
+
+    results = []
+
+    map_name = base_config["challenge"]["map"]
+
+    player_keys = sorted(
+        key
+        for key in base_config.keys()
+        if key.startswith("player_") and key != "player_0"
+    )
+
+    max_players = len(player_keys)
+
+    for fishbot_position in range(1, max_players + 1):
+
+        config = deepcopy(base_config)
+
+        for position in range(1, max_players + 1):
+
+            if position == fishbot_position:
+                config[f"player_{position}"] = {
+                    "difficulty": C.MEDIUM_DIFFICULTY,
+                    "team": C.DEFAULT_FISHBOT_TEAM,
+                    "ai": C.FISHBOT_AI,
+                }
+            else:
+                config[f"player_{position}"] = {
+                    "difficulty": C.MEDIUM_DIFFICULTY,
+                    "team": C.DEFAULT_OPPONENT_TEAM,
+                    "ai": C.COBRA_AI,
+                }
+
+        results.append({
+            "test_type": C.FFA,
+            "map_name": map_name,
+            "fishbot_position": fishbot_position,
+            "opponent_position": None,
+            "fishbot_difficulty": C.MEDIUM_DIFFICULTY,
+            "opponent_difficulty": C.MEDIUM_DIFFICULTY,
+            "config": config,
+        })
+
+    return results
+
+
+def generate_duel_configs(base_config: dict) -> list:
+    """
+    Generate all ordered 1v1 FishBot vs Cobra tests for a single map.
+
+    Every ordered pair of distinct player positions is generated.
+
+    Remaining player slots remain spectators.
+    """
+
+    results = []
+
+    map_name = base_config["challenge"]["map"]
+
+    player_keys = sorted(
+        key
+        for key in base_config.keys()
+        if key.startswith("player_") and key != "player_0"
+    )
+
+    max_players = len(player_keys)
+
+    for fishbot_position in range(1, max_players + 1):
+
+        for opponent_position in range(1, max_players + 1):
+
+            if fishbot_position == opponent_position:
+                continue
+
+            config = deepcopy(base_config)
+
+            config[f"player_{fishbot_position}"] = {
+                "difficulty": C.MEDIUM_DIFFICULTY,
+                "team": C.DEFAULT_FISHBOT_TEAM,
+                "ai": C.FISHBOT_AI,
+            }
+
+            config[f"player_{opponent_position}"] = {
+                "difficulty": C.HARD_DIFFICULTY,
+                "team": C.DEFAULT_OPPONENT_TEAM,
+                "ai": C.COBRA_AI,
+            }
+
+            results.append({
+                "test_type": C.DUEL,
+                "map_name": map_name,
+                "fishbot_position": fishbot_position,
+                "opponent_position": opponent_position,
+                "fishbot_difficulty": C.MEDIUM_DIFFICULTY,
+                "opponent_difficulty": C.HARD_DIFFICULTY,
+                "config": config,
+            })
+
+    return results
+
+
+def make_test_filename(test: dict) -> str:
+    """
+    Generate a unique filename for a generated test configuration.
+    """
+
+    map_name = test["map_name"]
+
+    if test["test_type"] == C.FFA:
+        return (
+            f"{map_name}"
+            f"_{C.FFA}"
+            f"_f{test['fishbot_position']}"
+        )
+
+    if test["test_type"] == C.DUEL:
+        return (
+            f"{map_name}"
+            f"_{C.DUEL}"
+            f"_f{test['fishbot_position']}"
+            f"_c{test['opponent_position']}"
+        )
+
+    raise ValueError(f"Unknown test type: {test['test_type']}")
+
+
+def write_test_configs(
+    final_configs: list,
+    output_dir: Path,
+    manifest_path: Path,
+) -> Path:
+    """
+    Write generated test configurations and create an immutable base manifest.
+
+    Parameters
+    ----------
+    final_configs
+        List of generated test configurations and metadata.
+    output_dir
+        Directory to write configuration files into.
+    manifest_path
+        Output path for the immutable base manifest.
+
+    Returns
+    -------
+    Path
+        Path to the written base manifest.
+    """
+
+    output_dir.mkdir(parents=True, exist_ok=True)
+    manifest_path.parent.mkdir(parents=True, exist_ok=True)
+
+    manifest = {
+        "version": 1,
+        "tests": {},
     }
 
-    # The "OPPONENT TEAM" should only contain the opponent player(s).
-    # In a 1v1 - this means that the opponent will not activate any 'team-related' code, which may put it at a disadvantage.
-    # e.g. Cobra begins using artillery only.
-    OPPONENT_TEAM = 0
-    FISHBOT_TEAM = 1        # this team should contain FishBot & all spectator players.
+    for test_id, test in enumerate(final_configs):
 
-    # Fill all slots with empty players
-    for i in range(total_players):
-        data[f"player_{i}"] = create_spectator_player(team=FISHBOT_TEAM)
+        test_key = f"{test_id:05d}"
 
-    # Insert FishBot
-    data[f"player_{fishbot_position}"] = fishbot_factory(
-        team=FISHBOT_TEAM,
-        difficulty=fishbot_difficulty
-    )
+        descriptive_name = make_test_filename(test)
+        file_name = f"{test_key}_{descriptive_name}.json"
 
-    # Insert Cobra
-    data[f"player_{opponent_position}"] = opponent_factory(
-        team=OPPONENT_TEAM,
-        difficulty=opponent_difficulty
-    )
+        config_path = output_dir / file_name
 
-    return data
+        # Write config file.
+        with open(config_path, "w") as f:
+            json.dump(test["config"], f, indent=4)
 
+        print(f"\t- {file_name}")
 
-def generate_json_test_data(skirmish_settings, map_settings):
+        # Copy all metadata except the full config.
+        metadata = {
+            key: value
+            for key, value in test.items()
+            if key != "config"
+        }
 
-    generated_test_data = []
+        metadata["config_file"] = file_name
 
-    # SKIRMISH INFO
-    BASES: int = skirmish_settings['bases']
-    POWER_LEVEL: int = skirmish_settings['powerLevel']
-    SCAVENGERS: int = skirmish_settings['scavengers']
-    TECH_LEVEL: int = skirmish_settings['techLevel']
+        manifest["tests"][test_key] = metadata
 
-    # FISHBOT INFO
-    FISHBOT_DIFFICULTY: str = skirmish_settings['fishbotDifficulty']
-    fishbot_factory = create_fishbot_player
+    with open(manifest_path, "w") as f:
+        json.dump(manifest, f, indent=4)
 
-    # 'OPPONENT' INFO
-    OPPONENT_NAME: str = get_uppercase_ai_name(skirmish_settings['opponentName'])
-    OPPONENT_DIFFICULTY: str = skirmish_settings['opponentDifficulty']
-    opponent_factory = lambda team, difficulty: create_opponent_player(team, difficulty, skirmish_settings['opponentName'])
+    print(f"\nSaved base manifest: {manifest_path}")
 
-    for m in map_settings:
-        # MAP INFO
-        MAP_NAME: str = m['mapName']
-        MAX_PLAYERS: int = m['maxPlayers']
-
-        # POSITION INFO (1v1 ONLY)
-        POSITION1: int = m['fishbot_position']
-        POSITION2: int = m['opponent_position']
-
-        POSITIONS = [POSITION1, POSITION2]
-        NUM_POSITIONS = len(POSITIONS)
-
-        # Creates two copies with positions swapped (only works for 1v1)
-        for i in range(NUM_POSITIONS):
-
-            FISHBOT_POSITION = POSITIONS[i % NUM_POSITIONS]
-            OPPONENT_POSITION = POSITIONS[(i+1) % NUM_POSITIONS]
-
-            FILE_NAME = f"{MAP_NAME.upper()}_{FISHBOT_POSITION}_{OPPONENT_POSITION}_{OPPONENT_NAME}_{OPPONENT_DIFFICULTY.upper()}_T{TECH_LEVEL}"
-            FILE_VER = 1
-
-            challenge_data = create_challenge_from_template(
-                # Map & game setup
-                challenge_name=FILE_NAME, challenge_version=FILE_VER, map_name=MAP_NAME, total_players=MAX_PLAYERS,
-                bases=BASES, power_level=POWER_LEVEL, scavengers=SCAVENGERS, tech_level=TECH_LEVEL,
-                # Player setup
-                fishbot_position=FISHBOT_POSITION, fishbot_difficulty=FISHBOT_DIFFICULTY, fishbot_factory=fishbot_factory,
-                opponent_position=OPPONENT_POSITION, opponent_difficulty=OPPONENT_DIFFICULTY, opponent_factory=opponent_factory,
-            )
-
-            generated_test_data.append({'file_name': FILE_NAME, 'raw_data': challenge_data})
-
-    return generated_test_data
-
-
-#################################### SAVE FUNCTIONS ####################################
-
-def extract_file_name_and_data(single_test_data):
-    FILE_NAME = single_test_data["file_name"]
-    DATA = single_test_data["raw_data"]
-    return FILE_NAME, DATA
-
-
-def save_challenge_files(generated_test_data: list, output_folder_path: str):
-
-    print(f"Saving challenge files to: `{output_folder_path}`")
-
-    for d in generated_test_data:
-        FILE_NAME, DATA = extract_file_name_and_data(d)
-
-        FILE_PATH = rf"{output_folder_path}/{FILE_NAME}.json"
-
-        with open(FILE_PATH, "w") as f:
-            json.dump(DATA, f, indent=4)
-
-        print(f"\t - `{FILE_NAME}` saved.")
+    return manifest_path
 
 
 ###############################################################################################
 
-
 if __name__ == "__main__":
-
-    import _set_autogame_config as cfg
-
-    from os import path as path
-    DEV_CONFIG_PATH = path.expandvars(r"C:\Users\%USERNAME%\OneDrive\Documents\wz2100_config_dir\tests")
-    PROD_CONFIG_PATH = r"..\Warzone 2100\PRODCONFIG\tests"
-
-    #################################### USER CONFIG START ####################################
-
-    SKIRMISH_SETTINGS, MAP_SETTINGS = cfg.generate_1v1_cobra_hard_3P()
-
-    OUTPUT_FOLDER_PATH = PROD_CONFIG_PATH
-
-    #################################### USER CONFIG END ####################################
-
-    json_test_data = generate_json_test_data(skirmish_settings=SKIRMISH_SETTINGS, map_settings=MAP_SETTINGS)
-    save_challenge_files(generated_test_data=json_test_data, output_folder_path=OUTPUT_FOLDER_PATH)
+    pass
 
