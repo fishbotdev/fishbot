@@ -107,14 +107,13 @@ def run_worker(*, run_manifest_path: Path, test_ids: list[str]):
 
 
 # The run_manifest is a test config file that dictates how the test should be run.
-def create_run_manifest() -> Path:
+def create_run_manifest(short_sha: str, runs_per_test: int, test_result_path: Path) -> Path:
 
-    COMMIT_SHA = "12345"
+    SHORT_SHA = short_sha
+    RUNS_PER_TEST = runs_per_test
 
-    SHORT_SHA = COMMIT_SHA[:7]
     BASE_MANIFEST_PATH = Path.cwd() / "base_manifest.json"
-    TEST_RESULTS_PATH = Path.cwd() / "results" / SHORT_SHA
-    RUNS_PER_TEST = 2
+    TEST_RESULTS_PATH = test_result_path
 
     run_manifest = {
         "version": 1,
@@ -133,11 +132,59 @@ def create_run_manifest() -> Path:
     return RUN_MANIFEST_PATH
 
 
+def assign_test_ids_to_workers(
+    base_manifest_path: Path,
+    worker_count: int,
+) -> dict[int, list[str]]:
+    """
+    Evenly distribute tests between workers.
+
+    Tests are assigned round-robin in manifest order:
+
+        Worker 0 -> 00000, 00005, 00010, ...
+        Worker 1 -> 00001, 00006, 00011, ...
+        ...
+
+    Returns
+    -------
+    dict[int, list[str]]
+        Mapping of worker ID to the test IDs assigned to that worker.
+    """
+
+    base_manifest = read_json(base_manifest_path)
+
+    ALL_TEST_IDS = list(base_manifest["tests"].keys())
+
+    assignments = {
+        worker_id: []
+        for worker_id in range(worker_count)
+    }
+
+    for index, test_id in enumerate(ALL_TEST_IDS):
+        worker_id = index % worker_count
+        assignments[worker_id].append(test_id)
+
+    return assignments
+
+
 def run_tests():
 
-    run_manifest_path = create_run_manifest()
+    COMMIT_SHA = "12345"
+    SHORT_SHA = COMMIT_SHA[:7]
+    RUNS_PER_TEST = 2
+    TEST_RESULT_PATH = Path.cwd() / "results" / SHORT_SHA
 
-    summary = run_worker(run_manifest_path=run_manifest_path, test_ids=["00023", "00024"])
+    run_manifest_path = create_run_manifest(short_sha=SHORT_SHA, runs_per_test=RUNS_PER_TEST, test_result_path=TEST_RESULT_PATH)
+
+    WORKER_COUNT = 5
+    BASE_MANIFEST_PATH = Path.cwd() / "base_manifest.json"
+    worker_assignments = assign_test_ids_to_workers(BASE_MANIFEST_PATH, WORKER_COUNT)
+
+    # Temporary: run worker 0 only.
+    summary = run_worker(
+        run_manifest_path=run_manifest_path,
+        test_ids=worker_assignments[0],
+    )
 
     print(summary)
 
