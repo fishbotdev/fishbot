@@ -22,6 +22,9 @@ The purpose of this file is to implement the test pipeline as laid out in `fishb
 Its purpose is to
 1. Repackage the base maps into N+1 player maps (where Player 0 is duplicated) defined in the JSONV2 format.
 2. Generate challenge .json files so autogames can automatically be run across all supported base maps.
+
+Note: The maximum player count is 10 players, so the map repackaging will not work for 10p maps (which would result in 11 total players).
+    TODO: find a way to test 10p maps.
 """
 
 import CONSTANTS as C
