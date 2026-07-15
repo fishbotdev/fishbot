@@ -137,6 +137,9 @@ function setupDebugMode() {
 	changePlayerColour(9, COLOURS["orange"]);
 	changePlayerColour(10, COLOURS["purple"]);
 	changePlayerColour(11, COLOURS["brown"]);
+
+	// Temporary: for automated testing
+	changePlayerColour(me, COLOURS["yellow"]);		
 	
 	const DIFFICULTY_LEVEL = ["Campaign", "Easy", "Medium", "Hard", "Insane"];
 	const get_difficulty_text = (difficulty) => DIFFICULTY_LEVEL[difficulty];
