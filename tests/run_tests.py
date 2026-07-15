@@ -49,13 +49,14 @@ def read_json(path: Path) -> dict:
         return json.load(f)
 
 
-def run_worker(*, run_manifest_path: Path, test_ids: list[str]):
+def run_worker(*, run_manifest_path: Path, worker_id: int):
     """
-    Executes the supplied list of test IDs.
+    Executes all tests assigned to a worker.
 
     The worker performs no scheduling. It simply:
         - loads the run manifest,
-        - looks up each test in the linked base manifest,
+        - retrieves its assigned test IDs,
+        - looks up each test in the base manifest,
         - executes the requested number of runs,
         - appends results to the corresponding XXXXX.jsonl file.
 
@@ -69,12 +70,19 @@ def run_worker(*, run_manifest_path: Path, test_ids: list[str]):
         }
     """
 
+    # Load run configuration.
     RUN_MANIFEST = read_json(run_manifest_path)
-    TEST_IDS = test_ids
 
     RUNS_PER_TEST = RUN_MANIFEST["runs_per_test"]
-    BASE_MANIFEST_TESTS = read_json(RUN_MANIFEST["base_manifest_path"])["tests"]
-    RESULTS_FOLDER_PATH = RUN_MANIFEST["results_folder_path"]
+    RESULTS_FOLDER_PATH = Path(RUN_MANIFEST["results_folder_path"])
+    BASE_MANIFEST_PATH = Path(RUN_MANIFEST["base_manifest_path"])
+
+    # Load worker assignment.
+    WORKER_ASSIGNMENTS = RUN_MANIFEST["worker_assignments"]
+    TEST_IDS = WORKER_ASSIGNMENTS[str(worker_id)]
+
+    # Load base manifest.
+    BASE_MANIFEST_TESTS = read_json(BASE_MANIFEST_PATH)["tests"]
 
     tests_completed = 0
     failures = 0
@@ -88,16 +96,15 @@ def run_worker(*, run_manifest_path: Path, test_ids: list[str]):
 
             elapsed_minutes += test_runner.run_tests(
                 test_file_name=test_file_name,
-                in_progress_file_path=Path(RESULTS_FOLDER_PATH) / f"{test_id}.jsonl",
+                in_progress_file_path=RESULTS_FOLDER_PATH / f"{test_id}.jsonl",
                 cycles=RUNS_PER_TEST,
             )
 
             tests_completed += 1
 
         except Exception as e:
-
             failures += 1
-            print(f"[ERROR] Test {test_id} failed: {e}")
+            print(f"[Worker {worker_id}] ERROR: Test {test_id} failed: {e}")
 
     return {
         "tests_completed": tests_completed,
@@ -107,7 +114,7 @@ def run_worker(*, run_manifest_path: Path, test_ids: list[str]):
 
 
 # The run_manifest is a test config file that dictates how the test should be run.
-def create_run_manifest(short_sha: str, runs_per_test: int, test_result_path: Path) -> Path:
+def write_run_manifest(short_sha: str, runs_per_test: int, test_result_path: Path, worker_assignments: dict) -> Path:
 
     SHORT_SHA = short_sha
     RUNS_PER_TEST = runs_per_test
@@ -122,6 +129,7 @@ def create_run_manifest(short_sha: str, runs_per_test: int, test_result_path: Pa
         "runs_per_test": RUNS_PER_TEST,
         "base_manifest_path": str(BASE_MANIFEST_PATH),
         "results_folder_path": str(TEST_RESULTS_PATH),
+        "worker_assignments": worker_assignments
     }
 
     RUN_MANIFEST_PATH = TEST_RESULTS_PATH / "run_manifest.json"
@@ -135,7 +143,7 @@ def create_run_manifest(short_sha: str, runs_per_test: int, test_result_path: Pa
 def assign_test_ids_to_workers(
     base_manifest_path: Path,
     worker_count: int,
-) -> dict[int, list[str]]:
+) -> dict[str, list[str]]:
     """
     Evenly distribute tests between workers.
 
@@ -147,7 +155,7 @@ def assign_test_ids_to_workers(
 
     Returns
     -------
-    dict[int, list[str]]
+    dict[str, list[str]]
         Mapping of worker ID to the test IDs assigned to that worker.
     """
 
@@ -156,41 +164,51 @@ def assign_test_ids_to_workers(
     ALL_TEST_IDS = list(base_manifest["tests"].keys())
 
     assignments = {
-        worker_id: []
+        str(worker_id): []
         for worker_id in range(worker_count)
     }
 
     for index, test_id in enumerate(ALL_TEST_IDS):
-        worker_id = index % worker_count
+        worker_id = str(index % worker_count)
         assignments[worker_id].append(test_id)
 
     return assignments
 
 
-def run_tests():
+def create_run_manifest():
 
     COMMIT_SHA = "12345"
     SHORT_SHA = COMMIT_SHA[:7]
     RUNS_PER_TEST = 2
     TEST_RESULT_PATH = Path.cwd() / "results" / SHORT_SHA
 
-    run_manifest_path = create_run_manifest(short_sha=SHORT_SHA, runs_per_test=RUNS_PER_TEST, test_result_path=TEST_RESULT_PATH)
-
     WORKER_COUNT = 5
     BASE_MANIFEST_PATH = Path.cwd() / "base_manifest.json"
     worker_assignments = assign_test_ids_to_workers(BASE_MANIFEST_PATH, WORKER_COUNT)
+    ## Note: this returns:
+    """
+    {
+        "0": ["00000", "00005", "00010", ...],
+        "1": ["00001", "00006", "00011", ...],
+    }
+    """
+
+    new_run_manifest_path = write_run_manifest(short_sha=SHORT_SHA, runs_per_test=RUNS_PER_TEST,
+                                           test_result_path=TEST_RESULT_PATH, worker_assignments=worker_assignments)
+
+    return new_run_manifest_path
+
+
+if __name__ == "__main__":
+    run_manifest_path = create_run_manifest()
 
     # Temporary: run worker 0 only.
     summary = run_worker(
         run_manifest_path=run_manifest_path,
-        test_ids=worker_assignments[0],
+        worker_id=0
     )
 
     print(summary)
-
-
-if __name__ == "__main__":
-    run_tests()
 
     # TEMPORARY
     # FILE_NAME = f"00023.jsonl"
