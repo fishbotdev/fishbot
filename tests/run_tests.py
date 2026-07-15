@@ -143,7 +143,7 @@ def write_run_manifest(short_sha: str, runs_per_test: int, base_manifest_path: P
 
 
 def assign_test_ids_to_workers(
-    base_manifest_path: Path,
+    test_ids: list[str],
     worker_count: int,
 ) -> dict[str, list[str]]:
     """
@@ -161,20 +161,40 @@ def assign_test_ids_to_workers(
         Mapping of worker ID to the test IDs assigned to that worker.
     """
 
-    base_manifest = read_json(base_manifest_path)
-
-    ALL_TEST_IDS = list(base_manifest["tests"].keys())
-
     assignments = {
         str(worker_id): []
         for worker_id in range(worker_count)
     }
 
-    for index, test_id in enumerate(ALL_TEST_IDS):
+    for index, test_id in enumerate(test_ids):
         worker_id = str(index % worker_count)
         assignments[worker_id].append(test_id)
 
     return assignments
+
+
+def filter_completed_tests(
+    test_ids: list[str],
+    results_folder: Path,
+) -> list[str]:
+    """
+    Removes tests that already have result files.
+
+    Returns only the test IDs that still need to be executed.
+    """
+
+    remaining = []
+
+    for test_id in test_ids:
+
+        result_path = results_folder / f"{test_id}.jsonl"
+
+        if result_path.exists() and result_path.stat().st_size > 0:
+            continue
+
+        remaining.append(test_id)
+
+    return remaining
 
 
 def launch_workers(
@@ -209,15 +229,23 @@ def run_batch_test() -> Path:
 
     WORKER_COUNT = 8
 
-    COMMIT_SHA = "12345"
+    COMMIT_SHA = "32d533f5a21991b6bd2be59bc7010496f0b5f786"
     SHORT_SHA = COMMIT_SHA[:7]
     RUNS_PER_TEST = 10
 
     BASE_MANIFEST_PATH = Path.cwd() / "base_manifest.json"
     TEST_RESULTS_PATH = Path.cwd() / "results" / SHORT_SHA
 
+    base_manifest = read_json(BASE_MANIFEST_PATH)
+    all_test_ids = list(base_manifest["tests"].keys())
+
+    remaining_test_ids = filter_completed_tests(
+        all_test_ids,
+        TEST_RESULTS_PATH,
+    )
+
     worker_assignments = assign_test_ids_to_workers(
-        BASE_MANIFEST_PATH,
+        remaining_test_ids,
         WORKER_COUNT,
     )
 
