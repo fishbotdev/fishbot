@@ -29,69 +29,123 @@ This means I can run autogames & perform development simultaneously using the sa
 The split between the development / production environment is not strictly necessary,
     but it has made development + testing a lot more streamlined!
 """
-
-import _set_autogame_config as cfg
-import _create_1v1_challenge_json as g
 import _run_and_save_autogames as test_runner
 import _process_autogame_results as test_processor
 
-from os import getcwd
+import json
+from pathlib import Path
+from datetime import datetime
 
-#################################### USER CONFIG START ####################################
 
-PRODUCTION_TEST_FOLDER_PATH = r"..\Warzone 2100\PRODCONFIG\tests"
+def write_json(path: Path, obj: dict) -> None:
+    """Write a JSON file with consistent formatting."""
+    with open(path, "w", encoding="utf-8") as f:
+        json.dump(obj, f, indent=4)
+        f.write("\n")
 
-REGENERATE_TESTS = True
-# config_generator = cfg.generate_1v1_cobra_med_3P
-# config_generator = cfg.generate_1v1_cobra_hard_3P
-# config_generator = cfg.generate_1v1_cobra_insane_3P
-# config_generator = cfg.generate_1v1_peacemaker_med_3P
-config_generator = cfg.generate_1v1_peacemaker_hard_3P
 
-RUN_TESTS = True               # Please see `__main__` in `_run_and_save_autogames.py` for how to set up your console.
-NUM_CYCLES_PER_TEST = 100
-TEST_RESULTS_FOLDER_PATH = getcwd()
+def read_json(path: Path) -> dict:
+    with open(path, "r", encoding="utf-8") as f:
+        return json.load(f)
 
-# Test metadata
-COMMIT_SHA = r"""
-3781360b96ba82f5e096bdde6868a8764f3522fb
-"""
 
-#################################### USER CONFIG END ####################################
+def run_worker(*, run_manifest_path: Path, test_ids: list[str]):
+    """
+    Executes the supplied list of test IDs.
 
-# Preprocess information
-SHORT_SHA = COMMIT_SHA.lstrip()[:7]
+    The worker performs no scheduling. It simply:
+        - loads the run manifest,
+        - looks up each test in the linked base manifest,
+        - executes the requested number of runs,
+        - appends results to the corresponding XXXXX.jsonl file.
 
-# Generate test.json files
-SKIRMISH_SETTINGS, MAP_SETTINGS = config_generator()
-data = g.generate_json_test_data(skirmish_settings=SKIRMISH_SETTINGS, map_settings=MAP_SETTINGS)
+    Returns
+    -------
+    dict
+        {
+            "tests_completed": int,
+            "failures": int,
+            "elapsed_minutes": float,
+        }
+    """
 
-test_file_names = []
-for d in data:
-    FILE_NAME, _ = g.extract_file_name_and_data(d)
-    test_file_names.append(FILE_NAME)
+    RUN_MANIFEST = read_json(run_manifest_path)
+    TEST_IDS = test_ids
 
-if REGENERATE_TESTS:
-    g.save_challenge_files(generated_test_data=data, output_folder_path=PRODUCTION_TEST_FOLDER_PATH)
+    RUNS_PER_TEST = RUN_MANIFEST["runs_per_test"]
+    BASE_MANIFEST_TESTS = read_json(RUN_MANIFEST["base_manifest_path"])["tests"]
+    RESULTS_FOLDER_PATH = RUN_MANIFEST["results_folder_path"]
 
-wip_file_names = []
+    tests_completed = 0
+    failures = 0
+    elapsed_minutes = 0.0
 
-total_test_time_mins = 0.0
+    for test_id in TEST_IDS:
 
-for test_file_name in test_file_names:
-    TEMP_FILE_NAME = f"{SHORT_SHA},{test_file_name},{NUM_CYCLES_PER_TEST}G.jsonl"
-    wip_file_names.append(TEMP_FILE_NAME)
+        try:
+            test = BASE_MANIFEST_TESTS[test_id]
+            test_file_name = test["config_file"]
 
-    if RUN_TESTS:
-        mins_to_complete = test_runner.run_tests(
-            test_file_name=test_file_name,
-            in_progress_file_name=TEMP_FILE_NAME,
-            cycles=NUM_CYCLES_PER_TEST
-        )
+            elapsed_minutes += test_runner.run_tests(
+                test_file_name=test_file_name,
+                in_progress_file_path=Path(RESULTS_FOLDER_PATH) / f"{test_id}.jsonl",
+                cycles=RUNS_PER_TEST,
+            )
 
-        total_test_time_mins += mins_to_complete
+            tests_completed += 1
 
-# Now loop through WIP filenames
-print(f"Total test time: {round(total_test_time_mins, 2)} mins.")
-for file_name in wip_file_names:
-    test_processor.print_test_summary(test_results_folder_path=TEST_RESULTS_FOLDER_PATH, test_file_name=file_name)
+        except Exception as e:
+
+            failures += 1
+            print(f"[ERROR] Test {test_id} failed: {e}")
+
+    return {
+        "tests_completed": tests_completed,
+        "failures": failures,
+        "elapsed_minutes": elapsed_minutes,
+    }
+
+
+# The run_manifest is a test config file that dictates how the test should be run.
+def create_run_manifest() -> Path:
+
+    COMMIT_SHA = "12345"
+
+    SHORT_SHA = COMMIT_SHA[:7]
+    BASE_MANIFEST_PATH = Path.cwd() / "base_manifest.json"
+    TEST_RESULTS_PATH = Path.cwd() / "results" / SHORT_SHA
+    RUNS_PER_TEST = 2
+
+    run_manifest = {
+        "version": 1,
+        "short_sha": SHORT_SHA,
+        "generated": datetime.now().isoformat(timespec="seconds"),
+        "runs_per_test": RUNS_PER_TEST,
+        "base_manifest_path": str(BASE_MANIFEST_PATH),
+        "results_folder_path": str(TEST_RESULTS_PATH),
+    }
+
+    RUN_MANIFEST_PATH = TEST_RESULTS_PATH / "run_manifest.json"
+    RUN_MANIFEST_PATH.parent.mkdir(parents=True, exist_ok=True)
+
+    write_json(RUN_MANIFEST_PATH, run_manifest)
+
+    return RUN_MANIFEST_PATH
+
+
+def run_tests():
+
+    run_manifest_path = create_run_manifest()
+
+    summary = run_worker(run_manifest_path=run_manifest_path, test_ids=["00023", "00024"])
+
+    print(summary)
+
+
+if __name__ == "__main__":
+    run_tests()
+
+    # TEMPORARY
+    # FILE_NAME = f"00023.jsonl"
+    # test_processor.print_test_summary(test_results_folder_path=Path("results/12345"), test_file_name=FILE_NAME)
+

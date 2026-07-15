@@ -63,6 +63,7 @@ import ctypes
 
 import pandas as pd
 import json
+from pathlib import Path
 
 from time import perf_counter
 
@@ -241,7 +242,7 @@ def extract_stats_from_summary_table(summary_table: List[str]) -> pd.DataFrame:
     return pd.DataFrame(rows)
 
 
-def append_match(df: pd.DataFrame, path: str) -> None:
+def append_match(df: pd.DataFrame, path: Path) -> None:
     records = df.to_dict(orient="records")
 
     with open(path, "a") as f:
@@ -270,11 +271,11 @@ def run_autogame(commands: List[str]) -> List[str]:
     return final_game_summary_table
 
 
-def run_tests(test_file_name: str, in_progress_file_name: str, cycles: int, debug_mode: bool=False) -> float:
+def run_tests(test_file_name: str, in_progress_file_path: Path, cycles: int, debug_mode: bool=False) -> float:
     AUTOGAME_COMMAND = [
         rf"..\Warzone 2100\bin\warzone2100.exe",        # assumes WZ2100 is installed in `fishbot/Warzone 2100`
         rf'--configdir="..\Warzone 2100\PRODCONFIG"',   # assumes that the mod is loaded in a "PRODCONFIG" subfolder of the WZ2100 install location e.g. `fishbot/Warzone 2100/PRODCONFIG`
-        rf'--skirmish="{test_file_name}.json"',         # a custom challenge .json file loaded into `configdir/tests` (see `warzone2100/data/mp/tests/miza.json` for an example). The test file must be added to the 'tests' folder: https://github.com/Warzone2100/warzone2100/blob/8701c62ae68ca70da43ec915cbf6776c492e6656/src/multiint.cpp#L526
+        rf'--skirmish="{test_file_name}"',              # a custom challenge .json file loaded into `configdir/tests` (see `warzone2100/data/mp/tests/miza.json` for an example). The test file must be added to the 'tests' folder: https://github.com/Warzone2100/warzone2100/blob/8701c62ae68ca70da43ec915cbf6776c492e6656/src/multiint.cpp#L526
         rf"--enableconsole",                            # creates a console (this is where the Game State summary is printed)
         rf"--headless",                                 # runs the program without a GUI
         rf"--autogame"                                  # automatically runs the game
@@ -309,7 +310,7 @@ def run_tests(test_file_name: str, in_progress_file_name: str, cycles: int, debu
 
         ADD_DEBUG_BREAKPOINT_HERE_TO_SEE_STATS_AS_DATAFRAME = 1
 
-        append_match(df=stats, path=in_progress_file_name)
+        append_match(df=stats, path=in_progress_file_path)
 
     TIME_ENDED = perf_counter()
     round_to_2dp = lambda x: round(x, 2)
