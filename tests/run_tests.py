@@ -35,6 +35,9 @@ import _process_autogame_results as test_processor
 import json
 from pathlib import Path
 from datetime import datetime
+import argparse
+import subprocess
+import sys
 
 
 def write_json(path: Path, obj: dict) -> None:
@@ -114,12 +117,11 @@ def run_worker(*, run_manifest_path: Path, worker_id: int):
 
 
 # The run_manifest is a test config file that dictates how the test should be run.
-def write_run_manifest(short_sha: str, runs_per_test: int, test_result_path: Path, worker_assignments: dict) -> Path:
+def write_run_manifest(short_sha: str, runs_per_test: int, base_manifest_path: Path, test_result_path: Path, worker_assignments: dict) -> Path:
 
     SHORT_SHA = short_sha
     RUNS_PER_TEST = runs_per_test
-
-    BASE_MANIFEST_PATH = Path.cwd() / "base_manifest.json"
+    BASE_MANIFEST_PATH = base_manifest_path
     TEST_RESULTS_PATH = test_result_path
 
     run_manifest = {
@@ -175,42 +177,93 @@ def assign_test_ids_to_workers(
     return assignments
 
 
-def create_run_manifest():
+def launch_workers(
+    *,
+    run_manifest_path: Path,
+    worker_count: int,
+):
+
+    processes = []
+
+    for worker_id in range(worker_count):
+
+        process = subprocess.Popen(
+            [
+                sys.executable,
+                str(Path(__file__).resolve()),
+                "--run-manifest",
+                str(run_manifest_path),
+                "--worker-id",
+                str(worker_id),
+            ],
+            creationflags=subprocess.CREATE_NEW_CONSOLE,
+        )
+
+        processes.append(process)
+
+    for process in processes:
+        process.wait()
+
+
+def run_batch_test() -> Path:
+
+    WORKER_COUNT = 8
 
     COMMIT_SHA = "12345"
     SHORT_SHA = COMMIT_SHA[:7]
-    RUNS_PER_TEST = 2
-    TEST_RESULT_PATH = Path.cwd() / "results" / SHORT_SHA
+    RUNS_PER_TEST = 10
 
-    WORKER_COUNT = 5
     BASE_MANIFEST_PATH = Path.cwd() / "base_manifest.json"
-    worker_assignments = assign_test_ids_to_workers(BASE_MANIFEST_PATH, WORKER_COUNT)
-    ## Note: this returns:
-    """
-    {
-        "0": ["00000", "00005", "00010", ...],
-        "1": ["00001", "00006", "00011", ...],
-    }
-    """
+    TEST_RESULTS_PATH = Path.cwd() / "results" / SHORT_SHA
 
-    new_run_manifest_path = write_run_manifest(short_sha=SHORT_SHA, runs_per_test=RUNS_PER_TEST,
-                                           test_result_path=TEST_RESULT_PATH, worker_assignments=worker_assignments)
+    worker_assignments = assign_test_ids_to_workers(
+        BASE_MANIFEST_PATH,
+        WORKER_COUNT,
+    )
 
-    return new_run_manifest_path
+    run_manifest_path = write_run_manifest(
+        short_sha=SHORT_SHA,
+        runs_per_test=RUNS_PER_TEST,
+        base_manifest_path=BASE_MANIFEST_PATH,
+        test_result_path=TEST_RESULTS_PATH,
+        worker_assignments=worker_assignments,
+    )
+
+    launch_workers(
+        run_manifest_path=run_manifest_path,
+        worker_count=WORKER_COUNT,
+    )
+
+    return run_manifest_path
 
 
 if __name__ == "__main__":
-    run_manifest_path = create_run_manifest()
 
-    # Temporary: run worker 0 only.
-    summary = run_worker(
-        run_manifest_path=run_manifest_path,
-        worker_id=0
+    parser = argparse.ArgumentParser()
+
+    parser.add_argument(
+        "--run-manifest",
+        type=Path,
     )
 
-    print(summary)
+    parser.add_argument(
+        "--worker-id",
+        type=int,
+    )
 
-    # TEMPORARY
-    # FILE_NAME = f"00023.jsonl"
-    # test_processor.print_test_summary(test_results_folder_path=Path("results/12345"), test_file_name=FILE_NAME)
+    args = parser.parse_args()
 
+    if args.run_manifest is not None:
+        # Worker mode
+        if args.worker_id is None:
+            parser.error("--worker-id is required when using --run-manifest")
+
+        summary = run_worker(
+            run_manifest_path=args.run_manifest,
+            worker_id=args.worker_id,
+        )
+
+        print(summary)
+    else:
+        # Orchestrator mode
+        run_batch_test()
