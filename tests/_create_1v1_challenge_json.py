@@ -107,12 +107,14 @@ def build_all_base_map_configs(
                 "scavengers": scavengers,
                 "techLevel": tech_level,
             },
-            "player_0": create_spectator_player(team=C.DEFAULT_FISHBOT_TEAM)
         }
 
-        # Rest of slots are filled with Spectator bots.
-        # Note: the team should be "FISHBOT_DEFAULT_TEAM" else other bots may adapt to use weaker weapons to support a non-existent teammate.
-        for player_id in range(1, map_info["maxPlayers"]):
+        # Intent: Rest of slots are filled with Spectator bots.
+        # These spectators should be on FishBot's team because other bots may adapt to
+        #   use weaker weapons to support a non-existent teammate.
+        for player_id in range(0, map_info["maxPlayers"]):
+            # Note: At the moment the result of this line is overwritten in both generate_ffa & generate_duel configs.
+            #   This line just serves to propagate 'maxPlayers' to these functions.
             config[f"player_{player_id}"] = create_spectator_player(team=C.DEFAULT_FISHBOT_TEAM)
 
         configs.append(config)
@@ -147,13 +149,13 @@ def generate_ffa_configs(base_config: dict) -> list:
             if position == fishbot_position:
                 config[f"player_{position}"] = {
                     "difficulty": C.MEDIUM_DIFFICULTY,
-                    "team": C.DEFAULT_FISHBOT_TEAM,
+                    "team": position,
                     "ai": C.FISHBOT_AI,
                 }
             else:
                 config[f"player_{position}"] = {
                     "difficulty": C.MEDIUM_DIFFICULTY,
-                    "team": C.DEFAULT_OPPONENT_TEAM,
+                    "team": position,
                     "ai": C.COBRA_AI,
                 }
 
@@ -200,17 +202,22 @@ def generate_duel_configs(base_config: dict) -> list:
 
             config = deepcopy(base_config)
 
-            config[f"player_{fishbot_position}"] = {
-                "difficulty": C.MEDIUM_DIFFICULTY,
-                "team": C.DEFAULT_FISHBOT_TEAM,
-                "ai": C.FISHBOT_AI,
-            }
+            for position in range(1, max_players + 1):
 
-            config[f"player_{opponent_position}"] = {
-                "difficulty": C.MEDIUM_DIFFICULTY,
-                "team": C.DEFAULT_OPPONENT_TEAM,
-                "ai": C.COBRA_AI,
-            }
+                if position == fishbot_position:
+                    config[f"player_{position}"] = {
+                        "difficulty": C.MEDIUM_DIFFICULTY,
+                        "team": position,
+                        "ai": C.FISHBOT_AI,
+                    }
+                elif position == opponent_position:
+                    config[f"player_{position}"] = {
+                        "difficulty": C.MEDIUM_DIFFICULTY,
+                        "team": position,
+                        "ai": C.COBRA_AI,
+                    }
+                else:
+                    config[f"player_{position}"] = create_spectator_player(team=fishbot_position)
 
             results.append({
                 "test_type": C.DUEL,
