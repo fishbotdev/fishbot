@@ -207,7 +207,7 @@ def generate_duel_configs(base_config: dict) -> list:
             }
 
             config[f"player_{opponent_position}"] = {
-                "difficulty": C.HARD_DIFFICULTY,
+                "difficulty": C.MEDIUM_DIFFICULTY,
                 "team": C.DEFAULT_OPPONENT_TEAM,
                 "ai": C.COBRA_AI,
             }
@@ -218,7 +218,7 @@ def generate_duel_configs(base_config: dict) -> list:
                 "fishbot_position": fishbot_position,
                 "opponent_position": opponent_position,
                 "fishbot_difficulty": C.MEDIUM_DIFFICULTY,
-                "opponent_difficulty": C.HARD_DIFFICULTY,
+                "opponent_difficulty": C.MEDIUM_DIFFICULTY,
                 "config": config,
             })
 
