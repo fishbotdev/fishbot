@@ -115,7 +115,7 @@ def build_all_base_map_configs(
         for player_id in range(0, map_info["maxPlayers"]):
             # Note: At the moment the result of this line is overwritten in both generate_ffa & generate_duel configs.
             #   This line just serves to propagate 'maxPlayers' to these functions.
-            config[f"player_{player_id}"] = create_spectator_player(team=0)
+            config[f"player_{player_id}"] = create_spectator_player(team=C.DEFAULT_FISHBOT_TEAM)
 
         configs.append(config)
 
@@ -149,7 +149,7 @@ def generate_ffa_configs(base_config: dict) -> list:
             if position == fishbot_position:
                 config[f"player_{position}"] = {
                     "difficulty": C.MEDIUM_DIFFICULTY,
-                    "team": position,
+                    "team": C.DEFAULT_FISHBOT_TEAM,
                     "ai": C.FISHBOT_AI,
                 }
             else:
@@ -207,7 +207,7 @@ def generate_duel_configs(base_config: dict) -> list:
                 if position == fishbot_position:
                     config[f"player_{position}"] = {
                         "difficulty": C.MEDIUM_DIFFICULTY,
-                        "team": position,
+                        "team": C.DEFAULT_FISHBOT_TEAM,
                         "ai": C.FISHBOT_AI,
                     }
                 elif position == opponent_position:
@@ -217,7 +217,7 @@ def generate_duel_configs(base_config: dict) -> list:
                         "ai": C.COBRA_AI,
                     }
                 else:
-                    config[f"player_{position}"] = create_spectator_player(team=fishbot_position)
+                    config[f"player_{position}"] = create_spectator_player(team=C.DEFAULT_FISHBOT_TEAM)
 
             results.append({
                 "test_type": C.DUEL,

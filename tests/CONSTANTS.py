@@ -30,6 +30,8 @@ INSANE_DIFFICULTY = "Insane"
 DUEL = "duel"
 FFA = "ffa"
 
+DEFAULT_FISHBOT_TEAM = 0
+
 FISHBOT_AI = "fishbot/multiplay/skirmish/FishBot.js"
 COBRA_AI = "Cobra.js"
 PEACEMAKER_AI = "PeacemakerAI.js"
