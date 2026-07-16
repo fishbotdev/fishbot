@@ -115,7 +115,7 @@ def build_all_base_map_configs(
         for player_id in range(0, map_info["maxPlayers"]):
             # Note: At the moment the result of this line is overwritten in both generate_ffa & generate_duel configs.
             #   This line just serves to propagate 'maxPlayers' to these functions.
-            config[f"player_{player_id}"] = create_spectator_player(team=C.DEFAULT_FISHBOT_TEAM)
+            config[f"player_{player_id}"] = create_spectator_player(team=0)
 
         configs.append(config)
 
