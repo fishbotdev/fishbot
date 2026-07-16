@@ -24,6 +24,11 @@ declare const startPositions: BaseObject[];
 declare const me: number;
 
 /**
+ * ```mapName``` The name of the current map.
+ */
+declare const mapName: string;
+
+/**
 * ```mapWidth``` Width of map in tiles (x). 
 */
 declare const mapWidth: number;
