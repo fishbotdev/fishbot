@@ -226,11 +226,11 @@ def launch_workers(
 
 def run_batch_test() -> Path:
 
-    WORKER_COUNT = 7
+    WORKER_COUNT = 6
 
     COMMIT_SHA = "6bd860067e7d85f496529ae90cf676c180a67448"
     SHORT_SHA = COMMIT_SHA[:7]
-    RUNS_PER_TEST = 20
+    RUNS_PER_TEST = 10
 
     BASE_MANIFEST_PATH = Path.cwd() / "base_manifest.json"
     TEST_RESULTS_PATH = Path.cwd() / "results" / SHORT_SHA

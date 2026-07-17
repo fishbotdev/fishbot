@@ -278,7 +278,8 @@ def run_tests(test_file_name: str, in_progress_file_path: Path, cycles: int, deb
         rf'--skirmish="{test_file_name}"',              # a custom challenge .json file loaded into `configdir/tests` (see `warzone2100/data/mp/tests/miza.json` for an example). The test file must be added to the 'tests' folder: https://github.com/Warzone2100/warzone2100/blob/8701c62ae68ca70da43ec915cbf6776c492e6656/src/multiint.cpp#L526
         rf"--enableconsole",                            # creates a console (this is where the Game State summary is printed)
         rf"--headless",                                 # runs the program without a GUI
-        rf"--autogame"                                  # automatically runs the game
+        rf"--autogame",                                 # automatically runs the game
+        rf"--nosound"                                   # removes sound from autogames
     ]
 
     print_iteration = lambda j: print(f"\n\n Iteration {j + 1} \n\n")
