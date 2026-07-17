@@ -193,6 +193,7 @@ if __name__ == "__main__":
     # OUTPUT DIRECTORY DEFINITIONS
     PRODUCTION_MAPS_FOLDER_PATH = Path(r"..\Warzone 2100\PRODCONFIG\maps")
     PRODUCTION_TEST_FOLDER_PATH = Path(r"..\Warzone 2100\PRODCONFIG\tests")
+    DEV_TEST_FOLDER_PATH = Path(r"~\OneDrive\Documents\wz2100_config_dir\tests").expanduser()
 
     #################################### USER CONFIG END ####################################
 
