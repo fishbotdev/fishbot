@@ -5,8 +5,7 @@ This file is used to record the changes to FishBot between each version.
 *Released ** Jul 2026***
 ### Changes in v0.4.3
 - Infrastructure improvements
-    - Added map repackager which allows FishBot to automatically be tested on all maps without a force-added human player.
-    - [in progress] Added the capability to automatically test FishBot on all inbuilt maps.
+    - Added a new test pipeline to allow FishBot to be automatically tested on all base maps with up to 9 other players.
 
 #### Test results (Warzone 2100 v4.7.0)
 FishBot `v0.4.2` (commit `1`) was tested 1v1 against Cobra & PeacemakerAI. Sides were swapped mid-way through all tests to account for map-induced imbalances (i.e. 100 games as Player 1, and then 100 games as Player 2). The average is taken as the final win percentage.

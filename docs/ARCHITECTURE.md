@@ -15,19 +15,13 @@ Figure 2: This diagram shows how the Warzone 2100 Game Engine interacts with Fis
 Figure 3: This diagram shows the normal entry path for the bot code to begin executing.
 
 ## Automatic Testing Pipeline
-FishBot is automatically tested 1v1 vs Cobra @ Hard / Medium difficulty on T2-NoBase maps.
+FishBot is automatically tested in two modes:
+1. Duel mode (vs 1 Cobra player, where all other slots are Spectator bots) for all 2p, 3p and 4p maps shipped with the game.
+2. FFA mode (vs N-1 other Cobra players) for 3p and 4p maps shipped with the game.
 
-![Architecture diagram of FishBot's automated testing pipeline.](images/tests-v0.4.3-automated-test-architecture-2.png)
-Figure 4: FishBot automated testing pipeline.
-
-### Block details - Test Runner
-As part of v0.4.1, a new testing pipeline was added was added to standardise and automate these tests.
-1. `set_autogame_config.py` contains functions to generate Python-native config files according to the type of automatic test desired.
-2. Optionally, `create_1v1_challenge_json.py` converts these Python-native config files into physical `.json` files which are then saved into the `wz2100_config_directory/tests` folder.
-3. `run_and_save_autogames.py` automatically runs all tests in the `wz2100_config_directory/tests` folder and saves the results to an intermediate `jsonl` file.
-    - `jsonl` is picked for its pure-append capability (data robustness to runtime failures) and its native data storage format (which makes extraction of data into Python a one-liner). 
-    - Increased storage memory  requirements and write speed are not critical for this application.
-4. `process_autogame_results.py` reads the `jsonl` formatted results and displays match statistics and summary plots.
+These tests are implemented using the test pipeline below:
+![Architecture diagram of FishBot's automated testing pipeline.](images/tests-v0.4.3-automated-test-architecture-3.png)
+Figure 4: FishBot v0.4.3+ automated testing pipeline.
 
 ## Documentation Methods
 The intent of the following documentation methods is to make changing the software easier:
