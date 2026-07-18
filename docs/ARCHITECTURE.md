@@ -1,5 +1,5 @@
 # FishBot Software Architecture
-These diagrams are recent as of `FishBot v0.4.0+`.
+These diagrams are recent as of `FishBot v0.4.3+`.
 They show how FishBot interacts with its partner systems.
 
 ## System Context Diagram
@@ -22,10 +22,4 @@ FishBot is automatically tested in two modes:
 These tests are implemented using the test pipeline below:
 ![Architecture diagram of FishBot's automated testing pipeline.](images/tests-v0.4.3-automated-test-architecture-3.png)
 Figure 4: FishBot v0.4.3+ automated testing pipeline.
-
-## Documentation Methods
-The intent of the following documentation methods is to make changing the software easier:
-* `jsdocs` style function/type declarations are used throughout the code to allow for IDE error checking.
-* Additionally, `wz2100-js-api.d.ts` declares the typing of commonly used JS API functions and global variables from the Warzone 2100 game engine. 
-* The addition of `jsconfig.json` allows VSCode to understand the various symbols within the project, allowing for some type checking and code navigation. 
-
+ 
