@@ -41,11 +41,12 @@
    4. Check for this new folder: `fishbot\_internal` and this new .exe file: `fishbot\spectate_map.exe`.
 
 ## Running Automated Tests
-Go to `fishbot/tests`, then run the files in this order (modifying the output file paths to the ones in your Configuration Directory):
-1. `run_test_generator.py`
-2. `run_tests.py` (wait a number of hours until these are complete). 
-   * Note: The implementation of the result parser, which scrapes the output console, is platform-dependent (works on Windows only). Please implement your own for Linux / Mac.
-3. `run_result_parser.py`
+Go to `fishbot/tests`, then run the files in this order (modifying the output file paths to those in your Configuration Directory):
+1. `run_test_generator.py` (~5 seconds)
+2. `run_tests.py` (may take ~1 day to complete, depending on the number of tests requested).
+   * For a new commit, don't forget to change `COMMIT_SHA`.
+   * Note: The implementation of the game-summary-table parser is platform-dependent (works on Windows only). Please implement your own terminal-scraper function for Linux / Mac.
+3. `run_result_parser.py` (~5 seconds)
 
 For any test that warrants further investigation, you can use `fishbot\spectate_map.exe` to run that test in spectator mode.
 

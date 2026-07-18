@@ -272,6 +272,8 @@ def run_autogame(commands: List[str]) -> List[str]:
 
 
 def run_tests(test_file_name: str, in_progress_file_path: Path, cycles: int, debug_mode: bool=False) -> float:
+    # Command line parameters: https://github.com/Warzone2100/warzone2100/blob/ebeaaa7958f35879eea7b57474eff0c89aa4fb03/src/clparse.cpp#L21
+
     AUTOGAME_COMMAND = [
         rf"..\Warzone 2100\bin\warzone2100.exe",        # assumes WZ2100 is installed in `fishbot/Warzone 2100`
         rf'--configdir="..\Warzone 2100\PRODCONFIG"',   # assumes that the mod is loaded in a "PRODCONFIG" subfolder of the WZ2100 install location e.g. `fishbot/Warzone 2100/PRODCONFIG`
