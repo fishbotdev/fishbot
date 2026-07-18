@@ -329,26 +329,27 @@ def run_tests(test_file_name: str, in_progress_file_path: Path, cycles: int, deb
 
 if __name__ == "__main__":
     """
-    The intended data pipeline is:
+    Functions:
     1. Run autogame
     2. Scrape console + store into dataframe
     3. Convert dataframe + test metadata to jsonl (storing the intermediate result for data safety in case of interruptions)
-    The `results.jsonl` file will be processed back into a dataframe by the processing script.
+    
+    Note: The `results.jsonl` file will be processed back into a dataframe by a downstream processing script.
     
     The jsonl pipeline is picked because its a good compromise between code complexity, speed & human-readability.
     
      1. Writing to .log/.txt (although faster) requires a custom parser & the performance improvement is minimal 
-     for this application (the tests can take up to ~1min each; saving 0.5 seconds at best doesn't make a material difference).
+     for this application (the tests can take up to ~5min each; saving 0.5 seconds in the parsing stage doesn't make a material difference).
      
-     2. Writing to Excel (as .xlsx or .csv) adds unnecessary code complexity compared to saving & reading from jsonl.
+     2. Writing to Excel (as .xlsx or .csv) adds unnecessary code complexity.
     """
 
     clear_console()
 
     ######## PROGRAM CONFIGURATION ########
 
-    TEST_FILE_NAME = "GAMMA_1_2_COBRA_HARD_T2"        # make sure to include .json
-    NUM_CYCLES_PER_TEST = 2
+    TEST_FILE_NAME = "GAMMA_1_2_COBRA_HARD_T2.json"        # make sure that the json file exists in `%Warzone Configuration Directory%/tests`.
+    NUM_CYCLES_PER_TEST = 1
     DEBUG_ON = False
 
     COMMIT_SHA = """
@@ -367,18 +368,20 @@ if __name__ == "__main__":
 
     # === RUN CONFIGURATION CHECKS (PyCharm) ===
     # 1. Check folder: `fishbot/tests` is set as the current working directory.
-    # 2. If using a PyCharm IDE (e.g. 2026.1.2) you will need to enable the "Emulate Terminal In Output Console" option in
-    #       the "Edit Configuration" / "Run Configuration" panel to get the output of --autogame to print to the console.
-    #       VSCode appears to show the terminal output by default so no special actions may be required.
+    # 2. If using a PyCharm IDE (e.g. 2026.1.2), you will need to enable the "Emulate Terminal In Output Console" option in
+    #       the "Edit Configuration" / "Run Configuration" panel.
+    #       This is to allow the output of --autogame to be printed to the console.
+    #       VSCode appears to show the terminal output by default, so no special actions may be required for VSCode.
 
     ######## END PROGRAM CONFIGURATION ########
 
     SHORT_SHA = COMMIT_SHA.lstrip()[:7]
     OUTPUT_FILE_NAME = f"{SHORT_SHA},{TEST_FILE_NAME},{NUM_CYCLES_PER_TEST}G.jsonl"
+    OUTPUT_FILE_PATH = Path.cwd() / OUTPUT_FILE_NAME
 
     mins_to_complete = run_tests(
         test_file_name=TEST_FILE_NAME,
-        in_progress_file_name=OUTPUT_FILE_NAME,
+        in_progress_file_path=OUTPUT_FILE_PATH,
         cycles=NUM_CYCLES_PER_TEST,
         debug_mode=DEBUG_ON
     )

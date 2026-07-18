@@ -97,8 +97,9 @@ if __name__ == "__main__":
     SOURCE_DIRECTORY_NAME = 'v4.7.0_base_maps'
     source_directory = Path.cwd() / SOURCE_DIRECTORY_NAME
 
-    # Example: Write directly to the dev/maps library
-    output_directory = Path("~/OneDrive/Documents/wz2100_config_dir/maps").expanduser()
+    # Example output
+    output_directory = Path.cwd() / 'packager_test'
+    output_directory.mkdir(parents=True, exist_ok=True)
 
     batch_report = run_batch_map_packaging(source_directory, output_directory)
 
