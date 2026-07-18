@@ -92,7 +92,6 @@ As mentioned above, I'd like it to be genuinely fun to play with, both as a team
 Admittedly, there is a long way to go - but I am hoping that one day I am able to make this wish come true. 
 
 ## Software Documentation
-jsdocs are used throughout the code. Additionally, `wz2100-js-api.d.ts` is used to indicate the typing of commonly used JS API functions and global variables from the Warzone 2100 game engine. The addition of `jsconfig.json` allows VSCode to understand the various symbols within the project, allowing for some type checking and code navigation. The intent of these documentation features is to make changing the software easier.
 
 For a high-level view of the FishBot software system, please see `docs\ARCHITECTURE.md` for some documentation of the software system architecture.
 

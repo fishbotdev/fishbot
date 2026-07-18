@@ -125,21 +125,29 @@ function setupDebugMode() {
 		"brown": 15,
 	};
 	
-	changePlayerColour(0, COLOURS["gray"]);
-	changePlayerColour(1, COLOURS["yellow"]);		
-	changePlayerColour(2, COLOURS["cyan"]);
-	changePlayerColour(3, COLOURS["blue"]);
-	changePlayerColour(4, COLOURS["neon-green"]);
-	changePlayerColour(5, COLOURS["infrared"]);
-	changePlayerColour(6, COLOURS["pink"]);
-	changePlayerColour(7, COLOURS["white"]);
-	changePlayerColour(8, COLOURS["red"]);
-	changePlayerColour(9, COLOURS["orange"]);
-	changePlayerColour(10, COLOURS["purple"]);
-	changePlayerColour(11, COLOURS["brown"]);
-	
+	const PLAYER_COLOURS = [
+		// I have picked short colour names because this plays well with the game summary table parser used during automated testing.
+		COLOURS["black"],		// Player 0 is the forced-human player so this can be any colour.
+		COLOURS["yellow"], 
+		COLOURS["cyan"], 
+		COLOURS["blue"], 
+		COLOURS["gray"], 
+		COLOURS["orange"],
+		COLOURS["pink"],
+		COLOURS["green"],
+		COLOURS["red"],
+		COLOURS["purple"],
+		COLOURS["white"],
+		COLOURS["brown"]
+	];
+
+	PLAYER_COLOURS.forEach((colour, player_id) => changePlayerColour(player_id, colour));
+
+	// Print bot info
 	const DIFFICULTY_LEVEL = ["Campaign", "Easy", "Medium", "Hard", "Insane"];
 	const get_difficulty_text = (difficulty) => DIFFICULTY_LEVEL[difficulty];
+
+	debug(`\nBot Info\n`);
 
 	playerData.forEach(p => {
 		if (p.isHuman) {
@@ -154,6 +162,8 @@ function setupDebugMode() {
 		chat(ALL_PLAYERS, playerInfo);
 		debug(playerInfo);
 	});
+
+	debug(`\nMap: ${mapName}\n`);
 }
 
 function eventStartLevel() {

@@ -15,12 +15,22 @@
 	If not, see <https://www.gnu.org/licenses/>.
 """
 
-# This file is intended to be a header file used in all test scripts.
+# This file is intended to be a header file used across all files in the `fishbot/tests` folder.
+
+NO_BASES = 1
+NO_SCAVENGERS = 0
+HIGH_POWER_LEVEL = 2
+TECH_LEVEL_2 = 2
 
 EASY_DIFFICULTY = "Easy"
 MEDIUM_DIFFICULTY = "Medium"
 HARD_DIFFICULTY = "Hard"
 INSANE_DIFFICULTY = "Insane"
+
+DUEL = "duel"
+FFA = "ffa"
+
+DEFAULT_FISHBOT_TEAM = 0
 
 FISHBOT_AI = "fishbot/multiplay/skirmish/FishBot.js"
 COBRA_AI = "Cobra.js"
