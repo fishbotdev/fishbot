@@ -37,6 +37,7 @@ from datetime import datetime
 import argparse
 import subprocess
 import sys
+import time
 
 
 def write_json(path: Path, obj: dict) -> None:
@@ -228,7 +229,7 @@ def run_batch_test() -> Path:
 
     WORKER_COUNT = 6
 
-    COMMIT_SHA = "6bd860067e7d85f496529ae90cf676c180a67448"
+    COMMIT_SHA = "db673e916c947857dc2b69975541c4da2239c342"
     SHORT_SHA = COMMIT_SHA[:7]
     RUNS_PER_TEST = 10
 
@@ -293,4 +294,12 @@ if __name__ == "__main__":
         print(summary)
     else:
         # Orchestrator mode
+
+        start_time = time.time()
+
         run_batch_test()
+
+        end_time = time.time()
+
+        duration_minutes = (end_time - start_time) / 60
+        print(f"Batch test completed in {duration_minutes:.2f} minutes ({(duration_minutes / 60):.2f} hours).")

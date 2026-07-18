@@ -199,6 +199,6 @@ if __name__ == "__main__":
     #################################### USER CONFIG END ####################################
 
     test_manifest_path = repackage_maps_and_generate_tests(base_maps_path=BASE_MAPS_PATH,
-                                                           production_maps_path=DEV_MAPS_FOLDER_PATH,
-                                                           production_tests_path=DEV_TEST_FOLDER_PATH)
+                                                           production_maps_path=PRODUCTION_MAPS_FOLDER_PATH,
+                                                           production_tests_path=PRODUCTION_TEST_FOLDER_PATH)
     print(test_manifest_path)
