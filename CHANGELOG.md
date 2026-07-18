@@ -5,7 +5,8 @@ This file is used to record the changes to FishBot between each version.
 *Released ** Jul 2026***
 ### Changes in v0.4.3
 - Infrastructure improvements
-    - Added a new test pipeline to allow FishBot to be automatically tested on all base maps with up to 9 other players.
+    - Added a new test pipeline to allow FishBot to be automatically tested on all base maps with up to 9 other players (see `fishbot\tests`).
+    - Added a GUI interface for running tests, replacing the old .bat file runners (`fishbot\python_helper_scripts\spectate_map`).
 
 #### Test results (Warzone 2100 v4.7.0)
 FishBot `v0.4.2` (commit `1`) was tested 1v1 against Cobra & PeacemakerAI. Sides were swapped mid-way through all tests to account for map-induced imbalances (i.e. 100 games as Player 1, and then 100 games as Player 2). The average is taken as the final win percentage.

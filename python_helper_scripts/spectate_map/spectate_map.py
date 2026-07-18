@@ -16,8 +16,6 @@
 """
 
 # Disclaimer: this entire file is AI-generated.
-print("--- Python Code Initialized ---")
-
 import json
 import os
 from pathlib import Path
@@ -643,4 +641,8 @@ def main():
 # =============================================================================
 
 if __name__ == "__main__":
-    main()
+    raise NotImplementedError("\n\n"
+                              "Please build the application using: `build_spectate_map.bat`. \n"
+                              "Then, open `spectate_map.exe` from the root `fishbot` directory.\n"
+                              "This application assumes the local Warzone 2100 installation is in: \n\t"
+                              "`fishbot/Warzone2100/bin/warzone2100.exe`.")
