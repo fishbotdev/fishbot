@@ -6,6 +6,10 @@ python_helper_scripts/process_results/v3/
 python_helper_scripts/process_results/v4/
 python_helper_scripts/map_analysis/*.json
 
+spectate_map.bat
+_internal/
+__spectate_map.bat
+
 tests/custom_test_map_packager/v4.7.0_base_maps/
 tests/custom_test_map_packager/v4.7.0_base_maps_upto4p/
 
