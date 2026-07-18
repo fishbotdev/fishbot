@@ -48,7 +48,7 @@ current_dir = Path(__file__).resolve().parent
 WZ2100_ADDON_LEV_FILEPATH = current_dir / "addon.lev"
 
 
-POSITION_OFFSET = 0       # To move by "1" WZ2100 game tile, enter "128".
+POSITION_OFFSET = 3       # To move by "1" WZ2100 game tile, enter "128".
 
 
 def write_json(path: Path, obj: dict) -> None:
@@ -249,7 +249,7 @@ def duplicate_start_position(
     key_prefix: str,
 ) -> None:
     """
-    Duplicate all entries belonging to one start position.
+    Duplicate / relabel all entries belonging to one start position.
     """
 
     next_id = 8888
@@ -258,17 +258,17 @@ def duplicate_start_position(
         if item.get("startpos") != source_startpos:
             continue
 
-        new_item = copy.deepcopy(item)
+        if item.get("name") == "A0CommandCentre":
+            # this sets the start position
+            new_item = copy.deepcopy(item)
+            new_item["start_pos"] = new_startpos
+            
+            data[f"{key_prefix}_{next_id:04d}"] = new_item
 
-        new_item["startpos"] = new_startpos
+            next_id += 1
 
-        # Update internal ID if the object has one (e.g. droids)
-        if "id" in new_item:
-            new_item["id"] = next_id
-
-        data[f"{key_prefix}_{next_id:04d}"] = new_item
-
-        next_id += 1
+        # Else, overwrite the startpos to prevent a conflict
+        item["startpos"] = new_startpos
 
 def translate_start_position(
     data: dict,
@@ -302,7 +302,7 @@ def process_struct_json(src: Path, dst: Path, metadata: dict) -> None:
 
     translate_start_position(
         data,
-        startpos=new_player_id,
+        startpos=0,
         dx=POSITION_OFFSET,
         dy=POSITION_OFFSET,
     )

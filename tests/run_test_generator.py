@@ -192,12 +192,13 @@ if __name__ == "__main__":
 
     # OUTPUT DIRECTORY DEFINITIONS
     PRODUCTION_MAPS_FOLDER_PATH = Path(r"..\Warzone 2100\PRODCONFIG\maps")
+    DEV_MAPS_FOLDER_PATH = Path(r"~\OneDrive\Documents\wz2100_config_dir\maps").expanduser()
     PRODUCTION_TEST_FOLDER_PATH = Path(r"..\Warzone 2100\PRODCONFIG\tests")
     DEV_TEST_FOLDER_PATH = Path(r"~\OneDrive\Documents\wz2100_config_dir\tests").expanduser()
 
     #################################### USER CONFIG END ####################################
 
     test_manifest_path = repackage_maps_and_generate_tests(base_maps_path=BASE_MAPS_PATH,
-                                                           production_maps_path=PRODUCTION_MAPS_FOLDER_PATH,
-                                                           production_tests_path=PRODUCTION_TEST_FOLDER_PATH)
+                                                           production_maps_path=DEV_MAPS_FOLDER_PATH,
+                                                           production_tests_path=DEV_TEST_FOLDER_PATH)
     print(test_manifest_path)
