@@ -188,7 +188,7 @@ if __name__ == "__main__":
 
     # INPUT DIRECTORY DEFINITIONS
     CURRENT_DIRECTORY = Path.cwd()
-    BASE_MAPS_PATH = CURRENT_DIRECTORY / r'custom_test_map_packager\v4.7.0_base_maps'
+    BASE_MAPS_PATH = CURRENT_DIRECTORY / r'custom_test_map_packager\v4.7.0_base_maps_upto4p'
 
     # OUTPUT DIRECTORY DEFINITIONS
     PRODUCTION_MAPS_FOLDER_PATH = Path(r"..\Warzone 2100\PRODCONFIG\maps")
