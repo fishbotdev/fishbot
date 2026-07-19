@@ -57,7 +57,7 @@ The current method for determining whether or not a map is *supported* is:
 * `Sk-GreatRift` ~
 * `Sk-RollingHills` ~
 * `Sk-Basingstoke` ~
-* `Sk-LittleEgypt` ~
+* ~~`Sk-LittleEgypt` ~~ - movement issues around water
 * `Sk-Cockpit` ~
 * `Sk-Urban-Chaos` ~
 * `Sk-Pyramidal` ~

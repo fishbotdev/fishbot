@@ -315,7 +315,7 @@ const DIVISION = {
 	SENSOR_RESERVE: 2008,
 	MAINTENANCE_RESERVE: 2009,
 	
-    FIRST_BCT: 3011,                 // this is a combined arms team; each BCT with ~26 units
+    FIRST_BCT: 3011,                 // this is a combined arms team; each BCT with ~30 units
     SECOND_BCT: 3012,
     THIRD_BCT: 3013,
     FOURTH_BCT: 3014,
