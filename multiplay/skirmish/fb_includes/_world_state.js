@@ -582,8 +582,6 @@ class worldStateBuilder {
             debug(`"${mapRow}",`);      // python script processes list of comma-delimited strings
         });
 
-        const isReachable = precalculateWheeledReachableTiles();
-        const constructionSearchPattern = precalculateConstructionSearchPattern();
     }
 
     /**
@@ -614,19 +612,40 @@ class worldStateBuilder {
         /** @returns {AirStrikeMissionRequest[]} */
         const createCASStrikeRequests = () => [];
 
+        /** @returns {BattalionComposition} */
+        const createBattalionComposition = (category) => {return {
+            'category': category, 
+            'healthyUnitList': [], 
+            'damagedUnitList': [], 
+            'count': 0,
+            'deficit': 0
+        };};
+        const CATEGORIES = [DIVISION.INFANTRY_RESERVE, DIVISION.HEAVY_CAV_RESERVE, DIVISION.LIGHT_CAV_RESERVE, DIVISION.SHORT_RANGE_FIRE_SUPPORT_RESERVE, DIVISION.AIR_DEFENCE_RESERVE, DIVISION.SENSOR_RESERVE, DIVISION.MAINTENANCE_RESERVE];
+
+        /** @returns {BrigadeComposition} */
+        const createBrigadeComposition = () => {
+            /** @type {{[category: number]: BattalionComposition}} */
+            const brigadeComposition = {};
+            CATEGORIES.forEach(category => {
+                brigadeComposition[category] = createBattalionComposition(category);
+            });
+            return brigadeComposition;
+        }
+
         /**
          * Creates an empty brigade object.
          * @param {number} brigadeID 
          * @returns {BrigadeMetadata} 
          */
         const createNewBrigadeObject = (brigadeID) => {
-            const x = baseLocation.x, y = baseLocation.y;
+            const x = baseLocation.x, y = baseLocation.y, z = MapTiles[y][x].height;
             return {
                 'id': brigadeID,
-                'location': {'x': x, 'y': y, 'z': MapTiles[y][x].height},
-                'strength': 0,
+                'location': {'x': x, 'y': y, 'z': z},
                 'nearbyTargets': createNearbyTargetsArray(),
-                'casStrikeRequests': createCASStrikeRequests(),                
+                'casStrikeRequests': createCASStrikeRequests(),
+                'strength': 0,
+                'composition': createBrigadeComposition()
             };
         };
 

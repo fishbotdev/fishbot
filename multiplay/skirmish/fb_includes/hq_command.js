@@ -927,40 +927,6 @@ class CommandCenter {
 		return vehicleCategories;
     }
 
-	#printDebugResupply(state) {
-
-		const getReserveUnitsOfType = (groupID) => state.g.enumGroup(groupID);
-
-		const HEAVY_CAV_RESERVE = getReserveUnitsOfType(DIVISION.HEAVY_CAV_RESERVE);
-		const LIGHT_CAV_RESERVE = getReserveUnitsOfType(DIVISION.LIGHT_CAV_RESERVE);
-		const INFANTRY_RESERVE = getReserveUnitsOfType(DIVISION.INFANTRY_RESERVE);
-		const SHORT_RANGE_FIRE_SUPPORT_RESERVE = getReserveUnitsOfType(DIVISION.SHORT_RANGE_FIRE_SUPPORT_RESERVE);
-		const SENSOR_RESERVE = getReserveUnitsOfType(DIVISION.SENSOR_RESERVE);
-		const AIR_DEFENCE_RESERVE = getReserveUnitsOfType(DIVISION.AIR_DEFENCE_RESERVE);
-		
-		const RETURNING_FOR_REPAIR = getReserveUnitsOfType(DIVISION.RETURNING_FOR_REPAIR);
-
-		let printedTitle = false;
-
-		this.BRIGADE_DESIGNATIONS.forEach(brigadeID => {
-			const supplyStatus = supply.getBrigadeSupplyStatus(state, brigadeID, this.FISHBOT_BRIGADE_COMPOSITION, this.TOTAL_UNITS_PER_BRIGADE, this.BRIGADE_REPAIR_THRESHOLD);
-			
-			// Check brigade strength as percentage
-			const brigadeStrength = supplyStatus['brigadeStrength'];
-
-			const actualBrigadeUnitCount = state.g.enumGroup(brigadeID).length;
-			if (brigadeStrength !== 0) {
-				if (!printedTitle) {					
-					debug(`==${getOrdinal(me)} DIVISION @ ${gameTime}==`);
-					debug(`\tRESERVE:\t hc: ${HEAVY_CAV_RESERVE.length}, lc: ${LIGHT_CAV_RESERVE.length}, inf: ${INFANTRY_RESERVE.length}, mort: ${SHORT_RANGE_FIRE_SUPPORT_RESERVE.length}, sens: ${SENSOR_RESERVE.length}, ada: ${AIR_DEFENCE_RESERVE.length}, repair: ${RETURNING_FOR_REPAIR.length}`)
-					printedTitle = true;
-				}
-				debug(`\tBrigade ${brigadeID}: ${brigadeStrength} % (${supplyStatus['totalLandUnits']} / ${this.TOTAL_UNITS_PER_BRIGADE} units) (actual: ${actualBrigadeUnitCount})`);
-			}
-		});
-
-	}
-
 	#recoverRepairedUnits(state) {
 		const repairedUnits = state.g.enumGroup(DIVISION.RETURNING_FOR_REPAIR);
 		const REPAIRED_AT_HEALTH = 99;
@@ -1229,6 +1195,8 @@ class CommandCenter {
 		}
 		
 		// Get unit deficits
+		this.toc.updateBrigadeSupplyStatus(state, this.BRIGADE_DESIGNATIONS[0], this.FISHBOT_BRIGADE_COMPOSITION, this.BRIGADE_REPAIR_THRESHOLD, this.BRIGADE_REPAIR_THRESHOLD);
+		
 		let deficit = supply.getBrigadeSupplyStatus(state, this.BRIGADE_DESIGNATIONS[0], this.FISHBOT_BRIGADE_COMPOSITION, this.TOTAL_UNITS_PER_BRIGADE, this.BRIGADE_REPAIR_THRESHOLD);
 		for (let i=1; i<this.BRIGADE_DESIGNATIONS.length; i++) {
 			if (deficit['brigadeStrength'] < 100) {

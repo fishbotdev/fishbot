@@ -857,6 +857,83 @@ class TacticalOperationsCenter {
 	}
 
 	/**
+	 * Updates unit lists for each battalion in a brigade.
+	 * @param {worldState} state 
+	 * @param {number} brigadeID 
+	 * @param {Object} maxBrigadeComposition  
+     * @param {number} vehicleRepairThreshold
+     * @param {number} cyborgRepairThreshold
+	 */
+    updateBrigadeSupplyStatus(state, brigadeID, maxBrigadeComposition, vehicleRepairThreshold, cyborgRepairThreshold) {
+        
+        const currBrigade = state.brigades[brigadeID];
+
+        const maxUnitsByCategory = [
+            [DIVISION.INFANTRY_RESERVE, maxBrigadeComposition.MAX_INFANTRY],
+            [DIVISION.HEAVY_CAV_RESERVE, maxBrigadeComposition.MAX_HEAVY_CAVALRY],
+            [DIVISION.LIGHT_CAV_RESERVE, maxBrigadeComposition.MAX_LIGHT_CAVALRY],
+            [DIVISION.SHORT_RANGE_FIRE_SUPPORT_RESERVE, maxBrigadeComposition.MAX_MORTAR],
+            [DIVISION.AIR_DEFENCE_RESERVE, maxBrigadeComposition.MAX_ADA],
+            [DIVISION.SENSOR_RESERVE, maxBrigadeComposition.MAX_SENSOR],
+            [DIVISION.MAINTENANCE_RESERVE, maxBrigadeComposition.MAX_REPAIR]
+        ];
+
+        const needsRepair = (unit, category, cyborgRepairThreshold, vehicleRepairThreshold) => {
+            if (category === DIVISION.INFANTRY_RESERVE) {
+                if (unit.health < cyborgRepairThreshold) {
+                    return true;
+                } else {
+                    return false;
+                }
+            }
+            if (unit.health < vehicleRepairThreshold) {
+                return true;
+            } else {
+                return false;
+            }
+        };
+
+        // This clears existing data from the previous run
+        for (const [btnID, btnInfo] of Object.entries(currBrigade["composition"])) {
+            btnInfo["damagedUnitList"].length = 0;
+            btnInfo["healthyUnitList"].length = 0;
+        }
+
+        // Reclassify
+        const brigadeUnits = state.g.enumGroup(brigadeID);      
+        brigadeUnits.forEach(unit => {
+            const category = getDroidFbGroupClassification(unit);
+
+            const currBattalion = currBrigade["composition"][category];
+
+            if (needsRepair(unit, category, cyborgRepairThreshold, vehicleRepairThreshold)) {
+                currBattalion["damagedUnitList"].push(unit);
+            } else {
+                currBattalion["healthyUnitList"].push(unit);
+            }
+        });
+
+        // Update the unit count + deficit
+        maxUnitsByCategory.forEach(c => {
+            const category = c[0];
+            const maxUnitCount = c[1];
+
+            const battalionComposition = currBrigade["composition"][category];
+
+            const healthyUnitCount = battalionComposition["healthyUnitList"].length;
+            battalionComposition["count"] = healthyUnitCount;
+            battalionComposition["deficit"] = maxUnitCount - healthyUnitCount;
+        });
+
+        if (true) {
+            debug(`${gameTime}: Brigade ${brigadeID} Composition`)
+            for (const [btnID, btnInfo] of Object.entries(currBrigade["composition"])) {
+                debug(`\t - ${btnID}: Count ${btnInfo["count"]} (- ${btnInfo["deficit"]})`);
+            }
+        }
+    }
+
+	/**
 	 * This function overwrites `state.brigades[id].casStrikeRequests` with new CAS strike requests.
 	 * @param {worldState} state 
 	 * @param {number} brigadeID 

@@ -185,12 +185,22 @@
 
 /**
  * Type definitions for `worldState.brigades`.
+ * @typedef {Object} BattalionComposition
+ * @property {number} category
+ * @property {DroidObject[]} healthyUnitList
+ * @property {DroidObject[]} damagedUnitList
+ * @property {number} count
+ * @property {number} deficit
+ * 
+ * @typedef {{ [category: number]: BattalionComposition}} BrigadeComposition
+ * 
  * @typedef {Object} BrigadeMetadata
  * @property {number} id This is the brigade ID (duplicate of the key).
  * @property {PositionInfo} location  
  * @property {number} strength
  * @property {NearbyTargets} nearbyTargets 
  * @property {AirStrikeMissionRequest[]} casStrikeRequests
+ * @property {BrigadeComposition} composition
  *  
  * @typedef {{ [brigadeID: number]: BrigadeMetadata }} BrigadeInfo
  *
