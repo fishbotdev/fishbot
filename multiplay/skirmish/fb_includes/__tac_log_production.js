@@ -498,29 +498,43 @@ function produceInfantry(factory) {
 
 function produceLandUnitCategory(category, factory) {
 	let factoryInProduction = false;  
+	let unitClass = DIVISION.HEAVY_CAV_RESERVE;		// temporary: until 'category' is replaced with `DIVISION.x`
 	
 	switch (category) {
 		case 'heavyCavalry':
 			factoryInProduction = factoryInProduction || produceHeavyCavalry(factory);
+			unitClass = DIVISION.HEAVY_CAV_RESERVE;
 			break;
 		case 'lightCavalry':
 			factoryInProduction = factoryInProduction || produceLightCavalry(factory);
+			unitClass = DIVISION.LIGHT_CAV_RESERVE;
 			break;
 		case 'shortRangeArtillery':
 			factoryInProduction = factoryInProduction || produceLandAPFireSupport(factory);
+			unitClass = DIVISION.SHORT_RANGE_FIRE_SUPPORT_RESERVE;
 			break;
 		case 'ADA':
 			factoryInProduction = factoryInProduction || produceHighVolumeAAUnit(factory);
+			unitClass = DIVISION.AIR_DEFENCE_RESERVE;
 			break;
 		case 'sensor': 
 			factoryInProduction = factoryInProduction || produceLandRecon(factory);
+			unitClass = DIVISION.SENSOR_RESERVE;
 			break;
 		case 'repair':
 			factoryInProduction = factoryInProduction || produceHeavyRepair(factory);
+			unitClass = DIVISION.MAINTENANCE_RESERVE;
 			break;
 		default:
+			debug(`${gameTime}: WARNING: produceLandUnitCategory() did not understand "${category}"; falling back to light cav production.`);
 			factoryInProduction = factoryInProduction || produceLightCavalry(factory);
+			unitClass = DIVISION.LIGHT_CAV_RESERVE;
 	}
+
+	return {
+		'productionStarted': factoryInProduction,
+		'category': unitClass
+	};
 
 }
 

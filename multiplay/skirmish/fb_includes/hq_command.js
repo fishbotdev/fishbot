@@ -1237,7 +1237,10 @@ class CommandCenter {
 
 			if (SHOULD_PRODUCE_TRUCKS && CYBORG_CONSTRUCTOR_AVAILABLE && !producedTruckThisTick) {
 				if (DEBUG_PRODUCTION) debug(`	${gameTime}: produced Combat Engineer`);
-				produceCombatEngineer(f);
+				const productionStarted = produceCombatEngineer(f);
+				if (productionStarted) {
+					this.toc.addToActiveProductionJobs(state, {'factory': f, 'type': ENGINEERING.ENGINEERING_RESERVE});
+				}
 				if (SINGLE_TRUCK_THIS_TICK) {
 					producedTruckThisTick = true;
 				}
@@ -1246,7 +1249,10 @@ class CommandCenter {
 
 			if (SHOULD_PRODUCE_INFANTRY) {
 				if (DEBUG_PRODUCTION) debug(`	${gameTime}: produced Infantry`);
-				produceInfantry(f);
+				const productionStarted = produceInfantry(f);
+				if (productionStarted) {
+					this.toc.addToActiveProductionJobs(state, {'factory': f, 'type': DIVISION.INFANTRY_RESERVE});
+				}
 			}
 		}
 
@@ -1255,7 +1261,10 @@ class CommandCenter {
 
 			if (SHOULD_PRODUCE_VTOLS) {
 				if (DEBUG_PRODUCTION) debug(`	${gameTime}: produced VTOL`);
-				produceCloseAirSupport(factory);
+				const productionStarted = produceCloseAirSupport(factory);
+				if (productionStarted) {
+					this.toc.addToActiveProductionJobs(state, {'factory': factory, 'type': DIVISION.AIR_RESERVE});
+				}
 			} else {
 				break;
 			}
@@ -1267,7 +1276,10 @@ class CommandCenter {
 			if (SHOULD_PRODUCE_TRUCKS && !CYBORG_CONSTRUCTOR_AVAILABLE && !producedTruckThisTick) {
 				if (DEBUG_PRODUCTION) debug(`	${gameTime}: produced Truck`);
 				// Note: CAN_DESIGN_UNITS prevents FishBot from producing any other trucks other than `Truck Viper Wheels` until the command center is built
-				produceTruck(factory, CAN_DESIGN_UNITS);		
+				const productionStarted = produceTruck(factory, CAN_DESIGN_UNITS);
+				if (productionStarted) {
+					this.toc.addToActiveProductionJobs(state, {'factory': factory, 'type': ENGINEERING.ENGINEERING_RESERVE});
+				}		
 				
 				if (SINGLE_TRUCK_THIS_TICK) {
 					producedTruckThisTick = true;
@@ -1277,11 +1289,12 @@ class CommandCenter {
 
 			if (SHOULD_PRODUCE_LAND_VEHICLES) {
 				if (DEBUG_PRODUCTION) debug(`	${gameTime}: produced Land Vehicle Template`);
-				produceLandUnitCategory(landVehicleCategory, factory);
+				const status = produceLandUnitCategory(landVehicleCategory, factory);
+				if (status["productionStarted"]) {
+					this.toc.addToActiveProductionJobs(state, {'factory': factory, 'type': status["category"]});
+				}
 				return;		
 				// occasionally 'return;' will prevent 2x sensor units from being made 
-				// TODO: better system is to track active production jobs; 
-				// units are usually overmanufactured as production is currently a 'negative-feedback' system
 			} else {
 				break;
 			}

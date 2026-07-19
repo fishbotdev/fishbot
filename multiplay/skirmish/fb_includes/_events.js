@@ -20,9 +20,14 @@
 	FishBot might use these in the future for performance optimisation.
 */
 
+/**
+ * Invoked when a factory completes production.
+ * @param {DroidObject} droid 
+ * @param {StructureObject} structure 
+ */
 function eventDroidBuilt(droid, structure) {	
-	// This is the only event handler that FishBot uses (avoids having to perform enumDroid continuously)
-	hq.toc.setNewDroidGroup(state, droid);	
+	const newGroupID = hq.toc.setNewDroidGroup(state, droid);
+	hq.toc.removeFromActiveProductionJobs(state, structure, newGroupID);	// this function is used for production tracking
 }
 
 function eventStructureReady(structure) {

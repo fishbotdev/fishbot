@@ -351,6 +351,7 @@ class worldState {
         /** @type {fbGroup} */
         this.g;
         this.activeMissions = [];
+        this.activeProductionJobs = [];
 
         // Bot attributes
         this.botIsActive = true;

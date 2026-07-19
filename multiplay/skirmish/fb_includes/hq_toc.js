@@ -925,7 +925,7 @@ class TacticalOperationsCenter {
             battalionComposition["deficit"] = maxUnitCount - healthyUnitCount;
         });
 
-        if (true) {
+        if (false) {
             debug(`${gameTime}: Brigade ${brigadeID} Composition`)
             for (const [btnID, btnInfo] of Object.entries(currBrigade["composition"])) {
                 debug(`\t - ${btnID}: Count ${btnInfo["count"]} (- ${btnInfo["deficit"]})`);
@@ -969,7 +969,7 @@ class TacticalOperationsCenter {
 	 * @param {worldState} state
      * @param {DroidObject} droid 
 	 * @param {number | undefined} groupIdToRemove
-     * @returns {void}
+     * @returns {number | string} groupID
      */
     setNewDroidGroup(state, droid, groupIdToRemove=undefined) {
 
@@ -980,6 +980,8 @@ class TacticalOperationsCenter {
 		}
 
 		state.g.addDroidToGroup({groupID: groupID, droidID: droid.id});
+
+		return groupID;
 	}
 
 	/**
@@ -1010,5 +1012,47 @@ class TacticalOperationsCenter {
 			state.g.removeDroidFromGroup({groupID: brigadeID, droidID: droid.id});
 			state.g.addDroidToGroup({groupID: DIVISION.RETURNING_FOR_REPAIR, droidID: droid.id});
 		});
+	}
+
+	/**
+	 * 
+	 * @param {worldState} state 
+	 * @param {Object} newProductionJob
+	 */
+	addToActiveProductionJobs(state, newProductionJob) {
+		state.activeProductionJobs.push(newProductionJob);
+	}
+
+	/**
+	 * 
+	 * @param {worldState} state 
+	 * @param {StructureObject} factory
+	 * @param {number | string} groupID
+	 */
+	removeFromActiveProductionJobs(state, factory, groupID) {
+
+		const itemToRemove = `"${factory.id} | ${groupID}"`;
+
+		if (false) {
+			debug(`${gameTime}: removeFromActiveProductionJobs() called with: ${itemToRemove}`);
+			debug(`Active Production Jobs:`)
+			state.activeProductionJobs.forEach(j => debug(`\t - ${j['factory'].id} | ${j['type']}`));
+		}
+
+		for (let i=0; i<state.activeProductionJobs.length; i++) {
+			const job = state.activeProductionJobs[i];
+
+			if (factory.id !== job['factory'].id) 
+				continue;
+
+			if (groupID !== job['type']) 	
+				continue;
+
+			const [deleted] = state.activeProductionJobs.splice(i, 1);
+			// debug(`\nRemoved ${deleted['factory'].id} | ${deleted['type']}`);
+			return;
+		}
+
+		debug(`${gameTime}: WARNING: removeFromActiveProductionJobs() failed to remove: ${itemToRemove}`)
 	}
 }
