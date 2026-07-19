@@ -47,6 +47,23 @@ The current method for determining whether or not a map is *supported* is:
 * `Monocot`
 * `Gamma`
 
+### 4 player (T2)
+* `Sk-Rush` ~
+* `Sk-Rush2` ~
+* `Sk-UrbanDuel` ~
+* `Sk-Mountain` ~
+* `Sk-Valley` ~
+* `Sk-FishNets` ~
+* `Sk-GreatRift` ~
+* `Sk-RollingHills` ~
+* `Sk-Basingstoke` ~
+* `Sk-LittleEgypt` ~
+* `Sk-Cockpit` ~
+* `Sk-Urban-Chaos` ~
+* `Sk-Pyramidal` ~
+* ~~`DustyMaze-2v2`~~ - untested
+* ~~`DustyMaze-FFA`~~ - untested
+
 Official support for other maps will be included in future versions. The current limitations are:
 * On very small maps with very low oil, FishBot runs out of power (and gets stuck) due to a fixed rigid build order. It can also get stuck if it doesn't claim enough derricks in the early game.
 * FishBot attempts to build forward-defences around derricks which are too dangerous to go and capture.
