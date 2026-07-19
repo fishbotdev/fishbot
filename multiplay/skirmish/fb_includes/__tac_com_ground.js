@@ -259,7 +259,7 @@ function moveBrigadeToAttack(state, brigadeID, groundTargets) {
 
 	const _distSqToClosestDroid = (droid) => distSq(droid.x, closestDroidToTarget.x, droid.y, closestDroidToTarget.y);
 	const dfDsqToTarget = _distSqToClosestDroid(DIRECT_FIRE_TARGET);
-	const isNearFrontLine = (droid) => _distSqToClosestDroid(droid) < 3 ** 2;
+	const isNearFrontLine = (droid) => _distSqToClosestDroid(droid) < 6 ** 2;
 
 	const moveToClosestDroid = (droid) => orderDroidLoc(droid, DORDER_MOVE, closestDroidToTarget.x, closestDroidToTarget.y);
 	
@@ -280,7 +280,7 @@ function moveBrigadeToAttack(state, brigadeID, groundTargets) {
 		if (droid.order === DROID_REPAIR) {			// do not interrupt a repair in progress
 			return;	
 		}
-		if (_distSqToClosestDroid(droid) > 6 ** 2) {
+		if (_distSqToClosestDroid(droid) > 4 ** 2) {
 			moveToClosestDroid(droid);
 			return;
 		} 
