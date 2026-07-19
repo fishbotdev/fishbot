@@ -1130,16 +1130,9 @@ class CommandCenter {
 	 * @returns {void}
 	 */
 	runProductionLogistics(state) {
-		/**
-		 * Debug print of idle factories.
-		 * @param {any[]} idleFactoryList 
-		 * @param {string} name 
-		 */
-		const debugPrintIfIdle = (idleFactoryList, name) => {
-			if (idleFactoryList.length > 0) {
-				debug(`	${gameTime}: Idle "${name}": ${idleFactoryList.length}`);
-			}
-		};
+
+		// Active production jobs
+		const activeProductionJobs = state.activeProductionJobs;
 
 		// Check factories for idle
 		const factories = state.playerInfo[me]["normalFactoryFbObjects"];
@@ -1151,12 +1144,38 @@ class CommandCenter {
 		const idleVtolFactories = getIdleStructureObjects(vtolFactories);
 
 		if (false) {
+			/**
+			 * Debug print of idle factories.
+			 * @param {any[]} idleFactoryList 
+			 * @param {string} name 
+			 */
+			const debugPrintIfIdle = (idleFactoryList, name) => {
+				if (idleFactoryList.length > 0) {
+					debug(`	${gameTime}: Idle "${name}": ${idleFactoryList.length}`);
+				}
+			};
+
 			debugPrintIfIdle(idleFactories, "Factory");
 			debugPrintIfIdle(idleCyborgFactories, "Cyborg Factory");
 			debugPrintIfIdle(idleVtolFactories, "VTOL Factory");
 		}
 
 		if (idleFactories.length === 0 && idleCyborgFactories.length === 0 && idleVtolFactories.length === 0) {
+			// Cleanup of the activeProductionJobs list - double check all factories are represented.
+			// Required in the case that a factory no longer exists.
+			const factoryIdList = [];
+			factories.forEach(f => factoryIdList.push(f.id));
+			cyborgFactories.forEach(f => factoryIdList.push(f.id));
+			vtolFactories.forEach(f => factoryIdList.push(f.id));
+
+			activeProductionJobs.forEach(j => {
+				if (factoryIdList.includes(j['factory'].id)) {
+					return;
+				}
+				this.toc.removeFromActiveProductionJobs(state, j['factory'], j['type']);
+				debug(`${gameTime}\tWARNING: removed ProductionJob "${j['factory'].id} | ${j['type']}" as Factory "${j['factory'].id}" was not found.`);
+			});
+			
 			return;
 		}
 

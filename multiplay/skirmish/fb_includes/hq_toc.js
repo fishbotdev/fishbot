@@ -1017,7 +1017,7 @@ class TacticalOperationsCenter {
 	/**
 	 * 
 	 * @param {worldState} state 
-	 * @param {Object} newProductionJob
+	 * @param {ProductionJob} newProductionJob
 	 */
 	addToActiveProductionJobs(state, newProductionJob) {
 		state.activeProductionJobs.push(newProductionJob);

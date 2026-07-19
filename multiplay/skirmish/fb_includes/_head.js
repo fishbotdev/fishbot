@@ -148,6 +148,13 @@
  */
 
 /**
+ * Type definition for `worldState.activeProductionJobs`.
+ * @typedef {Object} ProductionJob
+ * @property {StructureObject} factory
+ * @property {number | string} type FishBot droid type (e.g. DIVISION.HEAVY_CAV_RESERVE)
+ */
+
+/**
  * @typedef {Object} PositionInfo
  * Generic FishBot 'Position' object.
  * @property {number} x 
