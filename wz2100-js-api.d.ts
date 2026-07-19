@@ -806,3 +806,10 @@ declare function addBeacon(x: int, y: int, playerFilter: PlayerFilterType, messa
 Center the player's camera at the given position.
  */
 declare function centreView(x: number, y: number): void;
+
+/**
+## hideInterface()
+
+Hide user interface. (3.2+ only)
+ */
+declare function hideInterface(): void;

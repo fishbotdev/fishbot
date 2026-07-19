@@ -166,6 +166,8 @@ function setupDebugMode() {
 	debug(`\nMap: ${mapName}\n`);
 
 	centreView(baseLocation.x, baseLocation.y);		// Moves the camera to FishBot's start position
+
+	hideInterface();
 }
 
 function eventStartLevel() {
