@@ -497,45 +497,33 @@ function produceInfantry(factory) {
 }
 
 function produceLandUnitCategory(category, factory) {
-	let factoryInProduction = false;  
-	let unitClass = DIVISION.HEAVY_CAV_RESERVE;		// temporary: until 'category' is replaced with `DIVISION.x`
+	let productionStarted = false;  
 	
 	switch (category) {
-		case 'heavyCavalry':
-			factoryInProduction = factoryInProduction || produceHeavyCavalry(factory);
-			unitClass = DIVISION.HEAVY_CAV_RESERVE;
+		case DIVISION.HEAVY_CAV_RESERVE:
+			productionStarted = productionStarted || produceHeavyCavalry(factory);
 			break;
-		case 'lightCavalry':
-			factoryInProduction = factoryInProduction || produceLightCavalry(factory);
-			unitClass = DIVISION.LIGHT_CAV_RESERVE;
+		case DIVISION.LIGHT_CAV_RESERVE:
+			productionStarted = productionStarted || produceLightCavalry(factory);
 			break;
-		case 'shortRangeArtillery':
-			factoryInProduction = factoryInProduction || produceLandAPFireSupport(factory);
-			unitClass = DIVISION.SHORT_RANGE_FIRE_SUPPORT_RESERVE;
+		case DIVISION.SHORT_RANGE_FIRE_SUPPORT_RESERVE:
+			productionStarted = productionStarted || produceLandAPFireSupport(factory);
 			break;
-		case 'ADA':
-			factoryInProduction = factoryInProduction || produceHighVolumeAAUnit(factory);
-			unitClass = DIVISION.AIR_DEFENCE_RESERVE;
+		case DIVISION.AIR_DEFENCE_RESERVE:
+			productionStarted = productionStarted || produceHighVolumeAAUnit(factory);
 			break;
-		case 'sensor': 
-			factoryInProduction = factoryInProduction || produceLandRecon(factory);
-			unitClass = DIVISION.SENSOR_RESERVE;
+		case DIVISION.SENSOR_RESERVE: 
+			productionStarted = productionStarted || produceLandRecon(factory);
 			break;
-		case 'repair':
-			factoryInProduction = factoryInProduction || produceHeavyRepair(factory);
-			unitClass = DIVISION.MAINTENANCE_RESERVE;
+		case DIVISION.MAINTENANCE_RESERVE:
+			productionStarted = productionStarted || produceHeavyRepair(factory);
 			break;
 		default:
 			debug(`${gameTime}: WARNING: produceLandUnitCategory() did not understand "${category}"; falling back to light cav production.`);
-			factoryInProduction = factoryInProduction || produceLightCavalry(factory);
-			unitClass = DIVISION.LIGHT_CAV_RESERVE;
+			productionStarted = productionStarted || produceLightCavalry(factory);
 	}
 
-	return {
-		'productionStarted': factoryInProduction,
-		'category': unitClass
-	};
-
+	return productionStarted;
 }
 
 /**

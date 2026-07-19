@@ -863,6 +863,7 @@ class TacticalOperationsCenter {
 	 * @param {Object} maxBrigadeComposition  
      * @param {number} vehicleRepairThreshold
      * @param {number} cyborgRepairThreshold
+	 * @returns {void}
 	 */
     updateBrigadeSupplyStatus(state, brigadeID, maxBrigadeComposition, vehicleRepairThreshold, cyborgRepairThreshold) {
         
@@ -925,10 +926,10 @@ class TacticalOperationsCenter {
             battalionComposition["deficit"] = maxUnitCount - healthyUnitCount;
         });
 
-        if (false) {
+        if (true) {
             debug(`${gameTime}: Brigade ${brigadeID} Composition`)
             for (const [btnID, btnInfo] of Object.entries(currBrigade["composition"])) {
-                debug(`\t - ${btnID}: Count ${btnInfo["count"]} (- ${btnInfo["deficit"]})`);
+                debug(`\t - ${btnID}: ${btnInfo["count"]} healthy (- ${btnInfo["deficit"]}) ( - ${btnInfo["damagedUnitList"].length} damaged)`);
             }
         }
     }

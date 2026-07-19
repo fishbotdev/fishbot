@@ -63,7 +63,8 @@ class CommandCenter {
 		this.NUMBER_OF_BRIGADES = 2;
 		this.BRIGADE_DESIGNATIONS = BRIGADE_IDS.slice(0, this.NUMBER_OF_BRIGADES);
 
-		this.BRIGADE_REPAIR_THRESHOLD = 30;
+		this.VEHICLE_REPAIR_THRESHOLD = 30;
+		this.CYBORG_REPAIR_THRESHOLD = 45;
 		
 		// Task scheduling parameters
 		// Add regular, high priority, high computational load tasks to the start of the list.
@@ -837,12 +838,6 @@ class CommandCenter {
 		this.toc.assignConstructionTasks(state, approvedConstructionTasks);
 	}
 
-	#debugPrintLandVehicleCategory(categories) {
-		debug(`\t${gameTime}ms: Production priority`);
-		categories.forEach(c => 
-			debug(`\t    ${c['category'].padEnd(20)}\t | ${String(Math.floor(c['scoreNorm'] * 1000) / 1000).padEnd(5)} \t| ${Math.floor(c['surplusNorm'] * 1000) / 1000}`));
-	}
-
 	/**
 	 * 
 	 * @param {worldState} state 
@@ -851,6 +846,7 @@ class CommandCenter {
     #prioritiseLandVehicleCategory(state, deficit) {
         
 		const CATEGORIES = ['heavyCavalry', 'lightCavalry', 'shortRangeArtillery', 'ADA', 'sensor', 'repair'];
+		const CATEGORY_MAPPING = [DIVISION.HEAVY_CAV_RESERVE, DIVISION.LIGHT_CAV_RESERVE, DIVISION.SHORT_RANGE_FIRE_SUPPORT_RESERVE, DIVISION.AIR_DEFENCE_RESERVE, DIVISION.SENSOR_RESERVE, DIVISION.MAINTENANCE_RESERVE];
         let vehicleCategories = [];
 
 		let w_deficit = {
@@ -922,9 +918,16 @@ class CommandCenter {
 
 		vehicleCategories.forEach(c => c['scoreNorm'] = calculateScore(c.category));			
 
+		vehicleCategories.forEach((c, idx) => {c['category'] = CATEGORY_MAPPING[idx];});		// do before sort (otherwise the mapping is wrong)
+
 		vehicleCategories.sort((a, b) => b['scoreNorm'] - a['scoreNorm']);
 
-		return vehicleCategories;
+		if (false) {
+			debug(`\t${gameTime}ms: Production priority`);
+			vehicleCategories.forEach(c => debug(`\t    ${c['category'].padEnd(20)}\t | ${String(Math.floor(c['scoreNorm'] * 1000) / 1000).padEnd(5)} \t| ${Math.floor(c['surplusNorm'] * 1000) / 1000}`));
+		}
+		
+		return vehicleCategories[0].category;
     }
 
 	#recoverRepairedUnits(state) {
@@ -1055,7 +1058,7 @@ class CommandCenter {
 
 			const brigadeID = this.BRIGADE_DESIGNATIONS[i];
 
-  			const supplyStatus = supply.getBrigadeSupplyStatus(state, brigadeID, this.FISHBOT_BRIGADE_COMPOSITION, this.TOTAL_UNITS_PER_BRIGADE, this.BRIGADE_REPAIR_THRESHOLD);
+  			const supplyStatus = supply.getBrigadeSupplyStatus(state, brigadeID, this.FISHBOT_BRIGADE_COMPOSITION, this.TOTAL_UNITS_PER_BRIGADE, this.VEHICLE_REPAIR_THRESHOLD);
 
 			// Check brigade strength as percentage
 			const brigadeStrength = supplyStatus['brigadeStrength'];
@@ -1214,16 +1217,10 @@ class CommandCenter {
 		}
 		
 		// Get unit deficits
-		this.toc.updateBrigadeSupplyStatus(state, this.BRIGADE_DESIGNATIONS[0], this.FISHBOT_BRIGADE_COMPOSITION, this.BRIGADE_REPAIR_THRESHOLD, this.BRIGADE_REPAIR_THRESHOLD);
 		
-		let deficit = supply.getBrigadeSupplyStatus(state, this.BRIGADE_DESIGNATIONS[0], this.FISHBOT_BRIGADE_COMPOSITION, this.TOTAL_UNITS_PER_BRIGADE, this.BRIGADE_REPAIR_THRESHOLD);
-		for (let i=1; i<this.BRIGADE_DESIGNATIONS.length; i++) {
-			if (deficit['brigadeStrength'] < 100) {
-				break;
-			}
-			deficit = supply.getBrigadeSupplyStatus(state, this.BRIGADE_DESIGNATIONS[i], this.FISHBOT_BRIGADE_COMPOSITION, this.TOTAL_UNITS_PER_BRIGADE, this.BRIGADE_REPAIR_THRESHOLD);
-		}
-		const combatBrigadeDeficit = deficit;
+		this.BRIGADE_DESIGNATIONS.forEach(brigadeID => {
+			this.toc.updateBrigadeSupplyStatus(state, brigadeID, this.FISHBOT_BRIGADE_COMPOSITION, this.VEHICLE_REPAIR_THRESHOLD, this.CYBORG_REPAIR_THRESHOLD);
+		});
 
 		// Decide on whether or not to produce combat units
 		// Note: FishBot will not build combat vehicles before it can design them, on any difficulty.	
@@ -1234,12 +1231,24 @@ class CommandCenter {
 		const SHOULD_PRODUCE_VTOLS = CAN_DESIGN_UNITS && !HIT_AIR_UNIT_LIMIT;
 		
 		// Decide on which category of land combat vehicle to produce (basic greedy algorithm)
-		let landVehicleCategory = "heavyCavalry";
+		let landVehicleCategory = DIVISION.HEAVY_CAV_RESERVE;
+		
 		if (SHOULD_PRODUCE_LAND_VEHICLES && idleFactories.length > 0) {
-			const prioritisedCategories = this.#prioritiseLandVehicleCategory(state, combatBrigadeDeficit);
-			landVehicleCategory = prioritisedCategories[0].category;
-			// this.#debugPrintLandVehicleCategory(prioritisedCategories);
-			// debug(`${gameTime}: producing: ${landVehicleCategory}`);
+			if (true) {
+				let deficit = supply.getBrigadeSupplyStatus(state, this.BRIGADE_DESIGNATIONS[0], this.FISHBOT_BRIGADE_COMPOSITION, this.TOTAL_UNITS_PER_BRIGADE, this.VEHICLE_REPAIR_THRESHOLD);
+				for (let i=1; i<this.BRIGADE_DESIGNATIONS.length; i++) {
+					if (deficit['brigadeStrength'] < 100) {
+						break;
+					}
+					deficit = supply.getBrigadeSupplyStatus(state, this.BRIGADE_DESIGNATIONS[i], this.FISHBOT_BRIGADE_COMPOSITION, this.TOTAL_UNITS_PER_BRIGADE, this.VEHICLE_REPAIR_THRESHOLD);
+				}
+				const combatBrigadeDeficit = deficit;
+
+				landVehicleCategory = this.#prioritiseLandVehicleCategory(state, combatBrigadeDeficit);
+				debug(`\t${gameTime}: producing: ${landVehicleCategory}`);
+			} else {
+				
+			}
 		}
 
 		// Decide on whether or not to produce trucks
@@ -1308,9 +1317,9 @@ class CommandCenter {
 
 			if (SHOULD_PRODUCE_LAND_VEHICLES) {
 				if (DEBUG_PRODUCTION) debug(`	${gameTime}: produced Land Vehicle Template`);
-				const status = produceLandUnitCategory(landVehicleCategory, factory);
-				if (status["productionStarted"]) {
-					this.toc.addToActiveProductionJobs(state, {'factory': factory, 'type': status["category"]});
+				const productionStarted = produceLandUnitCategory(landVehicleCategory, factory);
+				if (productionStarted) {
+					this.toc.addToActiveProductionJobs(state, {'factory': factory, 'type': landVehicleCategory});
 				}
 				return;		
 				// occasionally 'return;' will prevent 2x sensor units from being made 
