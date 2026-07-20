@@ -841,10 +841,93 @@ class CommandCenter {
 	/**
 	 * 
 	 * @param {worldState} state 
+	 * @param {BrigadeComposition} brigadeComposition 
+	 */
+	#prioritiseLandVehicleCategory2(state, brigadeComposition) {
+		
+		const getMaxUnits = (category) => {
+			switch(category) {
+				case DIVISION.INFANTRY_RESERVE:
+					return this.FISHBOT_BRIGADE_COMPOSITION['MAX_INFANTRY']
+				case DIVISION.HEAVY_CAV_RESERVE:
+					return this.FISHBOT_BRIGADE_COMPOSITION['MAX_HEAVY_CAVALRY'];
+				case DIVISION.LIGHT_CAV_RESERVE:
+					return this.FISHBOT_BRIGADE_COMPOSITION['MAX_LIGHT_CAVALRY'];
+				case DIVISION.SHORT_RANGE_FIRE_SUPPORT_RESERVE:
+					return this.FISHBOT_BRIGADE_COMPOSITION['MAX_MORTAR'];
+				case DIVISION.AIR_DEFENCE_RESERVE:
+					return this.FISHBOT_BRIGADE_COMPOSITION['MAX_ADA'];
+				case DIVISION.SENSOR_RESERVE:
+					return this.FISHBOT_BRIGADE_COMPOSITION['MAX_SENSOR'];
+				case DIVISION.MAINTENANCE_RESERVE:
+					return this.FISHBOT_BRIGADE_COMPOSITION['MAX_REPAIR'];
+				default:
+					debug(`${gameTime}: prioritiseLandVehicleCategory2() / getMaxUnits(): failed to recognise "${category}". Returning "1".`)
+					return 1;
+			}
+		}
+
+		const getDeficit = (category) => {
+			const battalionComposition = brigadeComposition[category];
+			return battalionComposition["deficit"];
+		}
+
+		const getNormDeficit = (category) => getDeficit(category) / getMaxUnits(category);
+
+		const makeCategory = (category, weight) => {
+			const normDeficit = getNormDeficit(category);
+			return {
+				"type": category,
+				"normDeficit": normDeficit,
+				"w_strategic": weight,
+				"score": normDeficit * weight,
+			};
+		};
+
+		const CATEGORIES = [
+			// Weights were tuned in FishBot v0.4.3 to produce a better mix of units.
+			// makeCategory(DIVISION.INFANTRY_RESERVE, 1.0),		//
+			makeCategory(DIVISION.HEAVY_CAV_RESERVE, 0.8), 
+			makeCategory(DIVISION.LIGHT_CAV_RESERVE, 1.0), 
+			makeCategory(DIVISION.SHORT_RANGE_FIRE_SUPPORT_RESERVE, 0.77), 
+			makeCategory(DIVISION.AIR_DEFENCE_RESERVE, 0.62),
+			makeCategory(DIVISION.SENSOR_RESERVE, 0.4),
+			makeCategory(DIVISION.MAINTENANCE_RESERVE, 0.5),
+		];
+
+		const FORECAST_STEPS = 15;
+		// debug(`Forecasting...`)
+
+		const productionRequests = [];
+		for (let i=0; i<FORECAST_STEPS; i++) {
+			CATEGORIES.sort((a,b) => b["score"] - a["score"]);
+
+			if (CATEGORIES[0].normDeficit < 1e-6) {		// must account for rounding error
+				// debug(`Terminating early @ ${i} iterations`);
+				break;		
+			}
+
+			productionRequests.push({...CATEGORIES[0]});									// takes a snapshot of the current score
+
+			CATEGORIES[0].normDeficit -= 1 / getMaxUnits(CATEGORIES[0].type);				// simulates the unit being produced
+			CATEGORIES[0].score = CATEGORIES[0].normDeficit * CATEGORIES[0].w_strategic;	// updates the score
+		}
+
+		if (false) {
+			debug(`\t Next ${FORECAST_STEPS} ->`);
+			productionRequests.forEach(r => debug(`	${r.type}`));
+		}
+		
+		return productionRequests;
+	}	
+
+	/**
+	 * 
+	 * @param {worldState} state 
 	 * @param {*} deficit 
 	 */
     #prioritiseLandVehicleCategory(state, deficit) {
-        
+
 		const CATEGORIES = ['heavyCavalry', 'lightCavalry', 'shortRangeArtillery', 'ADA', 'sensor', 'repair'];
 		const CATEGORY_MAPPING = [DIVISION.HEAVY_CAV_RESERVE, DIVISION.LIGHT_CAV_RESERVE, DIVISION.SHORT_RANGE_FIRE_SUPPORT_RESERVE, DIVISION.AIR_DEFENCE_RESERVE, DIVISION.SENSOR_RESERVE, DIVISION.MAINTENANCE_RESERVE];
         let vehicleCategories = [];
@@ -926,7 +1009,7 @@ class CommandCenter {
 			debug(`\t${gameTime}ms: Production priority`);
 			vehicleCategories.forEach(c => debug(`\t    ${c['category'].padEnd(20)}\t | ${String(Math.floor(c['scoreNorm'] * 1000) / 1000).padEnd(5)} \t| ${Math.floor(c['surplusNorm'] * 1000) / 1000}`));
 		}
-		
+
 		return vehicleCategories[0].category;
     }
 
@@ -1134,7 +1217,6 @@ class CommandCenter {
 	 */
 	runProductionLogistics(state) {
 
-		// Active production jobs
 		const activeProductionJobs = state.activeProductionJobs;
 
 		// Check factories for idle
@@ -1217,11 +1299,6 @@ class CommandCenter {
 		}
 		
 		// Get unit deficits
-		
-		this.BRIGADE_DESIGNATIONS.forEach(brigadeID => {
-			this.toc.updateBrigadeSupplyStatus(state, brigadeID, this.FISHBOT_BRIGADE_COMPOSITION, this.VEHICLE_REPAIR_THRESHOLD, this.CYBORG_REPAIR_THRESHOLD);
-		});
-
 		// Decide on whether or not to produce combat units
 		// Note: FishBot will not build combat vehicles before it can design them, on any difficulty.	
 		const CAN_DESIGN_UNITS = HQ_IS_CONSTRUCTED;
@@ -1234,7 +1311,7 @@ class CommandCenter {
 		let landVehicleCategory = DIVISION.HEAVY_CAV_RESERVE;
 		
 		if (SHOULD_PRODUCE_LAND_VEHICLES && idleFactories.length > 0) {
-			if (true) {
+			if (false) {
 				let deficit = supply.getBrigadeSupplyStatus(state, this.BRIGADE_DESIGNATIONS[0], this.FISHBOT_BRIGADE_COMPOSITION, this.TOTAL_UNITS_PER_BRIGADE, this.VEHICLE_REPAIR_THRESHOLD);
 				for (let i=1; i<this.BRIGADE_DESIGNATIONS.length; i++) {
 					if (deficit['brigadeStrength'] < 100) {
@@ -1247,7 +1324,50 @@ class CommandCenter {
 				landVehicleCategory = this.#prioritiseLandVehicleCategory(state, combatBrigadeDeficit);
 				debug(`\t${gameTime}: producing: ${landVehicleCategory}`);
 			} else {
+				// Secondary implementation
+				const productionRequests = [];
+				const BASE_BRIGADE_NUMBER = DIVISION.FIRST_BCT;		// temporary
+
+				this.BRIGADE_DESIGNATIONS.forEach(brigadeID => {
+					this.toc.updateBrigadeSupplyStatus(state, brigadeID, this.FISHBOT_BRIGADE_COMPOSITION, this.VEHICLE_REPAIR_THRESHOLD, this.CYBORG_REPAIR_THRESHOLD);
+
+					const brigadeComposition = state.brigades[brigadeID]["composition"];
+					const weightedRequests = this.#prioritiseLandVehicleCategory2(state, brigadeComposition);
+
+					const brigadeWeightingFactor = this.NUMBER_OF_BRIGADES - (brigadeID - BASE_BRIGADE_NUMBER);
+					weightedRequests.forEach(request => request["score"] *= brigadeWeightingFactor);
+					productionRequests.push(...weightedRequests);
+				});
+
+				productionRequests.sort((a, b) => b.score - a.score);
+
+				// Remove active jobs
+				const removedRequests = [];
+				activeProductionJobs.forEach(job => {
+					for (let i=0; i<productionRequests.length; i++) {
+						if (job.type !== productionRequests[i].type) {
+							continue;
+						}
+						removedRequests.push(...productionRequests.splice(i, 1));
+						break;
+					}
+				});
 				
+				if (productionRequests.length > 0) {
+					landVehicleCategory = productionRequests[0].type;
+				} else {
+					debug(`${gameTime}: WARNING: landVehicleCategory defaulting to ${landVehicleCategory}`);
+				}
+
+				if (false) {
+					let deletedEntries = "";
+					removedRequests.forEach(r => deletedEntries += `${r.type},`)
+					debug(`Cleaned Production Requests (removed ${deletedEntries})`); 
+					productionRequests.forEach(r => debug(`\t-${r.type} | ${r.score}`));
+
+
+					debug(`\t${gameTime}: Impl2 producing: ${landVehicleCategory}`);
+				}
 			}
 		}
 

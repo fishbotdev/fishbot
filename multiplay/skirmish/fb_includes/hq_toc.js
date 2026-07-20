@@ -926,7 +926,7 @@ class TacticalOperationsCenter {
             battalionComposition["deficit"] = maxUnitCount - healthyUnitCount;
         });
 
-        if (true) {
+        if (false) {
             debug(`${gameTime}: Brigade ${brigadeID} Composition`)
             for (const [btnID, btnInfo] of Object.entries(currBrigade["composition"])) {
                 debug(`\t - ${btnID}: ${btnInfo["count"]} healthy (- ${btnInfo["deficit"]}) ( - ${btnInfo["damagedUnitList"].length} damaged)`);
