@@ -1311,20 +1311,6 @@ class CommandCenter {
 		let landVehicleCategory = DIVISION.HEAVY_CAV_RESERVE;
 		
 		if (SHOULD_PRODUCE_LAND_VEHICLES && idleFactories.length > 0) {
-			if (false) {
-				let deficit = supply.getBrigadeSupplyStatus(state, this.BRIGADE_DESIGNATIONS[0], this.FISHBOT_BRIGADE_COMPOSITION, this.TOTAL_UNITS_PER_BRIGADE, this.VEHICLE_REPAIR_THRESHOLD);
-				for (let i=1; i<this.BRIGADE_DESIGNATIONS.length; i++) {
-					if (deficit['brigadeStrength'] < 100) {
-						break;
-					}
-					deficit = supply.getBrigadeSupplyStatus(state, this.BRIGADE_DESIGNATIONS[i], this.FISHBOT_BRIGADE_COMPOSITION, this.TOTAL_UNITS_PER_BRIGADE, this.VEHICLE_REPAIR_THRESHOLD);
-				}
-				const combatBrigadeDeficit = deficit;
-
-				landVehicleCategory = this.#prioritiseLandVehicleCategory(state, combatBrigadeDeficit);
-				debug(`\t${gameTime}: producing: ${landVehicleCategory}`);
-			} else {
-				// Secondary implementation
 				const productionRequests = [];
 				const BASE_BRIGADE_NUMBER = DIVISION.FIRST_BCT;		// temporary
 
@@ -1365,10 +1351,8 @@ class CommandCenter {
 					debug(`Cleaned Production Requests (removed ${deletedEntries})`); 
 					productionRequests.forEach(r => debug(`\t-${r.type} | ${r.score}`));
 
-
 					debug(`\t${gameTime}: Impl2 producing: ${landVehicleCategory}`);
 				}
-			}
 		}
 
 		// Decide on whether or not to produce trucks
