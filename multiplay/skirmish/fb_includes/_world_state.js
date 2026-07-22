@@ -627,11 +627,9 @@ class worldStateBuilder {
 
         /** @returns {BrigadeComposition} */
         const createBrigadeComposition = () => {
-            /** @type {{[category: number]: BattalionComposition}} */
-            const brigadeComposition = {};
-            CATEGORIES.forEach(category => {
-                brigadeComposition[category] = createBattalionComposition(category);
-            });
+            /** @type {Map<number, BattalionComposition>} */
+            const brigadeComposition = new Map();
+            CATEGORIES.forEach(category => brigadeComposition.set(category, createBattalionComposition(category)));
             return brigadeComposition;
         }
 
@@ -658,6 +656,9 @@ class worldStateBuilder {
         BRIGADE_IDS.forEach(id => {
             brigades[id] = createNewBrigadeObject(id);
         });
+
+        // Create the reserve brigade
+        brigades[DIVISION.BCT_RESERVE] = createNewBrigadeObject(DIVISION.BCT_RESERVE);
 
         return brigades;
     }

@@ -199,7 +199,7 @@
  * @property {number} count
  * @property {number} deficit
  * 
- * @typedef {{ [category: number]: BattalionComposition}} BrigadeComposition
+ * @typedef {Map<number, BattalionComposition>} BrigadeComposition
  * 
  * @typedef {Object} BrigadeMetadata
  * @property {number} id This is the brigade ID (duplicate of the key).
@@ -327,6 +327,7 @@ const DIVISION = {
     THIRD_BCT: 3013,
     FOURTH_BCT: 3014,
 	FIFTH_BCT: 3015,
+	BCT_RESERVE: 3016,
 
 	RETURNING_FOR_REPAIR: 4000,
 };

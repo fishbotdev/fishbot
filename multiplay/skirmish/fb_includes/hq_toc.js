@@ -869,7 +869,8 @@ class TacticalOperationsCenter {
         
         const currBrigade = state.brigades[brigadeID];
 
-        const maxUnitsByCategory = [
+		/** @type {Map<number, number>} */
+        const maxUnitsByCategory = new Map([
             [DIVISION.INFANTRY_RESERVE, maxBrigadeComposition.MAX_INFANTRY],
             [DIVISION.HEAVY_CAV_RESERVE, maxBrigadeComposition.MAX_HEAVY_CAVALRY],
             [DIVISION.LIGHT_CAV_RESERVE, maxBrigadeComposition.MAX_LIGHT_CAVALRY],
@@ -877,7 +878,7 @@ class TacticalOperationsCenter {
             [DIVISION.AIR_DEFENCE_RESERVE, maxBrigadeComposition.MAX_ADA],
             [DIVISION.SENSOR_RESERVE, maxBrigadeComposition.MAX_SENSOR],
             [DIVISION.MAINTENANCE_RESERVE, maxBrigadeComposition.MAX_REPAIR]
-        ];
+		]);
 
         const needsRepair = (unit, category, cyborgRepairThreshold, vehicleRepairThreshold) => {
             if (category === DIVISION.INFANTRY_RESERVE) {
@@ -895,7 +896,7 @@ class TacticalOperationsCenter {
         };
 
         // This clears existing data from the previous run
-        for (const [btnID, btnInfo] of Object.entries(currBrigade["composition"])) {
+        for (const [btnID, btnInfo] of currBrigade["composition"]) {
             btnInfo["damagedUnitList"].length = 0;
             btnInfo["healthyUnitList"].length = 0;
         }
@@ -905,8 +906,7 @@ class TacticalOperationsCenter {
         brigadeUnits.forEach(unit => {
             const category = getDroidFbGroupClassification(unit);
 
-            const currBattalion = currBrigade["composition"][category];
-
+            const currBattalion = currBrigade["composition"].get(category);
             if (needsRepair(unit, category, cyborgRepairThreshold, vehicleRepairThreshold)) {
                 currBattalion["damagedUnitList"].push(unit);
             } else {
@@ -915,20 +915,17 @@ class TacticalOperationsCenter {
         });
 
         // Update the unit count + deficit
-        maxUnitsByCategory.forEach(c => {
-            const category = c[0];
-            const maxUnitCount = c[1];
-
-            const battalionComposition = currBrigade["composition"][category];
+		for (const [category, maxUnitCount] of maxUnitsByCategory) {
+            const battalionComposition = currBrigade["composition"].get(category);
 
             const healthyUnitCount = battalionComposition["healthyUnitList"].length;
             battalionComposition["count"] = healthyUnitCount;
             battalionComposition["deficit"] = maxUnitCount - healthyUnitCount;
-        });
+        };
 
         if (false) {
             debug(`${gameTime}: Brigade ${brigadeID} Composition`)
-            for (const [btnID, btnInfo] of Object.entries(currBrigade["composition"])) {
+            for (const [btnID, btnInfo] of currBrigade["composition"]) {
                 debug(`\t - ${btnID}: ${btnInfo["count"]} healthy (- ${btnInfo["deficit"]}) ( - ${btnInfo["damagedUnitList"].length} damaged)`);
             }
         }
@@ -988,18 +985,17 @@ class TacticalOperationsCenter {
 	/**
 	 * Assigns units to a brigade.
 	 * @param {worldState} state 
-	 * @param {*} reinforcements 
+	 * @param {DroidObject[]} reinforcements 
+	 * @param {number} reserveID
 	 * @param {number} brigadeID 
 	 * @returns {void}
 	 */
-	assignUnitsToBrigade(state, reinforcements, brigadeID) {
+	assignUnitsToBrigade(state, reinforcements, reserveID, brigadeID) {
 		
-		for (const c of Object.values(reinforcements)) {
-			c['unitList'].forEach(droid => {
-				state.g.removeDroidFromGroup({groupID: c['category'], droidID: droid.id});
-				state.g.addDroidToGroup({groupID: brigadeID, droidID: droid.id});
-			});
-		}
+		reinforcements.forEach(droid => {
+			state.g.removeDroidFromGroup({groupID: reserveID, droidID: droid.id});
+			state.g.addDroidToGroup({groupID: brigadeID, droidID: droid.id});
+		});
 	}
 
 	/**
