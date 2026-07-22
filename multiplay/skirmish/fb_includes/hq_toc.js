@@ -845,18 +845,6 @@ class TacticalOperationsCenter {
 	}
 
 	/**
-	 * This function writes `strength` (percentage) to `state.brigades[id].strength`.
-	 * @param {worldState} state 
-	 * @param {number} brigadeID 
-	 * @param {number} strength
-	 * @returns {void}
-	 */
-	setBrigadeStrength(state, brigadeID, strength) {
-		const currBrigade = state.brigades[brigadeID];
-		currBrigade['strength'] = strength;
-	}
-
-	/**
 	 * Updates unit lists for each battalion in a brigade.
 	 * @param {worldState} state 
 	 * @param {number} brigadeID 
@@ -995,19 +983,6 @@ class TacticalOperationsCenter {
 		reinforcements.forEach(droid => {
 			state.g.removeDroidFromGroup({groupID: reserveID, droidID: droid.id});
 			state.g.addDroidToGroup({groupID: brigadeID, droidID: droid.id});
-		});
-	}
-
-	/**
-	 * Assigns units to the `RETURNING_FOR_REPAIR` group (these units will immediately head towards base / the nearest repair facility).
-	 * @param {worldState} state 
-	 * @param {DroidObject[]} unitList 
-	 * @param {number} brigadeID 
-	 */
-	assignUnitsForRepair(state, unitList, brigadeID) {
-		unitList.forEach(droid => {
-			state.g.removeDroidFromGroup({groupID: brigadeID, droidID: droid.id});
-			state.g.addDroidToGroup({groupID: DIVISION.RETURNING_FOR_REPAIR, droidID: droid.id});
 		});
 	}
 
