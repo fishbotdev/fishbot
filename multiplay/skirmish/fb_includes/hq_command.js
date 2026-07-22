@@ -879,6 +879,10 @@ class CommandCenter {
 
 		const getDeficit = (category) => {
 			const battalionComposition = brigadeComposition.get(category);
+			if (battalionComposition == null) {
+				debug(`${gameTime}: WARNING - Attempted to get non-existent 'deficit' for category "${category}". Returning 0.`);
+				return 0;
+			}
 			return battalionComposition["deficit"];
 		}
 
@@ -958,7 +962,9 @@ class CommandCenter {
 		this.#recoverRepairedUnits(state);		
 
 		this.BRIGADE_DESIGNATIONS.forEach(brigadeID => 
-			this.toc.updateBrigadeSupplyStatus(state, brigadeID, this.FISHBOT_BRIGADE_COMPOSITION, this.VEHICLE_REPAIR_THRESHOLD, this.CYBORG_REPAIR_THRESHOLD));
+			this.toc.updateBrigadeSupplyStatus(state, brigadeID, this.FISHBOT_BRIGADE_COMPOSITION, this.VEHICLE_REPAIR_THRESHOLD, this.CYBORG_REPAIR_THRESHOLD)
+		);
+
 		this.toc.updateBrigadeSupplyStatus(state, DIVISION.BCT_RESERVE, this.FISHBOT_RESERVE_COMPOSITION, this.VEHICLE_REPAIR_THRESHOLD, this.CYBORG_REPAIR_THRESHOLD);
 
 		// Get reserve force units
@@ -1011,17 +1017,18 @@ class CommandCenter {
 
 				const deficit = btnComposition['deficit'];
 				const battalionReserve = reserveUnits.get(category);
-				// battalionReserve.forEach(r => debug(`-rs ${category} ${r.id}`));
+				if (battalionReserve == null) {
+					debug(`${gameTime}: WARNING: tried to get reserve units from non-existent category "${category}". Skipping.`);
+					continue;
+				}
+
 				const reinforcements = battalionReserve.splice(0, deficit);
-				// reinforcements.forEach(r => debug(`-${r.id}`));
 				this.toc.assignUnitsToBrigade(state, reinforcements, category, brigadeID);
 
 				const damagedUnitCount = btnComposition['damagedUnitList'].length;
 				const replacements = battalionReserve.splice(0, damagedUnitCount);
-				// if (replacements.length > 0) {		
-					this.toc.assignUnitsToBrigade(state, replacements, category, brigadeID);
-					this.toc.assignUnitsToBrigade(state, btnComposition['damagedUnitList'], brigadeID, DIVISION.RETURNING_FOR_REPAIR);		
-				// }
+				this.toc.assignUnitsToBrigade(state, replacements, category, brigadeID);
+				this.toc.assignUnitsToBrigade(state, btnComposition['damagedUnitList'], brigadeID, DIVISION.RETURNING_FOR_REPAIR);		
 			}
 
 		}
@@ -1250,7 +1257,6 @@ class CommandCenter {
 					this.toc.addToActiveProductionJobs(state, {'factory': factory, 'type': landVehicleCategory});
 				}
 				return;		
-				// occasionally 'return;' will prevent 2x sensor units from being made 
 			} else {
 				break;
 			}

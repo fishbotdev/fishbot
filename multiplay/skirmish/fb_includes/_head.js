@@ -151,7 +151,7 @@
  * Type definition for `worldState.activeProductionJobs`.
  * @typedef {Object} ProductionJob
  * @property {StructureObject} factory
- * @property {number | string} type FishBot droid type (e.g. DIVISION.HEAVY_CAV_RESERVE)
+ * @property {number} type FishBot droid type (e.g. DIVISION.HEAVY_CAV_RESERVE)
  */
 
 /**

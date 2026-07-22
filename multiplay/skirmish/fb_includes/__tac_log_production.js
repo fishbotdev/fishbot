@@ -496,6 +496,12 @@ function produceInfantry(factory) {
 	return false;
 }
 
+/**
+ * Driver for producing land units.
+ * @param {number} category 
+ * @param {StructureObject} factory 
+ * @returns 
+ */
 function produceLandUnitCategory(category, factory) {
 	let productionStarted = false;  
 	

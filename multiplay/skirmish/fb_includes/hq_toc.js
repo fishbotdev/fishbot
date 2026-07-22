@@ -855,7 +855,7 @@ class TacticalOperationsCenter {
 	 */
     updateBrigadeSupplyStatus(state, brigadeID, maxBrigadeComposition, vehicleRepairThreshold, cyborgRepairThreshold) {
         
-        const currBrigade = state.brigades[brigadeID];
+		const brigadeComposition = state.brigades[brigadeID]["composition"]
 
 		/** @type {Map<number, number>} */
         const maxUnitsByCategory = new Map([
@@ -884,17 +884,22 @@ class TacticalOperationsCenter {
         };
 
         // This clears existing data from the previous run
-        for (const [btnID, btnInfo] of currBrigade["composition"]) {
+        for (const [btnID, btnInfo] of brigadeComposition) {
             btnInfo["damagedUnitList"].length = 0;
             btnInfo["healthyUnitList"].length = 0;
         }
 
-        // Reclassify
+        // Reclassify as damaged / healthy
         const brigadeUnits = state.g.enumGroup(brigadeID);      
         brigadeUnits.forEach(unit => {
             const category = getDroidFbGroupClassification(unit);
 
-            const currBattalion = currBrigade["composition"].get(category);
+            const currBattalion = brigadeComposition.get(category);
+			if (currBattalion == null) {
+				debug(`${gameTime} WARNING: attempted to get non-existent category "${category}" in brigadeComposition.`);
+				return;
+			}
+			
             if (needsRepair(unit, category, cyborgRepairThreshold, vehicleRepairThreshold)) {
                 currBattalion["damagedUnitList"].push(unit);
             } else {
@@ -903,8 +908,12 @@ class TacticalOperationsCenter {
         });
 
         // Update the unit count + deficit
-		for (const [category, maxUnitCount] of maxUnitsByCategory) {
-            const battalionComposition = currBrigade["composition"].get(category);
+        for (const [category, battalionComposition] of brigadeComposition) {
+            const maxUnitCount = maxUnitsByCategory.get(category);
+			if (maxUnitCount == null) {
+				debug(`${gameTime} WARNING: attempted to get non-existent maxUnitCount for category "${category}".`);
+				return;
+			}
 
             const healthyUnitCount = battalionComposition["healthyUnitList"].length;
             battalionComposition["count"] = healthyUnitCount;
@@ -913,7 +922,7 @@ class TacticalOperationsCenter {
 
         if (false) {
             debug(`${gameTime}: Brigade ${brigadeID} Composition`)
-            for (const [btnID, btnInfo] of currBrigade["composition"]) {
+            for (const [btnID, btnInfo] of brigadeComposition) {
                 debug(`\t - ${btnID}: ${btnInfo["count"]} healthy (- ${btnInfo["deficit"]}) ( - ${btnInfo["damagedUnitList"].length} damaged)`);
             }
         }
@@ -955,7 +964,7 @@ class TacticalOperationsCenter {
 	 * @param {worldState} state
      * @param {DroidObject} droid 
 	 * @param {number | undefined} groupIdToRemove
-     * @returns {number | string} groupID
+     * @returns {number} groupID
      */
     setNewDroidGroup(state, droid, groupIdToRemove=undefined) {
 
@@ -999,20 +1008,15 @@ class TacticalOperationsCenter {
 	 * 
 	 * @param {worldState} state 
 	 * @param {StructureObject} factory
-	 * @param {number | string} groupID
+	 * @param {number} groupID
 	 */
 	removeFromActiveProductionJobs(state, factory, groupID) {
 
+		const activeProductionJobs = state.activeProductionJobs;
 		const itemToRemove = `"${factory.id} | ${groupID}"`;
 
-		if (false) {
-			debug(`${gameTime}: removeFromActiveProductionJobs() called with: ${itemToRemove}`);
-			debug(`Active Production Jobs:`)
-			state.activeProductionJobs.forEach(j => debug(`\t - ${j['factory'].id} | ${j['type']}`));
-		}
-
-		for (let i=0; i<state.activeProductionJobs.length; i++) {
-			const job = state.activeProductionJobs[i];
+		for (let i=0; i<activeProductionJobs.length; i++) {
+			const job = activeProductionJobs[i];
 
 			if (factory.id !== job['factory'].id) 
 				continue;
