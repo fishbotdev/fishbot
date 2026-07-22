@@ -58,7 +58,6 @@
 class fbGroup {
 
 	constructor() {
-		this.groupTemplate = {'groupMemberIDs': [], 'groupMembers': [], "groupSize": 0};
 		this.groups = new Map();
 		this.MAX_GROUP_SIZE = 256;
 	}
@@ -66,34 +65,33 @@ class fbGroup {
 	#lazyUpdateGroup(groupID) {
 		// Lazy update, only updates if one of the functions is called & only for that group ID
 		if (this.groups.has(groupID)) {
-			// Update members
-			let c = this.groups.get(groupID);
+			const c = this.groups.get(groupID);
 
-			// debug("lazyUpdateGroup/groupMember data -- before filter", c["groupMemberIDs"], c["groupMembers"]);
+            const updatedGroupMemberIDs = [];
+            const updatedGroupMembers = [];
+            c["groupMemberIDs"].forEach(droidID => {
+                const obj = getObject(DROID, me, droidID);
+                if (obj == null) {
+                    return;
+                }
+                updatedGroupMemberIDs.push(droidID);
+                updatedGroupMembers.push(obj);
+            });
 
-			c["groupMemberIDs"] = c["groupMemberIDs"].filter((id) => getObject(DROID, me, id) !== null);
-
-			// debug("lazyUpdateGroup/groupMember data -- after filter", c["groupMemberIDs"], c["groupMembers"]);
-
-			c["groupMembers"] = c["groupMemberIDs"].map((id) => {return getObject(DROID, me, id);});
-
-			// debug("lazyUpdateGroup/groupMember data -- after getObject map", c["groupMemberIDs"], c["groupMembers"]);
-
-			c["groupSize"] = c["groupMembers"].length;
+            c["groupMemberIDs"] = updatedGroupMemberIDs;
+            c["groupMembers"] = updatedGroupMembers;
+			c["groupSize"] = updatedGroupMembers.length;
 		}
 	}
 
 	createGroup(groupID) {
-		this.groups.set(groupID, {
-			...this.groupTemplate,
-			'groupMemberIDs': [...this.groupTemplate.groupMemberIDs],
-			'groupMembers': [...this.groupTemplate.groupMembers]
-		});
+		this.groups.set(groupID, {'groupMemberIDs': [], 'groupMembers': [], "groupSize": 0});
 	}
 
 	deleteGroup(groupID) {
-		if (this.groups.has(groupID))
+		if (this.groups.has(groupID)) {
 			this.groups.delete(groupID);
+        }
 	}
 
     /**
@@ -107,16 +105,16 @@ class fbGroup {
 			return [];
 		}
 
-		// niceDebug("ids before enum group update; ", this.groups.get(groupID)["groupMemberIDs"])
 		this.#lazyUpdateGroup(groupID);
 
 		return this.groups.get(groupID)["groupMembers"];
 	}
 	
 	groupSize(groupID) {
-		if (!this.groups.has(groupID))
-			return undefined;
-
+		if (!this.groups.has(groupID)) {
+            return undefined;
+        }
+			
 		this.#lazyUpdateGroup(groupID);
 
 		return this.groups.get(groupID)["groupSize"];
@@ -124,21 +122,18 @@ class fbGroup {
 
 	addDroidToGroup({groupID, droidID}) {
 		if (!this.groups.has(groupID)) {
-			// niceDebug("Created a new group", groupID);
 			this.createGroup(groupID);
 		}
 
 		this.#lazyUpdateGroup(groupID);
-		let currGroup = this.groups.get(groupID);
-		
+
+		const currGroup = this.groups.get(groupID);	
 		if (currGroup["groupSize"] >= this.MAX_GROUP_SIZE) {
 			debug(`addDroidToGroup failed: Cannot add more than ${this.MAX_GROUP_SIZE} members to the group.`);
 			return;
 		}
 		
-		currGroup["groupMemberIDs"] = currGroup["groupMemberIDs"].concat(droidID);
-		// niceDebug("groupMemberIDs", currGroup["groupMemberIDs"]);
-
+		currGroup["groupMemberIDs"].push(droidID);
 	}
 
 	removeDroidFromGroup({groupID, droidID}) {
@@ -148,8 +143,14 @@ class fbGroup {
 
 		this.#lazyUpdateGroup(groupID);
 
-		let c = this.groups.get(groupID)["groupMemberIDs"].concat();	// shallow copy
-		this.groups.get(groupID)["groupMemberIDs"] = c.filter((id) => id !== droidID);
+        const groupMemberIDs = this.groups.get(groupID)["groupMemberIDs"];
+        for (let i=0; i<groupMemberIDs.length; i++) {
+            if (groupMemberIDs[i] !== droidID) {
+                continue;
+            }    
+            groupMemberIDs.splice(i, 1);
+            return;
+        }
 	}
 }
 
