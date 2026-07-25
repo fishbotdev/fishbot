@@ -50,20 +50,33 @@ class CommandCenter {
 		this.MAX_TRUCKS = 8;
 
 		this.FISHBOT_BRIGADE_COMPOSITION = {
-			'MAX_HEAVY_CAVALRY': 8,
+			'MAX_HEAVY_CAVALRY': 3,
 			'MAX_LIGHT_CAVALRY': 3,
-			'MAX_MORTAR': 6,
-			'MAX_ADA': 3,
+			'MAX_MORTAR': 4,
+			'MAX_ADA': 2,
 			'MAX_SENSOR': 1,
 			'MAX_INFANTRY': 6,
 			'MAX_REPAIR': 1,
 		}
 		this.TOTAL_UNITS_PER_BRIGADE = Object.values(this.FISHBOT_BRIGADE_COMPOSITION).reduce((a, b) => a + b, 0);
 
-		this.NUMBER_OF_BRIGADES = 2;
+		this.NUMBER_OF_BRIGADES = 4;
 		this.BRIGADE_DESIGNATIONS = BRIGADE_IDS.slice(0, this.NUMBER_OF_BRIGADES);
 
-		this.BRIGADE_REPAIR_THRESHOLD = 30;
+		this.FISHBOT_RESERVE_COMPOSITION = {
+			// for DIVISION.BCT_RESERVE
+			'MAX_HEAVY_CAVALRY': Math.ceil(this.FISHBOT_BRIGADE_COMPOSITION['MAX_HEAVY_CAVALRY'] * this.NUMBER_OF_BRIGADES / 2),
+			'MAX_LIGHT_CAVALRY': Math.ceil(this.FISHBOT_BRIGADE_COMPOSITION['MAX_LIGHT_CAVALRY'] * this.NUMBER_OF_BRIGADES / 2),
+			'MAX_MORTAR': 3,
+			'MAX_ADA': this.FISHBOT_BRIGADE_COMPOSITION['MAX_ADA'],
+			'MAX_SENSOR': 1,
+			'MAX_INFANTRY': Math.ceil(this.FISHBOT_BRIGADE_COMPOSITION['MAX_INFANTRY'] * this.NUMBER_OF_BRIGADES / 2),
+			'MAX_REPAIR': 1
+		};
+		this.TOTAL_RESERVE_UNITS = Object.values(this.FISHBOT_RESERVE_COMPOSITION).reduce((a, b) => a + b, 0);
+
+		this.VEHICLE_REPAIR_THRESHOLD = 30;
+		this.CYBORG_REPAIR_THRESHOLD = 45;
 		
 		// Task scheduling parameters
 		// Add regular, high priority, high computational load tasks to the start of the list.
@@ -73,8 +86,9 @@ class CommandCenter {
 			'combat_runC2': 60,
 			'global_missionManager': 60,
 			'logistics_runConstruction': 60,
+			'logistics_runResupplyLogistics': 30,
 			'intel_getNearbyGroundTargets': 20,
-			'logistics_runSupply': 15,
+			'logistics_runStructureLogistics': 15,
 			'intel_getMapIntelligence': 12,
 			'intel_getAviationTargets': 10,
 			'intel_checkOilDominance': 2,
@@ -641,7 +655,6 @@ class CommandCenter {
 
 			this.BRIGADE_DESIGNATIONS.forEach((brigadeID) => {
 
-				// const brigadeStrength = state.brigades[brigadeID]['strength'];
 				const brigadeLocation = state.brigades[brigadeID]['location'];
 				brigadeLocations.push(brigadeLocation);
 
@@ -837,129 +850,91 @@ class CommandCenter {
 		this.toc.assignConstructionTasks(state, approvedConstructionTasks);
 	}
 
-	#debugPrintLandVehicleCategory(categories) {
-		debug(`\t${gameTime}ms: Production priority`);
-		categories.forEach(c => 
-			debug(`\t    ${c['category'].padEnd(20)}\t | ${String(Math.floor(c['scoreNorm'] * 1000) / 1000).padEnd(5)} \t| ${Math.floor(c['surplusNorm'] * 1000) / 1000}`));
-	}
-
 	/**
 	 * 
-	 * @param {worldState} state 
-	 * @param {*} deficit 
+	 * @param {BrigadeComposition} brigadeComposition 
 	 */
-    #prioritiseLandVehicleCategory(state, deficit) {
-        
-		const CATEGORIES = ['heavyCavalry', 'lightCavalry', 'shortRangeArtillery', 'ADA', 'sensor', 'repair'];
-        let vehicleCategories = [];
-
-		let w_deficit = {
-			'heavyCavalry': 1,
-            'lightCavalry': 1,
-            'shortRangeArtillery': 1,
-            'ADA': 1,
-            'sensor': 1,
-			'repair': 1
-		};
-		let w_strategic = {
-			'heavyCavalry': 1,
-            'lightCavalry': 1,
-            'shortRangeArtillery': 0.75,
-            'ADA': 0.001,
-            'sensor': 0.001,
-			'repair': 0.001,
-		};
-
-		const calculateSurplus = (category) => {return -1 * deficit[category]['normBaseDeficit']};
-		const makeCategory = (category) => {
-			return {
-				'category': category, 
-				'scoreNorm': 0.0, 
-				'surplusNorm': calculateSurplus(category)
-			};
-		};
-
-		let categoriesInSurplus = 0;
-
-		CATEGORIES.forEach(category => {
-			const c = makeCategory(category);
-			vehicleCategories.push(c);
-			if (c['surplusNorm'] >= 0) {
-				categoriesInSurplus++;
-			}
-		});
-
-		// Adjust unit strategic weights
-		const SUFFICIENT_CAVALRY = deficit['heavyCavalry']['normBaseDeficit'] < 0.65 && deficit['lightCavalry']['normBaseDeficit'] < 0.65;
-		if (SUFFICIENT_CAVALRY) {
-			w_strategic = {
-				'heavyCavalry': 1,
-				'lightCavalry': 0.95,
-				'shortRangeArtillery': 1,
-				'ADA': 0.9,
-				'sensor': 0.2,
-				'repair': 0.85,
-			};
-		}
-
-		// Adjust unit deficit weights
-		const BRIGADE_OVERSTRENGTH = categoriesInSurplus === CATEGORIES.length;
-		if (BRIGADE_OVERSTRENGTH) {
-			// All categories in surplus; use a new set of weights to deal with negative deficit. 
-			// In this condition, a large deficit weight = less likely to produce.
-			// This is because the algorithm greedily checks for "largest deficit". When the deficit is negative, "largest deficit" = least negative number.
-			w_deficit = {
-				'heavyCavalry': 1,
-				'lightCavalry': 2,
-				'shortRangeArtillery': 4,
-				'ADA': 2,
-				'sensor': 10,
-				'repair': 8,
-			};
-		}
-
-		const calculateScore = (category) => {return w_deficit[category] * deficit[category]['normBaseDeficit'] * w_strategic[category];};
-
-		vehicleCategories.forEach(c => c['scoreNorm'] = calculateScore(c.category));			
-
-		vehicleCategories.sort((a, b) => b['scoreNorm'] - a['scoreNorm']);
-
-		return vehicleCategories;
-    }
-
-	#printDebugResupply(state) {
-
-		const getReserveUnitsOfType = (groupID) => state.g.enumGroup(groupID);
-
-		const HEAVY_CAV_RESERVE = getReserveUnitsOfType(DIVISION.HEAVY_CAV_RESERVE);
-		const LIGHT_CAV_RESERVE = getReserveUnitsOfType(DIVISION.LIGHT_CAV_RESERVE);
-		const INFANTRY_RESERVE = getReserveUnitsOfType(DIVISION.INFANTRY_RESERVE);
-		const SHORT_RANGE_FIRE_SUPPORT_RESERVE = getReserveUnitsOfType(DIVISION.SHORT_RANGE_FIRE_SUPPORT_RESERVE);
-		const SENSOR_RESERVE = getReserveUnitsOfType(DIVISION.SENSOR_RESERVE);
-		const AIR_DEFENCE_RESERVE = getReserveUnitsOfType(DIVISION.AIR_DEFENCE_RESERVE);
+	#prioritiseLandVehicleCategory2(brigadeComposition) {
 		
-		const RETURNING_FOR_REPAIR = getReserveUnitsOfType(DIVISION.RETURNING_FOR_REPAIR);
-
-		let printedTitle = false;
-
-		this.BRIGADE_DESIGNATIONS.forEach(brigadeID => {
-			const supplyStatus = supply.getBrigadeSupplyStatus(state, brigadeID, this.FISHBOT_BRIGADE_COMPOSITION, this.TOTAL_UNITS_PER_BRIGADE, this.BRIGADE_REPAIR_THRESHOLD);
-			
-			// Check brigade strength as percentage
-			const brigadeStrength = supplyStatus['brigadeStrength'];
-
-			const actualBrigadeUnitCount = state.g.enumGroup(brigadeID).length;
-			if (brigadeStrength !== 0) {
-				if (!printedTitle) {					
-					debug(`==${getOrdinal(me)} DIVISION @ ${gameTime}==`);
-					debug(`\tRESERVE:\t hc: ${HEAVY_CAV_RESERVE.length}, lc: ${LIGHT_CAV_RESERVE.length}, inf: ${INFANTRY_RESERVE.length}, mort: ${SHORT_RANGE_FIRE_SUPPORT_RESERVE.length}, sens: ${SENSOR_RESERVE.length}, ada: ${AIR_DEFENCE_RESERVE.length}, repair: ${RETURNING_FOR_REPAIR.length}`)
-					printedTitle = true;
-				}
-				debug(`\tBrigade ${brigadeID}: ${brigadeStrength} % (${supplyStatus['totalLandUnits']} / ${this.TOTAL_UNITS_PER_BRIGADE} units) (actual: ${actualBrigadeUnitCount})`);
+		const getMaxUnits = (category) => {
+			switch(category) {
+				case DIVISION.INFANTRY_RESERVE:
+					return this.FISHBOT_BRIGADE_COMPOSITION['MAX_INFANTRY']
+				case DIVISION.HEAVY_CAV_RESERVE:
+					return this.FISHBOT_BRIGADE_COMPOSITION['MAX_HEAVY_CAVALRY'];
+				case DIVISION.LIGHT_CAV_RESERVE:
+					return this.FISHBOT_BRIGADE_COMPOSITION['MAX_LIGHT_CAVALRY'];
+				case DIVISION.SHORT_RANGE_FIRE_SUPPORT_RESERVE:
+					return this.FISHBOT_BRIGADE_COMPOSITION['MAX_MORTAR'];
+				case DIVISION.AIR_DEFENCE_RESERVE:
+					return this.FISHBOT_BRIGADE_COMPOSITION['MAX_ADA'];
+				case DIVISION.SENSOR_RESERVE:
+					return this.FISHBOT_BRIGADE_COMPOSITION['MAX_SENSOR'];
+				case DIVISION.MAINTENANCE_RESERVE:
+					return this.FISHBOT_BRIGADE_COMPOSITION['MAX_REPAIR'];
+				default:
+					debug(`${gameTime}: prioritiseLandVehicleCategory2() / getMaxUnits(): failed to recognise "${category}". Returning "1".`)
+					return 1;
 			}
-		});
+		}
 
-	}
+		const getDeficit = (category) => {
+			const battalionComposition = brigadeComposition.get(category);
+			if (battalionComposition == null) {
+				debug(`${gameTime}: WARNING - Attempted to get non-existent 'deficit' for category "${category}". Returning 0.`);
+				return 0;
+			}
+			return battalionComposition["deficit"];
+		}
+
+		const getNormDeficit = (category) => getDeficit(category) / getMaxUnits(category);
+
+		const makeCategory = (category, weight) => {
+			const normDeficit = getNormDeficit(category);
+			return {
+				"type": category,
+				"normDeficit": normDeficit,
+				"w_strategic": weight,
+				"score": normDeficit * weight,
+			};
+		};
+
+		const CATEGORIES = [
+			// Weights were tuned in FishBot v0.4.3 to produce a better mix of units.
+			// makeCategory(DIVISION.INFANTRY_RESERVE, 1.0),		//
+			makeCategory(DIVISION.HEAVY_CAV_RESERVE, 0.8), 
+			makeCategory(DIVISION.LIGHT_CAV_RESERVE, 1.0), 
+			makeCategory(DIVISION.SHORT_RANGE_FIRE_SUPPORT_RESERVE, 0.77), 
+			makeCategory(DIVISION.AIR_DEFENCE_RESERVE, 0.62),
+			makeCategory(DIVISION.SENSOR_RESERVE, 0.4),
+			makeCategory(DIVISION.MAINTENANCE_RESERVE, 0.5),
+		];
+
+		const FORECAST_STEPS = 15;
+		// debug(`Forecasting...`)
+
+		const productionRequests = [];
+		for (let i=0; i<FORECAST_STEPS; i++) {
+			CATEGORIES.sort((a,b) => b["score"] - a["score"]);
+
+			if (CATEGORIES[0].normDeficit < 1e-6) {		// must account for rounding error
+				// debug(`Terminating early @ ${i} iterations`);
+				break;		
+			}
+
+			productionRequests.push({...CATEGORIES[0]});									// takes a snapshot of the current score
+
+			CATEGORIES[0].normDeficit -= 1 / getMaxUnits(CATEGORIES[0].type);				// simulates the unit being produced
+			CATEGORIES[0].score = CATEGORIES[0].normDeficit * CATEGORIES[0].w_strategic;	// updates the score
+		}
+
+		if (false) {
+			debug(`\t Next ${FORECAST_STEPS} ->`);
+			productionRequests.forEach(r => debug(`	${r.type}`));
+		}
+		
+		return productionRequests;
+	}	
 
 	#recoverRepairedUnits(state) {
 		const repairedUnits = state.g.enumGroup(DIVISION.RETURNING_FOR_REPAIR);
@@ -970,56 +945,27 @@ class CommandCenter {
 				return;
 			}
 			this.toc.setNewDroidGroup(state, droid, DIVISION.RETURNING_FOR_REPAIR); 	// this sets the new group & removes from "RETURN_FOR_REPAIR"
+			// todo: This interface is a bit confusing.
 		});
 	}
 
-	#createNewRoster() {
-		// Note: categories must match `supply / getBrigadeSupplyStatus()`.
-		const createCategory = (category) => {return {'category': category, 'unitList': []};};
-
-		return {
-			'heavyCavalry': createCategory(DIVISION.HEAVY_CAV_RESERVE), 
-			'lightCavalry': createCategory(DIVISION.LIGHT_CAV_RESERVE), 
-			'infantry': createCategory(DIVISION.INFANTRY_RESERVE), 
-			'shortRangeArtillery': createCategory(DIVISION.SHORT_RANGE_FIRE_SUPPORT_RESERVE), 
-			'ADA': createCategory(DIVISION.AIR_DEFENCE_RESERVE), 
-			'sensor': createCategory(DIVISION.SENSOR_RESERVE),
-			'repair': createCategory(DIVISION.MAINTENANCE_RESERVE),
-		};		
-	}
-
 	/**
-	 * Categories must match `supply / getBrigadeSupplyStatus()`.
+	 * Gets the number of healthy combat units in a specified BCT (does not include logistic unit counts).
 	 * @param {worldState} state 
-	 * @returns 
+	 * @param {number} brigadeID
+	 * @returns {number} 
 	 */
-	#getReserveForceUnits(state) {
-		return {
-			'heavyCavalry': state.g.enumGroup(DIVISION.HEAVY_CAV_RESERVE), 
-			'lightCavalry': state.g.enumGroup(DIVISION.LIGHT_CAV_RESERVE), 
-			'infantry': state.g.enumGroup(DIVISION.INFANTRY_RESERVE), 
-			'shortRangeArtillery': state.g.enumGroup(DIVISION.SHORT_RANGE_FIRE_SUPPORT_RESERVE), 
-			'ADA': state.g.enumGroup(DIVISION.AIR_DEFENCE_RESERVE), 
-			'sensor': state.g.enumGroup(DIVISION.SENSOR_RESERVE),
-			'repair': state.g.enumGroup(DIVISION.MAINTENANCE_RESERVE),
-		};
-	}
+	#getBctCombatUnitCount(state, brigadeID) {
+		const brigadeComposition = state.brigades[brigadeID]["composition"]; 
+		let unitCount = 0;
+		for (const [category, btnComposition] of brigadeComposition) {
+			if ([DIVISION.AIR_DEFENCE_RESERVE, DIVISION.SENSOR_RESERVE, DIVISION.MAINTENANCE_RESERVE].includes(category)) {
+				continue;
+			}
+			unitCount += btnComposition["count"];
+		}
 
-	/**
-	 * Retrieves all units currently assigned to reserves.
-	 * @param {worldState} state 
-	 * @returns 
-	 */
-	#getReserveForceUnitsByCategory(state) {
-
-		const unitsByCategory = [];
-
-		const RESERVE_GROUP_IDS = [DIVISION.HEAVY_CAV_RESERVE, DIVISION.LIGHT_CAV_RESERVE, DIVISION.INFANTRY_RESERVE, DIVISION.SHORT_RANGE_FIRE_SUPPORT_RESERVE, DIVISION.AIR_DEFENCE_RESERVE, DIVISION.SENSOR_RESERVE];
-
-		const createCategory = (reserveGroupID) => {return {'id': reserveGroupID, 'reserveGroupUnits': state.g.enumGroup(reserveGroupID)};};
-		RESERVE_GROUP_IDS.forEach(id => unitsByCategory.push(createCategory(id)));
-
-		return unitsByCategory;
+		return unitCount;
 	}
 
 	/**
@@ -1035,127 +981,113 @@ class CommandCenter {
 		// Return repaired units back into the reserve force
 		this.#recoverRepairedUnits(state);		
 
+		// Update brigade supply status
+		const brigadeUnitCount = new Map();
+		this.BRIGADE_DESIGNATIONS.forEach(brigadeID => {
+			this.toc.updateBrigadeSupplyStatus(state, brigadeID, this.FISHBOT_BRIGADE_COMPOSITION, this.VEHICLE_REPAIR_THRESHOLD, this.CYBORG_REPAIR_THRESHOLD);
+
+			brigadeUnitCount.set(brigadeID, this.#getBctCombatUnitCount(state, brigadeID));
+		});
+
+		this.toc.updateBrigadeSupplyStatus(state, DIVISION.BCT_RESERVE, this.FISHBOT_RESERVE_COMPOSITION, this.VEHICLE_REPAIR_THRESHOLD, this.CYBORG_REPAIR_THRESHOLD);
+
 		// Get reserve force units
-		const reserveUnitsByCategory = this.#getReserveForceUnits(state);
-		const reserveUnitsByCategory2 = this.#getReserveForceUnitsByCategory(state);
+		const RESERVE_GROUP_IDS = [
+			DIVISION.HEAVY_CAV_RESERVE, 
+			DIVISION.LIGHT_CAV_RESERVE, 
+			DIVISION.INFANTRY_RESERVE, 
+			DIVISION.SHORT_RANGE_FIRE_SUPPORT_RESERVE, 
+			DIVISION.AIR_DEFENCE_RESERVE, 
+			DIVISION.SENSOR_RESERVE,
+			DIVISION.MAINTENANCE_RESERVE
+		];
 
-		let SHOULD_RUN_RESUPPLY_LOGISTICS = false;
-		for (let i=0; i<reserveUnitsByCategory2.length; i++) {
-			const reserveGroupUnits = reserveUnitsByCategory2[i].reserveGroupUnits;
+		/** @type {Map<number, DroidObject[]>} */
+		const reserveUnits = new Map();
+		RESERVE_GROUP_IDS.forEach(id => {reserveUnits.set(id, state.g.enumGroup(id))});
 
-			if (reserveGroupUnits.length > 0) {		
-				SHOULD_RUN_RESUPPLY_LOGISTICS = true;
-				break;
-			}
-		}
-		if (SHOULD_RUN_RESUPPLY_LOGISTICS) {
-			// debug(`	${gameTime}: running runResupplyLogistics()`);
-		} else {
-			return;
-		}
+		const RESERVE_REPAIR_THRESHOLD = 70;
 
-		const RESERVE_REPAIR_THRESHOLD = 80;
+		// In case reserve units are damaged, send these back for repair (reserves should only be engaged in light combat). 
 		const unitsToBeRepaired = [];
-
-		// Return damaged reserves for repair (e.g. rear actions)
-		for (let i=0; i<reserveUnitsByCategory2.length; i++) {
-			const reserveGroupID = reserveUnitsByCategory2[i].id;
-			const reserveGroupUnits = reserveUnitsByCategory2[i].reserveGroupUnits;
-
-			if (reserveGroupUnits.length === 0) {
+		for (const [category, unitList] of reserveUnits) {
+			if (unitList.length === 0) {
 				continue;
 			}
 
 			unitsToBeRepaired.length = 0;	// reset the list
-			reserveGroupUnits.forEach(droid => {
+			unitList.forEach(droid => {
 				if (droid.health < RESERVE_REPAIR_THRESHOLD) {
 					unitsToBeRepaired.push(droid);
 				}
 			});
-
-			this.toc.assignUnitsForRepair(state, unitsToBeRepaired, reserveGroupID);			
+			
+			this.toc.assignUnitsToBrigade(state, unitsToBeRepaired, category, DIVISION.RETURNING_FOR_REPAIR);
 		}
-		unitsToBeRepaired.length = 0;	// reset the list
 
-		// Assign reserves into active brigade combat teams
-		const understrengthBrigades = [];
-		const overstrengthBrigades = [];
+		// Decide how many BCTs should be made with the available units
+		const activeBrigade = new Map([
+			[DIVISION.FIRST_BCT, false], 
+			[DIVISION.SECOND_BCT, false],
+			[DIVISION.THIRD_BCT, false],
+			[DIVISION.FOURTH_BCT, false],
+			[DIVISION.FIFTH_BCT, false]
+		]);
 
-		const RECOMBINATION_THRESHOLD = 25;
-		const UNDERSTRENGTH_THRESHOLD = 10;
-		const OVERSTRENGTH_THRESHOLD = 100;
-
-		for (let i=0; i<this.BRIGADE_DESIGNATIONS.length; i++) {
-
-			const brigadeID = this.BRIGADE_DESIGNATIONS[i];
-
-  			const supplyStatus = supply.getBrigadeSupplyStatus(state, brigadeID, this.FISHBOT_BRIGADE_COMPOSITION, this.TOTAL_UNITS_PER_BRIGADE, this.BRIGADE_REPAIR_THRESHOLD);
-
-			// Check brigade strength as percentage
-			const brigadeStrength = supplyStatus['brigadeStrength'];
-			this.toc.setBrigadeStrength(state, brigadeID, brigadeStrength);
-
-			let BRIGADE_UNDERSTRENGTH = false;
-			if (brigadeStrength < UNDERSTRENGTH_THRESHOLD) {
-				understrengthBrigades.push(brigadeID);					// Earmark for dissolution if understrength
-				BRIGADE_UNDERSTRENGTH = true;
-			} else if (brigadeStrength > OVERSTRENGTH_THRESHOLD) {
-				overstrengthBrigades.push(brigadeID);						// Earmark if overstrength
+		let weakBCTCount = 0;
+		for (const [brigadeID, unitCount] of brigadeUnitCount) {
+			if (unitCount > this.TOTAL_UNITS_PER_BRIGADE * 1 / 2) {
+				activeBrigade.set(brigadeID, true);
+				continue;
 			}
 
-			const reinforcements = this.#createNewRoster();
-			const unitsToBeReturnedForRepair = [];
+			weakBCTCount += 1;
+			if (weakBCTCount > 1) {
+				if (unitCount > 0) {
+					debug(`${gameTime}: Brigade "${brigadeID}" recombined (only ${unitCount} units).`);
+				}
+				activeBrigade.set(brigadeID, false);	// deactivate the brigade for recombination
+			} else {
+				activeBrigade.set(brigadeID, true);
+			}
+			continue;	
+			
+		}
 
-			let heavyCavReinforcementCount = 0;
+		// Reinforce & replace damaged units for existing brigades, recombining where appropriate
+		for (const [brigadeID, unitCount] of brigadeUnitCount) {
+			const brigadeComposition = state.brigades[brigadeID]["composition"];
 
+			if (!activeBrigade.get(brigadeID)) {
+				// Forces all brigade units to 'return for repair', which eventually returns them to the reserves 
+				for (const [category, btnComposition] of brigadeComposition) {
+					this.toc.assignUnitsToBrigade(state, btnComposition['healthyUnitList'], brigadeID, DIVISION.RETURNING_FOR_REPAIR);		
+					this.toc.assignUnitsToBrigade(state, btnComposition['damagedUnitList'], brigadeID, DIVISION.RETURNING_FOR_REPAIR);		
+				}
+				continue;
+			}
+			
 			// By battalion, 
 			// 	 1. assign units to reach base / core strength, 
-			//   2. then return any residual units for repair, sending reinforcements if available
-			for (const [category, units] of Object.entries(reserveUnitsByCategory)) {
+			//   2. then return any damaged units for repair, sending reinforcements if available
+			for (const [category, btnComposition] of brigadeComposition) {
 
-				if (category === 'heavyCavalry') {
-					heavyCavReinforcementCount = units.length;		// used later to determine if a new brigade should be created
+				const deficit = btnComposition['deficit'];
+				const battalionReserve = reserveUnits.get(category);
+				if (battalionReserve == null) {
+					debug(`${gameTime}: WARNING: tried to get reserve units from non-existent category "${category}". Skipping.`);
+					continue;
 				}
 
-				const requiredBaseUnitCount = supplyStatus[category]['absBaseDeficit'];
-				for (let i=0; i<requiredBaseUnitCount; i++) {
-					if (units.length === 0) {
-						break;
-					}
-					const reserveUnit = units.shift();
-					reinforcements[category]['unitList'].push(reserveUnit);
-				}
+				const reinforcements = battalionReserve.splice(0, deficit);
+				this.toc.assignUnitsToBrigade(state, reinforcements, category, brigadeID);
 
-				const requiredReplacementCount = supplyStatus[category]['damagedUnitCount'];
-				for (let i=0; i<requiredReplacementCount; i++) {
-					const unitForRepair = supplyStatus[category]['damagedUnitList'].shift();
-					unitsToBeReturnedForRepair.push(unitForRepair);
-
-					if (units.length > 0) {
-						// Replace with fresh units if they are readily available.
-						const reserveUnit = units.shift();
-						reinforcements[category]['unitList'].push(reserveUnit);
-					}
-				}
-			}
-
-			const NO_HEAVY_CAV_REINFORCEMENTS = heavyCavReinforcementCount === 0;
-			const BRIGADE_HAS_NO_HEAVY_CAV = supplyStatus['heavyCavalry']['absBaseDeficit'] === this.FISHBOT_BRIGADE_COMPOSITION.MAX_HEAVY_CAVALRY;
-			const BRIGADE_IS_WEAK_AND_NOT_FIRST_BCT = understrengthBrigades.includes(brigadeID) && brigadeID !== DIVISION.FIRST_BCT;
-
-			const PREMATURE_CREATION_OF_BRIGADE = BRIGADE_IS_WEAK_AND_NOT_FIRST_BCT && BRIGADE_HAS_NO_HEAVY_CAV && NO_HEAVY_CAV_REINFORCEMENTS;
-
-			if (!PREMATURE_CREATION_OF_BRIGADE) {
-				this.toc.assignUnitsToBrigade(state, reinforcements, brigadeID);
-			}		
-
-			if (!BRIGADE_UNDERSTRENGTH) {
-				this.toc.assignUnitsForRepair(state, unitsToBeReturnedForRepair, brigadeID);
+				const damagedUnitCount = btnComposition['damagedUnitList'].length;
+				const replacements = battalionReserve.splice(0, damagedUnitCount);
+				this.toc.assignUnitsToBrigade(state, replacements, category, brigadeID);
+				this.toc.assignUnitsToBrigade(state, btnComposition['damagedUnitList'], brigadeID, DIVISION.RETURNING_FOR_REPAIR);		
 			}
 		}
-
-		// this.#printDebugResupply(state);
-
 	}
 
 	/**
@@ -1164,16 +1096,8 @@ class CommandCenter {
 	 * @returns {void}
 	 */
 	runProductionLogistics(state) {
-		/**
-		 * Debug print of idle factories.
-		 * @param {any[]} idleFactoryList 
-		 * @param {string} name 
-		 */
-		const debugPrintIfIdle = (idleFactoryList, name) => {
-			if (idleFactoryList.length > 0) {
-				debug(`	${gameTime}: Idle "${name}": ${idleFactoryList.length}`);
-			}
-		};
+
+		const activeProductionJobs = state.activeProductionJobs;
 
 		// Check factories for idle
 		const factories = state.playerInfo[me]["normalFactoryFbObjects"];
@@ -1185,12 +1109,38 @@ class CommandCenter {
 		const idleVtolFactories = getIdleStructureObjects(vtolFactories);
 
 		if (false) {
+			/**
+			 * Debug print of idle factories.
+			 * @param {any[]} idleFactoryList 
+			 * @param {string} name 
+			 */
+			const debugPrintIfIdle = (idleFactoryList, name) => {
+				if (idleFactoryList.length > 0) {
+					debug(`	${gameTime}: Idle "${name}": ${idleFactoryList.length}`);
+				}
+			};
+
 			debugPrintIfIdle(idleFactories, "Factory");
 			debugPrintIfIdle(idleCyborgFactories, "Cyborg Factory");
 			debugPrintIfIdle(idleVtolFactories, "VTOL Factory");
 		}
 
 		if (idleFactories.length === 0 && idleCyborgFactories.length === 0 && idleVtolFactories.length === 0) {
+			// Cleanup of the activeProductionJobs list - double check all factories are represented.
+			// Required in the case that a factory no longer exists.
+			const factoryIdList = [];
+			factories.forEach(f => factoryIdList.push(f.id));
+			cyborgFactories.forEach(f => factoryIdList.push(f.id));
+			vtolFactories.forEach(f => factoryIdList.push(f.id));
+
+			activeProductionJobs.forEach(j => {
+				if (factoryIdList.includes(j['factory'].id)) {
+					return;
+				}
+				this.toc.removeFromActiveProductionJobs(state, j['factory'], j['type']);
+				debug(`${gameTime}\tWARNING: removed ProductionJob "${j['factory'].id} | ${j['type']}" as Factory "${j['factory'].id}" was not found.`);
+			});
+			
 			return;
 		}
 
@@ -1200,8 +1150,8 @@ class CommandCenter {
 
 		const COMBAT_UNIT_HARD_LIMIT = getDroidLimit(me, DROID_WEAPON) - TRUCK_SOFT_LIMIT;
 		// Future: this.NUMBER_OF_BRIGADES should be matched to hard limit
-		const INFANTRY_UNIT_SOFT_LIMIT = this.FISHBOT_BRIGADE_COMPOSITION['MAX_INFANTRY'] * this.NUMBER_OF_BRIGADES;
-		const LAND_VEHICLE_SOFT_LIMIT = (this.TOTAL_UNITS_PER_BRIGADE - this.FISHBOT_BRIGADE_COMPOSITION['MAX_INFANTRY']) * this.NUMBER_OF_BRIGADES;
+		const INFANTRY_UNIT_SOFT_LIMIT = this.FISHBOT_BRIGADE_COMPOSITION['MAX_INFANTRY'] * this.NUMBER_OF_BRIGADES + this.FISHBOT_RESERVE_COMPOSITION['MAX_INFANTRY'];
+		const LAND_VEHICLE_SOFT_LIMIT = (this.TOTAL_UNITS_PER_BRIGADE - this.FISHBOT_BRIGADE_COMPOSITION['MAX_INFANTRY']) * this.NUMBER_OF_BRIGADES + (this.TOTAL_RESERVE_UNITS - this.FISHBOT_RESERVE_COMPOSITION['MAX_INFANTRY']);
 		const VTOL_UNIT_HARD_LIMIT = COMBAT_UNIT_HARD_LIMIT - LAND_VEHICLE_SOFT_LIMIT - INFANTRY_UNIT_SOFT_LIMIT;
 
 		// Get player data
@@ -1226,18 +1176,10 @@ class CommandCenter {
 			debug(`  HIT_INFANTRY_LIMIT: ${MY_INFANTRY_COUNT} >= ${INFANTRY_UNIT_SOFT_LIMIT}?`);
 			debug(`  HIT_LAND_VEHICLE_LIMIT: ${MY_LAND_VEHICLE_COUNT} >= ${LAND_VEHICLE_SOFT_LIMIT}?`);
 			debug(`  HIT_AIR_UNIT_LIMIT: ${MY_VTOL_COUNT} >= ${VTOL_UNIT_HARD_LIMIT}?`);
+			debug(`  RESERVE SIZE: ${this.TOTAL_RESERVE_UNITS}`);
 		}
 		
 		// Get unit deficits
-		let deficit = supply.getBrigadeSupplyStatus(state, this.BRIGADE_DESIGNATIONS[0], this.FISHBOT_BRIGADE_COMPOSITION, this.TOTAL_UNITS_PER_BRIGADE, this.BRIGADE_REPAIR_THRESHOLD);
-		for (let i=1; i<this.BRIGADE_DESIGNATIONS.length; i++) {
-			if (deficit['brigadeStrength'] < 100) {
-				break;
-			}
-			deficit = supply.getBrigadeSupplyStatus(state, this.BRIGADE_DESIGNATIONS[i], this.FISHBOT_BRIGADE_COMPOSITION, this.TOTAL_UNITS_PER_BRIGADE, this.BRIGADE_REPAIR_THRESHOLD);
-		}
-		const combatBrigadeDeficit = deficit;
-
 		// Decide on whether or not to produce combat units
 		// Note: FishBot will not build combat vehicles before it can design them, on any difficulty.	
 		const CAN_DESIGN_UNITS = HQ_IS_CONSTRUCTED;
@@ -1247,12 +1189,58 @@ class CommandCenter {
 		const SHOULD_PRODUCE_VTOLS = CAN_DESIGN_UNITS && !HIT_AIR_UNIT_LIMIT;
 		
 		// Decide on which category of land combat vehicle to produce (basic greedy algorithm)
-		let landVehicleCategory = "heavyCavalry";
+		let landVehicleCategory = DIVISION.HEAVY_CAV_RESERVE;
+		
 		if (SHOULD_PRODUCE_LAND_VEHICLES && idleFactories.length > 0) {
-			const prioritisedCategories = this.#prioritiseLandVehicleCategory(state, combatBrigadeDeficit);
-			landVehicleCategory = prioritisedCategories[0].category;
-			// this.#debugPrintLandVehicleCategory(prioritisedCategories);
-			// debug(`${gameTime}: producing: ${landVehicleCategory}`);
+			const productionRequests = [];
+
+			const brigadeWeightingFactors = [5, 4, 3, 2, 0];	// corresponds to each of the brigades (change with `this.NUMBER_OF_BRIGADES`)
+			const reserveWeightingFactor = 1; 
+
+			this.BRIGADE_DESIGNATIONS.forEach((brigadeID, idx) => {
+
+				const brigadeComposition = state.brigades[brigadeID]["composition"];
+				const weightedRequests = this.#prioritiseLandVehicleCategory2(brigadeComposition);
+
+				weightedRequests.forEach(request => request["score"] *= brigadeWeightingFactors[idx]);
+				productionRequests.push(...weightedRequests);
+			});
+
+			// Update reserve division
+
+			const brigadeComposition = state.brigades[DIVISION.BCT_RESERVE]["composition"];
+			const weightedRequests = this.#prioritiseLandVehicleCategory2(brigadeComposition);
+			weightedRequests.forEach(request => request["score"] *= reserveWeightingFactor);
+			productionRequests.push(...weightedRequests);
+
+			productionRequests.sort((a, b) => b.score - a.score);
+
+			// Remove active jobs
+			const removedRequests = [];
+			activeProductionJobs.forEach(job => {
+				for (let i=0; i<productionRequests.length; i++) {
+					if (job.type !== productionRequests[i].type) {
+						continue;
+					}
+					removedRequests.push(...productionRequests.splice(i, 1));
+					break;
+				}
+			});
+			
+			if (productionRequests.length > 0) {
+				landVehicleCategory = productionRequests[0].type;
+			} else {
+				debug(`${gameTime}: WARNING: landVehicleCategory defaulting to ${landVehicleCategory}`);
+			}
+
+			if (false) {
+				let deletedEntries = "";
+				removedRequests.forEach(r => deletedEntries += `${r.type},`)
+				debug(`Cleaned Production Requests (removed ${deletedEntries})`); 
+				productionRequests.forEach(r => debug(`\t-${r.type} | ${r.score}`));
+
+				debug(`\t${gameTime}: Impl2 producing: ${landVehicleCategory}`);
+			}
 		}
 
 		// Decide on whether or not to produce trucks
@@ -1269,7 +1257,10 @@ class CommandCenter {
 
 			if (SHOULD_PRODUCE_TRUCKS && CYBORG_CONSTRUCTOR_AVAILABLE && !producedTruckThisTick) {
 				if (DEBUG_PRODUCTION) debug(`	${gameTime}: produced Combat Engineer`);
-				produceCombatEngineer(f);
+				const productionStarted = produceCombatEngineer(f);
+				if (productionStarted) {
+					this.toc.addToActiveProductionJobs(state, {'factory': f, 'type': ENGINEERING.ENGINEERING_RESERVE});
+				}
 				if (SINGLE_TRUCK_THIS_TICK) {
 					producedTruckThisTick = true;
 				}
@@ -1278,7 +1269,10 @@ class CommandCenter {
 
 			if (SHOULD_PRODUCE_INFANTRY) {
 				if (DEBUG_PRODUCTION) debug(`	${gameTime}: produced Infantry`);
-				produceInfantry(f);
+				const productionStarted = produceInfantry(f);
+				if (productionStarted) {
+					this.toc.addToActiveProductionJobs(state, {'factory': f, 'type': DIVISION.INFANTRY_RESERVE});
+				}
 			}
 		}
 
@@ -1287,7 +1281,10 @@ class CommandCenter {
 
 			if (SHOULD_PRODUCE_VTOLS) {
 				if (DEBUG_PRODUCTION) debug(`	${gameTime}: produced VTOL`);
-				produceCloseAirSupport(factory);
+				const productionStarted = produceCloseAirSupport(factory);
+				if (productionStarted) {
+					this.toc.addToActiveProductionJobs(state, {'factory': factory, 'type': DIVISION.AIR_RESERVE});
+				}
 			} else {
 				break;
 			}
@@ -1299,7 +1296,10 @@ class CommandCenter {
 			if (SHOULD_PRODUCE_TRUCKS && !CYBORG_CONSTRUCTOR_AVAILABLE && !producedTruckThisTick) {
 				if (DEBUG_PRODUCTION) debug(`	${gameTime}: produced Truck`);
 				// Note: CAN_DESIGN_UNITS prevents FishBot from producing any other trucks other than `Truck Viper Wheels` until the command center is built
-				produceTruck(factory, CAN_DESIGN_UNITS);		
+				const productionStarted = produceTruck(factory, CAN_DESIGN_UNITS);
+				if (productionStarted) {
+					this.toc.addToActiveProductionJobs(state, {'factory': factory, 'type': ENGINEERING.ENGINEERING_RESERVE});
+				}		
 				
 				if (SINGLE_TRUCK_THIS_TICK) {
 					producedTruckThisTick = true;
@@ -1309,11 +1309,11 @@ class CommandCenter {
 
 			if (SHOULD_PRODUCE_LAND_VEHICLES) {
 				if (DEBUG_PRODUCTION) debug(`	${gameTime}: produced Land Vehicle Template`);
-				produceLandUnitCategory(landVehicleCategory, factory);
+				const productionStarted = produceLandUnitCategory(landVehicleCategory, factory);
+				if (productionStarted) {
+					this.toc.addToActiveProductionJobs(state, {'factory': factory, 'type': landVehicleCategory});
+				}
 				return;		
-				// occasionally 'return;' will prevent 2x sensor units from being made 
-				// TODO: better system is to track active production jobs; 
-				// units are usually overmanufactured as production is currently a 'negative-feedback' system
 			} else {
 				break;
 			}

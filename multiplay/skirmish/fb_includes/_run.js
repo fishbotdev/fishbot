@@ -64,10 +64,17 @@ function runConstructionLogistics() {
 	}
 }
 
-function runSupplyLogistics() {
+function runResupplyLogistics() {
 	if (state.botIsActive) {
-		if (state.WORKER_IDS['logistics_runSupply'][state.currWorkerID]) {
+		if (state.WORKER_IDS['logistics_runResupplyLogistics'][state.currWorkerID]) {
 			hq.runResupplyLogistics(state);				// assigns reserve units to brigades
+		}
+	}
+}
+
+function runStructureLogistics() {
+	if (state.botIsActive) {
+		if (state.WORKER_IDS['logistics_runStructureLogistics'][state.currWorkerID]) {
 			hq.runProductionLogistics(state);			// schedules production to replenish reserves
 
 			hq.runResearchLogistics(state);
@@ -95,7 +102,8 @@ function setupFishBot() {
 	setTimer("runIntelligence", state.TIME_BLOCK_MS);
 	setTimer("runC2", state.TIME_BLOCK_MS);
 	setTimer("runConstructionLogistics", state.TIME_BLOCK_MS);
-	setTimer("runSupplyLogistics", state.TIME_BLOCK_MS);
+	setTimer("runStructureLogistics", state.TIME_BLOCK_MS);
+	setTimer("runResupplyLogistics", state.TIME_BLOCK_MS);
 	setTimer("runMissionManager", state.TIME_BLOCK_MS);
 
 	setTimer("runGameEndedWatchdog", 60000);
@@ -164,6 +172,10 @@ function setupDebugMode() {
 	});
 
 	debug(`\nMap: ${mapName}\n`);
+
+	centreView(baseLocation.x, baseLocation.y);		// Moves the camera to FishBot's start position
+
+	hideInterface();
 }
 
 function eventStartLevel() {

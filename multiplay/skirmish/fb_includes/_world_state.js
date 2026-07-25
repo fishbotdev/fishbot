@@ -58,7 +58,6 @@
 class fbGroup {
 
 	constructor() {
-		this.groupTemplate = {'groupMemberIDs': [], 'groupMembers': [], "groupSize": 0};
 		this.groups = new Map();
 		this.MAX_GROUP_SIZE = 256;
 	}
@@ -66,34 +65,33 @@ class fbGroup {
 	#lazyUpdateGroup(groupID) {
 		// Lazy update, only updates if one of the functions is called & only for that group ID
 		if (this.groups.has(groupID)) {
-			// Update members
-			let c = this.groups.get(groupID);
+			const c = this.groups.get(groupID);
 
-			// debug("lazyUpdateGroup/groupMember data -- before filter", c["groupMemberIDs"], c["groupMembers"]);
+            const updatedGroupMemberIDs = [];
+            const updatedGroupMembers = [];
+            c["groupMemberIDs"].forEach(droidID => {
+                const obj = getObject(DROID, me, droidID);
+                if (obj == null) {
+                    return;
+                }
+                updatedGroupMemberIDs.push(droidID);
+                updatedGroupMembers.push(obj);
+            });
 
-			c["groupMemberIDs"] = c["groupMemberIDs"].filter((id) => getObject(DROID, me, id) !== null);
-
-			// debug("lazyUpdateGroup/groupMember data -- after filter", c["groupMemberIDs"], c["groupMembers"]);
-
-			c["groupMembers"] = c["groupMemberIDs"].map((id) => {return getObject(DROID, me, id);});
-
-			// debug("lazyUpdateGroup/groupMember data -- after getObject map", c["groupMemberIDs"], c["groupMembers"]);
-
-			c["groupSize"] = c["groupMembers"].length;
+            c["groupMemberIDs"] = updatedGroupMemberIDs;
+            c["groupMembers"] = updatedGroupMembers;
+			c["groupSize"] = updatedGroupMembers.length;
 		}
 	}
 
 	createGroup(groupID) {
-		this.groups.set(groupID, {
-			...this.groupTemplate,
-			'groupMemberIDs': [...this.groupTemplate.groupMemberIDs],
-			'groupMembers': [...this.groupTemplate.groupMembers]
-		});
+		this.groups.set(groupID, {'groupMemberIDs': [], 'groupMembers': [], "groupSize": 0});
 	}
 
 	deleteGroup(groupID) {
-		if (this.groups.has(groupID))
+		if (this.groups.has(groupID)) {
 			this.groups.delete(groupID);
+        }
 	}
 
     /**
@@ -107,16 +105,16 @@ class fbGroup {
 			return [];
 		}
 
-		// niceDebug("ids before enum group update; ", this.groups.get(groupID)["groupMemberIDs"])
 		this.#lazyUpdateGroup(groupID);
 
 		return this.groups.get(groupID)["groupMembers"];
 	}
 	
 	groupSize(groupID) {
-		if (!this.groups.has(groupID))
-			return undefined;
-
+		if (!this.groups.has(groupID)) {
+            return undefined;
+        }
+			
 		this.#lazyUpdateGroup(groupID);
 
 		return this.groups.get(groupID)["groupSize"];
@@ -124,21 +122,18 @@ class fbGroup {
 
 	addDroidToGroup({groupID, droidID}) {
 		if (!this.groups.has(groupID)) {
-			// niceDebug("Created a new group", groupID);
 			this.createGroup(groupID);
 		}
 
 		this.#lazyUpdateGroup(groupID);
-		let currGroup = this.groups.get(groupID);
-		
+
+		const currGroup = this.groups.get(groupID);	
 		if (currGroup["groupSize"] >= this.MAX_GROUP_SIZE) {
 			debug(`addDroidToGroup failed: Cannot add more than ${this.MAX_GROUP_SIZE} members to the group.`);
 			return;
 		}
 		
-		currGroup["groupMemberIDs"] = currGroup["groupMemberIDs"].concat(droidID);
-		// niceDebug("groupMemberIDs", currGroup["groupMemberIDs"]);
-
+		currGroup["groupMemberIDs"].push(droidID);
 	}
 
 	removeDroidFromGroup({groupID, droidID}) {
@@ -148,8 +143,14 @@ class fbGroup {
 
 		this.#lazyUpdateGroup(groupID);
 
-		let c = this.groups.get(groupID)["groupMemberIDs"].concat();	// shallow copy
-		this.groups.get(groupID)["groupMemberIDs"] = c.filter((id) => id !== droidID);
+        const groupMemberIDs = this.groups.get(groupID)["groupMemberIDs"];
+        for (let i=0; i<groupMemberIDs.length; i++) {
+            if (groupMemberIDs[i] !== droidID) {
+                continue;
+            }    
+            groupMemberIDs.splice(i, 1);
+            return;
+        }
 	}
 }
 
@@ -351,6 +352,8 @@ class worldState {
         /** @type {fbGroup} */
         this.g;
         this.activeMissions = [];
+        /** @type {ProductionJob[]} */
+        this.activeProductionJobs = [];
 
         // Bot attributes
         this.botIsActive = true;
@@ -582,8 +585,6 @@ class worldStateBuilder {
             debug(`"${mapRow}",`);      // python script processes list of comma-delimited strings
         });
 
-        const isReachable = precalculateWheeledReachableTiles();
-        const constructionSearchPattern = precalculateConstructionSearchPattern();
     }
 
     /**
@@ -614,19 +615,38 @@ class worldStateBuilder {
         /** @returns {AirStrikeMissionRequest[]} */
         const createCASStrikeRequests = () => [];
 
+        /** @returns {BattalionComposition} */
+        const createBattalionComposition = (category) => {return {
+            'category': category, 
+            'healthyUnitList': [], 
+            'damagedUnitList': [], 
+            'count': 0,
+            'deficit': 0
+        };};
+        const CATEGORIES = [DIVISION.INFANTRY_RESERVE, DIVISION.HEAVY_CAV_RESERVE, DIVISION.LIGHT_CAV_RESERVE, DIVISION.SHORT_RANGE_FIRE_SUPPORT_RESERVE, DIVISION.AIR_DEFENCE_RESERVE, DIVISION.SENSOR_RESERVE, DIVISION.MAINTENANCE_RESERVE];
+
+        /** @returns {BrigadeComposition} */
+        const createBrigadeComposition = () => {
+            /** @type {Map<number, BattalionComposition>} */
+            const brigadeComposition = new Map();
+            CATEGORIES.forEach(category => brigadeComposition.set(category, createBattalionComposition(category)));
+            return brigadeComposition;
+        }
+
         /**
          * Creates an empty brigade object.
          * @param {number} brigadeID 
          * @returns {BrigadeMetadata} 
          */
         const createNewBrigadeObject = (brigadeID) => {
-            const x = baseLocation.x, y = baseLocation.y;
+            const x = baseLocation.x, y = baseLocation.y, z = MapTiles[y][x].height;
             return {
                 'id': brigadeID,
-                'location': {'x': x, 'y': y, 'z': MapTiles[y][x].height},
-                'strength': 0,
+                'location': {'x': x, 'y': y, 'z': z},
                 'nearbyTargets': createNearbyTargetsArray(),
-                'casStrikeRequests': createCASStrikeRequests(),                
+                'casStrikeRequests': createCASStrikeRequests(),
+                'strength': 0,
+                'composition': createBrigadeComposition()
             };
         };
 
@@ -636,6 +656,9 @@ class worldStateBuilder {
         BRIGADE_IDS.forEach(id => {
             brigades[id] = createNewBrigadeObject(id);
         });
+
+        // Create the reserve brigade
+        brigades[DIVISION.BCT_RESERVE] = createNewBrigadeObject(DIVISION.BCT_RESERVE);
 
         return brigades;
     }

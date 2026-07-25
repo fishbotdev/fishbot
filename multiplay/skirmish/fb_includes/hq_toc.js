@@ -845,16 +845,88 @@ class TacticalOperationsCenter {
 	}
 
 	/**
-	 * This function writes `strength` (percentage) to `state.brigades[id].strength`.
+	 * Updates unit lists for each battalion in a brigade.
 	 * @param {worldState} state 
 	 * @param {number} brigadeID 
-	 * @param {number} strength
+	 * @param {Object} maxBrigadeComposition  
+     * @param {number} vehicleRepairThreshold
+     * @param {number} cyborgRepairThreshold
 	 * @returns {void}
 	 */
-	setBrigadeStrength(state, brigadeID, strength) {
-		const currBrigade = state.brigades[brigadeID];
-		currBrigade['strength'] = strength;
-	}
+    updateBrigadeSupplyStatus(state, brigadeID, maxBrigadeComposition, vehicleRepairThreshold, cyborgRepairThreshold) {
+        
+		const brigadeComposition = state.brigades[brigadeID]["composition"]
+
+		/** @type {Map<number, number>} */
+        const maxUnitsByCategory = new Map([
+            [DIVISION.INFANTRY_RESERVE, maxBrigadeComposition.MAX_INFANTRY],
+            [DIVISION.HEAVY_CAV_RESERVE, maxBrigadeComposition.MAX_HEAVY_CAVALRY],
+            [DIVISION.LIGHT_CAV_RESERVE, maxBrigadeComposition.MAX_LIGHT_CAVALRY],
+            [DIVISION.SHORT_RANGE_FIRE_SUPPORT_RESERVE, maxBrigadeComposition.MAX_MORTAR],
+            [DIVISION.AIR_DEFENCE_RESERVE, maxBrigadeComposition.MAX_ADA],
+            [DIVISION.SENSOR_RESERVE, maxBrigadeComposition.MAX_SENSOR],
+            [DIVISION.MAINTENANCE_RESERVE, maxBrigadeComposition.MAX_REPAIR]
+		]);
+
+        const needsRepair = (unit, category, cyborgRepairThreshold, vehicleRepairThreshold) => {
+            if (category === DIVISION.INFANTRY_RESERVE) {
+                if (unit.health < cyborgRepairThreshold) {
+                    return true;
+                } else {
+                    return false;
+                }
+            }
+            if (unit.health < vehicleRepairThreshold) {
+                return true;
+            } else {
+                return false;
+            }
+        };
+
+        // This clears existing data from the previous run
+        for (const [btnID, btnInfo] of brigadeComposition) {
+            btnInfo["damagedUnitList"].length = 0;
+            btnInfo["healthyUnitList"].length = 0;
+        }
+
+        // Reclassify as damaged / healthy
+        const brigadeUnits = state.g.enumGroup(brigadeID);      
+        brigadeUnits.forEach(unit => {
+            const category = getDroidFbGroupClassification(unit);
+
+            const currBattalion = brigadeComposition.get(category);
+			if (currBattalion == null) {
+				debug(`${gameTime} WARNING: attempted to get non-existent category "${category}" in brigadeComposition.`);
+				return;
+			}
+			
+            if (needsRepair(unit, category, cyborgRepairThreshold, vehicleRepairThreshold)) {
+                currBattalion["damagedUnitList"].push(unit);
+            } else {
+                currBattalion["healthyUnitList"].push(unit);
+            }
+        });
+
+        // Update the unit count + deficit
+        for (const [category, battalionComposition] of brigadeComposition) {
+            const maxUnitCount = maxUnitsByCategory.get(category);
+			if (maxUnitCount == null) {
+				debug(`${gameTime} WARNING: attempted to get non-existent maxUnitCount for category "${category}".`);
+				return;
+			}
+
+            const healthyUnitCount = battalionComposition["healthyUnitList"].length;
+            battalionComposition["count"] = healthyUnitCount;
+            battalionComposition["deficit"] = maxUnitCount - healthyUnitCount;
+        };
+
+        if (false) {
+            debug(`${gameTime}: Brigade ${brigadeID} Composition`)
+            for (const [btnID, btnInfo] of brigadeComposition) {
+                debug(`\t - ${btnID}: ${btnInfo["count"]} healthy (- ${btnInfo["deficit"]}) ( - ${btnInfo["damagedUnitList"].length} damaged)`);
+            }
+        }
+    }
 
 	/**
 	 * This function overwrites `state.brigades[id].casStrikeRequests` with new CAS strike requests.
@@ -892,7 +964,7 @@ class TacticalOperationsCenter {
 	 * @param {worldState} state
      * @param {DroidObject} droid 
 	 * @param {number | undefined} groupIdToRemove
-     * @returns {void}
+     * @returns {number} groupID
      */
     setNewDroidGroup(state, droid, groupIdToRemove=undefined) {
 
@@ -903,35 +975,60 @@ class TacticalOperationsCenter {
 		}
 
 		state.g.addDroidToGroup({groupID: groupID, droidID: droid.id});
+
+		return groupID;
 	}
 
 	/**
 	 * Assigns units to a brigade.
 	 * @param {worldState} state 
-	 * @param {*} reinforcements 
+	 * @param {DroidObject[]} reinforcements 
+	 * @param {number} reserveID
 	 * @param {number} brigadeID 
 	 * @returns {void}
 	 */
-	assignUnitsToBrigade(state, reinforcements, brigadeID) {
+	assignUnitsToBrigade(state, reinforcements, reserveID, brigadeID) {
 		
-		for (const c of Object.values(reinforcements)) {
-			c['unitList'].forEach(droid => {
-				state.g.removeDroidFromGroup({groupID: c['category'], droidID: droid.id});
-				state.g.addDroidToGroup({groupID: brigadeID, droidID: droid.id});
-			});
-		}
+		reinforcements.forEach(droid => {
+			state.g.removeDroidFromGroup({groupID: reserveID, droidID: droid.id});
+			state.g.addDroidToGroup({groupID: brigadeID, droidID: droid.id});
+		});
 	}
 
 	/**
-	 * Assigns units to the `RETURNING_FOR_REPAIR` group (these units will immediately head towards base / the nearest repair facility).
+	 * 
 	 * @param {worldState} state 
-	 * @param {DroidObject[]} unitList 
-	 * @param {number} brigadeID 
+	 * @param {ProductionJob} newProductionJob
 	 */
-	assignUnitsForRepair(state, unitList, brigadeID) {
-		unitList.forEach(droid => {
-			state.g.removeDroidFromGroup({groupID: brigadeID, droidID: droid.id});
-			state.g.addDroidToGroup({groupID: DIVISION.RETURNING_FOR_REPAIR, droidID: droid.id});
-		});
+	addToActiveProductionJobs(state, newProductionJob) {
+		state.activeProductionJobs.push(newProductionJob);
+	}
+
+	/**
+	 * 
+	 * @param {worldState} state 
+	 * @param {StructureObject} factory
+	 * @param {number} groupID
+	 */
+	removeFromActiveProductionJobs(state, factory, groupID) {
+
+		const activeProductionJobs = state.activeProductionJobs;
+		const itemToRemove = `"${factory.id} | ${groupID}"`;
+
+		for (let i=0; i<activeProductionJobs.length; i++) {
+			const job = activeProductionJobs[i];
+
+			if (factory.id !== job['factory'].id) 
+				continue;
+
+			if (groupID !== job['type']) 	
+				continue;
+
+			const [deleted] = state.activeProductionJobs.splice(i, 1);
+			// debug(`\nRemoved ${deleted['factory'].id} | ${deleted['type']}`);
+			return;
+		}
+
+		debug(`${gameTime}: WARNING: removeFromActiveProductionJobs() failed to remove: ${itemToRemove}`)
 	}
 }

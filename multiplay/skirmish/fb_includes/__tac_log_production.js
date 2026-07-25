@@ -496,32 +496,40 @@ function produceInfantry(factory) {
 	return false;
 }
 
+/**
+ * Driver for producing land units.
+ * @param {number} category 
+ * @param {StructureObject} factory 
+ * @returns 
+ */
 function produceLandUnitCategory(category, factory) {
-	let factoryInProduction = false;  
+	let productionStarted = false;  
 	
 	switch (category) {
-		case 'heavyCavalry':
-			factoryInProduction = factoryInProduction || produceHeavyCavalry(factory);
+		case DIVISION.HEAVY_CAV_RESERVE:
+			productionStarted = productionStarted || produceHeavyCavalry(factory);
 			break;
-		case 'lightCavalry':
-			factoryInProduction = factoryInProduction || produceLightCavalry(factory);
+		case DIVISION.LIGHT_CAV_RESERVE:
+			productionStarted = productionStarted || produceLightCavalry(factory);
 			break;
-		case 'shortRangeArtillery':
-			factoryInProduction = factoryInProduction || produceLandAPFireSupport(factory);
+		case DIVISION.SHORT_RANGE_FIRE_SUPPORT_RESERVE:
+			productionStarted = productionStarted || produceLandAPFireSupport(factory);
 			break;
-		case 'ADA':
-			factoryInProduction = factoryInProduction || produceHighVolumeAAUnit(factory);
+		case DIVISION.AIR_DEFENCE_RESERVE:
+			productionStarted = productionStarted || produceHighVolumeAAUnit(factory);
 			break;
-		case 'sensor': 
-			factoryInProduction = factoryInProduction || produceLandRecon(factory);
+		case DIVISION.SENSOR_RESERVE: 
+			productionStarted = productionStarted || produceLandRecon(factory);
 			break;
-		case 'repair':
-			factoryInProduction = factoryInProduction || produceHeavyRepair(factory);
+		case DIVISION.MAINTENANCE_RESERVE:
+			productionStarted = productionStarted || produceHeavyRepair(factory);
 			break;
 		default:
-			factoryInProduction = factoryInProduction || produceLightCavalry(factory);
+			debug(`${gameTime}: WARNING: produceLandUnitCategory() did not understand "${category}"; falling back to light cav production.`);
+			productionStarted = productionStarted || produceLightCavalry(factory);
 	}
 
+	return productionStarted;
 }
 
 /**

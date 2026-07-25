@@ -148,6 +148,13 @@
  */
 
 /**
+ * Type definition for `worldState.activeProductionJobs`.
+ * @typedef {Object} ProductionJob
+ * @property {StructureObject} factory
+ * @property {number} type FishBot droid type (e.g. DIVISION.HEAVY_CAV_RESERVE)
+ */
+
+/**
  * @typedef {Object} PositionInfo
  * Generic FishBot 'Position' object.
  * @property {number} x 
@@ -185,12 +192,22 @@
 
 /**
  * Type definitions for `worldState.brigades`.
+ * @typedef {Object} BattalionComposition
+ * @property {number} category
+ * @property {DroidObject[]} healthyUnitList
+ * @property {DroidObject[]} damagedUnitList
+ * @property {number} count
+ * @property {number} deficit
+ * 
+ * @typedef {Map<number, BattalionComposition>} BrigadeComposition
+ * 
  * @typedef {Object} BrigadeMetadata
  * @property {number} id This is the brigade ID (duplicate of the key).
  * @property {PositionInfo} location  
  * @property {number} strength
  * @property {NearbyTargets} nearbyTargets 
  * @property {AirStrikeMissionRequest[]} casStrikeRequests
+ * @property {BrigadeComposition} composition
  *  
  * @typedef {{ [brigadeID: number]: BrigadeMetadata }} BrigadeInfo
  *
@@ -305,11 +322,12 @@ const DIVISION = {
 	SENSOR_RESERVE: 2008,
 	MAINTENANCE_RESERVE: 2009,
 	
-    FIRST_BCT: 3011,                 // this is a combined arms team; each BCT with ~26 units
+    FIRST_BCT: 3011,                 // this is a combined arms team; each BCT with ~30 units
     SECOND_BCT: 3012,
     THIRD_BCT: 3013,
     FOURTH_BCT: 3014,
 	FIFTH_BCT: 3015,
+	BCT_RESERVE: 3016,
 
 	RETURNING_FOR_REPAIR: 4000,
 };

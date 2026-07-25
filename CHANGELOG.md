@@ -4,12 +4,22 @@ This file is used to record the changes to FishBot between each version.
 ## Fishbot v0.4.3
 *Released ** Jul 2026***
 ### Changes in v0.4.3
+- Combat improvements
+    - Now uses 4 smaller BCTs rather than 2 larger BCTs, which improves combat effectiveness (due to reduced overcrowding).
+    - Improved responsiveness of units to seek out a repair facility when damaged.
+- Production & resupply improvements
+    - Depleted BCTs (Brigade Combat Teams) are now automatically recombined into other BCTs, preserving fighting strength.
+    - Optimised production weights to produce a better mix of units per BCT.
+    - Now tracks active production jobs for more accurate production to meet demand.
 - Infrastructure improvements
-    - Added a new test pipeline to allow FishBot to be automatically tested on all base maps with up to 9 other players (see `fishbot\tests`).
-    - Added a GUI interface for running tests, replacing the old .bat file runners (see `fishbot\python_helper_scripts\spectate_map\spectate_map.py`).
+    - Testing:
+        - Added a new test pipeline to allow FishBot to be automatically tested on all base maps with up to 9 other players (see `fishbot\tests`).
+        - Added a GUI interface for running tests, replacing the old .bat file runners (see `fishbot\python_helper_scripts\spectate_map\spectate_map.py`).
+    - Debug Mode:
+        - On game start, the camera is now centered on FishBot's base.
 
 #### Test results (Warzone 2100 v4.7.0)
-FishBot `v0.4.2` (commit `1`) was tested 1v1 against Cobra & PeacemakerAI. Sides were swapped mid-way through all tests to account for map-induced imbalances (i.e. 100 games as Player 1, and then 100 games as Player 2). The average is taken as the final win percentage.
+FishBot `v0.4.3` (commit `1`) was tested 1v1 against Cobra & PeacemakerAI. Sides were swapped mid-way through all tests to account for map-induced imbalances (i.e. 100 games as Player 1, and then 100 games as Player 2). The average is taken as the final win percentage.
 
 `Monocot 3P T2-NoBase`:
 - **%** win rate: FishBot-v0.4.2 Medium vs Cobra **Hard** 
