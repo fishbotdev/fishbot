@@ -50,17 +50,17 @@ class CommandCenter {
 		this.MAX_TRUCKS = 8;
 
 		this.FISHBOT_BRIGADE_COMPOSITION = {
-			'MAX_HEAVY_CAVALRY': 8,
+			'MAX_HEAVY_CAVALRY': 3,
 			'MAX_LIGHT_CAVALRY': 3,
-			'MAX_MORTAR': 6,
-			'MAX_ADA': 3,
+			'MAX_MORTAR': 4,
+			'MAX_ADA': 2,
 			'MAX_SENSOR': 1,
 			'MAX_INFANTRY': 6,
 			'MAX_REPAIR': 1,
 		}
 		this.TOTAL_UNITS_PER_BRIGADE = Object.values(this.FISHBOT_BRIGADE_COMPOSITION).reduce((a, b) => a + b, 0);
 
-		this.NUMBER_OF_BRIGADES = 2;
+		this.NUMBER_OF_BRIGADES = 4;
 		this.BRIGADE_DESIGNATIONS = BRIGADE_IDS.slice(0, this.NUMBER_OF_BRIGADES);
 
 		this.FISHBOT_RESERVE_COMPOSITION = {
