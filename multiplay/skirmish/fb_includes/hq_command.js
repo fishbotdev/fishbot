@@ -655,7 +655,6 @@ class CommandCenter {
 
 			this.BRIGADE_DESIGNATIONS.forEach((brigadeID) => {
 
-				// const brigadeStrength = state.brigades[brigadeID]['strength'];
 				const brigadeLocation = state.brigades[brigadeID]['location'];
 				brigadeLocations.push(brigadeLocation);
 
@@ -951,6 +950,25 @@ class CommandCenter {
 	}
 
 	/**
+	 * Gets the number of healthy combat units in a specified BCT (does not include logistic unit counts).
+	 * @param {worldState} state 
+	 * @param {number} brigadeID
+	 * @returns {number} 
+	 */
+	#getBctCombatUnitCount(state, brigadeID) {
+		const brigadeComposition = state.brigades[brigadeID]["composition"]; 
+		let unitCount = 0;
+		for (const [category, btnComposition] of brigadeComposition) {
+			if ([DIVISION.AIR_DEFENCE_RESERVE, DIVISION.SENSOR_RESERVE, DIVISION.MAINTENANCE_RESERVE].includes(category)) {
+				continue;
+			}
+			unitCount += btnComposition["count"];
+		}
+
+		return unitCount;
+	}
+
+	/**
 	 * This function:
 	 * - returns repaired units to active duty 
 	 * - assigns reserve units to active brigade combat teams
@@ -963,9 +981,13 @@ class CommandCenter {
 		// Return repaired units back into the reserve force
 		this.#recoverRepairedUnits(state);		
 
-		this.BRIGADE_DESIGNATIONS.forEach(brigadeID => 
-			this.toc.updateBrigadeSupplyStatus(state, brigadeID, this.FISHBOT_BRIGADE_COMPOSITION, this.VEHICLE_REPAIR_THRESHOLD, this.CYBORG_REPAIR_THRESHOLD)
-		);
+		// Update brigade supply status
+		const brigadeUnitCount = new Map();
+		this.BRIGADE_DESIGNATIONS.forEach(brigadeID => {
+			this.toc.updateBrigadeSupplyStatus(state, brigadeID, this.FISHBOT_BRIGADE_COMPOSITION, this.VEHICLE_REPAIR_THRESHOLD, this.CYBORG_REPAIR_THRESHOLD);
+
+			brigadeUnitCount.set(brigadeID, this.#getBctCombatUnitCount(state, brigadeID));
+		});
 
 		this.toc.updateBrigadeSupplyStatus(state, DIVISION.BCT_RESERVE, this.FISHBOT_RESERVE_COMPOSITION, this.VEHICLE_REPAIR_THRESHOLD, this.CYBORG_REPAIR_THRESHOLD);
 
@@ -1003,15 +1025,48 @@ class CommandCenter {
 			this.toc.assignUnitsToBrigade(state, unitsToBeRepaired, category, DIVISION.RETURNING_FOR_REPAIR);
 		}
 
-		// Assign reserves into active brigade combat teams
-		for (let i=0; i<this.BRIGADE_DESIGNATIONS.length; i++) {
-			if (i !== 0) {
-				break;		// temporary, will figure out when to create more than 1 BCT & recombine them (I think it will be based on strength of reserves)
+		// Decide how many BCTs should be made with the available units
+		const activeBrigade = new Map([
+			[DIVISION.FIRST_BCT, false], 
+			[DIVISION.SECOND_BCT, false],
+			[DIVISION.THIRD_BCT, false],
+			[DIVISION.FOURTH_BCT, false],
+			[DIVISION.FIFTH_BCT, false]
+		]);
+
+		let weakBCTCount = 0;
+		for (const [brigadeID, unitCount] of brigadeUnitCount) {
+			if (unitCount > this.TOTAL_UNITS_PER_BRIGADE * 1 / 2) {
+				activeBrigade.set(brigadeID, true);
+				continue;
 			}
 
-			const brigadeID = this.BRIGADE_DESIGNATIONS[i];
+			weakBCTCount += 1;
+			if (weakBCTCount > 1) {
+				if (unitCount > 0) {
+					debug(`${gameTime}: Brigade "${brigadeID}" recombined (only ${unitCount} units).`);
+				}
+				activeBrigade.set(brigadeID, false);	// deactivate the brigade for recombination
+			} else {
+				activeBrigade.set(brigadeID, true);
+			}
+			continue;	
+			
+		}
+
+		// Reinforce & replace damaged units for existing brigades, recombining where appropriate
+		for (const [brigadeID, unitCount] of brigadeUnitCount) {
 			const brigadeComposition = state.brigades[brigadeID]["composition"];
 
+			if (!activeBrigade.get(brigadeID)) {
+				// Forces all brigade units to 'return for repair', which eventually returns them to the reserves 
+				for (const [category, btnComposition] of brigadeComposition) {
+					this.toc.assignUnitsToBrigade(state, btnComposition['healthyUnitList'], brigadeID, DIVISION.RETURNING_FOR_REPAIR);		
+					this.toc.assignUnitsToBrigade(state, btnComposition['damagedUnitList'], brigadeID, DIVISION.RETURNING_FOR_REPAIR);		
+				}
+				continue;
+			}
+			
 			// By battalion, 
 			// 	 1. assign units to reach base / core strength, 
 			//   2. then return any damaged units for repair, sending reinforcements if available
@@ -1032,7 +1087,6 @@ class CommandCenter {
 				this.toc.assignUnitsToBrigade(state, replacements, category, brigadeID);
 				this.toc.assignUnitsToBrigade(state, btnComposition['damagedUnitList'], brigadeID, DIVISION.RETURNING_FOR_REPAIR);		
 			}
-
 		}
 	}
 
@@ -1140,8 +1194,8 @@ class CommandCenter {
 		if (SHOULD_PRODUCE_LAND_VEHICLES && idleFactories.length > 0) {
 			const productionRequests = [];
 
-			const brigadeWeightingFactors = [3, 0, 0, 0, 0];	// corresponds to each of the brigades
-			const reserveWeightingFactor = 0.5;
+			const brigadeWeightingFactors = [5, 4, 3, 2, 0];	// corresponds to each of the brigades (change with `this.NUMBER_OF_BRIGADES`)
+			const reserveWeightingFactor = 1; 
 
 			this.BRIGADE_DESIGNATIONS.forEach((brigadeID, idx) => {
 
