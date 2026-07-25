@@ -255,7 +255,7 @@ function moveBrigadeToAttack(state, brigadeID, groundTargets) {
 
 	const closestDroidToTarget = findClosestDroidToTarget(ARMOUR_UNITS, DIRECT_FIRE_TARGET);
 	
-	const isTooFarFromBrigade = (droid) => distSq(droid.x, LOCATION_X, droid.y, LOCATION_Y) > 9 ** 2;
+	const isTooFarFromBrigade = (droid) => distSq(droid.x, LOCATION_X, droid.y, LOCATION_Y) > 6 ** 2;
 
 	const _distSqToClosestDroid = (droid) => distSq(droid.x, closestDroidToTarget.x, droid.y, closestDroidToTarget.y);
 	const dfDsqToTarget = _distSqToClosestDroid(DIRECT_FIRE_TARGET);
@@ -284,7 +284,7 @@ function moveBrigadeToAttack(state, brigadeID, groundTargets) {
 			moveToClosestDroid(droid);
 			return;
 		} 
-		const nearby = enumRange(droid.x, droid.y, 4, ALLIES);
+		const nearby = enumRange(droid.x, droid.y, 6, ALLIES);
 		for (let i=0; i<nearby.length; i++) {
 			const obj = nearby[i];
 			if (obj.type !== DROID) {
