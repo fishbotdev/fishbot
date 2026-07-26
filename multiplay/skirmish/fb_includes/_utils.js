@@ -131,10 +131,40 @@ function create2DGrid(numXCells, numYCells, cellFactory) {
 	return grid;
 }
 
+/**
+ * Returns the Coordinate of the one of the initial trucks (or `baseLocation`, if sufficiently close by).
+ * Intent: reduces the unnecessary movement of trucks at the start of the game. 
+ * Assumes the map spawns the initial trucks somewhere safe near the player's baseLocation.
+ * @returns {Coordinate}
+ */
+function getTruckStartingLocation() {
+	const bx = baseLocation.x, by = baseLocation.y;
+
+	/** @type {Coordinate} */
+	let startingLocation = [bx, by];
+	
+	const MAX_SQ_DISTANCE = 5 ** 2;
+	
+	const initialTrucks = enumDroid(me, DROID_CONSTRUCT);
+	for (let i=0; i<initialTrucks.length; i++) {
+		const u = initialTrucks[i];
+		const truckDistSq = distSq(u.x, bx, u.y, by);
+		// debug(`Truck ${i}: ${truckDistSq}`);
+		if (truckDistSq > MAX_SQ_DISTANCE) {
+			startingLocation[0] = u.x;
+			startingLocation[1] = u.y;
+			debug(`${gameTime}: Using truck location (${u.x}, ${u.y}) as the startLoc.`);
+			break;
+		}
+	}
+
+	return startingLocation;
+}
+
 
 /**
- * Returns the BFS order of all walkable tiles from the player's base location.
- * @returns {Coordinate[]} Javascript list of tuples
+ * Returns the BFS order of all walkable tiles from the player's base location (or the location of one of the initial trucks).
+ * @returns {Coordinate[]} i.e. array of 'tuples'
  */
 function getWalkableTiles() {
 	const xMax = mapWidth;
@@ -145,7 +175,7 @@ function getWalkableTiles() {
 	const isVisited = new Array(xMax * yMax).fill(false);
 
 	/** @type {Coordinate[]} */
-	const toSearch = [[baseLocation.x, baseLocation.y]];
+	const toSearch = [getTruckStartingLocation()];
 	const inSearchList = new Array(xMax * yMax).fill(false);	
 
 	const MAX_MAP_DIM = 256;
