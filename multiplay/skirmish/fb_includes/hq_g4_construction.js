@@ -20,7 +20,12 @@ class armyEngineering {
 
 	}
 
-	#getNumFinishedModules({structureID}) {
+	/**
+	 * Gets the number of finished power, factory or research modules.
+	 * @param {string} structureID 
+	 * @returns {number}
+	 */
+	#getNumFinishedModules(structureID) {
 		// Assumes that 
 		let completedModuleCount = 0;
 		switch (structureID) {
@@ -40,7 +45,6 @@ class armyEngineering {
 				break;
 			default:
 				debug(`#getNumFinishedModules(): Could not recognise structureID ${structureID}, returning 0 modules`);
-				// do nothing
 		}
 
 		return completedModuleCount;
@@ -483,7 +487,11 @@ class armyEngineering {
 		// Inputs:
 		// -	buildQueue: a list of STRUCTURES['exampleName']
 
-		const baseBuildOrder_T1NoBase = [
+		// const totalDerricks = state.poi.derricks.length;		// used to determine 'low-oil ness' (estimate derricks / player).
+		const MY_DERRICK_COUNT = state.playerInfo[me]['numDerricks'];
+		const MAX_GENERATORS_AND_POWER_MODULES = Math.ceil(MY_DERRICK_COUNT / 4);
+				
+		const baseBuildOrder_T2NoBase = [
 			STRUCTURES["Factory"],
 			STRUCTURES["Factory"],
 			STRUCTURES["Command Center"],
@@ -577,33 +585,44 @@ class armyEngineering {
 		// Put each task into an appropriate format for approval ("buildTask", which is internal to g4_construction)
 		let buildTasks = [];
 
-		// Create running tally
-		let minimumRequired = {};
-		baseBuildOrder_T1NoBase.forEach(struct => {
-			if (!defined(minimumRequired[struct.id])) {
-				minimumRequired[struct.id] = 0;
-				// debug(`	requestBaseConstruction(): minimumRequired -> ${struct.id} ${minimumRequired[struct.id]}`);
+		// Create structure information
+		const structureCounts = new Map();
+		baseBuildOrder_T2NoBase.forEach(structInfo => {
+			// keyed by structureID
+			if (structureCounts.get(structInfo) == null) {
+				structureCounts.set(structInfo, {'target': 0, 'count': 0});
 			}
 		});
 
-		for (let i=0; i<baseBuildOrder_T1NoBase.length; i++) {
-			// Iterate through the build order & check if the desired number of structures have been built already;
-			const currStructureData = baseBuildOrder_T1NoBase[i];
-
-			// Part 1: Add new structure to running tally
-			minimumRequired[currStructureData.id] += 1;
-
-			// Part 2: Check how many in progress / built
-			let structCount = undefined;
-			if (["Research Module", "Power Module", "Factory Module"].includes(currStructureData.name)) {
-				structCount = this.#getNumFinishedModules({structureID: currStructureData.id});
+		// For each category, get number of constructed / in-progress structures 
+		for (const [structureInfo, count] of structureCounts) {
+			if (["Research Module", "Power Module", "Factory Module"].includes(structureInfo.name)) {
+				count['count'] = this.#getNumFinishedModules(structureInfo.id);
 			} else {
-				structCount = enumStruct(me, currStructureData.id).length;		// returns both 'BUILT' & 'BEING_BUILT' results
+				// `enumStruct` is used since it returns results for both 'BUILT' & 'BEING_BUILT'
+				count['count'] = enumStruct(me, structureInfo.id).length;		
 			}
+		}
 
-			if (false) debug(`	structCount -> structCount ${structCount} 	VS 	built ${minimumRequired[currStructureData.id]}`);
+		for (let i=0; i<baseBuildOrder_T2NoBase.length; i++) {
+			const currStructureData = baseBuildOrder_T2NoBase[i];
+			const STRUCTURE_NAME = currStructureData.name;
 
-			if (structCount >= minimumRequired[currStructureData.id]) {
+			const counts = structureCounts.get(currStructureData);
+			const structCount = counts['count'];
+			
+			// Skip exclusions / custom adaptation code
+			// 1. Adapt power generators to number of derricks
+			if (["Power Generator", "Power Module"].includes(STRUCTURE_NAME)) {
+				if (structCount >= MAX_GENERATORS_AND_POWER_MODULES) {
+					// debug(`${gameTime}: Skipping ${STRUCTURE_NAME} (${structCount} constructed) // ${MY_DERRICK_COUNT} derricks`);
+					continue;
+				}	
+			} 
+
+			// Add to running tally & continue if the current disposition exceeds the new target
+			counts['target'] += 1;
+			if (structCount >= counts['target']) {
 				continue;
 			}
 
