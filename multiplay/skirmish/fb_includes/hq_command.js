@@ -783,6 +783,7 @@ class CommandCenter {
 		// const totalDerricks = state.poi.derricks.length;		// used to determine 'low-oil ness' (estimate derricks / player).
 		const MY_DERRICK_COUNT = state.playerInfo[me]['numDerricks'];
 		const USE_VTOL = (MY_DERRICK_COUNT > 8);
+		const USE_FACTORY_MODULES = (MY_DERRICK_COUNT >= 6);
 
 		// Command tasks g4 with option & prioritises options here
 		// For now, assumes that g4 does not propose duplicates - e.g. tracks & removes already assigned tasks 
@@ -792,7 +793,7 @@ class CommandCenter {
 		const MAX_BASE_BUILD_TASKS = 1;
 		const baseBuildDeficit = MAX_BASE_BUILD_TASKS - activeBaseBuildTasks.length;
 		if (baseBuildDeficit > 0) {
-			const requestedBaseBuildTasks = engineering.requestBaseConstruction(state, MY_DERRICK_COUNT, USE_VTOL);
+			const requestedBaseBuildTasks = engineering.requestBaseConstruction(state, MY_DERRICK_COUNT, USE_VTOL, USE_FACTORY_MODULES);
 			approvedConstructionTasks.push(...requestedBaseBuildTasks.slice(0, 1));
 		}
 

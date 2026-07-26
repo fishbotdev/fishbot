@@ -485,11 +485,12 @@ class armyEngineering {
 	 * @param {boolean} useVtols
 	 * @returns 
 	 */
-	requestBaseConstruction(state, myDerrickCount, useVtols) {
+	requestBaseConstruction(state, myDerrickCount, useVtols, useFactoryModules) {
 
 		// Extract adaptation parameters
 		const MY_DERRICK_COUNT = myDerrickCount;
 		const USE_VTOL = useVtols;	
+		const USE_FACTORY_MODULES = useFactoryModules;
 
 		const MAX_GENERATORS_AND_POWER_MODULES = Math.max(Math.ceil(MY_DERRICK_COUNT / 4), 1);		
 		const MODULES_PER_FACTORY = 2;
@@ -630,6 +631,10 @@ class armyEngineering {
 			}
 			// 3. Remove extra factory module requests (potential outcome of removing VTOL factories)
 			if (["Factory Module"].includes(STRUCTURE_NAME)) {
+				if (!USE_FACTORY_MODULES) {
+					continue;
+				}
+
 				const factoryCount = structureCounts.get(STRUCTURES["Factory"])['count'];
 				const vtolFactoryCount = structureCounts.get(STRUCTURES["VTOL Factory"])['count'];
 				const factoryModuleCount = structureCounts.get(STRUCTURES["Factory Module"])['count'];
