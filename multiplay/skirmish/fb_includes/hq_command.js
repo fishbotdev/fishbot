@@ -991,6 +991,8 @@ class CommandCenter {
 
 		this.toc.updateBrigadeSupplyStatus(state, DIVISION.BCT_RESERVE, this.FISHBOT_RESERVE_COMPOSITION, this.VEHICLE_REPAIR_THRESHOLD, this.CYBORG_REPAIR_THRESHOLD);
 
+		const REPAIR_FACILITY_AVAILABLE = state.playerInfo[me]["repairFacilityFbObjects"].length > 0;		// this has the potential to be stale, but it is not critical that it is up-to-date
+
 		// Get reserve force units
 		const RESERVE_GROUP_IDS = [
 			DIVISION.HEAVY_CAV_RESERVE, 
@@ -1006,23 +1008,25 @@ class CommandCenter {
 		const reserveUnits = new Map();
 		RESERVE_GROUP_IDS.forEach(id => {reserveUnits.set(id, state.g.enumGroup(id))});
 
-		const RESERVE_REPAIR_THRESHOLD = 70;
+		if (REPAIR_FACILITY_AVAILABLE) {
+			const RESERVE_REPAIR_THRESHOLD = 70;
 
-		// In case reserve units are damaged, send these back for repair (reserves should only be engaged in light combat). 
-		const unitsToBeRepaired = [];
-		for (const [category, unitList] of reserveUnits) {
-			if (unitList.length === 0) {
-				continue;
-			}
-
-			unitsToBeRepaired.length = 0;	// reset the list
-			unitList.forEach(droid => {
-				if (droid.health < RESERVE_REPAIR_THRESHOLD) {
-					unitsToBeRepaired.push(droid);
+			// In case reserve units are damaged, send these back for repair (reserves should only be engaged in light combat). 
+			const unitsToBeRepaired = [];
+			for (const [category, unitList] of reserveUnits) {
+				if (unitList.length === 0) {
+					continue;
 				}
-			});
-			
-			this.toc.assignUnitsToBrigade(state, unitsToBeRepaired, category, DIVISION.RETURNING_FOR_REPAIR);
+
+				unitsToBeRepaired.length = 0;	// reset the list
+				unitList.forEach(droid => {
+					if (droid.health < RESERVE_REPAIR_THRESHOLD) {
+						unitsToBeRepaired.push(droid);
+					}
+				});
+				
+				this.toc.assignUnitsToBrigade(state, unitsToBeRepaired, category, DIVISION.RETURNING_FOR_REPAIR);
+			}
 		}
 
 		// Decide how many BCTs should be made with the available units
@@ -1082,10 +1086,12 @@ class CommandCenter {
 				const reinforcements = battalionReserve.splice(0, deficit);
 				this.toc.assignUnitsToBrigade(state, reinforcements, category, brigadeID);
 
-				const damagedUnitCount = btnComposition['damagedUnitList'].length;
-				const replacements = battalionReserve.splice(0, damagedUnitCount);
-				this.toc.assignUnitsToBrigade(state, replacements, category, brigadeID);
-				this.toc.assignUnitsToBrigade(state, btnComposition['damagedUnitList'], brigadeID, DIVISION.RETURNING_FOR_REPAIR);		
+				if (REPAIR_FACILITY_AVAILABLE) {
+					const damagedUnitCount = btnComposition['damagedUnitList'].length;
+					const replacements = battalionReserve.splice(0, damagedUnitCount);
+					this.toc.assignUnitsToBrigade(state, replacements, category, brigadeID);
+					this.toc.assignUnitsToBrigade(state, btnComposition['damagedUnitList'], brigadeID, DIVISION.RETURNING_FOR_REPAIR);		
+				}
 			}
 		}
 	}
