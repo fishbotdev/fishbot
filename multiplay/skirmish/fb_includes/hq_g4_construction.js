@@ -479,16 +479,18 @@ class armyEngineering {
 	}
 
 	/**
-	 * 
-	 * @param {worldState} state 
+	 * Yields the next base structure to be constructed.
+	 * @param {worldState} state
+	 * @param {number} myDerrickCount
+	 * @param {boolean} useVtols
 	 * @returns 
 	 */
-	requestBaseConstruction(state) {
-		// Inputs:
-		// -	buildQueue: a list of STRUCTURES['exampleName']
+	requestBaseConstruction(state, myDerrickCount, useVtols) {
 
-		// const totalDerricks = state.poi.derricks.length;		// used to determine 'low-oil ness' (estimate derricks / player).
-		const MY_DERRICK_COUNT = state.playerInfo[me]['numDerricks'];
+		// Extract adaptation parameters
+		const MY_DERRICK_COUNT = myDerrickCount;
+		const USE_VTOL = useVtols;	
+
 		const MAX_GENERATORS_AND_POWER_MODULES = Math.ceil(MY_DERRICK_COUNT / 4);
 		const MODULES_PER_FACTORY = 2;
 				
@@ -622,7 +624,7 @@ class armyEngineering {
 			// 2. Remove VTOLs if low oil (having more ground units is more effective to capture more oil)
 				// TODO: this is a strategic decision which should be made by hq_command (to do with unit mix), this decision should not be made here
 			if (["VTOL Factory", "VTOL Rearming Pad"].includes(STRUCTURE_NAME)) {
-				if (MY_DERRICK_COUNT <= 8) {	
+				if (USE_VTOL) {	
 					continue;
 				}
 			}
@@ -633,7 +635,7 @@ class armyEngineering {
 				const factoryModuleCount = structureCounts.get(STRUCTURES["Factory Module"])['count'];
 				
 				if (factoryModuleCount >= (factoryCount + vtolFactoryCount) * MODULES_PER_FACTORY) {		
-					continue;	// todo: cut all construction until a certain oil is reached e.g. 2 generators?
+					continue;
 				}
 			}
 
@@ -643,8 +645,8 @@ class armyEngineering {
 				continue;
 			}
 
-			// debug(`(FishBot ${me}) ${gameTime}: building ${STRUCTURE_NAME}`);
 			// Else, schedule a new task
+			// debug(`(FishBot ${me}) ${gameTime}: building ${STRUCTURE_NAME}`);
 			const buildRequest = this.translateIntoBuildRequest({
 				missionType: MISSION_TYPE.CONSTRUCT_AUTO_DETECT_BY_STRUCTURE, 
 				structureData: currStructureData,
