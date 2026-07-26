@@ -490,6 +490,7 @@ class armyEngineering {
 		// const totalDerricks = state.poi.derricks.length;		// used to determine 'low-oil ness' (estimate derricks / player).
 		const MY_DERRICK_COUNT = state.playerInfo[me]['numDerricks'];
 		const MAX_GENERATORS_AND_POWER_MODULES = Math.ceil(MY_DERRICK_COUNT / 4);
+		const MODULES_PER_FACTORY = 2;
 				
 		const baseBuildOrder_T2NoBase = [
 			STRUCTURES["Factory"],
@@ -610,14 +611,31 @@ class armyEngineering {
 			const counts = structureCounts.get(currStructureData);
 			const structCount = counts['count'];
 			
-			// Skip exclusions / custom adaptation code
+			// Implement construction adaptations
 			// 1. Adapt power generators to number of derricks
 			if (["Power Generator", "Power Module"].includes(STRUCTURE_NAME)) {
 				if (structCount >= MAX_GENERATORS_AND_POWER_MODULES) {
 					// debug(`${gameTime}: Skipping ${STRUCTURE_NAME} (${structCount} constructed) // ${MY_DERRICK_COUNT} derricks`);
 					continue;
 				}	
-			} 
+			}
+			// 2. Remove VTOLs if low oil (having more ground units is more effective to capture more oil)
+				// TODO: this is a strategic decision which should be made by hq_command (to do with unit mix), this decision should not be made here
+			if (["VTOL Factory", "VTOL Rearming Pad"].includes(STRUCTURE_NAME)) {
+				if (MY_DERRICK_COUNT <= 8) {	
+					continue;
+				}
+			}
+			// 3. Remove extra factory module requests (potential outcome of removing VTOL factories)
+			if (["Factory Module"].includes(STRUCTURE_NAME)) {
+				const factoryCount = structureCounts.get(STRUCTURES["Factory"])['count'];
+				const vtolFactoryCount = structureCounts.get(STRUCTURES["VTOL Factory"])['count'];
+				const factoryModuleCount = structureCounts.get(STRUCTURES["Factory Module"])['count'];
+				
+				if (factoryModuleCount >= (factoryCount + vtolFactoryCount) * MODULES_PER_FACTORY) {		
+					continue;	// todo: cut all construction until a certain oil is reached e.g. 2 generators?
+				}
+			}
 
 			// Add to running tally & continue if the current disposition exceeds the new target
 			counts['target'] += 1;
@@ -625,6 +643,7 @@ class armyEngineering {
 				continue;
 			}
 
+			// debug(`(FishBot ${me}) ${gameTime}: building ${STRUCTURE_NAME}`);
 			// Else, schedule a new task
 			const buildRequest = this.translateIntoBuildRequest({
 				missionType: MISSION_TYPE.CONSTRUCT_AUTO_DETECT_BY_STRUCTURE, 
