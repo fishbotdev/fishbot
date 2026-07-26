@@ -4,6 +4,8 @@ This file is used to record the changes to FishBot between each version.
 ## Fishbot v0.4.3
 *Released ** Jul 2026***
 ### Changes in v0.4.3
+- More supported maps
+    - FishBot is now tested & working on most of the 2, 3, and 4 player maps shipped with Warzone 4.7.0.
 - Combat improvements
     - Now uses 4 smaller BCTs rather than 2 larger BCTs, which improves combat effectiveness (due to reduced overcrowding).
     - Improved responsiveness of units to seek out a repair facility when damaged.
@@ -16,23 +18,24 @@ This file is used to record the changes to FishBot between each version.
         - Added a new test pipeline to allow FishBot to be automatically tested on all base maps with up to 9 other players (see `fishbot\tests`).
         - Added a GUI interface for running tests, replacing the old .bat file runners (see `fishbot\python_helper_scripts\spectate_map\spectate_map.py`).
     - Debug Mode:
-        - On game start, the camera is now centered on FishBot's base.
+        - On game start, the camera now centers on FishBot's base.
 
-#### Test results (Warzone 2100 v4.7.0)
+#### Benchmark results (Warzone 2100 v4.7.0)
 FishBot `v0.4.3` (commit `1`) was tested 1v1 against Cobra & PeacemakerAI. Sides were swapped mid-way through all tests to account for map-induced imbalances (i.e. 100 games as Player 1, and then 100 games as Player 2). The average is taken as the final win percentage.
 
-`Monocot 3P T2-NoBase`:
-- **%** win rate: FishBot-v0.4.2 Medium vs Cobra **Hard** 
-- **%** win rate: FishBot-v0.4.2 Medium vs Cobra **Insane** 
-- **%** win rate: FishBot-v0.4.2 Medium vs PeacemakerAI v0.8 **Medium** 
-- **%** win rate: FishBot-v0.4.2 Medium vs PeacemakerAI v0.8 **Hard** 
+`Sk-Rush 4P T2-NoBase (1v1 duel)`:
+- **%** win rate: FishBot-v0.4.3 Medium vs Cobra **Hard** 
+- **%** win rate: FishBot-v0.4.3 Medium vs Cobra **Insane** 
+- **%** win rate: FishBot-v0.4.3 Medium vs PeacemakerAI v0.8 **Medium** 
+- **%** win rate: FishBot-v0.4.3 Medium vs PeacemakerAI v0.8 **Hard** 
 
-`Gamma 3P T2-NoBase`:
-- **%** win rate: FishBot-v0.4.2 Medium vs Cobra **Hard** 
-- **%** win rate: FishBot-v0.4.2 Medium vs Cobra **Insane** 
-- **%** win rate: FishBot-v0.4.2 Medium vs PeacemakerAI v0.8 **Medium** 
-- **%** win rate: FishBot-v0.4.2 Medium vs PeacemakerAI v0.8 **Hard** 
+`Gamma 3P T2-NoBase (1v1 duel)`:
+- **%** win rate: FishBot-v0.4.3 Medium vs Cobra **Hard** 
+- **%** win rate: FishBot-v0.4.3 Medium vs Cobra **Insane** 
+- **%** win rate: FishBot-v0.4.3 Medium vs PeacemakerAI v0.8 **Medium** 
+- **%** win rate: FishBot-v0.4.3 Medium vs PeacemakerAI v0.8 **Hard** 
 
+As of this version (FishBot v0.4.3), FishBot is now automatically tested on T2-NoBase starts on all 2, 3 and 4 player maps against Cobra @ Medium difficulty (duel & FFA, on all combinations of positions).
 
 ## Fishbot v0.4.2
 *Released **10 Jul 2026***

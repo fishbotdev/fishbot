@@ -229,7 +229,7 @@ def run_batch_test() -> Path:
 
     WORKER_COUNT = 6
 
-    COMMIT_SHA = "db673e916c947857dc2b69975541c4da2239c342"
+    COMMIT_SHA = "cfc76a9c75385a8bdf701b9109ce8ddbc88cfcc9"
     SHORT_SHA = COMMIT_SHA[:7]
     RUNS_PER_TEST = 10
 

@@ -32,41 +32,45 @@ As of the most current version **v0.4.1**, FishBot works best on large, standard
 It currently only has been tested with scavengers disabled.
 
 The current method for determining whether or not a map is *supported* is:
-* For 2P & 3P maps, FishBot can win in T2 against a single Cobra @ Medium difficulty.
-* For higher player-count maps, it can win in a team with other FishBots.
+* For 2 player maps, FishBot has a higher than 75% win rate (cumulatively, across both positions) against Cobra @ Medium difficulty.
+* For 3 player maps and higher, FishBot has:
+    * a higher than 50% WR in FFA (cumulative across all positions) against Cobra @ Medium, and
+    * 75% WR in duels across all pairs of positions (i.e. 1v1 with all other player slots being empty).
+
+Some of the test results for larger maps may change over time as more test data becomes available. The affected test results are shown in ***italic***.
 
 ### 2 player (T2)
-* `Sk-Startup`
-* ~~`Sk-UrbanChasm`~~ -- bankrupts itself (rigid build order)
-* ~~`Sk-HighGround`~~ -- bankrupts itself (rigid build order)
-* `Roughness`
-* `Vision`
-* `DustyMaze (2P)`
+* `Sk-Startup` (100% duel)
+* `Sk-UrbanChasm` (75% duel)
+* `Sk-HighGround` (**35%** duel) - weakest 2p map
+* `Roughness` (95% duel)
+* `Vision` (95% duel)
+* ~~`DustyMaze (2P)`~~ (manually tested)
 
 ### 3 player (T2)
-* `Monocot`
-* `Gamma`
+* `Monocot` (100% duel, 100% FFA)
+* `Gamma` (100% duel, 100% FFA)
 
 ### 4 player (T2)
-* `Sk-Rush` ~
-* `Sk-Rush2` ~
-* `Sk-UrbanDuel` ~
-* `Sk-Mountain` ~
-* `Sk-Valley` ~
-* `Sk-FishNets` ~
-* `Sk-GreatRift` ~
-* `Sk-RollingHills` ~
-* `Sk-Basingstoke` ~
-* ~~`Sk-LittleEgypt` ~~ - movement issues around water
-* `Sk-Cockpit` ~
-* `Sk-Urban-Chaos` ~
-* `Sk-Pyramidal` ~
-* ~~`DustyMaze-2v2`~~ - untested
-* ~~`DustyMaze-FFA`~~ - untested
+* `Sk-Rush` (100% duel, 65% FFA)
+* `Sk-Rush2` (96% duel, 70% FFA)
+* `Sk-UrbanDuel` (95% duel, 82% FFA)
+* `Sk-Mountain` (99% duel, 72% FFA)
+* `Sk-Valley` (92% duel, 85% FFA)
+* `Sk-FishNets` (92% duel, **41%** FFA) - weakest 4p map
+* `Sk-GreatRift` (98% duel, 81% FFA)
+* `Sk-RollingHills` (90% duel, 90% FFA) 
+* `Sk-Basingstoke` (83% duel, 68% FFA)
+* `Sk-LittleEgypt` (97% duel, ***54% FFA***)
+* `Sk-Cockpit` (100% duel, ***83% FFA***)
+* `Sk-Urban-Chaos` (94% duel, 97% FFA)
+* `Sk-Pyramidal` (100% duel, 79% FFA)
+* ~~`DustyMaze-2v2`~~ (manually tested)
+* ~~`DustyMaze-FFA`~~ (manually tested)
 
-Official support for other maps will be included in future versions. The current limitations are:
-* On very small maps with very low oil, FishBot runs out of power (and gets stuck) due to a fixed rigid build order. It can also get stuck if it doesn't claim enough derricks in the early game.
-* FishBot attempts to build forward-defences around derricks which are too dangerous to go and capture.
+Most 2, 3 and 4 player maps are supported. Some limitations are:
+* Low oil problems: On very small maps with very low oil, FishBot runs out of power (and gets stuck) due to a fixed rigid build order. It can also get stuck if it doesn't claim enough derricks in the early game.
+* FishBot sometimes attempts to build forward-defences around derricks which are actually too dangerous to go and capture.
 
 ## Recent updates
 * **v0.4.2** - *released **10 Jul 2026***

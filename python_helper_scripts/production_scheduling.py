@@ -43,10 +43,10 @@ ID_MAP = {
 }
 
 FISHBOT_BRIGADE_COMPOSITION = {
-    'MAX_HEAVY_CAVALRY': 8,
+    'MAX_HEAVY_CAVALRY': 3,
     'MAX_LIGHT_CAVALRY': 3,
-    'MAX_MORTAR': 6,
-    'MAX_ADA': 3,
+    'MAX_MORTAR': 4,
+    'MAX_ADA': 2,
     'MAX_SENSOR': 1,
     'MAX_REPAIR': 1,
 }

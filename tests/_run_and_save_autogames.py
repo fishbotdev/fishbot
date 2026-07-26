@@ -256,7 +256,7 @@ def append_match(df: pd.DataFrame, path: Path) -> None:
 
 def run_autogame(commands: List[str]) -> List[str]:
     # Execute normally (let WZ write directly to the console)
-    TIMEOUT_SECONDS = 300
+    TIMEOUT_SECONDS = 900
     subprocess.run(commands, timeout=TIMEOUT_SECONDS)        # blocking (only returns once the process is finished)
     del TIMEOUT_SECONDS, commands
 
