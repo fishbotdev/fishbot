@@ -52,11 +52,11 @@ FISHBOT_BRIGADE_COMPOSITION = {
 }
 
 WEIGHTS = {
-    'MAX_HEAVY_CAVALRY': 0.8,
+    'MAX_HEAVY_CAVALRY': 0.95,
     'MAX_LIGHT_CAVALRY': 1.0,
-    'MAX_MORTAR': 0.77,
-    'MAX_ADA': 0.62,
-    'MAX_SENSOR': 0.40,
+    'MAX_MORTAR': 0.7,
+    'MAX_ADA': 0.65,
+    'MAX_SENSOR': 0.25,
     'MAX_REPAIR': 0.5,
 }
 

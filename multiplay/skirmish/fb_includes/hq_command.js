@@ -905,24 +905,25 @@ class CommandCenter {
 		};
 
 		const CATEGORIES = [
-			// Weights were tuned in FishBot v0.4.3 to produce a better mix of units.
-			// makeCategory(DIVISION.INFANTRY_RESERVE, 1.0),		//
-			makeCategory(DIVISION.HEAVY_CAV_RESERVE, 0.8), 
+			// Production weights (which influences production order) are tuned using `python_helper_scripts / production_scheduling.py`.
+			// Must be rebalanced each time the brigade composition is changed.
+			// makeCategory(DIVISION.INFANTRY_RESERVE, 1.0),		
+			makeCategory(DIVISION.HEAVY_CAV_RESERVE, 0.95), 
 			makeCategory(DIVISION.LIGHT_CAV_RESERVE, 1.0), 
-			makeCategory(DIVISION.SHORT_RANGE_FIRE_SUPPORT_RESERVE, 0.77), 
-			makeCategory(DIVISION.AIR_DEFENCE_RESERVE, 0.62),
-			makeCategory(DIVISION.SENSOR_RESERVE, 0.4),
+			makeCategory(DIVISION.SHORT_RANGE_FIRE_SUPPORT_RESERVE, 0.7), 
+			makeCategory(DIVISION.AIR_DEFENCE_RESERVE, 0.65),
+			makeCategory(DIVISION.SENSOR_RESERVE, 0.25),
 			makeCategory(DIVISION.MAINTENANCE_RESERVE, 0.5),
 		];
 
-		const FORECAST_STEPS = 15;
+		const FORECAST_STEPS = 8;
 		// debug(`Forecasting...`)
 
 		const productionRequests = [];
 		for (let i=0; i<FORECAST_STEPS; i++) {
 			CATEGORIES.sort((a,b) => b["score"] - a["score"]);
 
-			if (CATEGORIES[0].normDeficit < 1e-6) {		// must account for rounding error
+			if (CATEGORIES[0].normDeficit < 1e-3) {		// must account for FP rounding error
 				// debug(`Terminating early @ ${i} iterations`);
 				break;		
 			}
