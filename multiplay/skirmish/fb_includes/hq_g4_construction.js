@@ -491,7 +491,7 @@ class armyEngineering {
 		const MY_DERRICK_COUNT = myDerrickCount;
 		const USE_VTOL = useVtols;	
 
-		const MAX_GENERATORS_AND_POWER_MODULES = Math.ceil(MY_DERRICK_COUNT / 4);
+		const MAX_GENERATORS_AND_POWER_MODULES = Math.max(Math.ceil(MY_DERRICK_COUNT / 4), 1);		
 		const MODULES_PER_FACTORY = 2;
 				
 		const baseBuildOrder_T2NoBase = [
