@@ -1204,7 +1204,7 @@ class CommandCenter {
 		if (SHOULD_PRODUCE_LAND_VEHICLES && idleFactories.length > 0) {
 			const productionRequests = [];
 
-			const brigadeWeightingFactors = [5, 4, 3, 2, 0];	// corresponds to each of the brigades (change with `this.NUMBER_OF_BRIGADES`)
+			const brigadeWeightingFactors = [16, 8, 4, 2, 0];	// corresponds to each of the brigades (change with `this.NUMBER_OF_BRIGADES`)
 			const reserveWeightingFactor = 1; 
 
 			this.BRIGADE_DESIGNATIONS.forEach((brigadeID, idx) => {
