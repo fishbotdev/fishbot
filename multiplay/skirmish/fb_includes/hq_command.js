@@ -1047,15 +1047,12 @@ class CommandCenter {
 
 			weakBCTCount += 1;
 			if (weakBCTCount > 1) {
-				if (unitCount > 0) {
-					debug(`${gameTime}: Brigade "${brigadeID}" recombined (only ${unitCount} units).`);
-				}
+				// if (unitCount > 0) 	debug(`${gameTime}: Brigade "${brigadeID}" recombined (only ${unitCount} units).`);
 				activeBrigade.set(brigadeID, false);	// deactivate the brigade for recombination
 			} else {
 				activeBrigade.set(brigadeID, true);
 			}
 			continue;	
-			
 		}
 
 		// Reinforce & replace damaged units for existing brigades, recombining where appropriate
