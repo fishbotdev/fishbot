@@ -590,22 +590,18 @@ class armyEngineering {
 
 		// Create structure information
 		const structureCounts = new Map();
+		let count;
 		baseBuildOrder_T2NoBase.forEach(structInfo => {
-			// keyed by structureID
-			if (structureCounts.get(structInfo) == null) {
-				structureCounts.set(structInfo, {'target': 0, 'count': 0});
+			if (structureCounts.get(structInfo) != null) {
+				return;		// skip because it exists already
 			}
-		});
-
-		// For each category, get number of constructed / in-progress structures 
-		for (const [structureInfo, count] of structureCounts) {
-			if (["Research Module", "Power Module", "Factory Module"].includes(structureInfo.name)) {
-				count['count'] = this.#getNumFinishedModules(structureInfo.id);
+			if (["Research Module", "Power Module", "Factory Module"].includes(structInfo.name)) {
+				count = this.#getNumFinishedModules(structInfo.id);
 			} else {
-				// `enumStruct` is used since it returns results for both 'BUILT' & 'BEING_BUILT'
-				count['count'] = enumStruct(me, structureInfo.id).length;		
-			}
-		}
+				count = enumStruct(me, structInfo.id).length;	// `enumStruct` returns both 'BUILT' & 'BEING_BUILT'	
+			}	
+			structureCounts.set(structInfo, {'target': 0, 'count': count});
+		});
 
 		for (let i=0; i<baseBuildOrder_T2NoBase.length; i++) {
 			const currStructureData = baseBuildOrder_T2NoBase[i];
@@ -618,28 +614,26 @@ class armyEngineering {
 			// 1. Adapt power generators to number of derricks
 			if (["Power Generator", "Power Module"].includes(STRUCTURE_NAME)) {
 				if (structCount >= MAX_GENERATORS_AND_POWER_MODULES) {
-					// debug(`${gameTime}: Skipping ${STRUCTURE_NAME} (${structCount} constructed) // ${MY_DERRICK_COUNT} derricks`);
 					continue;
 				}	
 			}
-			// 2. Remove VTOLs if low oil (having more ground units is more effective to capture more oil)
-				// TODO: this is a strategic decision which should be made by hq_command (to do with unit mix), this decision should not be made here
+			// 2. Remove VTOLs if unused
 			if (["VTOL Factory", "VTOL Rearming Pad"].includes(STRUCTURE_NAME)) {
 				if (!USE_VTOL) {	
 					continue;
 				}
 			}
-			// 3. Remove extra factory module requests (potential outcome of removing VTOL factories)
+			// 3. Remove extra factory modules (e.g. as a result of VTOL Factory removal).
 			if (["Factory Module"].includes(STRUCTURE_NAME)) {
 				if (!USE_FACTORY_MODULES) {
 					continue;
 				}
-
 				const factoryCount = structureCounts.get(STRUCTURES["Factory"])['count'];
 				const vtolFactoryCount = structureCounts.get(STRUCTURES["VTOL Factory"])['count'];
 				const factoryModuleCount = structureCounts.get(STRUCTURES["Factory Module"])['count'];
-				
-				if (factoryModuleCount >= (factoryCount + vtolFactoryCount) * MODULES_PER_FACTORY) {		
+
+				const MAXIMUM_FACTORY_MODULES_REACHED = (factoryModuleCount >= (factoryCount + vtolFactoryCount) * MODULES_PER_FACTORY);
+				if (MAXIMUM_FACTORY_MODULES_REACHED) {		
 					continue;
 				}
 			}
