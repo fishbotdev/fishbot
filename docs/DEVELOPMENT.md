@@ -6,25 +6,45 @@
 * PyCharm (or any other development environment for Python)
 
 ## Setting up a new Development Environment (Windows 11 only)
-1. Install Warzone2100 (in this example, I use Warzone 2100 v4.7.0).
-2. Create a new Warzone2100 Configuration Directory e.g. `Documents/wz2100_config_dir`.
-3. Clone FishBot into the mods folder e.g. `Documents/wz2100_config_dir/mods/4.7.0/autoload/fishbot`.
-4. Create a 'Production' (clean) install of Warzone2100. This is what the GUI test runner targets. To do this:
-   1. Install a portable version of Warzone 2100 v4.7.0+ in the `fishbot` root directory, i.e. `fishbot/Warzone2100/bin/warzone2100.exe`.
-5. Set up the map files you want to test (required for 'bot-only' autogames). 
+### Setting up Configuration Directories for Development & Production
+1. Install Warzone2100 v4.6.1+ (in this example, I use Warzone 2100 v4.7.0) as a Portable Install. To do this:
+   1. Download the Warzone 2100 installer.
+   2. Open the installer, select your language, then click the `Advanced` button in the bottom left of the `Welcome to the Warzone 2100 Setup Wizard` page.
+   3. Select `Portable Install`.
+   4. Click OK, then Next until you reach the `Select Destination Location` page.
+   5. Set the output directory to any folder e.g. `Documents/Warzone 2100`.
+   6. In `Select Components` screen, remove `Addons` & `Videos` (they are not required for FishBot development).
+   7. Click OK and let Warzone 2100 install.
+2. Create a new folder in `Documents`, called `wz2100_config_dir`. 
+   * This is the development Config Directory (we are separating the Config Directory for development & production).
+3. Go to your install directory and run `launch_warzone.bat`. Then, **close** Warzone 2100.
+   * This forces the creation of a new "Warzone2100 Configuration Directory" e.g. Warzone 2100 creates a new folder `Documents/Warzone 2100/Warzone 2100`.
+4. Rename the new `Warzone 2100` folder to `PRODCONFIG`, e.g. `Documents/Warzone 2100/PRODCONFIG`.
+5. **Copy** & paste the contents of `Warzone 2100/PRODCONFIG` (e.g. folders like `maps`, `mods`, `multiplay`, etc.) inside `wz2100_config_dir` (from Step 2).
+5. Go to: `Documents/wz2100_config_dir/mods/4.x.x/autoload/` and clone FishBot into a *new directory* e.g. `autoload/fishbot`. 
+   * If done correctly, the new directory should look like `Documents/wz2100_config_dir/mods/4.7.0/autoload/fishbot/multiplay/skirmish/FishBot.js`. 
+   * This is the **development** copy of FishBot.
+6. Move `Warzone 2100` inside `fishbot`. If done correctly, the folder path should look like:
+   `Documents/wz2100_config_dir/mods/4.x.x/autoload/fishbot/Warzone 2100`.
+7. Go to the Production mods folder: `Documents/wz2100_config_dir/mods/4.x.x/autoload/fishbot/Warzone 2100/PRODCONFIG/mods/4.x.x/autoload` and clone FishBot into a *new directory* e.g. `autoload/fishbot`.
+   * If done correctly, the new folder path should look like: `fishbot/Warzone 2100/PRODCONFIG/mods/4.x.x/autoload/fishbot/multiplay/skirmish/FishBot.js`. 
+   * This is the **production** copy of FishBot.
+
+### Setting up Supporting Files for Bot-only Tests
+1. Get the raw map files you want to test (required for 'bot-only' autogames). To do this:
    1. Go to `fishbot/tests/custom_test_map_packager`.
-   2. Follow `README(test_map_packager).md` in this folder to load the maps you want to test into a subfolder: `custom_test_map_packager/v4.7.0_base_maps`. This is used by the 'test_generator' to generate a new map.
-6. Create a new 'Spectator' bot. To do this:
+   2. Follow the steps in `README(test_map_packager).md` to install the custom maps into both the Production & Development folders.
+2. Create a new 'Spectator' bot. To do this:
    1. Create this folder `wz2100_config_dir/mods/4.7.0/autoload/spectator/multiplay/skirmish`.
-   2. In the `skirmish` folder, create an empty file using Notepad named `Spectator.js`.
-   3. Open `Spectator.js` and copy-paste this:
+   2. Copy paste the following into a text editor (e.g. Notepad):
    ```javascript
       function eventStartLevel() {
           transformPlayerToSpectator(me);	
       }
    ```
-   4. Then, in the same `skirmish` folder, create another empty file named `Spectator.json`.
-   5. Open `Spectator.json` and copy-paste this:
+   3. Save the file as `Spectator.js` inside `skirmish` (select Save as type: `All files`).
+      * If done correctly, you should be able to see `spectator/multiplay/skirmish/Spectator.js`.
+   4. Open a new text editor window. Copy-paste the following inside the new window:
    ```json
    {
 	    "AI": {
@@ -34,21 +54,34 @@
       }
    }
    ```
-7. Build the test runner GUI. To do this:
-   1. If you don't have `pyinstaller`, open Command Prompt and run `pip install pyinstaller`.
-   2. Go to `fishbot\python_helper_scripts\spectate_map`.
-   3. Run `build_spectate_map.bat`.
-   4. Check for this new folder: `fishbot\_internal` and this new .exe file: `fishbot\spectate_map.exe`.
+   5. Save the file as `Spectator.json` inside `skirmish` (select Save as type: `All files`).
+      * If done correctly, you should be able to see `Spectator.json` as well as `Spectator.js` inside `spectator/multiplay/skirmish/`.
+   6. Duplicate the `spectator` folder inside `PRODCONFIG/mods/4.7.0/autoload`. 
+      * If done correctly, you should be able to see: `PRODCONFIG/mods/4.7.0/autoload/spectator/multiplay/skirmish`.
 
 ## Running Automated Tests
-Go to `fishbot/tests`, then run the files in this order (modifying the output file paths to those in your Configuration Directory):
-1. `run_test_generator.py` (~5 seconds)
+Go to `fishbot/tests`, then run the files in this order:
+1. [*Optional*] `run_test_generator.py` (~5 seconds)
+   * Please double check the output folder path before running.
+   * Re-run this if the map or test information has changed (e.g. a new set of maps, or modified skirmish settings.
+   Also re-run if the folder location has changed.
 2. `run_tests.py` (may take ~1 day to complete, depending on the number of tests requested).
-   * For a new commit, don't forget to change `COMMIT_SHA`.
+   * Don't forget to change `COMMIT_SHA`.
    * Note: The implementation of the game-summary-table parser is platform-dependent (works on Windows only). Please implement your own terminal-scraper function for Linux / Mac.
 3. `run_result_parser.py` (~5 seconds)
+   * Don't forget to change `COMMIT_SHA`.
 
-For any test that warrants further investigation, you can use `fishbot\spectate_map.exe` to run that test in spectator mode.
+For any test that warrants further investigation, you can use `fishbot\spectate_map.exe` to select and run the test in spectator mode.
+
+### Build the 'Spectate Map' GUI
+To spectate FishBot on any map which is specified by an existing `.json` test file, you use the map selector GUI (`spectate_map.exe`) to set up a game in single-player Spectator mode. This allows you to observe how FishBot is performing in real time, and to speed up and slow down the game at your leisure.
+To build this tool:
+   1. If you don't have `pyinstaller`, open Command Prompt and run `pip install pyinstaller`.
+   2. Go to `wz2100_config_dir\mods\4.7.0\autoload\fishbot\python_helper_scripts\spectate_map`.
+   3. Run `build_spectate_map.bat`.
+   4. In `Documents\wz2100_config_dir\mods\4.7.0\autoload\fishbot\`, check for:
+      * New folder: `fishbot\_internal` and 
+      * New .exe file: `fishbot\spectate_map.exe`.
 
 ## Software Documentation Methods
 The intent of the following documentation methods is to make changing the software easier:
