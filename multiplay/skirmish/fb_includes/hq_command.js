@@ -856,93 +856,6 @@ class CommandCenter {
 		this.toc.assignConstructionTasks(state, approvedConstructionTasks);
 	}
 
-	/**
-	 * 
-	 * @param {BrigadeComposition} brigadeComposition 
-	 */
-	#prioritiseLandVehicleCategory2(brigadeComposition) {
-		
-		const getMaxUnits = (category) => {
-			switch(category) {
-				case DIVISION.INFANTRY_RESERVE:
-					return this.FISHBOT_BRIGADE_COMPOSITION['MAX_INFANTRY']
-				case DIVISION.HEAVY_CAV_RESERVE:
-					return this.FISHBOT_BRIGADE_COMPOSITION['MAX_HEAVY_CAVALRY'];
-				case DIVISION.LIGHT_CAV_RESERVE:
-					return this.FISHBOT_BRIGADE_COMPOSITION['MAX_LIGHT_CAVALRY'];
-				case DIVISION.SHORT_RANGE_FIRE_SUPPORT_RESERVE:
-					return this.FISHBOT_BRIGADE_COMPOSITION['MAX_MORTAR'];
-				case DIVISION.AIR_DEFENCE_RESERVE:
-					return this.FISHBOT_BRIGADE_COMPOSITION['MAX_ADA'];
-				case DIVISION.SENSOR_RESERVE:
-					return this.FISHBOT_BRIGADE_COMPOSITION['MAX_SENSOR'];
-				case DIVISION.MAINTENANCE_RESERVE:
-					return this.FISHBOT_BRIGADE_COMPOSITION['MAX_REPAIR'];
-				default:
-					debug(`${gameTime}: prioritiseLandVehicleCategory2() / getMaxUnits(): failed to recognise "${category}". Returning "1".`)
-					return 1;
-			}
-		}
-
-		const getDeficit = (category) => {
-			const battalionComposition = brigadeComposition.get(category);
-			if (battalionComposition == null) {
-				debug(`${gameTime}: WARNING - Attempted to get non-existent 'deficit' for category "${category}". Returning 0.`);
-				return 0;
-			}
-			return battalionComposition["deficit"];
-		}
-
-		const getNormDeficit = (category) => getDeficit(category) / getMaxUnits(category);
-
-		const makeCategory = (category, weight) => {
-			const normDeficit = getNormDeficit(category);
-			return {
-				"type": category,
-				"normDeficit": normDeficit,
-				"w_strategic": weight,
-				"score": normDeficit * weight,
-			};
-		};
-
-		const CATEGORIES = [
-			// Production weights (which influences production order) are tuned using `python_helper_scripts / production_scheduling.py`.
-			// Must be rebalanced each time the brigade composition is changed.
-			// makeCategory(DIVISION.INFANTRY_RESERVE, 1.0),		
-			makeCategory(DIVISION.HEAVY_CAV_RESERVE, 0.95), 
-			makeCategory(DIVISION.LIGHT_CAV_RESERVE, 1.0), 
-			makeCategory(DIVISION.SHORT_RANGE_FIRE_SUPPORT_RESERVE, 0.7), 
-			makeCategory(DIVISION.AIR_DEFENCE_RESERVE, 0.65),
-			makeCategory(DIVISION.SENSOR_RESERVE, 0.25),
-			makeCategory(DIVISION.MAINTENANCE_RESERVE, 0.5),
-		];
-
-		const FORECAST_STEPS = 8;
-		// debug(`Forecasting...`)
-
-		const productionRequests = [];
-		for (let i=0; i<FORECAST_STEPS; i++) {
-			CATEGORIES.sort((a,b) => b["score"] - a["score"]);
-
-			if (CATEGORIES[0].normDeficit < 1e-3) {		// must account for FP rounding error
-				// debug(`Terminating early @ ${i} iterations`);
-				break;		
-			}
-
-			productionRequests.push({...CATEGORIES[0]});									// takes a snapshot of the current score
-
-			CATEGORIES[0].normDeficit -= 1 / getMaxUnits(CATEGORIES[0].type);				// simulates the unit being produced
-			CATEGORIES[0].score = CATEGORIES[0].normDeficit * CATEGORIES[0].w_strategic;	// updates the score
-		}
-
-		if (false) {
-			debug(`\t Next ${FORECAST_STEPS} ->`);
-			productionRequests.forEach(r => debug(`	${r.type}`));
-		}
-		
-		return productionRequests;
-	}	
-
 	#recoverRepairedUnits(state) {
 		const repairedUnits = state.g.enumGroup(DIVISION.RETURNING_FOR_REPAIR);
 		const REPAIRED_AT_HEALTH = 99;
@@ -1208,18 +1121,16 @@ class CommandCenter {
 			const reserveWeightingFactor = 1; 
 
 			this.BRIGADE_DESIGNATIONS.forEach((brigadeID, idx) => {
-
 				const brigadeComposition = state.brigades[brigadeID]["composition"];
-				const weightedRequests = this.#prioritiseLandVehicleCategory2(brigadeComposition);
+				const weightedRequests = supply.prioritiseLandVehicleCategory(brigadeComposition, this.FISHBOT_BRIGADE_COMPOSITION);
 
 				weightedRequests.forEach(request => request["score"] *= brigadeWeightingFactors[idx]);
 				productionRequests.push(...weightedRequests);
 			});
 
 			// Update reserve division
-
 			const brigadeComposition = state.brigades[DIVISION.BCT_RESERVE]["composition"];
-			const weightedRequests = this.#prioritiseLandVehicleCategory2(brigadeComposition);
+			const weightedRequests = supply.prioritiseLandVehicleCategory(brigadeComposition, this.FISHBOT_RESERVE_COMPOSITION);
 			weightedRequests.forEach(request => request["score"] *= reserveWeightingFactor);
 			productionRequests.push(...weightedRequests);
 
