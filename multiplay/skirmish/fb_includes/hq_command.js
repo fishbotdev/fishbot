@@ -858,14 +858,10 @@ class CommandCenter {
 
 	#recoverRepairedUnits(state) {
 		const repairedUnits = state.g.enumGroup(DIVISION.RETURNING_FOR_REPAIR);
-		const REPAIRED_AT_HEALTH = 99;
-
 		repairedUnits.forEach(droid => {
-			if (droid.health < REPAIRED_AT_HEALTH) {
-				return;
+			if (droid.health >= 95) {
+				this.toc.resetDroidGroup(state, droid, DIVISION.RETURNING_FOR_REPAIR); 	
 			}
-			this.toc.setNewDroidGroup(state, droid, DIVISION.RETURNING_FOR_REPAIR); 	// this sets the new group & removes from "RETURN_FOR_REPAIR"
-			// todo: This interface is a bit confusing.
 		});
 	}
 
