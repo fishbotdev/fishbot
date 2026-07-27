@@ -8,7 +8,7 @@ It is designed for Tech Level 2, No-Base starts on the supported maps below. Tec
 
 ## Download
 
-1. Start Warzone 2100. Click Options.
+1. Open Warzone 2100. Click on "Options".
 2. Click "Open Configuration Directory" in the bottom left corner.
 3. Download 📦fishbot.zip from https://github.com/fishbotdev/fishbot/releases. 
 4. Move the .zip file to 📁`mods/4.7.0/autoload/`.
@@ -42,29 +42,29 @@ Some of the test results for larger maps may change over time as more test data 
 ### 2 player (T2)
 * `Sk-Startup` (100% duel)
 * `Sk-UrbanChasm` (85% duel)
-* `Sk-HighGround` (85% duel)
+* `Sk-HighGround` (70% duel)
 * `Roughness` (100% duel)
-* `Vision` (95% duel)
+* `Vision` (90% duel)
 * ~~`DustyMaze (2P)`~~ (to be manually tested)
 
 ### 3 player (T2)
-* `Monocot` (100% duel, 100% FFA)
+* `Monocot` (100% duel, 97% FFA)
 * `Gamma` (100% duel, 97% FFA)
 
 ### 4 player (T2)
-* `Sk-Rush` (100% duel, 65% FFA)
-* `Sk-Rush2` (96% duel, 70% FFA)
-* `Sk-UrbanDuel` (95% duel, 82% FFA)
-* `Sk-Mountain` (99% duel, 72% FFA)
-* `Sk-Valley` (92% duel, 85% FFA)
-* `Sk-FishNets` (92% duel, **41%** FFA) - weakest 4p map
-* `Sk-GreatRift` (98% duel, 81% FFA)
-* `Sk-RollingHills` (90% duel, 90% FFA) 
+* `Sk-Rush` (99% duel, 82% FFA)
+* `Sk-Rush2` (99% duel, 80% FFA)
+* `Sk-UrbanDuel` (90% duel, 55% FFA)
+* `Sk-Mountain` (99% duel, 65% FFA)
+* `Sk-Valley` (93% duel, 72% FFA)
+* `Sk-FishNets` (91% duel, **42%** FFA) - weakest 4p map
+* `Sk-GreatRift` (99% duel, 64% FFA)
+* `Sk-RollingHills` (89% duel, 70% FFA) 
 * ~~`Sk-Basingstoke` ()~~ - not compatible: large unit groups get stuck pathfinding
 * `Sk-LittleEgypt` (97% duel, ***54% FFA***) 
 * ~~`Sk-Cockpit` (100% duel, ***83% FFA***)~~ - not compatible: unit groups get stuck in the narrow base entrances
-* `Sk-Urban-Chaos` (94% duel, 97% FFA)
-* `Sk-Pyramidal` (100% duel, 79% FFA)
+* `Sk-Urban-Chaos` (98% duel, 92% FFA)
+* `Sk-Pyramidal` (100% duel, 80% FFA)
 * ~~`DustyMaze-2v2`~~ (to be manually tested)
 * ~~`DustyMaze-FFA`~~ (to be manually tested)
 
