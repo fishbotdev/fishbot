@@ -187,18 +187,25 @@ if __name__ == "__main__":
     #################################### USER CONFIG START ####################################
 
     # INPUT DIRECTORY DEFINITIONS
-    CURRENT_DIRECTORY = Path.cwd()
-    BASE_MAPS_PATH = CURRENT_DIRECTORY / r'custom_test_map_packager\v4.7.0_base_maps_upto4p'
+    BASE_MAPS_PATH = Path.cwd() / r'custom_test_map_packager\v4.7.0_base_maps_upto5p'
 
     # OUTPUT DIRECTORY DEFINITIONS
-    PRODUCTION_MAPS_FOLDER_PATH = Path(r"..\Warzone 2100\PRODCONFIG\maps")
-    DEV_MAPS_FOLDER_PATH = Path(r"~\OneDrive\Documents\wz2100_config_dir\maps").expanduser()
-    PRODUCTION_TEST_FOLDER_PATH = Path(r"..\Warzone 2100\PRODCONFIG\tests")
-    DEV_TEST_FOLDER_PATH = Path(r"~\OneDrive\Documents\wz2100_config_dir\tests").expanduser()
+    BASE_PRODUCTION_DIRECTORY = r"..\Warzone 2100\PRODCONFIG"
+    PRODUCTION_MAPS_FOLDER_PATH = Path(rf"{BASE_PRODUCTION_DIRECTORY}\maps")
+    PRODUCTION_TEST_FOLDER_PATH = Path(rf"{BASE_PRODUCTION_DIRECTORY}\tests")
+
+    BASE_DEV_DIRECTORY = r"~\OneDrive\Documents\wz2100_config_dir"
+    DEV_MAPS_FOLDER_PATH = Path(rf"{BASE_DEV_DIRECTORY}\maps").expanduser()
+    DEV_TEST_FOLDER_PATH = Path(rf"{BASE_DEV_DIRECTORY}\tests").expanduser()
 
     #################################### USER CONFIG END ####################################
 
     test_manifest_path = repackage_maps_and_generate_tests(base_maps_path=BASE_MAPS_PATH,
+                                                           production_maps_path=DEV_MAPS_FOLDER_PATH,
+                                                           production_tests_path=DEV_TEST_FOLDER_PATH)
+
+    test_manifest_path = repackage_maps_and_generate_tests(base_maps_path=BASE_MAPS_PATH,
                                                            production_maps_path=PRODUCTION_MAPS_FOLDER_PATH,
                                                            production_tests_path=PRODUCTION_TEST_FOLDER_PATH)
+
     print(test_manifest_path)
