@@ -877,14 +877,14 @@ class CommandCenter {
 	 */
 	#getBctCombatUnitCount(state, brigadeID) {
 		const brigadeComposition = state.brigades[brigadeID]["composition"]; 
+		const EXCLUDED_CATEGORIES = [DIVISION.AIR_DEFENCE_RESERVE, DIVISION.SENSOR_RESERVE, DIVISION.MAINTENANCE_RESERVE];
+
 		let unitCount = 0;
 		for (const [category, btnComposition] of brigadeComposition) {
-			if ([DIVISION.AIR_DEFENCE_RESERVE, DIVISION.SENSOR_RESERVE, DIVISION.MAINTENANCE_RESERVE].includes(category)) {
-				continue;
+			if (!EXCLUDED_CATEGORIES.includes(category)) {
+				unitCount += btnComposition["count"];	
 			}
-			unitCount += btnComposition["count"];
 		}
-
 		return unitCount;
 	}
 

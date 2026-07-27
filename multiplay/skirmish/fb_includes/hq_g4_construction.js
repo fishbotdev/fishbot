@@ -483,11 +483,10 @@ class armyEngineering {
 	 * @param {worldState} state
 	 * @param {number} myDerrickCount
 	 * @param {boolean} useVtols
+	 * @param {boolean} useFactoryModules
 	 * @returns 
 	 */
 	requestBaseConstruction(state, myDerrickCount, useVtols, useFactoryModules) {
-
-		// Extract adaptation parameters
 		const MY_DERRICK_COUNT = myDerrickCount;
 		const USE_VTOL = useVtols;	
 		const USE_FACTORY_MODULES = useFactoryModules;
