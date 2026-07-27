@@ -759,12 +759,12 @@ class armyEngineering {
 		return callback(...args);	//...args is important otherwise all remaining args will be interpreted as a single array of parameters
 	}
 
-	#finaliseConstruction(md) {
+	#finaliseConstruction(md, reserveID) {
 		// Mission completed
 		const taskForceUnits = state.g.enumGroup(md.taskForceID);
 		if (taskForceUnits.length > 0) {
 			taskForceUnits.forEach((droid) => {
-				state.g.addDroidToGroup({groupID: ENGINEERING.ENGINEERING_RESERVE, droidID: droid.id});
+				state.g.addDroidToGroup({groupID: reserveID, droidID: droid.id});
 				orderDroidLoc(droid, DORDER_MOVE, baseLocation.x, baseLocation.y);
 			});	
 		} else {
@@ -807,28 +807,22 @@ class armyEngineering {
 	createBuildBaseStructureTask({buildTask, tickUID}) {
 		const cellSize = state.grid.cellSize;
 		
-		let engineeringReserve = state.g.enumGroup(ENGINEERING.ENGINEERING_RESERVE);
-		if (engineeringReserve.length === 0) {			
-			// debug(`#createBuildBaseStructureTask(): No trucks available.`);
+		const taskForceUnits = state.g.enumGroup(ENGINEERING.BASE_BUILDER);
+		if (taskForceUnits.length === 0) {			
+			debug(`${gameTime}	WARNING (FishBot ${me}): createBuildBaseStructureTask(): No trucks available to construct ${buildTask.structureID}.`);
 			return undefined;
 		}
 
-		let MAX_TRUCKS = 2;
-
 		if (!isStructureAvailable(buildTask.structureID, me)) {
-			debug(`#createBuildBaseStructureTask(): Structure not available: ${buildTask.structureID}`);
+			debug(`${gameTime}	WARNING (FishBot ${me}): createBuildBaseStructureTask(): Structure not available: ${buildTask.structureID}.`);
 			return undefined;
 		}
 
 		const loc = pickBaseStructLocation(buildTask.structureID);		
 		if (loc == undefined) {
-			// debug(`#createBuildBaseStructureTask(): pickStructLocation() couldn't find a good location for ${buildTask.structureID}.`);
+			debug(`${gameTime}	WARNING (FishBot ${me}): createBuildBaseStructureTask() / pickBaseStructLocation(): couldn't find a good location for ${buildTask.structureID}.`);
 			return undefined;
 		}
-
-		// Select closest trucks to new location
-		engineeringReserve.sort((a,b) => distSq(a.x, buildTask.x, a.y, buildTask.y) - distSq(b.x, buildTask.x, b.y, buildTask.y));
-		const taskForceUnits = engineeringReserve.slice(0, MAX_TRUCKS); 
 
 		let md = this.#createMissionOrders();
 
@@ -841,12 +835,12 @@ class armyEngineering {
 		
 		taskForceUnits.forEach((droid) => {
 			state.g.addDroidToGroup({groupID: md.taskForceID, droidID: droid.id});
-			state.g.removeDroidFromGroup({groupID: ENGINEERING.ENGINEERING_RESERVE, droidID: droid.id});
+			state.g.removeDroidFromGroup({groupID: ENGINEERING.BASE_BUILDER, droidID: droid.id});
 		});		
 
 		// Assign orders for conducting & ceasing operations			
 		md.orders = () => this.#mcb(buildBaseStructure, md.taskForceID, buildTask.structureID, loc.x, loc.y);		// lambda is necessary otherwise md.orders is not interpreted as a function
-		md.ceaseOrders = () => this.#mcb(this.#finaliseConstruction, md);
+		md.ceaseOrders = () => this.#mcb(this.#finaliseConstruction, md, ENGINEERING.BASE_BUILDER);
 
 		return md;
 	}
@@ -895,7 +889,7 @@ class armyEngineering {
 
 		// Assign orders for conducting & ceasing operations			
 		md.orders = () => this.#mcb(buildOilDerrick, md.taskForceID, buildTask.structureID, derrick);		// lambda is necessary otherwise md.orders is not interpreted as a function
-		md.ceaseOrders = () => this.#mcb(this.#finaliseConstruction, md);
+		md.ceaseOrders = () => this.#mcb(this.#finaliseConstruction, md, ENGINEERING.ENGINEERING_RESERVE);
 
 		return md;
 	}
@@ -944,7 +938,7 @@ class armyEngineering {
 
 		// Assign orders for conducting & ceasing operations			
 		md.orders = () => this.#mcb(buildMultipleOilDerricks, md.taskForceID, buildTask.structureID, sectorDerricks);		// lambda is necessary otherwise md.orders is not interpreted as a function
-		md.ceaseOrders = () => this.#mcb(this.#finaliseConstruction, md);
+		md.ceaseOrders = () => this.#mcb(this.#finaliseConstruction, md, ENGINEERING.ENGINEERING_RESERVE);
 
 		return md;
 	}
@@ -958,16 +952,14 @@ class armyEngineering {
 
 		const cellSize = state.grid.cellSize;
 
-		let engineeringReserve = state.g.enumGroup(ENGINEERING.ENGINEERING_RESERVE);
-		if (engineeringReserve.length === 0) {
-			// debug(`#createBuildBaseStructureTask(): No trucks available.`);
+		const taskForceUnits = state.g.enumGroup(ENGINEERING.BASE_BUILDER);
+		if (taskForceUnits.length === 0) {			
+			debug(`${gameTime}	WARNING (FishBot ${me}): createBuildSingleModuleTask(): No trucks available to construct ${buildTask.structureID}.`);
 			return undefined;
 		}
 
-		const MAX_TRUCKS = 2;
-
 		if (!isStructureAvailable(buildTask.structureID, me)) {
-			debug(`#createBuildSingleModuleTask(): Structure not available: ${buildTask.structureID}`);
+			debug(`${gameTime}	WARNING (FishBot ${me}): createBuildSingleModuleTask(): Structure not available: ${buildTask.structureID}.`);
 			return undefined;
 		}
 		
@@ -1003,10 +995,6 @@ class armyEngineering {
 		const y = baseStructures[0].y;
 		const numFinishedModules = baseStructures[0].modules + 1;
 
-		// Select closest trucks to location
-		engineeringReserve.sort((a,b) => distSq(a.x, buildTask.x, a.y, buildTask.y) - distSq(b.x, buildTask.x, b.y, buildTask.y));
-		const taskForceUnits = engineeringReserve.slice(0, MAX_TRUCKS); 
-
 		let md = this.#createMissionOrders();
 
 		// Create mission details
@@ -1019,12 +1007,12 @@ class armyEngineering {
 		
 		taskForceUnits.forEach((droid) => {
 			state.g.addDroidToGroup({groupID: md.taskForceID, droidID: droid.id});
-			state.g.removeDroidFromGroup({groupID: ENGINEERING.ENGINEERING_RESERVE, droidID: droid.id});
+			state.g.removeDroidFromGroup({groupID: ENGINEERING.BASE_BUILDER, droidID: droid.id});
 		});		
 
 		// Assign orders for conducting & ceasing operations			
 		md.orders = () => this.#mcb(buildSingleModule, md.taskForceID, buildTask.structureID, x, y, numFinishedModules);
-		md.ceaseOrders = () => this.#mcb(this.#finaliseConstruction, md);
+		md.ceaseOrders = () => this.#mcb(this.#finaliseConstruction, md, ENGINEERING.BASE_BUILDER);
 
 		return md;
 	}
@@ -1079,7 +1067,7 @@ class armyEngineering {
 
 		// Assign orders for conducting & ceasing operations
 		md.orders = () => this.#mcb(buildNearbyDefences, md.taskForceID, buildTask.structureID, preferredLoc.x, preferredLoc.y);		// lambda is necessary otherwise md.orders is not interpreted as a function
-		md.ceaseOrders = () => this.#mcb(this.#finaliseConstruction, md);
+		md.ceaseOrders = () => this.#mcb(this.#finaliseConstruction, md, ENGINEERING.ENGINEERING_RESERVE);
 
 		// debug(`Mission creation for: _CONSTRUCT_NEARBY_DEFENCE_ -> (${preferredLoc.x}, ${preferredLoc.y}) `);			
 
@@ -1137,7 +1125,7 @@ class armyEngineering {
 		// Assign orders for conducting & ceasing operations
 		// Can use the same driver as 'buildNearbyDefences' (same logic)
 		md.orders = () => this.#mcb(buildNearbyDefences, md.taskForceID, buildTask.structureID, preferredLoc.x, preferredLoc.y);		
-		md.ceaseOrders = () => this.#mcb(this.#finaliseConstruction, md);
+		md.ceaseOrders = () => this.#mcb(this.#finaliseConstruction, md, ENGINEERING.ENGINEERING_RESERVE);
 
 		// debug(`Mission creation for: CONSTRUCT_REPAIR_CENTER -> (${preferredLoc.x}, ${preferredLoc.y}) `);		
 
@@ -1186,7 +1174,7 @@ class armyEngineering {
 
 		// Can use the same driver as 'buildNearbyDefences' (same logic)
 		md.orders = () => this.#mcb(demolishStructure, md.taskForceID, buildTask.structureID, loc.x, loc.y);		
-		md.ceaseOrders = () => this.#mcb(this.#finaliseConstruction, md);
+		md.ceaseOrders = () => this.#mcb(this.#finaliseConstruction, md, ENGINEERING.ENGINEERING_RESERVE);
 
 		return md;
 	}

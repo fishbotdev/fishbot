@@ -773,7 +773,8 @@ class CommandCenter {
 		this.#abortDangerousConstructionTasks(state, activeRemoteMissions);
 
 		// Command then terminates, if there are no available trucks this tick (avoids expensive planning tasks)
-		const trucksUnavailable = state.g.enumGroup(ENGINEERING.ENGINEERING_RESERVE).length === 0;
+		const trucksUnavailable = (state.g.enumGroup(ENGINEERING.ENGINEERING_RESERVE).length === 0) && 
+								  (state.g.enumGroup(ENGINEERING.BASE_BUILDER).length === 0);
 		if (trucksUnavailable) {
 			return;
 		}
