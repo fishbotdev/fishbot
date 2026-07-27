@@ -484,9 +484,10 @@ class armyEngineering {
 	 * @param {number} myDerrickCount
 	 * @param {boolean} useVtols
 	 * @param {boolean} useFactoryModules
+	 * @param {number} myVtolCount
 	 * @returns 
 	 */
-	requestBaseConstruction(state, myDerrickCount, useVtols, useFactoryModules) {
+	requestBaseConstruction(state, myDerrickCount, useVtols, useFactoryModules, myVtolCount) {
 		const MY_DERRICK_COUNT = myDerrickCount;
 		const USE_VTOL = useVtols;	
 		const USE_FACTORY_MODULES = useFactoryModules;
@@ -633,6 +634,12 @@ class armyEngineering {
 
 				const MAXIMUM_FACTORY_MODULES_REACHED = (factoryModuleCount >= (factoryCount + vtolFactoryCount) * MODULES_PER_FACTORY);
 				if (MAXIMUM_FACTORY_MODULES_REACHED) {		
+					continue;
+				}
+			}
+			// 4. Match rearming pads to the number of VTOLs
+			if (["VTOL Rearming Pad"].includes(STRUCTURE_NAME)) {
+				if (structCount >= myVtolCount) {
 					continue;
 				}
 			}

@@ -15,7 +15,7 @@ This file is used to record the changes to FishBot between each version.
     - Now tracks active production jobs for more accurate production to meet demand.
 - Construction improvements
     - Build order adaptation: 
-        - Matches the number of generators to the number of derricks.
+        - Matches the number of generators to the number of derricks & rearming pads to the number of aircraft.
         - VTOL infrastructure & factory modules are no longer constructed in very low oil situations.
     - Improved base construction efficiency.
 - Test infrastructure improvements
