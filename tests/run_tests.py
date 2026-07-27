@@ -227,9 +227,9 @@ def launch_workers(
 
 def run_batch_test() -> Path:
 
-    WORKER_COUNT = 6
+    WORKER_COUNT = 4    # match to number of CPU cores
 
-    COMMIT_SHA = "cfc76a9c75385a8bdf701b9109ce8ddbc88cfcc9"
+    COMMIT_SHA = "483d2dd37cc75dd341cc4a1652d881268de2c8af"
     SHORT_SHA = COMMIT_SHA[:7]
     RUNS_PER_TEST = 10
 
