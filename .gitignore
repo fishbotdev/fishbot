@@ -11,7 +11,7 @@ _internal/
 __spectate_map.bat
 
 tests/custom_test_map_packager/v4.7.0_base_maps/
-tests/custom_test_map_packager/v4.7.0_base_maps_upto4p/
+tests/custom_test_map_packager/v4.7.0_base_maps_upto5p/
 
 *.odp
 *.odp#
