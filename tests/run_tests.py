@@ -225,11 +225,11 @@ def launch_workers(
         process.wait()
 
 
-def run_batch_test() -> Path:
+def run_batch_test(commit_sha: str) -> Path:
 
     WORKER_COUNT = 4    # match to number of CPU cores
 
-    COMMIT_SHA = "483d2dd37cc75dd341cc4a1652d881268de2c8af"
+    COMMIT_SHA = commit_sha
     SHORT_SHA = COMMIT_SHA[:7]
     RUNS_PER_TEST = 10
 
@@ -297,7 +297,7 @@ if __name__ == "__main__":
 
         start_time = time.time()
 
-        run_batch_test()
+        run_batch_test(commit_sha="799e86939c8f1f80b430e5d234432a94deee3de8")
 
         end_time = time.time()
 
