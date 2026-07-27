@@ -20,7 +20,12 @@ class armyEngineering {
 
 	}
 
-	#getNumFinishedModules({structureID}) {
+	/**
+	 * Gets the number of finished power, factory or research modules.
+	 * @param {string} structureID 
+	 * @returns {number}
+	 */
+	#getNumFinishedModules(structureID) {
 		// Assumes that 
 		let completedModuleCount = 0;
 		switch (structureID) {
@@ -40,7 +45,6 @@ class armyEngineering {
 				break;
 			default:
 				debug(`#getNumFinishedModules(): Could not recognise structureID ${structureID}, returning 0 modules`);
-				// do nothing
 		}
 
 		return completedModuleCount;
@@ -475,46 +479,52 @@ class armyEngineering {
 	}
 
 	/**
-	 * 
-	 * @param {worldState} state 
+	 * Yields the next base structure to be constructed.
+	 * @param {worldState} state
+	 * @param {number} myDerrickCount
+	 * @param {boolean} useVtols
+	 * @param {boolean} useFactoryModules
 	 * @returns 
 	 */
-	requestBaseConstruction(state) {
-		// Inputs:
-		// -	buildQueue: a list of STRUCTURES['exampleName']
+	requestBaseConstruction(state, myDerrickCount, useVtols, useFactoryModules) {
+		const MY_DERRICK_COUNT = myDerrickCount;
+		const USE_VTOL = useVtols;	
+		const USE_FACTORY_MODULES = useFactoryModules;
 
-		const baseBuildOrder_T1NoBase = [
+		const MAX_GENERATORS_AND_POWER_MODULES = Math.max(Math.ceil(MY_DERRICK_COUNT / 4), 1);		
+		const MODULES_PER_FACTORY = 2;
+				
+		const baseBuildOrder_T2NoBase = [
 			STRUCTURES["Factory"],
 			STRUCTURES["Factory"],
 			STRUCTURES["Command Center"],
 			STRUCTURES["Power Generator"],	
 			STRUCTURES["Power Generator"],	
 			STRUCTURES["Power Generator"],		
-			STRUCTURES["Power Module"],
+			STRUCTURES["Power Module"],		// The script will automatically find a place to put this module.
 			STRUCTURES["Power Generator"],
 			STRUCTURES["Cyborg Factory"],		
 			STRUCTURES["Factory Module"],
 			STRUCTURES["Factory Module"],
-			STRUCTURES["VTOL Factory"],
-			STRUCTURES["Power Module"],				// The script will automatically find the position to place this power module
-			STRUCTURES["VTOL Rearming Pad"],
-			STRUCTURES["Research Facility"],
-			STRUCTURES["Power Module"],
-			STRUCTURES["Power Module"],
 			STRUCTURES["Repair Facility"],
+			STRUCTURES["Power Module"],				
+			STRUCTURES["Research Facility"],
+			STRUCTURES["Research Module"],
+			STRUCTURES["Power Module"],
+			STRUCTURES["Power Module"],
+			STRUCTURES["VTOL Factory"],
 			STRUCTURES["VTOL Rearming Pad"],
 			STRUCTURES["Cyborg Factory"],		
 			STRUCTURES["Factory Module"],
 			STRUCTURES["Factory Module"],
 			STRUCTURES["Research Facility"],
 			STRUCTURES["Research Module"],
-
+			STRUCTURES["VTOL Rearming Pad"],
 			STRUCTURES["Factory Module"],
 			STRUCTURES["Factory Module"],
 			STRUCTURES["VTOL Rearming Pad"],
 			STRUCTURES["Power Generator"],
 			STRUCTURES["Power Module"],
-			STRUCTURES["Research Module"],
 			STRUCTURES["Research Facility"],
 			STRUCTURES["Research Module"],
 			STRUCTURES["VTOL Rearming Pad"],
@@ -577,37 +587,64 @@ class armyEngineering {
 		// Put each task into an appropriate format for approval ("buildTask", which is internal to g4_construction)
 		let buildTasks = [];
 
-		// Create running tally
-		let minimumRequired = {};
-		baseBuildOrder_T1NoBase.forEach(struct => {
-			if (!defined(minimumRequired[struct.id])) {
-				minimumRequired[struct.id] = 0;
-				// debug(`	requestBaseConstruction(): minimumRequired -> ${struct.id} ${minimumRequired[struct.id]}`);
+		// Create structure information
+		const structureCounts = new Map();
+		let count;
+		baseBuildOrder_T2NoBase.forEach(structInfo => {
+			if (structureCounts.get(structInfo) != null) {
+				return;		// skip because it exists already
 			}
+			if (["Research Module", "Power Module", "Factory Module"].includes(structInfo.name)) {
+				count = this.#getNumFinishedModules(structInfo.id);
+			} else {
+				count = enumStruct(me, structInfo.id).length;	// `enumStruct` returns both 'BUILT' & 'BEING_BUILT'	
+			}	
+			structureCounts.set(structInfo, {'target': 0, 'count': count});
 		});
 
-		for (let i=0; i<baseBuildOrder_T1NoBase.length; i++) {
-			// Iterate through the build order & check if the desired number of structures have been built already;
-			const currStructureData = baseBuildOrder_T1NoBase[i];
+		for (let i=0; i<baseBuildOrder_T2NoBase.length; i++) {
+			const currStructureData = baseBuildOrder_T2NoBase[i];
+			const STRUCTURE_NAME = currStructureData.name;
 
-			// Part 1: Add new structure to running tally
-			minimumRequired[currStructureData.id] += 1;
+			const counts = structureCounts.get(currStructureData);
+			const structCount = counts['count'];
+			
+			// Implement construction adaptations
+			// 1. Adapt power generators to number of derricks
+			if (["Power Generator", "Power Module"].includes(STRUCTURE_NAME)) {
+				if (structCount >= MAX_GENERATORS_AND_POWER_MODULES) {
+					continue;
+				}	
+			}
+			// 2. Remove VTOLs if unused
+			if (["VTOL Factory", "VTOL Rearming Pad"].includes(STRUCTURE_NAME)) {
+				if (!USE_VTOL) {	
+					continue;
+				}
+			}
+			// 3. Remove extra factory modules (e.g. as a result of VTOL Factory removal).
+			if (["Factory Module"].includes(STRUCTURE_NAME)) {
+				if (!USE_FACTORY_MODULES) {
+					continue;
+				}
+				const factoryCount = structureCounts.get(STRUCTURES["Factory"])['count'];
+				const vtolFactoryCount = structureCounts.get(STRUCTURES["VTOL Factory"])['count'];
+				const factoryModuleCount = structureCounts.get(STRUCTURES["Factory Module"])['count'];
 
-			// Part 2: Check how many in progress / built
-			let structCount = undefined;
-			if (["Research Module", "Power Module", "Factory Module"].includes(currStructureData.name)) {
-				structCount = this.#getNumFinishedModules({structureID: currStructureData.id});
-			} else {
-				structCount = enumStruct(me, currStructureData.id).length;		// returns both 'BUILT' & 'BEING_BUILT' results
+				const MAXIMUM_FACTORY_MODULES_REACHED = (factoryModuleCount >= (factoryCount + vtolFactoryCount) * MODULES_PER_FACTORY);
+				if (MAXIMUM_FACTORY_MODULES_REACHED) {		
+					continue;
+				}
 			}
 
-			if (false) debug(`	structCount -> structCount ${structCount} 	VS 	built ${minimumRequired[currStructureData.id]}`);
-
-			if (structCount >= minimumRequired[currStructureData.id]) {
+			// Add to running tally & continue if the current disposition exceeds the new target
+			counts['target'] += 1;
+			if (structCount >= counts['target']) {
 				continue;
 			}
 
 			// Else, schedule a new task
+			// debug(`(FishBot ${me}) ${gameTime}: building ${STRUCTURE_NAME}`);
 			const buildRequest = this.translateIntoBuildRequest({
 				missionType: MISSION_TYPE.CONSTRUCT_AUTO_DETECT_BY_STRUCTURE, 
 				structureData: currStructureData,

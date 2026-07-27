@@ -8,12 +8,17 @@ This file is used to record the changes to FishBot between each version.
     - FishBot is now tested & working on most of the 2, 3, and 4 player maps shipped with Warzone 4.7.0.
 - Combat improvements
     - Now uses 4 smaller BCTs rather than 2 larger BCTs, which improves combat effectiveness (due to reduced overcrowding).
-    - Improved responsiveness of units to seek out a repair facility when damaged.
+    - Improved effectiveness of repair units & repair facilities.
 - Production & resupply improvements
     - Depleted BCTs (Brigade Combat Teams) are now automatically recombined into other BCTs, preserving fighting strength.
     - Optimised production weights to produce a better mix of units per BCT.
     - Now tracks active production jobs for more accurate production to meet demand.
-- Infrastructure improvements
+- Construction improvements
+    - Build order adaptation: 
+        - Matches the number of generators to the number of derricks.
+        - VTOL infrastructure & factory modules are no longer constructed in very low oil situations.
+    - Improved early game construction efficiency.
+- Test infrastructure improvements
     - Testing:
         - Added a new test pipeline to allow FishBot to be automatically tested on all base maps with up to 9 other players (see `fishbot\tests`).
         - Added a GUI interface for running tests, replacing the old .bat file runners (see `fishbot\python_helper_scripts\spectate_map\spectate_map.py`).

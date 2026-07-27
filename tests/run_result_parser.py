@@ -170,32 +170,6 @@ def group_tests_by_map(parsed_tests: list[dict]) -> dict:
     return dict(grouped)
 
 
-def summarise_tests(test_list: list[dict]) -> dict | None:
-    """
-    Summarise a collection of test results.
-
-    Returns
-    -------
-    {
-        "wins": int,
-        "games": int,
-        "win_rate": float,
-    }
-    """
-
-    if not test_list:
-        return None
-
-    wins = sum(test["wins"] for test in test_list)
-    games = sum(test["games"] for test in test_list)
-
-    return {
-        "wins": wins,
-        "games": games,
-        "win_rate": wins / games if games else 0.0,
-    }
-
-
 def make_bar(win_rate: float, *, length: int = 20) -> str:
     filled = round(win_rate * length)
     return "█" * filled + "░" * (length - filled)

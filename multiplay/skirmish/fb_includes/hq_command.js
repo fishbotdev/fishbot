@@ -737,12 +737,11 @@ class CommandCenter {
 	 */
 	runConstructionLogistics(state) {
 
-		// Command re-evaluates existing construction tasks
-		let activeOilCapTaskIDs = [];
-		let activeBaseBuildTasks = []; 
-		let activeDefenceBuildTaskIDs = [];
-		let activeRepairCenterBuildTaskIDs = [];
-		let activeRemoteMissions = [];
+		const activeOilCapTaskIDs = [];
+		const activeBaseBuildTasks = []; 
+		const activeDefenceBuildTaskIDs = [];
+		const activeRepairCenterBuildTaskIDs = [];
+		const activeRemoteMissions = [];
 
 		this.toc.getActiveConstructionMissions(state).forEach(missionData => {
 			switch(missionData.missionType) {
@@ -779,15 +778,19 @@ class CommandCenter {
 			return;
 		}
 
-		// Command tasks g4 with option & prioritises options here
-		// For now, assumes that g4 does not propose duplicates - e.g. tracks & removes already assigned tasks 
-		let approvedConstructionTasks = [];
+		// Set adaptation parameters (todo: move to strategic layer)
+		// const totalDerricks = state.poi.derricks.length;		// used to determine 'low-oil ness' (estimate derricks / player).
+		const MY_DERRICK_COUNT = state.playerInfo[me]['numDerricks'];
+		const USE_VTOL = (MY_DERRICK_COUNT > 8);
+		const USE_FACTORY_MODULES = (MY_DERRICK_COUNT >= 6);
+
+		const approvedConstructionTasks = [];
 
 		// BASE BUILD
 		const MAX_BASE_BUILD_TASKS = 1;
 		const baseBuildDeficit = MAX_BASE_BUILD_TASKS - activeBaseBuildTasks.length;
 		if (baseBuildDeficit > 0) {
-			const requestedBaseBuildTasks = engineering.requestBaseConstruction(state);
+			const requestedBaseBuildTasks = engineering.requestBaseConstruction(state, MY_DERRICK_COUNT, USE_VTOL, USE_FACTORY_MODULES);
 			approvedConstructionTasks.push(...requestedBaseBuildTasks.slice(0, 1));
 		}
 
@@ -846,106 +849,15 @@ class CommandCenter {
 			}
 		}
 
-		// Command delegates assignment 
 		this.toc.assignConstructionTasks(state, approvedConstructionTasks);
 	}
 
-	/**
-	 * 
-	 * @param {BrigadeComposition} brigadeComposition 
-	 */
-	#prioritiseLandVehicleCategory2(brigadeComposition) {
-		
-		const getMaxUnits = (category) => {
-			switch(category) {
-				case DIVISION.INFANTRY_RESERVE:
-					return this.FISHBOT_BRIGADE_COMPOSITION['MAX_INFANTRY']
-				case DIVISION.HEAVY_CAV_RESERVE:
-					return this.FISHBOT_BRIGADE_COMPOSITION['MAX_HEAVY_CAVALRY'];
-				case DIVISION.LIGHT_CAV_RESERVE:
-					return this.FISHBOT_BRIGADE_COMPOSITION['MAX_LIGHT_CAVALRY'];
-				case DIVISION.SHORT_RANGE_FIRE_SUPPORT_RESERVE:
-					return this.FISHBOT_BRIGADE_COMPOSITION['MAX_MORTAR'];
-				case DIVISION.AIR_DEFENCE_RESERVE:
-					return this.FISHBOT_BRIGADE_COMPOSITION['MAX_ADA'];
-				case DIVISION.SENSOR_RESERVE:
-					return this.FISHBOT_BRIGADE_COMPOSITION['MAX_SENSOR'];
-				case DIVISION.MAINTENANCE_RESERVE:
-					return this.FISHBOT_BRIGADE_COMPOSITION['MAX_REPAIR'];
-				default:
-					debug(`${gameTime}: prioritiseLandVehicleCategory2() / getMaxUnits(): failed to recognise "${category}". Returning "1".`)
-					return 1;
-			}
-		}
-
-		const getDeficit = (category) => {
-			const battalionComposition = brigadeComposition.get(category);
-			if (battalionComposition == null) {
-				debug(`${gameTime}: WARNING - Attempted to get non-existent 'deficit' for category "${category}". Returning 0.`);
-				return 0;
-			}
-			return battalionComposition["deficit"];
-		}
-
-		const getNormDeficit = (category) => getDeficit(category) / getMaxUnits(category);
-
-		const makeCategory = (category, weight) => {
-			const normDeficit = getNormDeficit(category);
-			return {
-				"type": category,
-				"normDeficit": normDeficit,
-				"w_strategic": weight,
-				"score": normDeficit * weight,
-			};
-		};
-
-		const CATEGORIES = [
-			// Weights were tuned in FishBot v0.4.3 to produce a better mix of units.
-			// makeCategory(DIVISION.INFANTRY_RESERVE, 1.0),		//
-			makeCategory(DIVISION.HEAVY_CAV_RESERVE, 0.8), 
-			makeCategory(DIVISION.LIGHT_CAV_RESERVE, 1.0), 
-			makeCategory(DIVISION.SHORT_RANGE_FIRE_SUPPORT_RESERVE, 0.77), 
-			makeCategory(DIVISION.AIR_DEFENCE_RESERVE, 0.62),
-			makeCategory(DIVISION.SENSOR_RESERVE, 0.4),
-			makeCategory(DIVISION.MAINTENANCE_RESERVE, 0.5),
-		];
-
-		const FORECAST_STEPS = 15;
-		// debug(`Forecasting...`)
-
-		const productionRequests = [];
-		for (let i=0; i<FORECAST_STEPS; i++) {
-			CATEGORIES.sort((a,b) => b["score"] - a["score"]);
-
-			if (CATEGORIES[0].normDeficit < 1e-6) {		// must account for rounding error
-				// debug(`Terminating early @ ${i} iterations`);
-				break;		
-			}
-
-			productionRequests.push({...CATEGORIES[0]});									// takes a snapshot of the current score
-
-			CATEGORIES[0].normDeficit -= 1 / getMaxUnits(CATEGORIES[0].type);				// simulates the unit being produced
-			CATEGORIES[0].score = CATEGORIES[0].normDeficit * CATEGORIES[0].w_strategic;	// updates the score
-		}
-
-		if (false) {
-			debug(`\t Next ${FORECAST_STEPS} ->`);
-			productionRequests.forEach(r => debug(`	${r.type}`));
-		}
-		
-		return productionRequests;
-	}	
-
 	#recoverRepairedUnits(state) {
 		const repairedUnits = state.g.enumGroup(DIVISION.RETURNING_FOR_REPAIR);
-		const REPAIRED_AT_HEALTH = 99;
-
 		repairedUnits.forEach(droid => {
-			if (droid.health < REPAIRED_AT_HEALTH) {
-				return;
+			if (droid.health >= 95) {
+				this.toc.resetDroidGroup(state, droid, DIVISION.RETURNING_FOR_REPAIR); 	
 			}
-			this.toc.setNewDroidGroup(state, droid, DIVISION.RETURNING_FOR_REPAIR); 	// this sets the new group & removes from "RETURN_FOR_REPAIR"
-			// todo: This interface is a bit confusing.
 		});
 	}
 
@@ -957,14 +869,14 @@ class CommandCenter {
 	 */
 	#getBctCombatUnitCount(state, brigadeID) {
 		const brigadeComposition = state.brigades[brigadeID]["composition"]; 
+		const EXCLUDED_CATEGORIES = [DIVISION.AIR_DEFENCE_RESERVE, DIVISION.SENSOR_RESERVE, DIVISION.MAINTENANCE_RESERVE];
+
 		let unitCount = 0;
 		for (const [category, btnComposition] of brigadeComposition) {
-			if ([DIVISION.AIR_DEFENCE_RESERVE, DIVISION.SENSOR_RESERVE, DIVISION.MAINTENANCE_RESERVE].includes(category)) {
-				continue;
+			if (!EXCLUDED_CATEGORIES.includes(category)) {
+				unitCount += btnComposition["count"];	
 			}
-			unitCount += btnComposition["count"];
 		}
-
 		return unitCount;
 	}
 
@@ -991,6 +903,8 @@ class CommandCenter {
 
 		this.toc.updateBrigadeSupplyStatus(state, DIVISION.BCT_RESERVE, this.FISHBOT_RESERVE_COMPOSITION, this.VEHICLE_REPAIR_THRESHOLD, this.CYBORG_REPAIR_THRESHOLD);
 
+		const REPAIR_FACILITY_AVAILABLE = state.playerInfo[me]["repairFacilityFbObjects"].length > 0;		// this has the potential to be stale, but it is not critical that it is up-to-date
+
 		// Get reserve force units
 		const RESERVE_GROUP_IDS = [
 			DIVISION.HEAVY_CAV_RESERVE, 
@@ -1006,23 +920,25 @@ class CommandCenter {
 		const reserveUnits = new Map();
 		RESERVE_GROUP_IDS.forEach(id => {reserveUnits.set(id, state.g.enumGroup(id))});
 
-		const RESERVE_REPAIR_THRESHOLD = 70;
+		if (REPAIR_FACILITY_AVAILABLE) {
+			const RESERVE_REPAIR_THRESHOLD = 70;
 
-		// In case reserve units are damaged, send these back for repair (reserves should only be engaged in light combat). 
-		const unitsToBeRepaired = [];
-		for (const [category, unitList] of reserveUnits) {
-			if (unitList.length === 0) {
-				continue;
-			}
-
-			unitsToBeRepaired.length = 0;	// reset the list
-			unitList.forEach(droid => {
-				if (droid.health < RESERVE_REPAIR_THRESHOLD) {
-					unitsToBeRepaired.push(droid);
+			// In case reserve units are damaged, send these back for repair (reserves should only be engaged in light combat). 
+			const unitsToBeRepaired = [];
+			for (const [category, unitList] of reserveUnits) {
+				if (unitList.length === 0) {
+					continue;
 				}
-			});
-			
-			this.toc.assignUnitsToBrigade(state, unitsToBeRepaired, category, DIVISION.RETURNING_FOR_REPAIR);
+
+				unitsToBeRepaired.length = 0;	// reset the list
+				unitList.forEach(droid => {
+					if (droid.health < RESERVE_REPAIR_THRESHOLD) {
+						unitsToBeRepaired.push(droid);
+					}
+				});
+				
+				this.toc.assignUnitsToBrigade(state, unitsToBeRepaired, category, DIVISION.RETURNING_FOR_REPAIR);
+			}
 		}
 
 		// Decide how many BCTs should be made with the available units
@@ -1043,15 +959,12 @@ class CommandCenter {
 
 			weakBCTCount += 1;
 			if (weakBCTCount > 1) {
-				if (unitCount > 0) {
-					debug(`${gameTime}: Brigade "${brigadeID}" recombined (only ${unitCount} units).`);
-				}
+				// if (unitCount > 0) 	debug(`${gameTime}: Brigade "${brigadeID}" recombined (only ${unitCount} units).`);
 				activeBrigade.set(brigadeID, false);	// deactivate the brigade for recombination
 			} else {
 				activeBrigade.set(brigadeID, true);
 			}
 			continue;	
-			
 		}
 
 		// Reinforce & replace damaged units for existing brigades, recombining where appropriate
@@ -1082,10 +995,12 @@ class CommandCenter {
 				const reinforcements = battalionReserve.splice(0, deficit);
 				this.toc.assignUnitsToBrigade(state, reinforcements, category, brigadeID);
 
-				const damagedUnitCount = btnComposition['damagedUnitList'].length;
-				const replacements = battalionReserve.splice(0, damagedUnitCount);
-				this.toc.assignUnitsToBrigade(state, replacements, category, brigadeID);
-				this.toc.assignUnitsToBrigade(state, btnComposition['damagedUnitList'], brigadeID, DIVISION.RETURNING_FOR_REPAIR);		
+				if (REPAIR_FACILITY_AVAILABLE) {
+					const damagedUnitCount = btnComposition['damagedUnitList'].length;
+					const replacements = battalionReserve.splice(0, damagedUnitCount);
+					this.toc.assignUnitsToBrigade(state, replacements, category, brigadeID);
+					this.toc.assignUnitsToBrigade(state, btnComposition['damagedUnitList'], brigadeID, DIVISION.RETURNING_FOR_REPAIR);		
+				}
 			}
 		}
 	}
@@ -1110,7 +1025,6 @@ class CommandCenter {
 
 		if (false) {
 			/**
-			 * Debug print of idle factories.
 			 * @param {any[]} idleFactoryList 
 			 * @param {string} name 
 			 */
@@ -1119,26 +1033,24 @@ class CommandCenter {
 					debug(`	${gameTime}: Idle "${name}": ${idleFactoryList.length}`);
 				}
 			};
-
 			debugPrintIfIdle(idleFactories, "Factory");
 			debugPrintIfIdle(idleCyborgFactories, "Cyborg Factory");
 			debugPrintIfIdle(idleVtolFactories, "VTOL Factory");
 		}
 
 		if (idleFactories.length === 0 && idleCyborgFactories.length === 0 && idleVtolFactories.length === 0) {
-			// Cleanup of the activeProductionJobs list - double check all factories are represented.
-			// Required in the case that a factory no longer exists.
+			// Cleanup of the activeProductionJobs list, e.g. if a factory is destroyed mid-way through a job.
 			const factoryIdList = [];
 			factories.forEach(f => factoryIdList.push(f.id));
 			cyborgFactories.forEach(f => factoryIdList.push(f.id));
 			vtolFactories.forEach(f => factoryIdList.push(f.id));
 
 			activeProductionJobs.forEach(j => {
-				if (factoryIdList.includes(j['factory'].id)) {
-					return;
+				const FACTORY_ID = j['factory'].id;
+				if (!factoryIdList.includes(FACTORY_ID)) {
+					debug(`${gameTime}\tWARNING: removed ProductionJob "${FACTORY_ID} | ${j['type']}" as Factory "${FACTORY_ID}" was not found.`);
+					this.toc.removeFromActiveProductionJobs(state, j['factory'], j['type']);
 				}
-				this.toc.removeFromActiveProductionJobs(state, j['factory'], j['type']);
-				debug(`${gameTime}\tWARNING: removed ProductionJob "${j['factory'].id} | ${j['type']}" as Factory "${j['factory'].id}" was not found.`);
 			});
 			
 			return;
@@ -1194,22 +1106,20 @@ class CommandCenter {
 		if (SHOULD_PRODUCE_LAND_VEHICLES && idleFactories.length > 0) {
 			const productionRequests = [];
 
-			const brigadeWeightingFactors = [5, 4, 3, 2, 0];	// corresponds to each of the brigades (change with `this.NUMBER_OF_BRIGADES`)
+			const brigadeWeightingFactors = [16, 8, 4, 2, 0];	// corresponds to each of the brigades (change with `this.NUMBER_OF_BRIGADES`)
 			const reserveWeightingFactor = 1; 
 
 			this.BRIGADE_DESIGNATIONS.forEach((brigadeID, idx) => {
-
 				const brigadeComposition = state.brigades[brigadeID]["composition"];
-				const weightedRequests = this.#prioritiseLandVehicleCategory2(brigadeComposition);
+				const weightedRequests = supply.prioritiseLandVehicleCategory(brigadeComposition, this.FISHBOT_BRIGADE_COMPOSITION);
 
 				weightedRequests.forEach(request => request["score"] *= brigadeWeightingFactors[idx]);
 				productionRequests.push(...weightedRequests);
 			});
 
 			// Update reserve division
-
 			const brigadeComposition = state.brigades[DIVISION.BCT_RESERVE]["composition"];
-			const weightedRequests = this.#prioritiseLandVehicleCategory2(brigadeComposition);
+			const weightedRequests = supply.prioritiseLandVehicleCategory(brigadeComposition, this.FISHBOT_RESERVE_COMPOSITION);
 			weightedRequests.forEach(request => request["score"] *= reserveWeightingFactor);
 			productionRequests.push(...weightedRequests);
 
@@ -1238,7 +1148,6 @@ class CommandCenter {
 				removedRequests.forEach(r => deletedEntries += `${r.type},`)
 				debug(`Cleaned Production Requests (removed ${deletedEntries})`); 
 				productionRequests.forEach(r => debug(`\t-${r.type} | ${r.score}`));
-
 				debug(`\t${gameTime}: Impl2 producing: ${landVehicleCategory}`);
 			}
 		}
@@ -1322,7 +1231,7 @@ class CommandCenter {
 	}
 
 	/**
-	 * 
+	 * Decides what to research.
 	 * @param {worldState} state 
 	 */
 	runResearchLogistics(state) {
@@ -1331,40 +1240,6 @@ class CommandCenter {
 		if (idleLabs.length === 0) {
 			return;
 		}
-
-		/*
-			v0.3.1 release -> Power upgrade, Heavy Cannon, Cannon Dmg, Research upgrade, ROF, twin aslt, vehicle metals
-
-			Example v0.4.1 T2 research order 
-				446902   APFSDS Cannon Rounds Mk3
-				678902   Dedicated Synaptic Link Data Analysis Mk3
-				689902   Gas Turbine Generator Mk3
-				842902   Dense Composite Alloys Mk2
-				903902   Twin Assault Cannon
-				1034902  HVAPFSDS Cannon Rounds
-				1039902  Heavy Body - Tiger
-				1074902  HEAP Mortar Shells Mk2
-				1130902  Neural Synapse Research Brain
-				1226902  Cannon Autoloader Mk3
-				1234902  HVAPFSDS Cannon Rounds Mk2
-				1266902  Dense Composite Alloys Mk3
-				1282902  HEAP Mortar Shells Mk3
-				1345902  Vapor Turbine Generator
-				1393902  Cannon Rapid Loader
-				1438902  HVAPFSDS Cannon Rounds Mk3
-				1457902  Mortar Autoloader Mk3
-				1481902  Superdense Composite Alloys
-				1507902  Vapor Turbine Generator Mk2
-				1570902  Mortar Fast Loader
-				1572902  Cannon Rapid Loader Mk2
-				1653902  Needle Gun
-				1689902  Neural Synapse Research Brain Mk2
-				1722902  Vapor Turbine Generator Mk3
-				1725902  Superdense Composite Alloys Mk2
-				1787902  Cannon Rapid Loader Mk3
-				1904902  Advanced Engineering
-				1910902  Hardened Rail Dart
-		*/
 
 		const FISHBOT_T2_CANNON_RESEARCH_PRIORITIES = [
 			RESEARCHES["APFSDS Cannon Rounds Mk3"].id,
@@ -1381,7 +1256,6 @@ class CommandCenter {
 			RESEARCHES["Neural Synapse Research Brain"].id,
 			RESEARCHES["Dense Composite Alloys Mk2"].id,
 
-			// Gauss Cannon researches added here
 			RESEARCHES["Needle Gun"].id,
 			RESEARCHES["Rail Gun"].id,
 			RESEARCHES["Gauss Cannon"].id,
@@ -1392,21 +1266,16 @@ class CommandCenter {
 			"R-Wpn-Mortar-Damage", 	
 			"R-Wpn-Mortar-ROF",
 			"R-Vehicle-Metals",
+			"R-Cyborg-Metals", 
 
 			// RESEARCHES["Advanced Engineering"].id,
 			// RESEARCHES["Advanced Repair Facility"].id,
 			RESEARCHES["Auto-Repair"].id,
 			RESEARCHES["Neural Synapse Research Brain Mk2"].id,
 
-			// "R-Cyborg-Metals", 
 			"R-Struc-VTOLPad-Upgrade",
-
 			"R-Struc-Factory-Upgrade",
 			RESEARCHES["Neural Synapse Research Brain Mk3"].id,
-			
-			// RESEARCHES["Howitzer"].id,
-			// RESEARCHES["Heavy Cannon"].id, 
-			// RESEARCHES["AA Cyclone Flak Cannon"].id, 		
 		];
 
 		const FISHBOT_T2_CANNON_RESEARCH_BLACKLIST = [
@@ -1422,22 +1291,18 @@ class CommandCenter {
 			for (let j=positionInResearchOrder; j<researchOrder.length; j++) {
 				if (pursueResearch(idleLabs[i], researchOrder[j].id)) {
 					positionInResearchOrder++;
-					// debug(`  ${gameTime} (FishBot ${me}): researching ${researchOrder[j].name}`);		
+					// debug(`  ${gameTime} (FishBot ${me}): ${researchOrder[j].name}`);		
 					break;
 				}
 			}
 		}
-
 	}
 
 	/**
-	 * 
+	 * Executes all bot actions which use the mission manager system (e.g. aviation, construction).
 	 * @param {worldState} state 
 	 */
 	runMissionManager(state) {
-		// Executes all bot actions which use the mission manager (e.g. aviation, construction)
-		// debug(`${gameTime}:		global_missionManager`);
 		this.toc.manageMissions(state);
 	}
-
 }
