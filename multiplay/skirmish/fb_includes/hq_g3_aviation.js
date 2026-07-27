@@ -87,11 +87,6 @@ class armyAviation {
 		};
 	}
 
-	#mcb(callback, ...args) {
-		// This function is here so we can schedule execution of the callback function at some later point
-		return callback(...args);	//...args is important otherwise all remaining args will be interpreted as a single array of parameters
-	}
-
 	createVtolStagingMission() {
 		// this is the default behaviour of all AIR_RESERVE aircraft
 
@@ -106,7 +101,7 @@ class armyAviation {
 		md.taskForceID = DIVISION.AIR_RESERVE;			// breaks the normal pattern: id === reserveGroup for a default action
 
 		// Assign orders for conducting & ceasing operations			
-		md.orders = () => this.#mcb(rearmVtolGroup, md.taskForceID);		
+		md.orders = () => rearmVtolGroup(md.taskForceID);		
 		md.ceaseOrders = () => {return;};	// doesn't do anything
 
 		return md;
@@ -145,8 +140,8 @@ class armyAviation {
 		md.target = targetInfo;
 
 		// Assign orders for conducting & ceasing operations			
-		md.orders = () => this.#mcb(doAirStrike, targetInfo, md.taskForceID, numRaidAircraft);		// lambda is necessary otherwise md.orders is not interpreted as a function
-		md.ceaseOrders = () => this.#mcb(this.#finaliseVtolMission, md);
+		md.orders = () => doAirStrike(targetInfo, md.taskForceID);		
+		md.ceaseOrders = () => this.#finaliseVtolMission(md);
 
 		return md;
 	}
@@ -185,8 +180,8 @@ class armyAviation {
 
 		// Assign orders for conducting & ceasing operations
 		const areWeaponsHot = true;
-		md.orders = () => this.#mcb(doAirRecon, x, y, areWeaponsHot, md.taskForceID);		// lambda is necessary otherwise md.orders is not interpreted as a function
-		md.ceaseOrders = () => this.#mcb(this.#finaliseVtolMission, md);
+		md.orders = () => doAirRecon(x, y, areWeaponsHot, md.taskForceID);		
+		md.ceaseOrders = () => this.#finaliseVtolMission(md);
 
 		return md;
 	}
@@ -224,8 +219,8 @@ class armyAviation {
 
 		// Assign orders for conducting & ceasing operations
 		const areWeaponsHot = false;
-		md.orders = () => this.#mcb(doAirRecon, x, y, areWeaponsHot, md.taskForceID);		// lambda is necessary otherwise md.orders is not interpreted as a function
-		md.ceaseOrders = () => this.#mcb(this.#finaliseVtolMission, md);
+		md.orders = () => doAirRecon(x, y, areWeaponsHot, md.taskForceID);		
+		md.ceaseOrders = () => this.#finaliseVtolMission(md);
 
 		return md;
 	}
@@ -262,8 +257,8 @@ class armyAviation {
 		md.target = undefined;
 
 		const areWeaponsHot = true;
-		md.orders = () => this.#mcb(doAirRecon, x, y, areWeaponsHot, md.taskForceID);		// lambda is necessary otherwise md.orders is not interpreted as a function
-		md.ceaseOrders = () => this.#mcb(this.#finaliseVtolMission, md);
+		md.orders = () => doAirRecon(x, y, areWeaponsHot, md.taskForceID);		// lambda is necessary otherwise md.orders is not interpreted as a function
+		md.ceaseOrders = () => this.#finaliseVtolMission(md);
 
 		return md;
 	}

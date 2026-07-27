@@ -754,22 +754,15 @@ class armyEngineering {
 		};
 	}
 
-	#mcb(callback, ...args) {
-		// This function is here so we can schedule execution of the callback function at some later point
-		return callback(...args);	//...args is important otherwise all remaining args will be interpreted as a single array of parameters
-	}
-
 	#finaliseConstruction(md, reserveID) {
 		// Mission completed
 		const taskForceUnits = state.g.enumGroup(md.taskForceID);
-		if (taskForceUnits.length > 0) {
-			taskForceUnits.forEach((droid) => {
-				state.g.addDroidToGroup({groupID: reserveID, droidID: droid.id});
-				orderDroidLoc(droid, DORDER_MOVE, baseLocation.x, baseLocation.y);
-			});	
-		} else {
-			// debug(`Terminated mission: taskForceID ${md.taskForceID} are all dead.`);
-		}
+		taskForceUnits.forEach((droid) => {
+			state.g.addDroidToGroup({groupID: reserveID, droidID: droid.id});
+			orderDroidLoc(droid, DORDER_MOVE, baseLocation.x, baseLocation.y);
+		});	
+		// if (taskForceUnits.length === 0)	debug(`Terminated mission: taskForceID ${md.taskForceID} are all dead.`);
+		
 		state.g.deleteGroup(md.taskForceID);
 		md.timeCompleted = getCurrGameTime();
 	}
@@ -793,7 +786,7 @@ class armyEngineering {
 		md.taskForceID = ENGINEERING.ENGINEERING_RESERVE;		// taskForceID is used for enumGroup so 
 
 		// Assign orders for conducting & ceasing operations			
-		md.orders = () => this.#mcb(helpConstructAroundBase, md.taskForceID);		
+		md.orders = () => helpConstructAroundBase(md.taskForceID);		
 		md.ceaseOrders = () => {return;};	// doesn't do anything
 
 		return md;
@@ -846,8 +839,8 @@ class armyEngineering {
 		});		
 
 		// Assign orders for conducting & ceasing operations			
-		md.orders = () => this.#mcb(buildBaseStructure, md.taskForceID, buildTask.structureID, loc.x, loc.y);		// lambda is necessary otherwise md.orders is not interpreted as a function
-		md.ceaseOrders = () => this.#mcb(this.#finaliseConstruction, md, ENGINEERING.BASE_BUILDER);		// puts the reserve back in BASE_BUILDER
+		md.orders = () => buildBaseStructure(md.taskForceID, buildTask.structureID, loc.x, loc.y);		// md.orders is a function
+		md.ceaseOrders = () => this.#finaliseConstruction(md, ENGINEERING.BASE_BUILDER);		// puts the reserve back in BASE_BUILDER
 
 		return md;
 	}
@@ -895,8 +888,8 @@ class armyEngineering {
 		});		
 
 		// Assign orders for conducting & ceasing operations			
-		md.orders = () => this.#mcb(buildOilDerrick, md.taskForceID, buildTask.structureID, derrick);		// lambda is necessary otherwise md.orders is not interpreted as a function
-		md.ceaseOrders = () => this.#mcb(this.#finaliseConstruction, md, ENGINEERING.ENGINEERING_RESERVE);
+		md.orders = () => buildOilDerrick(md.taskForceID, buildTask.structureID, derrick);		// lambda is necessary otherwise md.orders is not interpreted as a function
+		md.ceaseOrders = () => this.#finaliseConstruction(md, ENGINEERING.ENGINEERING_RESERVE);
 
 		return md;
 	}
@@ -944,8 +937,8 @@ class armyEngineering {
 		});		
 
 		// Assign orders for conducting & ceasing operations			
-		md.orders = () => this.#mcb(buildMultipleOilDerricks, md.taskForceID, buildTask.structureID, sectorDerricks);		// lambda is necessary otherwise md.orders is not interpreted as a function
-		md.ceaseOrders = () => this.#mcb(this.#finaliseConstruction, md, ENGINEERING.ENGINEERING_RESERVE);
+		md.orders = () => buildMultipleOilDerricks(md.taskForceID, buildTask.structureID, sectorDerricks);		// lambda is necessary otherwise md.orders is not interpreted as a function
+		md.ceaseOrders = () => this.#finaliseConstruction(md, ENGINEERING.ENGINEERING_RESERVE);
 
 		return md;
 	}
@@ -1025,8 +1018,8 @@ class armyEngineering {
 		});		
 
 		// Assign orders for conducting & ceasing operations			
-		md.orders = () => this.#mcb(buildSingleModule, md.taskForceID, buildTask.structureID, x, y, numFinishedModules);
-		md.ceaseOrders = () => this.#mcb(this.#finaliseConstruction, md, ENGINEERING.BASE_BUILDER);		// puts the reserve back in BASE_BUILDER
+		md.orders = () => buildSingleModule(md.taskForceID, buildTask.structureID, x, y, numFinishedModules);
+		md.ceaseOrders = () => this.#finaliseConstruction(md, ENGINEERING.BASE_BUILDER);		// puts the reserve back in BASE_BUILDER
 
 		return md;
 	}
@@ -1080,8 +1073,8 @@ class armyEngineering {
 		});		
 
 		// Assign orders for conducting & ceasing operations
-		md.orders = () => this.#mcb(buildNearbyDefences, md.taskForceID, buildTask.structureID, preferredLoc.x, preferredLoc.y);		// lambda is necessary otherwise md.orders is not interpreted as a function
-		md.ceaseOrders = () => this.#mcb(this.#finaliseConstruction, md, ENGINEERING.ENGINEERING_RESERVE);
+		md.orders = () => buildNearbyDefences(md.taskForceID, buildTask.structureID, preferredLoc.x, preferredLoc.y);		// lambda is necessary otherwise md.orders is not interpreted as a function
+		md.ceaseOrders = () => this.#finaliseConstruction(md, ENGINEERING.ENGINEERING_RESERVE);
 
 		// debug(`Mission creation for: _CONSTRUCT_NEARBY_DEFENCE_ -> (${preferredLoc.x}, ${preferredLoc.y}) `);			
 
@@ -1138,8 +1131,8 @@ class armyEngineering {
 
 		// Assign orders for conducting & ceasing operations
 		// Can use the same driver as 'buildNearbyDefences' (same logic)
-		md.orders = () => this.#mcb(buildNearbyDefences, md.taskForceID, buildTask.structureID, preferredLoc.x, preferredLoc.y);		
-		md.ceaseOrders = () => this.#mcb(this.#finaliseConstruction, md, ENGINEERING.ENGINEERING_RESERVE);
+		md.orders = () => buildNearbyDefences(md.taskForceID, buildTask.structureID, preferredLoc.x, preferredLoc.y);		
+		md.ceaseOrders = () => this.#finaliseConstruction(md, ENGINEERING.ENGINEERING_RESERVE);
 
 		// debug(`Mission creation for: CONSTRUCT_REPAIR_CENTER -> (${preferredLoc.x}, ${preferredLoc.y}) `);		
 
@@ -1187,8 +1180,8 @@ class armyEngineering {
 		if (false) debug(`Mission creation for: DEMOLISH_REPAIR_CENTER -> (${loc.x}, ${loc.y}) `);			
 
 		// Can use the same driver as 'buildNearbyDefences' (same logic)
-		md.orders = () => this.#mcb(demolishStructure, md.taskForceID, buildTask.structureID, loc.x, loc.y);		
-		md.ceaseOrders = () => this.#mcb(this.#finaliseConstruction, md, ENGINEERING.ENGINEERING_RESERVE);
+		md.orders = () => demolishStructure(md.taskForceID, buildTask.structureID, loc.x, loc.y);		
+		md.ceaseOrders = () => this.#finaliseConstruction(md, ENGINEERING.ENGINEERING_RESERVE);
 
 		return md;
 	}
