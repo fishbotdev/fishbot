@@ -807,10 +807,17 @@ class armyEngineering {
 	createBuildBaseStructureTask({buildTask, tickUID}) {
 		const cellSize = state.grid.cellSize;
 		
-		const taskForceUnits = state.g.enumGroup(ENGINEERING.BASE_BUILDER);
-		if (taskForceUnits.length === 0) {			
-			debug(`${gameTime}	WARNING (FishBot ${me}): createBuildBaseStructureTask(): No trucks available to construct ${buildTask.structureID}.`);
-			return undefined;
+		let reserveID = ENGINEERING.BASE_BUILDER;
+		let taskForceUnits = state.g.enumGroup(reserveID);
+		
+		if (taskForceUnits.length === 0) {
+			// debug(`${gameTime}	WARNING (FishBot ${me}): createBuildSingleModuleTask(): Falling back to ENGINEERING.ENGINEERING_RESERVE.`);
+			reserveID = ENGINEERING.ENGINEERING_RESERVE;
+			taskForceUnits = state.g.enumGroup(reserveID);
+			if (taskForceUnits.length === 0) {
+				debug(`${gameTime}	WARNING (FishBot ${me}): createBuildSingleModuleTask(): No trucks available to construct ${buildTask.structureID}.`);
+				return undefined;
+			}
 		}
 
 		if (!isStructureAvailable(buildTask.structureID, me)) {
@@ -835,12 +842,12 @@ class armyEngineering {
 		
 		taskForceUnits.forEach((droid) => {
 			state.g.addDroidToGroup({groupID: md.taskForceID, droidID: droid.id});
-			state.g.removeDroidFromGroup({groupID: ENGINEERING.BASE_BUILDER, droidID: droid.id});
+			state.g.removeDroidFromGroup({groupID: reserveID, droidID: droid.id});
 		});		
 
 		// Assign orders for conducting & ceasing operations			
 		md.orders = () => this.#mcb(buildBaseStructure, md.taskForceID, buildTask.structureID, loc.x, loc.y);		// lambda is necessary otherwise md.orders is not interpreted as a function
-		md.ceaseOrders = () => this.#mcb(this.#finaliseConstruction, md, ENGINEERING.BASE_BUILDER);
+		md.ceaseOrders = () => this.#mcb(this.#finaliseConstruction, md, ENGINEERING.BASE_BUILDER);		// puts the reserve back in BASE_BUILDER
 
 		return md;
 	}
@@ -952,10 +959,17 @@ class armyEngineering {
 
 		const cellSize = state.grid.cellSize;
 
-		const taskForceUnits = state.g.enumGroup(ENGINEERING.BASE_BUILDER);
-		if (taskForceUnits.length === 0) {			
-			debug(`${gameTime}	WARNING (FishBot ${me}): createBuildSingleModuleTask(): No trucks available to construct ${buildTask.structureID}.`);
-			return undefined;
+		let reserveID = ENGINEERING.BASE_BUILDER;
+		let taskForceUnits = state.g.enumGroup(reserveID);
+
+		if (taskForceUnits.length === 0) {
+			// debug(`${gameTime}	WARNING (FishBot ${me}): createBuildSingleModuleTask(): Falling back to ENGINEERING.ENGINEERING_RESERVE.`);
+			reserveID = ENGINEERING.ENGINEERING_RESERVE;
+			taskForceUnits = state.g.enumGroup(reserveID);
+			if (taskForceUnits.length === 0) {
+				debug(`${gameTime}	WARNING (FishBot ${me}): createBuildSingleModuleTask(): No trucks available to construct ${buildTask.structureID}.`);
+				return undefined;
+			}
 		}
 
 		if (!isStructureAvailable(buildTask.structureID, me)) {
@@ -1007,12 +1021,12 @@ class armyEngineering {
 		
 		taskForceUnits.forEach((droid) => {
 			state.g.addDroidToGroup({groupID: md.taskForceID, droidID: droid.id});
-			state.g.removeDroidFromGroup({groupID: ENGINEERING.BASE_BUILDER, droidID: droid.id});
+			state.g.removeDroidFromGroup({groupID: reserveID, droidID: droid.id});
 		});		
 
 		// Assign orders for conducting & ceasing operations			
 		md.orders = () => this.#mcb(buildSingleModule, md.taskForceID, buildTask.structureID, x, y, numFinishedModules);
-		md.ceaseOrders = () => this.#mcb(this.#finaliseConstruction, md, ENGINEERING.BASE_BUILDER);
+		md.ceaseOrders = () => this.#mcb(this.#finaliseConstruction, md, ENGINEERING.BASE_BUILDER);		// puts the reserve back in BASE_BUILDER
 
 		return md;
 	}
