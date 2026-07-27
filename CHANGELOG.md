@@ -17,7 +17,7 @@ This file is used to record the changes to FishBot between each version.
     - Build order adaptation: 
         - Matches the number of generators to the number of derricks.
         - VTOL infrastructure & factory modules are no longer constructed in very low oil situations.
-    - Improved early game construction efficiency.
+    - Improved base construction efficiency.
 - Test infrastructure improvements
     - Testing:
         - Added a new test pipeline to allow FishBot to be automatically tested on all base maps with up to 9 other players (see `fishbot\tests`).
