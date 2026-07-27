@@ -41,15 +41,15 @@ Some of the test results for larger maps may change over time as more test data 
 
 ### 2 player (T2)
 * `Sk-Startup` (100% duel)
-* `Sk-UrbanChasm` (75% duel)
-* `Sk-HighGround` (**35%** duel) - weakest 2p map
-* `Roughness` (95% duel)
+* `Sk-UrbanChasm` (85% duel)
+* `Sk-HighGround` (85% duel)
+* `Roughness` (100% duel)
 * `Vision` (95% duel)
 * ~~`DustyMaze (2P)`~~ (manually tested)
 
 ### 3 player (T2)
 * `Monocot` (100% duel, 100% FFA)
-* `Gamma` (100% duel, 100% FFA)
+* `Gamma` (100% duel, 97% FFA)
 
 ### 4 player (T2)
 * `Sk-Rush` (100% duel, 65% FFA)
@@ -60,9 +60,9 @@ Some of the test results for larger maps may change over time as more test data 
 * `Sk-FishNets` (92% duel, **41%** FFA) - weakest 4p map
 * `Sk-GreatRift` (98% duel, 81% FFA)
 * `Sk-RollingHills` (90% duel, 90% FFA) 
-* `Sk-Basingstoke` (83% duel, 68% FFA)
-* `Sk-LittleEgypt` (97% duel, ***54% FFA***)
-* `Sk-Cockpit` (100% duel, ***83% FFA***)
+* ~~`Sk-Basingstoke` (83% duel, ***68% FFA***)~~
+* ~~`Sk-LittleEgypt` (97% duel, ***54% FFA***)~~
+* ~~`Sk-Cockpit` (100% duel, ***83% FFA***)~~
 * `Sk-Urban-Chaos` (94% duel, 97% FFA)
 * `Sk-Pyramidal` (100% duel, 79% FFA)
 * ~~`DustyMaze-2v2`~~ (manually tested)
