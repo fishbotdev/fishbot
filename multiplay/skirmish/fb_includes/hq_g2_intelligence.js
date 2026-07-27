@@ -21,43 +21,6 @@ class armyIntelligence {
 	}
 
 	/*
-		MISSION CREATION
-	*/
-	createIntelRequest({missionType, payload, priority=MISSION_PRIORITY.LOW}) {
-		return {
-			'missionType': missionType,
-			'payload': payload,
-			'priority': priority
-		};
-	}
-
-	#createMissionOrders() {
-		return {
-			'id': undefined, 
-			'missionType': undefined, 
-			'missionStatus': MISSION_STATUS.FAILED_CREATION, 
-			'priority': MISSION_PRIORITY.LOW, 
-			'taskForceID': undefined, 
-			'orders': undefined, 
-			'ceaseOrders': undefined,
-			'timeStarted': -2,
-			'timeCompleted': -1,
-
-			'sectorID': undefined,	
-		};
-	}
-
-	#mcb(callback, ...args) {
-		// This function is here so we can schedule execution of the callback function at some later point
-		return callback(...args);	//...args is important otherwise all remaining args will be interpreted as a single array of parameters
-	}
-
-	#finaliseIntelMission(md) {
-		// Mission completed
-		md.timeCompleted = getCurrGameTime();
-	}
-
-	/*
 		REAL-TIME TARGETING
 	*/
 
