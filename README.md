@@ -45,7 +45,7 @@ Some of the test results for larger maps may change over time as more test data 
 * `Sk-HighGround` (85% duel)
 * `Roughness` (100% duel)
 * `Vision` (95% duel)
-* ~~`DustyMaze (2P)`~~ (manually tested)
+* ~~`DustyMaze (2P)`~~ (to be manually tested)
 
 ### 3 player (T2)
 * `Monocot` (100% duel, 100% FFA)
@@ -60,17 +60,18 @@ Some of the test results for larger maps may change over time as more test data 
 * `Sk-FishNets` (92% duel, **41%** FFA) - weakest 4p map
 * `Sk-GreatRift` (98% duel, 81% FFA)
 * `Sk-RollingHills` (90% duel, 90% FFA) 
-* ~~`Sk-Basingstoke` (83% duel, ***68% FFA***)~~
-* ~~`Sk-LittleEgypt` (97% duel, ***54% FFA***)~~
-* ~~`Sk-Cockpit` (100% duel, ***83% FFA***)~~
+* ~~`Sk-Basingstoke` ()~~ - not compatible: large unit groups get stuck pathfinding
+* `Sk-LittleEgypt` (97% duel, ***54% FFA***) 
+* ~~`Sk-Cockpit` (100% duel, ***83% FFA***)~~ - not compatible: unit groups get stuck in the narrow base entrances
 * `Sk-Urban-Chaos` (94% duel, 97% FFA)
 * `Sk-Pyramidal` (100% duel, 79% FFA)
-* ~~`DustyMaze-2v2`~~ (manually tested)
-* ~~`DustyMaze-FFA`~~ (manually tested)
+* ~~`DustyMaze-2v2`~~ (to be manually tested)
+* ~~`DustyMaze-FFA`~~ (to be manually tested)
 
 Most 2, 3 and 4 player maps are supported. Some limitations are:
 * Low oil problems: On very small maps with very low oil, FishBot runs out of power (and gets stuck) due to a fixed rigid build order. It can also get stuck if it doesn't claim enough derricks in the early game.
 * FishBot sometimes attempts to build forward-defences around derricks which are actually too dangerous to go and capture.
+* FishBot's group-movement algorithm sometimes causes large groups of units to get stuck in a tight ball.
 
 ## Recent updates
 * **v0.4.2** - *released **10 Jul 2026***
