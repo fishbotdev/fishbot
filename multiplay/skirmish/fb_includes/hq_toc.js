@@ -959,24 +959,27 @@ class TacticalOperationsCenter {
 	}
 
 	/**
-     * Adds all newly manufactured droids into a FishBot group. 
-	 * Called directly by the `eventDroidBuilt` handler.
+     * Adds all newly manufactured droids into a FishBot reserve group (called by `eventDroidBuilt()`).
 	 * @param {worldState} state
      * @param {DroidObject} droid 
-	 * @param {number | undefined} groupIdToRemove
-     * @returns {number} groupID
+     * @returns {number} new groupID
      */
-    setNewDroidGroup(state, droid, groupIdToRemove=undefined) {
-
+    setNewDroidGroup(state, droid) {
 		const groupID = getDroidFbGroupClassification(droid);
-
-		if (defined(groupIdToRemove)) {
-			state.g.removeDroidFromGroup({groupID: groupIdToRemove, droidID: droid.id});
-		}
-
 		state.g.addDroidToGroup({groupID: groupID, droidID: droid.id});
-
 		return groupID;
+	}
+
+	/**
+	 * Resets the FishBot group of a droid to the appropriate reserve groupID (used during unit repair).
+	 * @param {worldState} state 
+	 * @param {DroidObject} droid 
+	 * @param {number} groupIdToRemove 
+	 * @returns {void}
+	 */
+	resetDroidGroup(state, droid, groupIdToRemove) {
+		state.g.removeDroidFromGroup({groupID: groupIdToRemove, droidID: droid.id});
+		this.setNewDroidGroup(state, droid);
 	}
 
 	/**
