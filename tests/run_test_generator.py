@@ -194,7 +194,7 @@ if __name__ == "__main__":
     PRODUCTION_MAPS_FOLDER_PATH = Path(rf"{BASE_PRODUCTION_DIRECTORY}\maps")
     PRODUCTION_TEST_FOLDER_PATH = Path(rf"{BASE_PRODUCTION_DIRECTORY}\tests")
 
-    BASE_DEV_DIRECTORY = r"~\OneDrive\Documents\wz2100_config_dir"
+    BASE_DEV_DIRECTORY = r"~\Documents\wz2100_config_dir"
     DEV_MAPS_FOLDER_PATH = Path(rf"{BASE_DEV_DIRECTORY}\maps").expanduser()
     DEV_TEST_FOLDER_PATH = Path(rf"{BASE_DEV_DIRECTORY}\tests").expanduser()
 
