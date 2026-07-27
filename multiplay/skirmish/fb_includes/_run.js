@@ -181,9 +181,8 @@ function setupDebugMode() {
 function eventStartLevel() {
 	queue("setupFishBot", me * 100);	
 	
-	// Debug mode is enabled for development & automated testing. 
 	if (DEBUG_MODE_ON) {
-		setupDebugMode();
+		setupDebugMode();		// Debug mode is enabled for development & automated testing 
 	}
 
 	// One time use: start initial construction tasks immediately
