@@ -737,12 +737,11 @@ class CommandCenter {
 	 */
 	runConstructionLogistics(state) {
 
-		// Command re-evaluates existing construction tasks
-		let activeOilCapTaskIDs = [];
-		let activeBaseBuildTasks = []; 
-		let activeDefenceBuildTaskIDs = [];
-		let activeRepairCenterBuildTaskIDs = [];
-		let activeRemoteMissions = [];
+		const activeOilCapTaskIDs = [];
+		const activeBaseBuildTasks = []; 
+		const activeDefenceBuildTaskIDs = [];
+		const activeRepairCenterBuildTaskIDs = [];
+		const activeRemoteMissions = [];
 
 		this.toc.getActiveConstructionMissions(state).forEach(missionData => {
 			switch(missionData.missionType) {
@@ -785,9 +784,7 @@ class CommandCenter {
 		const USE_VTOL = (MY_DERRICK_COUNT > 8);
 		const USE_FACTORY_MODULES = (MY_DERRICK_COUNT >= 6);
 
-		// Command tasks g4 with option & prioritises options here
-		// For now, assumes that g4 does not propose duplicates - e.g. tracks & removes already assigned tasks 
-		let approvedConstructionTasks = [];
+		const approvedConstructionTasks = [];
 
 		// BASE BUILD
 		const MAX_BASE_BUILD_TASKS = 1;
@@ -852,7 +849,6 @@ class CommandCenter {
 			}
 		}
 
-		// Command delegates assignment 
 		this.toc.assignConstructionTasks(state, approvedConstructionTasks);
 	}
 
@@ -1029,7 +1025,6 @@ class CommandCenter {
 
 		if (false) {
 			/**
-			 * Debug print of idle factories.
 			 * @param {any[]} idleFactoryList 
 			 * @param {string} name 
 			 */
@@ -1038,26 +1033,24 @@ class CommandCenter {
 					debug(`	${gameTime}: Idle "${name}": ${idleFactoryList.length}`);
 				}
 			};
-
 			debugPrintIfIdle(idleFactories, "Factory");
 			debugPrintIfIdle(idleCyborgFactories, "Cyborg Factory");
 			debugPrintIfIdle(idleVtolFactories, "VTOL Factory");
 		}
 
 		if (idleFactories.length === 0 && idleCyborgFactories.length === 0 && idleVtolFactories.length === 0) {
-			// Cleanup of the activeProductionJobs list - double check all factories are represented.
-			// Required in the case that a factory no longer exists.
+			// Cleanup of the activeProductionJobs list, e.g. if a factory is destroyed mid-way through a job.
 			const factoryIdList = [];
 			factories.forEach(f => factoryIdList.push(f.id));
 			cyborgFactories.forEach(f => factoryIdList.push(f.id));
 			vtolFactories.forEach(f => factoryIdList.push(f.id));
 
 			activeProductionJobs.forEach(j => {
-				if (factoryIdList.includes(j['factory'].id)) {
-					return;
+				const FACTORY_ID = j['factory'].id;
+				if (!factoryIdList.includes(FACTORY_ID)) {
+					debug(`${gameTime}\tWARNING: removed ProductionJob "${FACTORY_ID} | ${j['type']}" as Factory "${FACTORY_ID}" was not found.`);
+					this.toc.removeFromActiveProductionJobs(state, j['factory'], j['type']);
 				}
-				this.toc.removeFromActiveProductionJobs(state, j['factory'], j['type']);
-				debug(`${gameTime}\tWARNING: removed ProductionJob "${j['factory'].id} | ${j['type']}" as Factory "${j['factory'].id}" was not found.`);
 			});
 			
 			return;
@@ -1155,7 +1148,6 @@ class CommandCenter {
 				removedRequests.forEach(r => deletedEntries += `${r.type},`)
 				debug(`Cleaned Production Requests (removed ${deletedEntries})`); 
 				productionRequests.forEach(r => debug(`\t-${r.type} | ${r.score}`));
-
 				debug(`\t${gameTime}: Impl2 producing: ${landVehicleCategory}`);
 			}
 		}
@@ -1299,22 +1291,18 @@ class CommandCenter {
 			for (let j=positionInResearchOrder; j<researchOrder.length; j++) {
 				if (pursueResearch(idleLabs[i], researchOrder[j].id)) {
 					positionInResearchOrder++;
-					// debug(`  ${gameTime} (FishBot ${me}): researching ${researchOrder[j].name}`);		
+					// debug(`  ${gameTime} (FishBot ${me}): ${researchOrder[j].name}`);		
 					break;
 				}
 			}
 		}
-
 	}
 
 	/**
-	 * 
+	 * Executes all bot actions which use the mission manager system (e.g. aviation, construction).
 	 * @param {worldState} state 
 	 */
 	runMissionManager(state) {
-		// Executes all bot actions which use the mission manager (e.g. aviation, construction)
-		// debug(`${gameTime}:		global_missionManager`);
 		this.toc.manageMissions(state);
 	}
-
 }
