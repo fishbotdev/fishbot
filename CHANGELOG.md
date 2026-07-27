@@ -13,7 +13,11 @@ This file is used to record the changes to FishBot between each version.
     - Depleted BCTs (Brigade Combat Teams) are now automatically recombined into other BCTs, preserving fighting strength.
     - Optimised production weights to produce a better mix of units per BCT.
     - Now tracks active production jobs for more accurate production to meet demand.
-- Infrastructure improvements
+- Construction improvements
+    - Build order adaptation: 
+        - Matches the number of generators to the number of derricks captured.
+        - VTOL infrastructure & factory modules are no longer constructed in very low oil situations.
+- Test infrastructure improvements
     - Testing:
         - Added a new test pipeline to allow FishBot to be automatically tested on all base maps with up to 9 other players (see `fishbot\tests`).
         - Added a GUI interface for running tests, replacing the old .bat file runners (see `fishbot\python_helper_scripts\spectate_map\spectate_map.py`).

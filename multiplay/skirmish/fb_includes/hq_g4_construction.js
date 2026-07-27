@@ -625,7 +625,7 @@ class armyEngineering {
 			// 2. Remove VTOLs if low oil (having more ground units is more effective to capture more oil)
 				// TODO: this is a strategic decision which should be made by hq_command (to do with unit mix), this decision should not be made here
 			if (["VTOL Factory", "VTOL Rearming Pad"].includes(STRUCTURE_NAME)) {
-				if (USE_VTOL) {	
+				if (!USE_VTOL) {	
 					continue;
 				}
 			}
