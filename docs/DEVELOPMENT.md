@@ -42,7 +42,7 @@
           transformPlayerToSpectator(me);	
       }
    ```
-   3. Save the file as `Spectator.js` inside `skirmish` (select Save as type: `All files`).
+   3. Save the file as `Spectator.js` inside `skirmish` (select "Save as type" as `All files`).
       * If done correctly, you should be able to see `spectator/multiplay/skirmish/Spectator.js`.
    4. Open a new text editor window. Copy-paste the following inside the new window:
    ```json
@@ -54,34 +54,41 @@
       }
    }
    ```
-   5. Save the file as `Spectator.json` inside `skirmish` (select Save as type: `All files`).
+   5. Save the file as `Spectator.json` inside the `skirmish` folder (select "Save as type" as `All files`).
       * If done correctly, you should be able to see `Spectator.json` as well as `Spectator.js` inside `spectator/multiplay/skirmish/`.
    6. Duplicate the `spectator` folder inside `PRODCONFIG/mods/4.7.0/autoload`. 
       * If done correctly, you should be able to see: `PRODCONFIG/mods/4.7.0/autoload/spectator/multiplay/skirmish`.
+3. Open Command Prompt and run `pip install pandas`.
 
 ## Running Automated Tests
 Go to `fishbot/tests`, then run the files in this order:
 1. [*Optional*] `run_test_generator.py` (~5 seconds)
-   * Please double check the output folder path before running.
-   * Re-run this if the map or test information has changed (e.g. a new set of maps, or modified skirmish settings.
-   Also re-run if the folder location has changed.
+   * Please double check the output folder path before running the script.
+   * Re-run this script if the map or test information has changed (e.g. a new set of maps, or modified skirmish settings). Also re-run the script if the output folder location has changed.
 2. `run_tests.py` (may take ~1 day to complete, depending on the number of tests requested).
-   * Don't forget to change `COMMIT_SHA`.
+   * Don't forget to change `COMMIT_SHA` for a new test.
    * Note: The implementation of the game-summary-table parser is platform-dependent (works on Windows only). Please implement your own terminal-scraper function for Linux / Mac.
 3. `run_result_parser.py` (~5 seconds)
-   * Don't forget to change `COMMIT_SHA`.
+   * Don't forget to change `COMMIT_SHA` for a new test.
 
-For any test that warrants further investigation, you can use `fishbot\spectate_map.exe` to select and run the test in spectator mode.
+For any test that warrants further investigation, you can use `spectate_map.exe` to select and run the test in spectator mode.
 
-### Build the 'Spectate Map' GUI
-To spectate FishBot on any map which is specified by an existing `.json` test file, you use the map selector GUI (`spectate_map.exe`) to set up a game in single-player Spectator mode. This allows you to observe how FishBot is performing in real time, and to speed up and slow down the game at your leisure.
-To build this tool:
-   1. If you don't have `pyinstaller`, open Command Prompt and run `pip install pyinstaller`.
-   2. Go to `wz2100_config_dir\mods\4.7.0\autoload\fishbot\python_helper_scripts\spectate_map`.
+### Build the Map-Selector GUI to observe FishBot in Spectator Mode
+To spectate FishBot in real time, there is a handy map-selector GUI `spectate_map.exe` to configure a game in single-player spectator mode. This allows you to:
+* observe how FishBot is performing in real time (with the statistics panel and free movement of the camera), and
+* speed up or slow down the game using the in-game DEBUG controls.
+
+To build `spectate_map.exe`, follow these steps:
+   1. Open Command Prompt and run `pip install pyinstaller`.
+   2. Go to this folder: `wz2100_config_dir\mods\4.7.0\autoload\fishbot\python_helper_scripts\spectate_map`.
    3. Run `build_spectate_map.bat`.
    4. In `Documents\wz2100_config_dir\mods\4.7.0\autoload\fishbot\`, check for:
       * New folder: `fishbot\_internal` and 
       * New .exe file: `fishbot\spectate_map.exe`.
+
+On opening `spectate_map.exe`, make sure to Browse for the **Tests Folder** on your machine. 
+
+The tests folder should point to the **Development** Configuration Directory (e.g. `Documents\wz2100_config_dir\tests`) so you can make local changes and immediately test the effect of those changes in spectator mode.
 
 ## Software Documentation Methods
 The intent of the following documentation methods is to make changing the software easier:
