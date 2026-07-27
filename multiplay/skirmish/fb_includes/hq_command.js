@@ -1239,7 +1239,7 @@ class CommandCenter {
 	}
 
 	/**
-	 * 
+	 * Decides what to research.
 	 * @param {worldState} state 
 	 */
 	runResearchLogistics(state) {
@@ -1248,40 +1248,6 @@ class CommandCenter {
 		if (idleLabs.length === 0) {
 			return;
 		}
-
-		/*
-			v0.3.1 release -> Power upgrade, Heavy Cannon, Cannon Dmg, Research upgrade, ROF, twin aslt, vehicle metals
-
-			Example v0.4.1 T2 research order 
-				446902   APFSDS Cannon Rounds Mk3
-				678902   Dedicated Synaptic Link Data Analysis Mk3
-				689902   Gas Turbine Generator Mk3
-				842902   Dense Composite Alloys Mk2
-				903902   Twin Assault Cannon
-				1034902  HVAPFSDS Cannon Rounds
-				1039902  Heavy Body - Tiger
-				1074902  HEAP Mortar Shells Mk2
-				1130902  Neural Synapse Research Brain
-				1226902  Cannon Autoloader Mk3
-				1234902  HVAPFSDS Cannon Rounds Mk2
-				1266902  Dense Composite Alloys Mk3
-				1282902  HEAP Mortar Shells Mk3
-				1345902  Vapor Turbine Generator
-				1393902  Cannon Rapid Loader
-				1438902  HVAPFSDS Cannon Rounds Mk3
-				1457902  Mortar Autoloader Mk3
-				1481902  Superdense Composite Alloys
-				1507902  Vapor Turbine Generator Mk2
-				1570902  Mortar Fast Loader
-				1572902  Cannon Rapid Loader Mk2
-				1653902  Needle Gun
-				1689902  Neural Synapse Research Brain Mk2
-				1722902  Vapor Turbine Generator Mk3
-				1725902  Superdense Composite Alloys Mk2
-				1787902  Cannon Rapid Loader Mk3
-				1904902  Advanced Engineering
-				1910902  Hardened Rail Dart
-		*/
 
 		const FISHBOT_T2_CANNON_RESEARCH_PRIORITIES = [
 			RESEARCHES["APFSDS Cannon Rounds Mk3"].id,
@@ -1298,7 +1264,6 @@ class CommandCenter {
 			RESEARCHES["Neural Synapse Research Brain"].id,
 			RESEARCHES["Dense Composite Alloys Mk2"].id,
 
-			// Gauss Cannon researches added here
 			RESEARCHES["Needle Gun"].id,
 			RESEARCHES["Rail Gun"].id,
 			RESEARCHES["Gauss Cannon"].id,
@@ -1309,21 +1274,16 @@ class CommandCenter {
 			"R-Wpn-Mortar-Damage", 	
 			"R-Wpn-Mortar-ROF",
 			"R-Vehicle-Metals",
+			"R-Cyborg-Metals", 
 
 			// RESEARCHES["Advanced Engineering"].id,
 			// RESEARCHES["Advanced Repair Facility"].id,
 			RESEARCHES["Auto-Repair"].id,
 			RESEARCHES["Neural Synapse Research Brain Mk2"].id,
 
-			// "R-Cyborg-Metals", 
 			"R-Struc-VTOLPad-Upgrade",
-
 			"R-Struc-Factory-Upgrade",
 			RESEARCHES["Neural Synapse Research Brain Mk3"].id,
-			
-			// RESEARCHES["Howitzer"].id,
-			// RESEARCHES["Heavy Cannon"].id, 
-			// RESEARCHES["AA Cyclone Flak Cannon"].id, 		
 		];
 
 		const FISHBOT_T2_CANNON_RESEARCH_BLACKLIST = [
