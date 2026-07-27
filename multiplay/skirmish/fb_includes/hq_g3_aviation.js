@@ -146,46 +146,6 @@ class armyAviation {
 		return md;
 	}
 
-	createCasPatrolMission({x, y, tickUID=undefined}) {
-		// This function is a tactical level function - it defines:
-		//	- Who will perform the mission
-		//	- Orders to execute the mission
-
-		// it returns either:
-		// 	- missionData object (according to missionDataTemplate), if mission successfully created, OR
-		//	- undefined, if mission was not able to be created
-
-		let airReserve = state.g.enumGroup(DIVISION.AIR_RESERVE);
-		const MIN_CAS_PATROL_AIRCRAFT = 2;
-
-		// Not possible if no available recon units
-		if (airReserve.length < MIN_CAS_PATROL_AIRCRAFT) {
-			return undefined;
-		}
-		
-		let md = this.#createMissionOrders();
-
-		// Create mission details
-		const id = getCurrGameTime() + "_CAS_PATROL_" + tickUID;
-		md.id = id;
-		md.taskForceID = id;
-		
-		let taskForceUnits = airReserve.slice(0, 2);  
-		taskForceUnits.forEach((droid) => {
-			state.g.addDroidToGroup({groupID: md.taskForceID, droidID: droid.id});
-			state.g.removeDroidFromGroup({groupID: DIVISION.AIR_RESERVE, droidID: droid.id});
-		});	
-		
-		md.target = undefined;
-
-		// Assign orders for conducting & ceasing operations
-		const areWeaponsHot = true;
-		md.orders = () => doAirRecon(x, y, areWeaponsHot, md.taskForceID);		
-		md.ceaseOrders = () => this.#finaliseVtolMission(md);
-
-		return md;
-	}
-
 	createAirReconSilentMission({x, y, tickUID=undefined}) {
 		// This function is a tactical level function - it defines:
 		//	- Who will perform the mission

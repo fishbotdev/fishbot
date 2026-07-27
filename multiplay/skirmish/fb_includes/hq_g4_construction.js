@@ -108,7 +108,7 @@ class armyEngineering {
 					// if (tileIsBurning(d.x, d.y)) continue;		// seems to be worse
 
 					if (derricksInCell.length >= 4) {
-						const br = engineering.translateIntoBuildRequest({
+						const br = this.translateIntoBuildRequest({
 							missionType: MISSION_TYPE.CONSTRUCT_ALL_DERRICKS_IN_SECTOR, 
 							structureData: STRUCTURES["Oil Derrick"],
 							payload: grid[gx][gy]		// needs to have the '.derricks' property to work with the existing system
@@ -117,7 +117,7 @@ class armyEngineering {
 						if (DEBUG_ON) debugGrid[gx][gy] = "X";
 						break;
 					} else {
-						const br = engineering.translateIntoBuildRequest({
+						const br = this.translateIntoBuildRequest({
 							missionType: MISSION_TYPE.CONSTRUCT_OIL_DERRICK, 
 							structureData: STRUCTURES["Oil Derrick"],
 							payload: d

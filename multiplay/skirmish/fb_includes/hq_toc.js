@@ -233,9 +233,6 @@ class TacticalOperationsCenter {
 			case MISSION_TYPE.VTOL_STAGING_MISSION:
 				md = aviation.createVtolStagingMission();		
 				break;
-			case MISSION_TYPE.CAS_PATROL:
-				md = aviation.createCasPatrolMission({x: args[0], y: args[1], tickUID: args[2]});		
-				break;
 			case MISSION_TYPE.CAS_STRIKE:
 				md = aviation.createAirStrikeMission({targetInfo: args[0], numRaidAircraft: args[1], tickUID: args[2], type: "CAS_STRIKE"});
 				break;
