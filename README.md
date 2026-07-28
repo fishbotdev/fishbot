@@ -20,58 +20,92 @@ To check if the path is correct, you should be able to find `FishBot.js` in this
 
 If you can find `Fishbot.js` here, FishBot should automatically load on the next startup of Warzone 2100. It will then be available to select as an AI bot.
 
-## List of supported technology levels
+## Supported technology levels
 Currently, only T2 (**Technology Level 2**) starts are supported. Further support for other technology levels might be added in a future version. 
 
 However, at the moment I feel like Cobra already fills the gap in the other technology levels very well.
 
 In particular, I think Cobra performs excellently on T1 in Warzone 2100 v4.6.3+. 
 
-## List of supported maps (Warzone2100 4.7.0)
-As of the most current version **v0.4.1**, FishBot works best on large, standard "low-oil" game maps with up to ~10 derricks per player. 
-It currently only has been tested with scavengers disabled.
+## Supported maps (Warzone2100 4.7.0)
+As of **v0.4.3**, FishBot works well on most "low-oil" maps shipped with the game. 
 
-The current method for determining whether or not a map is *supported* is:
-* For 2 player maps, FishBot has a higher than 75% win rate (cumulatively, across both positions) against Cobra @ Medium difficulty.
-* For 3 player maps and higher, FishBot has:
-    * a higher than 50% WR in FFA (cumulative across all positions) against Cobra @ Medium, and
-    * 75% WR in duels across all pairs of positions (i.e. 1v1 with all other player slots being empty).
-
-Some of the test results for larger maps may change over time as more test data becomes available. The affected test results are shown in ***italic***.
+FishBot is not compatible with scavengers; it currently ignores them.
 
 ### 2 player (T2)
 * `Sk-Startup` (100% duel)
-* `Sk-UrbanChasm` (85% duel)
-* `Sk-HighGround` (70% duel)
+* `Sk-UrbanChasm` (80% duel)
+* `Sk-HighGround` (85% duel)
 * `Roughness` (100% duel)
 * `Vision` (90% duel)
-* ~~`DustyMaze (2P)`~~ (to be manually tested)
+* `DustyMaze (2P)` (*tested manually*)
 
 ### 3 player (T2)
-* `Monocot` (100% duel, 97% FFA)
-* `Gamma` (100% duel, 97% FFA)
+* `Monocot` (98% duel, 100% FFA)
+* `Gamma` (100% duel, 100% FFA)
 
 ### 4 player (T2)
-* `Sk-Rush` (99% duel, 82% FFA)
-* `Sk-Rush2` (99% duel, 80% FFA)
+* `Sk-Rush` (100% duel, 70% FFA)
+* `Sk-Rush2` (100% duel, 92% FFA)
 * `Sk-UrbanDuel` (90% duel, 55% FFA)
-* `Sk-Mountain` (99% duel, 65% FFA)
+* `Sk-Mountain` (100% duel, 65% FFA)
 * `Sk-Valley` (93% duel, 72% FFA)
-* `Sk-FishNets` (91% duel, **42%** FFA) - weakest 4p map
-* `Sk-GreatRift` (99% duel, 64% FFA)
-* `Sk-RollingHills` (89% duel, 70% FFA) 
-* ~~`Sk-Basingstoke` ()~~ - not compatible: large unit groups get stuck pathfinding
-* `Sk-LittleEgypt` (97% duel, ***54% FFA***) 
-* ~~`Sk-Cockpit` (100% duel, ***83% FFA***)~~ - not compatible: unit groups get stuck in the narrow base entrances
+* `Sk-FishNets` (91% duel, 50% FFA)
+* `Sk-GreatRift` (96% duel, 72% FFA)
+* `Sk-RollingHills` (90% duel, 90% FFA) 
+* ~~`Sk-Basingstoke`~~ - **not compatible**: large unit groups get stuck during pathfinding
+* `Sk-LittleEgypt` (97% duel, 54% FFA) 
+* ~~`Sk-Cockpit`~~ - **not compatible**: unit groups get stuck in the narrow base entrances
 * `Sk-Urban-Chaos` (98% duel, 92% FFA)
-* `Sk-Pyramidal` (100% duel, 80% FFA)
-* ~~`DustyMaze-2v2`~~ (to be manually tested)
-* ~~`DustyMaze-FFA`~~ (to be manually tested)
+* `Sk-Pyramidal` (100% duel, 88% FFA)
+* `DustyMaze-2v2` (*tested manually*)
+* `DustyMaze-FFA` (*tested manually*)
 
-Most 2, 3 and 4 player maps are supported. Some limitations are:
-* Low oil problems: On very small maps with very low oil, FishBot runs out of power (and gets stuck) due to a fixed rigid build order. It can also get stuck if it doesn't claim enough derricks in the early game.
-* FishBot sometimes attempts to build forward-defences around derricks which are actually too dangerous to go and capture.
+### 5 player (T2)
+* `Bloat` (FFA)
+
+### 6 player (T2)
+* `Melting` (*tested manually*)
+* `Entropy` (*tested manually*)
+
+### 7 player (T2)
+* `Thales` (*tested manually*)
+
+### 8 player (T2)
+* `Sk-Clover` (*tested manually*)
+* `Sk-MizaMaze` (*tested manually*)
+* ~~`Sk-Manhattan`~~ - **not compatible**: central river blocks land units
+* `Sk-Bananas` (*tested manually*)
+* `Sk-Wheel` (*tested manually*)
+* `Sk-Ziggurat` (*tested manually*)
+* `Sk-Concrete` (*tested manually*)
+* `Sk-ThePit` (*tested manually*)
+* ~~`Sk-HideNSneak`~~ - **not compatible**: terrain confuses the unit grouping algorithm
+* `Sk-YinYang` (*tested manually*)
+* `Sk-SandCastles` (*tested manually*)
+* `Sk-BeggarsKanyon` (*tested manually*)
+* `Sk-Gridlock` (*tested manually*)
+* ~~`Sk-Cockate`~~ - **not compatible**: unit groups get stuck in the narrow base entrances
+
+### 9 player (T2)
+* `Sk-WindFury` (*tested manually*)
+
+### 10 player (T2)
+* `Emergence` (*tested manually*)
+* ~~`WaterLoop`~~ - **not compatible**: sea map
+
+### How to determine if a map is supported
+The method is as follows:
+* For 2 player maps, FishBot has a 75%+ win rate (cumulatively, across both positions) against Cobra @ Medium difficulty.
+* For 3 & 4 player maps, FishBot has a:
+    * 50%+ win rate in FFA (cumulative across all positions) against Cobra @ Medium difficulty, and
+    * 75%+ win rate in duels (against Cobra @ Medium difficulty) across all pairs of positions (i.e. 1v1 with all other player slots being empty).
+* For 5 player maps and higher, FishBot is able to win a FFA game in 3 tries or less, and does not run into a breaking issue.
+
+Some current FishBot limitations are:
 * FishBot's group-movement algorithm sometimes causes large groups of units to get stuck in a tight ball.
+* FishBot does not use hover units (yet) so it struggles with maps with a lot of water.
+* FishBot sometimes attempts to build forward-defences around derricks which are actually too dangerous to go and capture.
 
 ## Recent updates
 * **v0.4.2** - *released **10 Jul 2026***
@@ -99,8 +133,8 @@ Please see [`CHANGELOG.md`](CHANGELOG.md) for a detailed list of all past change
 ## Upcoming features
 The current areas for improvement are:
 * Strategic improvements (FishBot's current strategic level is: 'this is the closest target, go there').
+* Tactical-level targeting improvements (i.e. preventing target oscillation).
 * Support for T1 & T3.
-* Increased support for popular skirmish maps.
 
 ## Background and Goals
 FishBot was initially forked from NullBot v3. I acknowledge and appreciate the work of the NullBot team in creating the foundation for this body of work. As of v0.4.0, not much of the original code remains, but I am grateful for the structural and spiritual influence of the original work.
@@ -113,9 +147,11 @@ My goal is to make FishBot a generally useful bot which could be packaged with t
 As mentioned above, I'd like it to be genuinely fun to play with, both as a teammate and as an opponent! 
 Admittedly, there is a long way to go - but I am hoping that one day I am able to make this wish come true. 
 
-## Software Documentation
+## Documentation
 
-For a high-level view of the FishBot software system, please see `docs\ARCHITECTURE.md` for some documentation of the software system architecture.
+* For a high-level view of the FishBot software system, please see `docs\ARCHITECTURE.md`.
+* To get set up with development, please see `docs\DEVELOPMENT.md`.
+* For a detailed list of changes from version to version, please see `CHANGELOG.md`.
 
 ## Licensing Information (GPL 2.0)
 
