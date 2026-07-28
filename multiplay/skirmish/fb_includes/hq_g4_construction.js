@@ -406,22 +406,21 @@ class armyEngineering {
 
 		// PART 2: FIND CONSTRUCTION LOCATIONS
 		forceLocations.forEach(LOCATION => {
+			if (distSq(baseLocation.x, LOCATION.x, baseLocation.y, LOCATION.y) < REPAIR_CENTER_SEARCH_RADIUS ** 2) {
+				// Too close to the base (prevents doubling-up on the repair facility in the base build order)
+				return;
+			}
+
 			const potentialLocation = pickStructLocation3(STRUCTURES["Repair Facility"].id, LOCATION.x, LOCATION.y);
 			if (potentialLocation == undefined) {
 				return;
 			}
-
 			const x = potentialLocation.x;
 			const y = potentialLocation.y;
 
 			const gx = Math.floor(x / cellSize);
 			const gy = Math.floor(y / cellSize);
 			if (enemyUnitThreat[gx][gy] !== 0) {
-				return;
-			}
-
-			if (distSq(x, baseLocation.x, y, baseLocation.y) <= REPAIR_CENTER_SEARCH_RADIUS ** 2) {
-				// Too close to the base (prevents doubling-up on the repair facility in the base build order)
 				return;
 			}
 
