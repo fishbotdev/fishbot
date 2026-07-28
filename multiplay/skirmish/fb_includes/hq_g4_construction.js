@@ -480,18 +480,17 @@ class armyEngineering {
 	/**
 	 * Yields the next base structure to be constructed.
 	 * @param {worldState} state
-	 * @param {number} myDerrickCount
+	 * @param {number} maxGenerators
 	 * @param {boolean} useVtols
 	 * @param {boolean} useFactoryModules
 	 * @param {number} myVtolCount
 	 * @returns 
 	 */
-	requestBaseConstruction(state, myDerrickCount, useVtols, useFactoryModules, myVtolCount) {
-		const MY_DERRICK_COUNT = myDerrickCount;
+	requestBaseConstruction(state, maxGenerators, useVtols, useFactoryModules, myVtolCount) {
+		const MAX_GENERATORS_AND_POWER_MODULES = maxGenerators;
 		const USE_VTOL = useVtols;	
 		const USE_FACTORY_MODULES = useFactoryModules;
 
-		const MAX_GENERATORS_AND_POWER_MODULES = Math.max(Math.ceil(MY_DERRICK_COUNT / 4), 2);		
 		const MODULES_PER_FACTORY = 2;
 				
 		const baseBuildOrder_T2NoBase = [
@@ -504,45 +503,56 @@ class armyEngineering {
 			STRUCTURES["Power Module"],		// The script will automatically find a place to put this module.
 			STRUCTURES["Power Generator"],
 			STRUCTURES["Cyborg Factory"],		
-			STRUCTURES["Factory Module"],
-			STRUCTURES["Factory Module"],
 			STRUCTURES["Repair Facility"],
-			STRUCTURES["Power Module"],				
+			STRUCTURES["Factory Module"],
+			STRUCTURES["Factory Module"],
+			STRUCTURES["Power Module"],			
 			STRUCTURES["Research Facility"],
 			STRUCTURES["Research Module"],
-			STRUCTURES["Power Module"],
 			STRUCTURES["Power Module"],
 			STRUCTURES["VTOL Factory"],
+			STRUCTURES["Power Module"],	
 			STRUCTURES["VTOL Rearming Pad"],
-			STRUCTURES["Cyborg Factory"],		
+			STRUCTURES["Cyborg Factory"],
+			
+			STRUCTURES["Power Generator"],		// inserting here in the case that more power than expected is captured
+				STRUCTURES["Power Module"],
+			
 			STRUCTURES["Factory Module"],
 			STRUCTURES["Factory Module"],
+
 			STRUCTURES["Research Facility"],
 			STRUCTURES["Research Module"],
 			STRUCTURES["VTOL Rearming Pad"],
+
+			STRUCTURES["Power Generator"],		// inserting here in the case that more power than expected is captured
+				STRUCTURES["Power Module"],
+
 			STRUCTURES["Factory Module"],
+			STRUCTURES["VTOL Rearming Pad"],
+			STRUCTURES["Research Facility"],
+			STRUCTURES["Research Module"],
+
+			STRUCTURES["VTOL Rearming Pad"],
+			STRUCTURES["Research Facility"],
+			STRUCTURES["Research Module"],
+			STRUCTURES["VTOL Rearming Pad"],
+			STRUCTURES["VTOL Rearming Pad"],
+			STRUCTURES["Research Facility"],
+			STRUCTURES["Research Module"],
 			STRUCTURES["Factory Module"],
-			STRUCTURES["VTOL Rearming Pad"],
-			STRUCTURES["Power Generator"],
-			STRUCTURES["Power Module"],
-			STRUCTURES["Research Facility"],
-			STRUCTURES["Research Module"],
-			STRUCTURES["VTOL Rearming Pad"],
-			STRUCTURES["Research Facility"],
-			STRUCTURES["Research Module"],
-			STRUCTURES["VTOL Rearming Pad"],
-			STRUCTURES["VTOL Rearming Pad"],
-			STRUCTURES["Research Facility"],
-			STRUCTURES["Research Module"],
 			STRUCTURES["Factory"],
 			STRUCTURES["Factory Module"],
 			STRUCTURES["Factory Module"],
-			STRUCTURES["Power Generator"],
-			STRUCTURES["Power Module"],
 			STRUCTURES["VTOL Rearming Pad"],
 			STRUCTURES["VTOL Rearming Pad"],
 			STRUCTURES["Cyborg Factory"],
 			
+			STRUCTURES["Power Generator"],		// inserting these here in the case that more power than expected is captured
+				STRUCTURES["Power Module"],
+			STRUCTURES["Power Generator"],		
+				STRUCTURES["Power Module"],
+
 			STRUCTURES["VTOL Rearming Pad"],
 			STRUCTURES["VTOL Rearming Pad"],
 
@@ -553,20 +563,19 @@ class armyEngineering {
 			STRUCTURES["VTOL Rearming Pad"],
 			STRUCTURES["VTOL Rearming Pad"],
 
-			STRUCTURES["Power Generator"],
-			STRUCTURES["Power Module"],
-
 			STRUCTURES["Factory"],
 			STRUCTURES["Factory Module"],
 			STRUCTURES["Factory Module"],
 
 			STRUCTURES["Cyborg Factory"],
 
-			STRUCTURES["VTOL Rearming Pad"],
-			STRUCTURES["VTOL Rearming Pad"],
+			STRUCTURES["Power Generator"],		// inserting these here in the case that more power than expected is captured
+				STRUCTURES["Power Module"],
+			STRUCTURES["Power Generator"],		
+				STRUCTURES["Power Module"],
 
-			STRUCTURES["Power Generator"],
-			STRUCTURES["Power Module"],
+			STRUCTURES["VTOL Rearming Pad"],
+			STRUCTURES["VTOL Rearming Pad"],
 
 			STRUCTURES["VTOL Rearming Pad"],
 			STRUCTURES["VTOL Rearming Pad"],
@@ -576,12 +585,6 @@ class armyEngineering {
 			STRUCTURES["VTOL Rearming Pad"],
 
 			STRUCTURES["Cyborg Factory"],
-
-			STRUCTURES["Power Generator"],
-			STRUCTURES["Power Module"],
-
-			STRUCTURES["Power Generator"],
-			STRUCTURES["Power Module"],
 		];
 
 		// Put each task into an appropriate format for approval ("buildTask", which is internal to g4_construction)
