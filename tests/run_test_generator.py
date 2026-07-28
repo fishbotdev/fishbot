@@ -34,6 +34,22 @@ from custom_test_map_packager import run_test_map_packager as p
 
 from pathlib import Path
 import re
+import ctypes
+from ctypes import wintypes
+
+
+# Note: this is a Windows-specific function.
+def get_documents_path():
+    # CSIDL_PERSONAL is the constant ID for the "My Documents" folder
+    CSIDL_PERSONAL = 5
+
+    # Create a buffer to hold the path string
+    buf = ctypes.create_unicode_buffer(wintypes.MAX_PATH)
+
+    # Call the Windows API
+    ctypes.windll.shell32.SHGetFolderPathW(None, CSIDL_PERSONAL, None, 0, buf)
+
+    return Path(buf.value)
 
 
 def extract_mapname_and_playercount(batch_report: list) -> list:
@@ -187,22 +203,24 @@ if __name__ == "__main__":
     #################################### USER CONFIG START ####################################
 
     # INPUT DIRECTORY DEFINITIONS
-    BASE_MAPS_PATH = Path.cwd() / r'custom_test_map_packager\v4.7.0_base_maps_upto4p_short'
+    # BASE_MAPS_PATH = Path.cwd() / r'custom_test_map_packager\\v4.7.0_base_maps_upto4p_short'
+    BASE_MAPS_PATH = Path.cwd() / r'custom_test_map_packager\\v4.7.0_base_maps_upto6p_long'
 
     # OUTPUT DIRECTORY DEFINITIONS
     BASE_PRODUCTION_DIRECTORY = r"..\Warzone 2100\PRODCONFIG"
     PRODUCTION_MAPS_FOLDER_PATH = Path(rf"{BASE_PRODUCTION_DIRECTORY}\maps")
     PRODUCTION_TEST_FOLDER_PATH = Path(rf"{BASE_PRODUCTION_DIRECTORY}\tests")
 
-    BASE_DEV_DIRECTORY = r"~\Documents\wz2100_config_dir"
-    DEV_MAPS_FOLDER_PATH = Path(rf"{BASE_DEV_DIRECTORY}\maps").expanduser()
-    DEV_TEST_FOLDER_PATH = Path(rf"{BASE_DEV_DIRECTORY}\tests").expanduser()
+    BASE_DEV_DIRECTORY = get_documents_path() / "wz2100_config_dir"
+    DEV_MAPS_FOLDER_PATH = Path(rf"{BASE_DEV_DIRECTORY}\maps")
+    DEV_TEST_FOLDER_PATH = Path(rf"{BASE_DEV_DIRECTORY}\tests")
 
     #################################### USER CONFIG END ####################################
 
-    test_manifest_path = repackage_maps_and_generate_tests(base_maps_path=BASE_MAPS_PATH,
-                                                           production_maps_path=DEV_MAPS_FOLDER_PATH,
-                                                           production_tests_path=DEV_TEST_FOLDER_PATH)
+    if False:
+        test_manifest_path = repackage_maps_and_generate_tests(base_maps_path=BASE_MAPS_PATH,
+                                                               production_maps_path=DEV_MAPS_FOLDER_PATH,
+                                                               production_tests_path=DEV_TEST_FOLDER_PATH)
 
     test_manifest_path = repackage_maps_and_generate_tests(base_maps_path=BASE_MAPS_PATH,
                                                            production_maps_path=PRODUCTION_MAPS_FOLDER_PATH,

@@ -50,16 +50,16 @@ function pickBaseStructLocation(structureID) {
 	const BBOX_3x3_STRUCTURES = [STRUCTURES["Factory"].id, STRUCTURES["VTOL Factory"].id, STRUCTURES["Laser Satellite Command Post"].id, STRUCTURES["Satellite Uplink Center"].id];
 	const BBOX_2x2_STRUCTURES = [STRUCTURES["Command Center"].id, STRUCTURES["Command Relay Center"].id, STRUCTURES["Power Generator"].id, STRUCTURES["Research Facility"].id];
 
-	let BBOX_CORNERS = [[-1, -1], [1, 1], [-1, 1], [1, -1]];
-	const BBOX_3X3_CORNERS = [[-2, -2], [-2, 2], [2, -2], [2, 2], [2, 0], [-2, 0], [0, 2], [0, -2]];
-	const BBOX_2X2_CORNERS = [[-2, -2], [-2, 1], [1, -2], [1, 1], [1, 0], [-2, 0], [0, 1], [0, -2]];
+	let BBOX_COORDS = [[-1, -1], [-1, 0], [-1, 1], [0, 1], [1, 1], [1, 0], [1, -1], [0, -1]];
+	const BBOX_3X3_COORDS = [[-2, -2], [-2, -1], [-2, 0], [-2, 1], [-2, 2], [-1, 2], [0, 2], [1, 2], [2, 2], [2, 1], [2, 0], [2, -1], [2, -2], [1, -2], [0, -2], [-1, -2]];
+	const BBOX_2X2_COORDS = [[-2, -2], [-2, -1], [-2, 0], [-2, 1], [-2, 2], [-1, 1], [0, 1], [1, 1], [1, 0], [1, -1], [1, -2], [0, -2], [-1, -2]];
 	
 	if (BBOX_3x3_STRUCTURES.includes(structureID)) {
 		// coordinate for a 3x3 structure is the center tile of the structure
-		BBOX_CORNERS = BBOX_3X3_CORNERS;
+		BBOX_COORDS = BBOX_3X3_COORDS;
 	} else if (BBOX_2x2_STRUCTURES.includes(structureID)) {
 		// coordinate for a 2x2 structure is the bottom right tile of the structure ((7, 16) center = (7, 15), (6, 15), (6, 16))
-		BBOX_CORNERS = BBOX_2X2_CORNERS
+		BBOX_COORDS = BBOX_2X2_COORDS
 	}
 	
 	for (let i=0; i<walkableTiles.length; i++) {
@@ -73,8 +73,8 @@ function pickBaseStructLocation(structureID) {
 
 		// Check a bounding box around the structure is in the walkable tiles list
 		let boundingBoxTestFailed = false;
-		for (let j=0; j<BBOX_CORNERS.length; j++) {
-			const c = BBOX_CORNERS[j];
+		for (let j=0; j<BBOX_COORDS.length; j++) {
+			const c = BBOX_COORDS[j];
 			const x1 = x + c[0]; 
 			const y1 = y + c[1];
 
@@ -92,7 +92,6 @@ function pickBaseStructLocation(structureID) {
 			continue;
 		}
 
-		// debug(`${structureID} success @ ${x}, ${y}`);
 		return {'x': x, 'y': y};
 	}
 
@@ -125,77 +124,78 @@ function pickStructLocation3(structureID, x, y) {
 	const xDirection = (x > HALF_MAP_WIDTH) ? -1 : 1;
 	const yDirection = (y > HALF_MAP_HEIGHT) ? -1 : 1;
 
-	for (let i=0; i<QUADRANT_SEARCH_PATTERN.length; i++) {
-		const tX = x + xDirection * QUADRANT_SEARCH_PATTERN[i][0];
-		const tY = y + yDirection * QUADRANT_SEARCH_PATTERN[i][1];
+	for (let sign = 1; sign >= -1; sign -= 2) {		// swaps to the 'opposite' quadrant to continue looking
+		for (let i=0; i<QUADRANT_SEARCH_PATTERN.length; i++) {
+			const tX = x + sign * xDirection * QUADRANT_SEARCH_PATTERN[i][0];
+			const tY = y + sign * yDirection * QUADRANT_SEARCH_PATTERN[i][1];
 
-		if (tX < 0 || tX >= mapWidth || tY < 0 || tY >= mapHeight) {
-			continue;
-		}
-			
-		if (!isWalkable[tX][tY]) {
-			// debug(`	${gameTime}: psl2 rejected: (${tX}, ${tY}); not reachable`);
-			continue;
-		}
-
-		if (isDerrickPosition[`${tX},${tY}`]) {
-			// For some reason - `structureCanFit` / the `enumRange` check below seem to miss friendly / enemy derricks.
-			continue;
-		}
-
-		if (!structureCanFit(structureID, tX, tY)) {		// required for structures with bounding box >= 1x1 
-			continue;
-		}
-
-		// Reject tiles with structures or enemy droids on them 
-		// (Previous testing indicated that `structureCanFit` may not account for partially built structures)
-		const gameObjects = enumRange(tX, tY, 3, ALL_PLAYERS, false);
-		let positionBlocked = false;
-		for (let i=0; i<gameObjects.length; i++) {
-			const o = gameObjects[i];
-			
-			if (o.type === STRUCTURE) {
-				if (o.x === tX && o.y === tY) {
-					positionBlocked = true;
-					break;
-				}
+			if (tX < 0 || tX >= mapWidth || tY < 0 || tY >= mapHeight) {
+				continue;
+			}
+				
+			if (!isWalkable[tX][tY]) {
+				// debug(`	${gameTime}: psl2 rejected: (${tX}, ${tY}); not reachable`);
 				continue;
 			}
 
-			if (o.type === DROID) {
-				if (playerIsEnemy[o.player]) {
+			if (isDerrickPosition[`${tX},${tY}`]) {
+				// For some reason - `structureCanFit` / the `enumRange` check below seem to miss friendly / enemy derricks.
+				continue;
+			}
+
+			if (!structureCanFit(structureID, tX, tY)) {		// required for structures with bounding box >= 1x1 
+				continue;
+			}
+
+			// Reject tiles with structures or enemy droids on them 
+			// (Previous testing indicated that `structureCanFit` may not account for partially built structures)
+			const gameObjects = enumRange(tX, tY, 3, ALL_PLAYERS, false);
+			let positionBlocked = false;
+			for (let i=0; i<gameObjects.length; i++) {
+				const o = gameObjects[i];
+				
+				if (o.type === STRUCTURE) {
 					if (o.x === tX && o.y === tY) {
 						positionBlocked = true;
 						break;
 					}
+					continue;
 				}
+
+				if (o.type === DROID) {
+					if (playerIsEnemy[o.player]) {
+						if (o.x === tX && o.y === tY) {
+							positionBlocked = true;
+							break;
+						}
+					}
+					continue;
+				}
+			}
+
+			if (positionBlocked) {
 				continue;
 			}
+
+			const z = MapTiles[tY][tX].height;
+			const loc = {'x': tX, 'y': tY, 'z': z};
+
+			if (Math.abs(z - specifiedHeight) > HEIGHT_TOLERANCE) {
+				// debug(`	${gameTime}: psl2 rejected: (${tX}, ${tY}); height (${MapTiles[tY][tX].height} !== ${specifiedHeight})`);
+				outsideOfHeightTolerance.push(loc);
+				continue;
+			}
+
+			return loc;	
 		}
-
-		if (positionBlocked) {
-			continue;
-		}
-
-		const z = MapTiles[tY][tX].height;
-		const loc = {'x': tX, 'y': tY, 'z': z};
-
-		if (Math.abs(z - specifiedHeight) > HEIGHT_TOLERANCE) {
-			// debug(`	${gameTime}: psl2 rejected: (${tX}, ${tY}); height (${MapTiles[tY][tX].height} !== ${specifiedHeight})`);
-			outsideOfHeightTolerance.push(loc);
-			continue;
-		}
-
-		return loc;	
 	}
 
 	for (let i=0; i<outsideOfHeightTolerance.length; i++) {		// if list is empty, this for-loop never runs
 		return outsideOfHeightTolerance[i];		
 	}
 
-	// debug(` ${gameTime}: pickStructLocation3() failed: could not find appropriate (${x} ${y}) for "${structureID}"`);
+	debug(`${gameTime}\t(FishBot ${me}) WARNING: pickStructLocation3() failed @ (${x} ${y}) for "${structureID}"`);
 	return undefined;
-
 }
 
 /*

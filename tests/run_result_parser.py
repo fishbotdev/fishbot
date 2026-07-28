@@ -269,7 +269,7 @@ if __name__ == "__main__":
     BASE_MANIFEST_PATH = Path.cwd() / "base_manifest.json"
     base_manifest = read_json(BASE_MANIFEST_PATH)
 
-    COMMIT_SHA = "799e86939c8f1f80b430e5d234432a94deee3de8"
+    COMMIT_SHA = "b155be21ee55cffe7240ab54bd39e5a2ced12ab2"
     SHORT_SHA = COMMIT_SHA[:7]
 
     TEST_RESULTS_PATH = Path.cwd() / "results" / SHORT_SHA

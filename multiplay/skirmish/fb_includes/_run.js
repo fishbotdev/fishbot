@@ -181,16 +181,15 @@ function setupDebugMode() {
 function eventStartLevel() {
 	queue("setupFishBot", me * 100);	
 	
-	// Debug mode is enabled for development & automated testing. 
 	if (DEBUG_MODE_ON) {
-		setupDebugMode();
+		setupDebugMode();		// Debug mode is enabled for development & automated testing 
 	}
 
 	// One time use: start initial construction tasks immediately
 	const initialTrucks = enumDroid(me, DROID_CONSTRUCT);
 	initialTrucks.forEach(droid => {
-		orderDroidLoc(droid, DORDER_MOVE, droid.x + 1, droid.y + 1);		// copied from NullBot (apparently trucks can sometimes get stuck when a building is placed on top of them)
-		state.g.addDroidToGroup({groupID: ENGINEERING.ENGINEERING_RESERVE, droidID: droid.id});
+		orderDroidLoc(droid, DORDER_MOVE, droid.x + 1, droid.y + 1);		// From NullBot: apparently trucks can sometimes get stuck when a building is placed on top of them
+		state.g.addDroidToGroup({groupID: ENGINEERING.BASE_BUILDER, droidID: droid.id});
 	});
 	queue("runConstructionLogistics");				
 	queue("runMissionManager");

@@ -226,15 +226,11 @@ class TacticalOperationsCenter {
 			case MISSION_TYPE.ABORT_MISSION:
 				break;		// handled in the mission manager
 
-
 			/*
 				AVIATION MISSIONS
 			*/
 			case MISSION_TYPE.VTOL_STAGING_MISSION:
 				md = aviation.createVtolStagingMission();		
-				break;
-			case MISSION_TYPE.CAS_PATROL:
-				md = aviation.createCasPatrolMission({x: args[0], y: args[1], tickUID: args[2]});		
 				break;
 			case MISSION_TYPE.CAS_STRIKE:
 				md = aviation.createAirStrikeMission({targetInfo: args[0], numRaidAircraft: args[1], tickUID: args[2], type: "CAS_STRIKE"});
@@ -244,12 +240,6 @@ class TacticalOperationsCenter {
 				break;
 			case MISSION_TYPE.DAS_STRIKE:
 				md = aviation.createAirStrikeMission({targetInfo: args[0], numRaidAircraft: args[1], tickUID: args[2], type: "DAS_STRIKE"});
-				break;
-			case MISSION_TYPE.AIR_RECON_SILENT:
-				md = aviation.createAirReconSilentMission({x: args[0], y: args[1], tickUID: args[2]});		
-				break;
-			case MISSION_TYPE.AIR_RECON_PATROL:
-				md = aviation.createAirReconPatrolMission({x: args[0], y: args[1], tickUID: args[2]});		
 				break;
 
 			/*

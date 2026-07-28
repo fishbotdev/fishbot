@@ -108,7 +108,7 @@ class armyEngineering {
 					// if (tileIsBurning(d.x, d.y)) continue;		// seems to be worse
 
 					if (derricksInCell.length >= 4) {
-						const br = engineering.translateIntoBuildRequest({
+						const br = this.translateIntoBuildRequest({
 							missionType: MISSION_TYPE.CONSTRUCT_ALL_DERRICKS_IN_SECTOR, 
 							structureData: STRUCTURES["Oil Derrick"],
 							payload: grid[gx][gy]		// needs to have the '.derricks' property to work with the existing system
@@ -117,7 +117,7 @@ class armyEngineering {
 						if (DEBUG_ON) debugGrid[gx][gy] = "X";
 						break;
 					} else {
-						const br = engineering.translateIntoBuildRequest({
+						const br = this.translateIntoBuildRequest({
 							missionType: MISSION_TYPE.CONSTRUCT_OIL_DERRICK, 
 							structureData: STRUCTURES["Oil Derrick"],
 							payload: d
@@ -406,22 +406,21 @@ class armyEngineering {
 
 		// PART 2: FIND CONSTRUCTION LOCATIONS
 		forceLocations.forEach(LOCATION => {
+			if (distSq(baseLocation.x, LOCATION.x, baseLocation.y, LOCATION.y) < REPAIR_CENTER_SEARCH_RADIUS ** 2) {
+				// Too close to the base (prevents doubling-up on the repair facility in the base build order)
+				return;
+			}
+
 			const potentialLocation = pickStructLocation3(STRUCTURES["Repair Facility"].id, LOCATION.x, LOCATION.y);
 			if (potentialLocation == undefined) {
 				return;
 			}
-
 			const x = potentialLocation.x;
 			const y = potentialLocation.y;
 
 			const gx = Math.floor(x / cellSize);
 			const gy = Math.floor(y / cellSize);
 			if (enemyUnitThreat[gx][gy] !== 0) {
-				return;
-			}
-
-			if (distSq(x, baseLocation.x, y, baseLocation.y) <= REPAIR_CENTER_SEARCH_RADIUS ** 2) {
-				// Too close to the base (prevents doubling-up on the repair facility in the base build order)
 				return;
 			}
 
@@ -481,17 +480,17 @@ class armyEngineering {
 	/**
 	 * Yields the next base structure to be constructed.
 	 * @param {worldState} state
-	 * @param {number} myDerrickCount
+	 * @param {number} maxGenerators
 	 * @param {boolean} useVtols
 	 * @param {boolean} useFactoryModules
+	 * @param {number} myVtolCount
 	 * @returns 
 	 */
-	requestBaseConstruction(state, myDerrickCount, useVtols, useFactoryModules) {
-		const MY_DERRICK_COUNT = myDerrickCount;
+	requestBaseConstruction(state, maxGenerators, useVtols, useFactoryModules, myVtolCount) {
+		const MAX_GENERATORS_AND_POWER_MODULES = maxGenerators;
 		const USE_VTOL = useVtols;	
 		const USE_FACTORY_MODULES = useFactoryModules;
 
-		const MAX_GENERATORS_AND_POWER_MODULES = Math.max(Math.ceil(MY_DERRICK_COUNT / 4), 1);		
 		const MODULES_PER_FACTORY = 2;
 				
 		const baseBuildOrder_T2NoBase = [
@@ -504,45 +503,56 @@ class armyEngineering {
 			STRUCTURES["Power Module"],		// The script will automatically find a place to put this module.
 			STRUCTURES["Power Generator"],
 			STRUCTURES["Cyborg Factory"],		
-			STRUCTURES["Factory Module"],
-			STRUCTURES["Factory Module"],
 			STRUCTURES["Repair Facility"],
-			STRUCTURES["Power Module"],				
+			STRUCTURES["Factory Module"],
+			STRUCTURES["Factory Module"],
+			STRUCTURES["Power Module"],			
 			STRUCTURES["Research Facility"],
 			STRUCTURES["Research Module"],
-			STRUCTURES["Power Module"],
 			STRUCTURES["Power Module"],
 			STRUCTURES["VTOL Factory"],
+			STRUCTURES["Power Module"],	
 			STRUCTURES["VTOL Rearming Pad"],
-			STRUCTURES["Cyborg Factory"],		
+			STRUCTURES["Cyborg Factory"],
+			
+			STRUCTURES["Power Generator"],		// inserting here in the case that more power than expected is captured
+				STRUCTURES["Power Module"],
+			
 			STRUCTURES["Factory Module"],
 			STRUCTURES["Factory Module"],
+
 			STRUCTURES["Research Facility"],
 			STRUCTURES["Research Module"],
 			STRUCTURES["VTOL Rearming Pad"],
+
+			STRUCTURES["Power Generator"],		// inserting here in the case that more power than expected is captured
+				STRUCTURES["Power Module"],
+
 			STRUCTURES["Factory Module"],
+			STRUCTURES["VTOL Rearming Pad"],
+			STRUCTURES["Research Facility"],
+			STRUCTURES["Research Module"],
+
+			STRUCTURES["VTOL Rearming Pad"],
+			STRUCTURES["Research Facility"],
+			STRUCTURES["Research Module"],
+			STRUCTURES["VTOL Rearming Pad"],
+			STRUCTURES["VTOL Rearming Pad"],
+			STRUCTURES["Research Facility"],
+			STRUCTURES["Research Module"],
 			STRUCTURES["Factory Module"],
-			STRUCTURES["VTOL Rearming Pad"],
-			STRUCTURES["Power Generator"],
-			STRUCTURES["Power Module"],
-			STRUCTURES["Research Facility"],
-			STRUCTURES["Research Module"],
-			STRUCTURES["VTOL Rearming Pad"],
-			STRUCTURES["Research Facility"],
-			STRUCTURES["Research Module"],
-			STRUCTURES["VTOL Rearming Pad"],
-			STRUCTURES["VTOL Rearming Pad"],
-			STRUCTURES["Research Facility"],
-			STRUCTURES["Research Module"],
 			STRUCTURES["Factory"],
 			STRUCTURES["Factory Module"],
 			STRUCTURES["Factory Module"],
-			STRUCTURES["Power Generator"],
-			STRUCTURES["Power Module"],
 			STRUCTURES["VTOL Rearming Pad"],
 			STRUCTURES["VTOL Rearming Pad"],
 			STRUCTURES["Cyborg Factory"],
 			
+			STRUCTURES["Power Generator"],		// inserting these here in the case that more power than expected is captured
+				STRUCTURES["Power Module"],
+			STRUCTURES["Power Generator"],		
+				STRUCTURES["Power Module"],
+
 			STRUCTURES["VTOL Rearming Pad"],
 			STRUCTURES["VTOL Rearming Pad"],
 
@@ -553,20 +563,19 @@ class armyEngineering {
 			STRUCTURES["VTOL Rearming Pad"],
 			STRUCTURES["VTOL Rearming Pad"],
 
-			STRUCTURES["Power Generator"],
-			STRUCTURES["Power Module"],
-
 			STRUCTURES["Factory"],
 			STRUCTURES["Factory Module"],
 			STRUCTURES["Factory Module"],
 
 			STRUCTURES["Cyborg Factory"],
 
-			STRUCTURES["VTOL Rearming Pad"],
-			STRUCTURES["VTOL Rearming Pad"],
+			STRUCTURES["Power Generator"],		// inserting these here in the case that more power than expected is captured
+				STRUCTURES["Power Module"],
+			STRUCTURES["Power Generator"],		
+				STRUCTURES["Power Module"],
 
-			STRUCTURES["Power Generator"],
-			STRUCTURES["Power Module"],
+			STRUCTURES["VTOL Rearming Pad"],
+			STRUCTURES["VTOL Rearming Pad"],
 
 			STRUCTURES["VTOL Rearming Pad"],
 			STRUCTURES["VTOL Rearming Pad"],
@@ -576,12 +585,6 @@ class armyEngineering {
 			STRUCTURES["VTOL Rearming Pad"],
 
 			STRUCTURES["Cyborg Factory"],
-
-			STRUCTURES["Power Generator"],
-			STRUCTURES["Power Module"],
-
-			STRUCTURES["Power Generator"],
-			STRUCTURES["Power Module"],
 		];
 
 		// Put each task into an appropriate format for approval ("buildTask", which is internal to g4_construction)
@@ -633,6 +636,12 @@ class armyEngineering {
 
 				const MAXIMUM_FACTORY_MODULES_REACHED = (factoryModuleCount >= (factoryCount + vtolFactoryCount) * MODULES_PER_FACTORY);
 				if (MAXIMUM_FACTORY_MODULES_REACHED) {		
+					continue;
+				}
+			}
+			// 4. Match rearming pads to the number of VTOLs
+			if (["VTOL Rearming Pad"].includes(STRUCTURE_NAME)) {
+				if (structCount >= myVtolCount) {
 					continue;
 				}
 			}
@@ -754,22 +763,15 @@ class armyEngineering {
 		};
 	}
 
-	#mcb(callback, ...args) {
-		// This function is here so we can schedule execution of the callback function at some later point
-		return callback(...args);	//...args is important otherwise all remaining args will be interpreted as a single array of parameters
-	}
-
-	#finaliseConstruction(md) {
+	#finaliseConstruction(md, reserveID) {
 		// Mission completed
 		const taskForceUnits = state.g.enumGroup(md.taskForceID);
-		if (taskForceUnits.length > 0) {
-			taskForceUnits.forEach((droid) => {
-				state.g.addDroidToGroup({groupID: ENGINEERING.ENGINEERING_RESERVE, droidID: droid.id});
-				orderDroidLoc(droid, DORDER_MOVE, baseLocation.x, baseLocation.y);
-			});	
-		} else {
-			// debug(`Terminated mission: taskForceID ${md.taskForceID} are all dead.`);
-		}
+		taskForceUnits.forEach((droid) => {
+			state.g.addDroidToGroup({groupID: reserveID, droidID: droid.id});
+			orderDroidLoc(droid, DORDER_MOVE, baseLocation.x, baseLocation.y);
+		});	
+		// if (taskForceUnits.length === 0)	debug(`Terminated mission: taskForceID ${md.taskForceID} are all dead.`);
+		
 		state.g.deleteGroup(md.taskForceID);
 		md.timeCompleted = getCurrGameTime();
 	}
@@ -793,7 +795,7 @@ class armyEngineering {
 		md.taskForceID = ENGINEERING.ENGINEERING_RESERVE;		// taskForceID is used for enumGroup so 
 
 		// Assign orders for conducting & ceasing operations			
-		md.orders = () => this.#mcb(helpConstructAroundBase, md.taskForceID);		
+		md.orders = () => helpConstructAroundBase(md.taskForceID);		
 		md.ceaseOrders = () => {return;};	// doesn't do anything
 
 		return md;
@@ -807,28 +809,29 @@ class armyEngineering {
 	createBuildBaseStructureTask({buildTask, tickUID}) {
 		const cellSize = state.grid.cellSize;
 		
-		let engineeringReserve = state.g.enumGroup(ENGINEERING.ENGINEERING_RESERVE);
-		if (engineeringReserve.length === 0) {			
-			// debug(`#createBuildBaseStructureTask(): No trucks available.`);
-			return undefined;
+		let reserveID = ENGINEERING.BASE_BUILDER;
+		let taskForceUnits = state.g.enumGroup(reserveID);
+		
+		if (taskForceUnits.length === 0) {
+			// debug(`${gameTime}	WARNING (FishBot ${me}): createBuildSingleModuleTask(): Falling back to ENGINEERING.ENGINEERING_RESERVE.`);
+			reserveID = ENGINEERING.ENGINEERING_RESERVE;
+			taskForceUnits = state.g.enumGroup(reserveID);
+			if (taskForceUnits.length === 0) {
+				debug(`${gameTime}	WARNING (FishBot ${me}): createBuildSingleModuleTask(): No trucks available to construct ${buildTask.structureID}.`);
+				return undefined;
+			}
 		}
 
-		let MAX_TRUCKS = 2;
-
 		if (!isStructureAvailable(buildTask.structureID, me)) {
-			debug(`#createBuildBaseStructureTask(): Structure not available: ${buildTask.structureID}`);
+			debug(`${gameTime}	WARNING (FishBot ${me}): createBuildBaseStructureTask(): Structure not available: ${buildTask.structureID}.`);
 			return undefined;
 		}
 
 		const loc = pickBaseStructLocation(buildTask.structureID);		
 		if (loc == undefined) {
-			// debug(`#createBuildBaseStructureTask(): pickStructLocation() couldn't find a good location for ${buildTask.structureID}.`);
+			debug(`${gameTime}	WARNING (FishBot ${me}): createBuildBaseStructureTask() / pickBaseStructLocation(): couldn't find a good location for ${buildTask.structureID}.`);
 			return undefined;
 		}
-
-		// Select closest trucks to new location
-		engineeringReserve.sort((a,b) => distSq(a.x, buildTask.x, a.y, buildTask.y) - distSq(b.x, buildTask.x, b.y, buildTask.y));
-		const taskForceUnits = engineeringReserve.slice(0, MAX_TRUCKS); 
 
 		let md = this.#createMissionOrders();
 
@@ -841,12 +844,12 @@ class armyEngineering {
 		
 		taskForceUnits.forEach((droid) => {
 			state.g.addDroidToGroup({groupID: md.taskForceID, droidID: droid.id});
-			state.g.removeDroidFromGroup({groupID: ENGINEERING.ENGINEERING_RESERVE, droidID: droid.id});
+			state.g.removeDroidFromGroup({groupID: reserveID, droidID: droid.id});
 		});		
 
 		// Assign orders for conducting & ceasing operations			
-		md.orders = () => this.#mcb(buildBaseStructure, md.taskForceID, buildTask.structureID, loc.x, loc.y);		// lambda is necessary otherwise md.orders is not interpreted as a function
-		md.ceaseOrders = () => this.#mcb(this.#finaliseConstruction, md);
+		md.orders = () => buildBaseStructure(md.taskForceID, buildTask.structureID, loc.x, loc.y);		// md.orders is a function
+		md.ceaseOrders = () => this.#finaliseConstruction(md, ENGINEERING.BASE_BUILDER);		// puts the reserve back in BASE_BUILDER
 
 		return md;
 	}
@@ -894,8 +897,8 @@ class armyEngineering {
 		});		
 
 		// Assign orders for conducting & ceasing operations			
-		md.orders = () => this.#mcb(buildOilDerrick, md.taskForceID, buildTask.structureID, derrick);		// lambda is necessary otherwise md.orders is not interpreted as a function
-		md.ceaseOrders = () => this.#mcb(this.#finaliseConstruction, md);
+		md.orders = () => buildOilDerrick(md.taskForceID, buildTask.structureID, derrick);		// lambda is necessary otherwise md.orders is not interpreted as a function
+		md.ceaseOrders = () => this.#finaliseConstruction(md, ENGINEERING.ENGINEERING_RESERVE);
 
 		return md;
 	}
@@ -943,8 +946,8 @@ class armyEngineering {
 		});		
 
 		// Assign orders for conducting & ceasing operations			
-		md.orders = () => this.#mcb(buildMultipleOilDerricks, md.taskForceID, buildTask.structureID, sectorDerricks);		// lambda is necessary otherwise md.orders is not interpreted as a function
-		md.ceaseOrders = () => this.#mcb(this.#finaliseConstruction, md);
+		md.orders = () => buildMultipleOilDerricks(md.taskForceID, buildTask.structureID, sectorDerricks);		// lambda is necessary otherwise md.orders is not interpreted as a function
+		md.ceaseOrders = () => this.#finaliseConstruction(md, ENGINEERING.ENGINEERING_RESERVE);
 
 		return md;
 	}
@@ -958,16 +961,21 @@ class armyEngineering {
 
 		const cellSize = state.grid.cellSize;
 
-		let engineeringReserve = state.g.enumGroup(ENGINEERING.ENGINEERING_RESERVE);
-		if (engineeringReserve.length === 0) {
-			// debug(`#createBuildBaseStructureTask(): No trucks available.`);
-			return undefined;
+		let reserveID = ENGINEERING.BASE_BUILDER;
+		let taskForceUnits = state.g.enumGroup(reserveID);
+
+		if (taskForceUnits.length === 0) {
+			// debug(`${gameTime}	WARNING (FishBot ${me}): createBuildSingleModuleTask(): Falling back to ENGINEERING.ENGINEERING_RESERVE.`);
+			reserveID = ENGINEERING.ENGINEERING_RESERVE;
+			taskForceUnits = state.g.enumGroup(reserveID);
+			if (taskForceUnits.length === 0) {
+				debug(`${gameTime}	WARNING (FishBot ${me}): createBuildSingleModuleTask(): No trucks available to construct ${buildTask.structureID}.`);
+				return undefined;
+			}
 		}
 
-		const MAX_TRUCKS = 2;
-
 		if (!isStructureAvailable(buildTask.structureID, me)) {
-			debug(`#createBuildSingleModuleTask(): Structure not available: ${buildTask.structureID}`);
+			debug(`${gameTime}	WARNING (FishBot ${me}): createBuildSingleModuleTask(): Structure not available: ${buildTask.structureID}.`);
 			return undefined;
 		}
 		
@@ -1003,10 +1011,6 @@ class armyEngineering {
 		const y = baseStructures[0].y;
 		const numFinishedModules = baseStructures[0].modules + 1;
 
-		// Select closest trucks to location
-		engineeringReserve.sort((a,b) => distSq(a.x, buildTask.x, a.y, buildTask.y) - distSq(b.x, buildTask.x, b.y, buildTask.y));
-		const taskForceUnits = engineeringReserve.slice(0, MAX_TRUCKS); 
-
 		let md = this.#createMissionOrders();
 
 		// Create mission details
@@ -1019,12 +1023,12 @@ class armyEngineering {
 		
 		taskForceUnits.forEach((droid) => {
 			state.g.addDroidToGroup({groupID: md.taskForceID, droidID: droid.id});
-			state.g.removeDroidFromGroup({groupID: ENGINEERING.ENGINEERING_RESERVE, droidID: droid.id});
+			state.g.removeDroidFromGroup({groupID: reserveID, droidID: droid.id});
 		});		
 
 		// Assign orders for conducting & ceasing operations			
-		md.orders = () => this.#mcb(buildSingleModule, md.taskForceID, buildTask.structureID, x, y, numFinishedModules);
-		md.ceaseOrders = () => this.#mcb(this.#finaliseConstruction, md);
+		md.orders = () => buildSingleModule(md.taskForceID, buildTask.structureID, x, y, numFinishedModules);
+		md.ceaseOrders = () => this.#finaliseConstruction(md, ENGINEERING.BASE_BUILDER);		// puts the reserve back in BASE_BUILDER
 
 		return md;
 	}
@@ -1037,6 +1041,11 @@ class armyEngineering {
 	createBuildNearbyDefenceTask({buildTask, tickUID}) {
 		const cellSize = state.grid.cellSize;
 
+		const currDerrick = buildTask.payload;
+		const derrickID = currDerrick.id;
+		const x = currDerrick.x;
+		const y = currDerrick.y;
+
 		const MINIMUM_TRUCKS = 2;
 		
 		let engineeringReserve = state.g.enumGroup(ENGINEERING.ENGINEERING_RESERVE);
@@ -1046,8 +1055,7 @@ class armyEngineering {
 		}
 
 		// Select closest trucks to new location
-		const currDerrick = buildTask.payload;
-		engineeringReserve.sort((a,b) => distSq(a.x, currDerrick.x, a.y, currDerrick.y) - distSq(b.x, currDerrick.x, b.y, currDerrick.y));
+		engineeringReserve.sort((a,b) => distSq(a.x, x, a.y, y) - distSq(b.x, x, b.y, y));
 		const taskForceUnits = engineeringReserve.slice(0, MINIMUM_TRUCKS); 
 
 		if (!isStructureAvailable(buildTask.structureID, me)) {
@@ -1055,9 +1063,9 @@ class armyEngineering {
 			return undefined;
 		}
 
-		let preferredLoc = pickStructLocation3(buildTask.structureID, currDerrick.x, currDerrick.y);
+		let preferredLoc = pickStructLocation3(buildTask.structureID, x, y);
 		if (preferredLoc === undefined) {
-			debug(`createBuildNearbyDefenceTask(): pickStructLocation3() could not find a valid location`);
+			debug(`${gameTime} WARNING: createBuildNearbyDefenceTask() / pickStructLocation3: could not find a valid location near (${x}, ${y}).`);
 			return undefined;
 		}
 
@@ -1068,7 +1076,7 @@ class armyEngineering {
 		md.id = id;
 		md.taskForceID = id;
 
-		md.sectorID = currDerrick.id;			// TODO: CHECK IF "SECTORID" is the correct abstraction even though this is derrick ID (position ID?)
+		md.sectorID = derrickID;			
 		md.gx = Math.floor(preferredLoc.x / cellSize);
 		md.gy = Math.floor(preferredLoc.y / cellSize);
 		
@@ -1078,10 +1086,8 @@ class armyEngineering {
 		});		
 
 		// Assign orders for conducting & ceasing operations
-		md.orders = () => this.#mcb(buildNearbyDefences, md.taskForceID, buildTask.structureID, preferredLoc.x, preferredLoc.y);		// lambda is necessary otherwise md.orders is not interpreted as a function
-		md.ceaseOrders = () => this.#mcb(this.#finaliseConstruction, md);
-
-		// debug(`Mission creation for: _CONSTRUCT_NEARBY_DEFENCE_ -> (${preferredLoc.x}, ${preferredLoc.y}) `);			
+		md.orders = () => buildNearbyDefences(md.taskForceID, buildTask.structureID, preferredLoc.x, preferredLoc.y);		
+		md.ceaseOrders = () => this.#finaliseConstruction(md, ENGINEERING.ENGINEERING_RESERVE);
 
 		return md;
 	}
@@ -1136,8 +1142,8 @@ class armyEngineering {
 
 		// Assign orders for conducting & ceasing operations
 		// Can use the same driver as 'buildNearbyDefences' (same logic)
-		md.orders = () => this.#mcb(buildNearbyDefences, md.taskForceID, buildTask.structureID, preferredLoc.x, preferredLoc.y);		
-		md.ceaseOrders = () => this.#mcb(this.#finaliseConstruction, md);
+		md.orders = () => buildNearbyDefences(md.taskForceID, buildTask.structureID, preferredLoc.x, preferredLoc.y);		
+		md.ceaseOrders = () => this.#finaliseConstruction(md, ENGINEERING.ENGINEERING_RESERVE);
 
 		// debug(`Mission creation for: CONSTRUCT_REPAIR_CENTER -> (${preferredLoc.x}, ${preferredLoc.y}) `);		
 
@@ -1185,8 +1191,8 @@ class armyEngineering {
 		if (false) debug(`Mission creation for: DEMOLISH_REPAIR_CENTER -> (${loc.x}, ${loc.y}) `);			
 
 		// Can use the same driver as 'buildNearbyDefences' (same logic)
-		md.orders = () => this.#mcb(demolishStructure, md.taskForceID, buildTask.structureID, loc.x, loc.y);		
-		md.ceaseOrders = () => this.#mcb(this.#finaliseConstruction, md);
+		md.orders = () => demolishStructure(md.taskForceID, buildTask.structureID, loc.x, loc.y);		
+		md.ceaseOrders = () => this.#finaliseConstruction(md, ENGINEERING.ENGINEERING_RESERVE);
 
 		return md;
 	}

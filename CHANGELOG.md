@@ -5,7 +5,7 @@ This file is used to record the changes to FishBot between each version.
 *Released ** Jul 2026***
 ### Changes in v0.4.3
 - More supported maps
-    - FishBot is now tested & working on most of the 2, 3, and 4 player maps shipped with Warzone 4.7.0.
+    - FishBot is now tested & working on most base maps shipped with Warzone 2100 (as of v4.7.0).
 - Combat improvements
     - Now uses 4 smaller BCTs rather than 2 larger BCTs, which improves combat effectiveness (due to reduced overcrowding).
     - Improved effectiveness of repair units & repair facilities.
@@ -15,9 +15,9 @@ This file is used to record the changes to FishBot between each version.
     - Now tracks active production jobs for more accurate production to meet demand.
 - Construction improvements
     - Build order adaptation: 
-        - Matches the number of generators to the number of derricks.
+        - Now matches the number of generators to the number of derricks & VTOL rearming pads to the number of VTOLs.
         - VTOL infrastructure & factory modules are no longer constructed in very low oil situations.
-    - Improved early game construction efficiency.
+    - Improved base construction efficiency.
 - Test infrastructure improvements
     - Testing:
         - Added a new test pipeline to allow FishBot to be automatically tested on all base maps with up to 9 other players (see `fishbot\tests`).
@@ -25,22 +25,10 @@ This file is used to record the changes to FishBot between each version.
     - Debug Mode:
         - On game start, the camera now centers on FishBot's base.
 
-#### Benchmark results (Warzone 2100 v4.7.0)
-FishBot `v0.4.3` (commit `1`) was tested 1v1 against Cobra & PeacemakerAI. Sides were swapped mid-way through all tests to account for map-induced imbalances (i.e. 100 games as Player 1, and then 100 games as Player 2). The average is taken as the final win percentage.
+#### Test results (Warzone 2100 v4.7.0)
+As of this version (FishBot v0.4.3), FishBot is now automatically tested on all standard 2, 3 and 4 player maps against Cobra @ Medium difficulty (T2-NoBase). 
 
-`Sk-Rush 4P T2-NoBase (1v1 duel)`:
-- **%** win rate: FishBot-v0.4.3 Medium vs Cobra **Hard** 
-- **%** win rate: FishBot-v0.4.3 Medium vs Cobra **Insane** 
-- **%** win rate: FishBot-v0.4.3 Medium vs PeacemakerAI v0.8 **Medium** 
-- **%** win rate: FishBot-v0.4.3 Medium vs PeacemakerAI v0.8 **Hard** 
-
-`Gamma 3P T2-NoBase (1v1 duel)`:
-- **%** win rate: FishBot-v0.4.3 Medium vs Cobra **Hard** 
-- **%** win rate: FishBot-v0.4.3 Medium vs Cobra **Insane** 
-- **%** win rate: FishBot-v0.4.3 Medium vs PeacemakerAI v0.8 **Medium** 
-- **%** win rate: FishBot-v0.4.3 Medium vs PeacemakerAI v0.8 **Hard** 
-
-As of this version (FishBot v0.4.3), FishBot is now automatically tested on T2-NoBase starts on all 2, 3 and 4 player maps against Cobra @ Medium difficulty (duel & FFA, on all combinations of positions).
+It is tested in both duel (1v1) & FFA (1v1v1v1) modes, on all combinations of positions. The final results are aggregated into a percentage which can be found in `README.md`.
 
 ## Fishbot v0.4.2
 *Released **10 Jul 2026***

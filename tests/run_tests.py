@@ -297,7 +297,7 @@ if __name__ == "__main__":
 
         start_time = time.time()
 
-        run_batch_test(commit_sha="799e86939c8f1f80b430e5d234432a94deee3de8")
+        run_batch_test(commit_sha="b155be21ee55cffe7240ab54bd39e5a2ced12ab2")
 
         end_time = time.time()
 

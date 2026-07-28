@@ -773,7 +773,8 @@ class CommandCenter {
 		this.#abortDangerousConstructionTasks(state, activeRemoteMissions);
 
 		// Command then terminates, if there are no available trucks this tick (avoids expensive planning tasks)
-		const trucksUnavailable = state.g.enumGroup(ENGINEERING.ENGINEERING_RESERVE).length === 0;
+		const trucksUnavailable = (state.g.enumGroup(ENGINEERING.ENGINEERING_RESERVE).length === 0) && 
+								  (state.g.enumGroup(ENGINEERING.BASE_BUILDER).length === 0);
 		if (trucksUnavailable) {
 			return;
 		}
@@ -781,8 +782,16 @@ class CommandCenter {
 		// Set adaptation parameters (todo: move to strategic layer)
 		// const totalDerricks = state.poi.derricks.length;		// used to determine 'low-oil ness' (estimate derricks / player).
 		const MY_DERRICK_COUNT = state.playerInfo[me]['numDerricks'];
-		const USE_VTOL = (MY_DERRICK_COUNT > 8);
+
+		const generatorsRequired = Math.ceil(MY_DERRICK_COUNT / 4);
+		const clamp = (value, min, max) => Math.min(Math.max(value, min), max);
+		const MIN_GENERATORS = 2;
+		const MAX_GENERATORS = 10;	// todo: use `getStructureLimit()`.
+		const MAX_GENERATORS_AND_POWER_MODULES = clamp(generatorsRequired, MIN_GENERATORS, MAX_GENERATORS);
+
+		const USE_VTOL = (MY_DERRICK_COUNT >= 8);
 		const USE_FACTORY_MODULES = (MY_DERRICK_COUNT >= 6);
+		const MY_VTOL_COUNT = state.playerInfo[me]['numAirUnits'];
 
 		const approvedConstructionTasks = [];
 
@@ -790,7 +799,7 @@ class CommandCenter {
 		const MAX_BASE_BUILD_TASKS = 1;
 		const baseBuildDeficit = MAX_BASE_BUILD_TASKS - activeBaseBuildTasks.length;
 		if (baseBuildDeficit > 0) {
-			const requestedBaseBuildTasks = engineering.requestBaseConstruction(state, MY_DERRICK_COUNT, USE_VTOL, USE_FACTORY_MODULES);
+			const requestedBaseBuildTasks = engineering.requestBaseConstruction(state, MAX_GENERATORS_AND_POWER_MODULES, USE_VTOL, USE_FACTORY_MODULES, MY_VTOL_COUNT);
 			approvedConstructionTasks.push(...requestedBaseBuildTasks.slice(0, 1));
 		}
 
