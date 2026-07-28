@@ -289,7 +289,10 @@ class CommandCenter {
 			const objectList = [];
 			targetObjectList.forEach(t => {
 				const obj = getObject(t.type, t.player, t.id);
-				if (obj != null) {
+				if (obj == null) {
+					return;
+				} 	
+				if (isWalkable[obj.x][obj.y]) {		// This captures if the potential target is on an island / water terrain. FishBot will ignore these targets for now.
 					objectList.push(obj);
 				}
 			});

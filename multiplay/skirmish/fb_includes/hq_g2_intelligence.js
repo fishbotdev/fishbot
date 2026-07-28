@@ -347,7 +347,6 @@ class armyIntelligence {
 	 */
 	findClosestTarget(state, x, y) {
 
-		// **
 		const xMax = state.grid.numXCells;
 		const yMax = state.grid.numYCells;
 		const cellSize = state.grid.cellSize;
@@ -361,11 +360,12 @@ class armyIntelligence {
 		const toSearch = [[Math.floor(x / cellSize), Math.floor(y / cellSize)]];
 		const inSearchList = new Array(xMax * yMax).fill(false);	
 
-		// **
 		const MAX_MAP_DIM = 256;
 		const MAX_CELLS = Math.ceil(MAX_MAP_DIM / cellSize);
 		const MAX_ITERS = Math.min(xMax * yMax, MAX_CELLS * MAX_CELLS);
 		let iters = 0;
+
+		const nonWalkableTileTargets = [];
 		
 		// Formatted as [x, y, manhattanDistance]
 		// const NEIGHBOUR_OFFSETS = [[-1, -1, 2], [-1, 0, 1], [-1, 1, 2], [0, 1, 1], [1, 1, 2], [1, 0, 1], [1, -1, 2], [0, -1, 1]];
@@ -411,9 +411,14 @@ class armyIntelligence {
 					for (let j=0; j<potentialTargets.length; j++) {
 						const t = potentialTargets[j];
 						const obj = getObject(t.type, t.player, t.id);
-						if (obj != null) {
+						if (obj == null) {
+							continue;
+						}
+						if (isWalkable[obj.x][obj.y]) {		// this is here to handle targets on water terrain / islands. FishBot will ignore these for now.
 							// debug(`${gameTime}: intel/findClosestTarget: BFS in ${iters} iterations (returning ${obj.name} (${obj.x}, ${obj.y})).`);
-							return obj;		
+							return obj;
+						} else {
+							nonWalkableTileTargets.push(obj);
 						}
 					};
 				}
@@ -425,9 +430,14 @@ class armyIntelligence {
 			iters++;
 		}
 
+		for (let i=0; i<nonWalkableTileTargets.length; i++) {
+			const obj = nonWalkableTileTargets[i];
+			debug(`${gameTime}\t(FishBot ${me}): findClosestTarget() returned nonWalkableTileTarget: "${obj.name}" (type: ${obj.type}, player: ${obj.player}, id: ${obj.id})`);
+			return nonWalkableTileTargets[i];
+		}
+
 		// debug(`${gameTime}: intel/findClosestTarget: BFS in ${iters} iterations: no targets found.`);
 		return undefined;
 	}
 		
-
 }
