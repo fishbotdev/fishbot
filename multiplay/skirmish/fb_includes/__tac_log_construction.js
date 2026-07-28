@@ -51,7 +51,7 @@ function pickBaseStructLocation(structureID) {
 	const BBOX_2x2_STRUCTURES = [STRUCTURES["Command Center"].id, STRUCTURES["Command Relay Center"].id, STRUCTURES["Power Generator"].id, STRUCTURES["Research Facility"].id];
 
 	let BBOX_CORNERS = [[-1, -1], [1, 1], [-1, 1], [1, -1]];
-	const BBOX_3X3_CORNERS = [[-2, -2], [-2, 2], [2, -2], [2, 2], [2, 0], [-2, 0], [0, 2], [0, -2]];
+	const BBOX_3X3_CORNERS = [[-2, -2], [-2, 2], [2, -2], [2, 2], [-2, -1], [-1, -2], [-2, 1], [-1, 2], [1, -2], [2, -1], [2, 1], [1, 2], [2, 0], [-2, 0], [0, 2], [0, -2]];
 	const BBOX_2X2_CORNERS = [[-2, -2], [-2, 1], [1, -2], [1, 1], [1, 0], [-2, 0], [0, 1], [0, -2]];
 	
 	if (BBOX_3x3_STRUCTURES.includes(structureID)) {
@@ -92,7 +92,6 @@ function pickBaseStructLocation(structureID) {
 			continue;
 		}
 
-		// debug(`${structureID} success @ ${x}, ${y}`);
 		return {'x': x, 'y': y};
 	}
 
