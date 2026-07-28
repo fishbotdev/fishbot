@@ -61,15 +61,17 @@
 3. Open Command Prompt and run `pip install pandas`.
 
 ## Running Automated Tests
-Go to `fishbot/tests`, then run the files in this order:
-1. [*Optional*] `run_test_generator.py` (~5 seconds)
-   * Please double check the output folder path before running the script.
-   * Re-run this script if the map or test information has changed (e.g. a new set of maps, or modified skirmish settings). Also re-run the script if the output folder location has changed.
-2. `run_tests.py` (may take ~1 day to complete, depending on the number of tests requested).
-   * Don't forget to change `COMMIT_SHA` for a new test.
-   * Note: The implementation of the game-summary-table parser is platform-dependent (works on Windows only). Please implement your own terminal-scraper function for Linux / Mac.
-3. `run_result_parser.py` (~5 seconds)
-   * Don't forget to change `COMMIT_SHA` for a new test.
+1. Pull the latest commits for FishBot into both the development (for the test runner) and production folders (for the source code under test).
+2. Open up `fishbot/tests` in your Python IDE.
+3. Run these Python scripts in this order:
+   1. [*Optional*] `run_test_generator.py` (~5 seconds)
+      * Please double check the output folder path before running the script.
+      * Re-run this script if the map or test information has changed (e.g. a new set of maps, or modified skirmish settings). Also re-run the script if the output folder location has changed.
+   2. `run_tests.py` (may take up to ~1 day to complete, depending on the number of tests requested).
+      * Don't forget to change `COMMIT_SHA` for a new test.
+      * Note: The implementation of the game-summary-table parser is platform-dependent (works on Windows only). Please implement your own terminal-scraper function for Linux / Mac.
+   3. `run_result_parser.py` (~5 seconds)
+      * Don't forget to change `COMMIT_SHA` for a new test.
 
 For any test that warrants further investigation, you can use `spectate_map.exe` to select and run the test in spectator mode.
 
