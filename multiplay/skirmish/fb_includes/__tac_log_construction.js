@@ -125,77 +125,78 @@ function pickStructLocation3(structureID, x, y) {
 	const xDirection = (x > HALF_MAP_WIDTH) ? -1 : 1;
 	const yDirection = (y > HALF_MAP_HEIGHT) ? -1 : 1;
 
-	for (let i=0; i<QUADRANT_SEARCH_PATTERN.length; i++) {
-		const tX = x + xDirection * QUADRANT_SEARCH_PATTERN[i][0];
-		const tY = y + yDirection * QUADRANT_SEARCH_PATTERN[i][1];
+	for (let sign = 1; sign >= -1; sign -= 2) {		// swaps to the 'opposite' quadrant to continue looking
+		for (let i=0; i<QUADRANT_SEARCH_PATTERN.length; i++) {
+			const tX = x + sign * xDirection * QUADRANT_SEARCH_PATTERN[i][0];
+			const tY = y + sign * yDirection * QUADRANT_SEARCH_PATTERN[i][1];
 
-		if (tX < 0 || tX >= mapWidth || tY < 0 || tY >= mapHeight) {
-			continue;
-		}
-			
-		if (!isWalkable[tX][tY]) {
-			// debug(`	${gameTime}: psl2 rejected: (${tX}, ${tY}); not reachable`);
-			continue;
-		}
-
-		if (isDerrickPosition[`${tX},${tY}`]) {
-			// For some reason - `structureCanFit` / the `enumRange` check below seem to miss friendly / enemy derricks.
-			continue;
-		}
-
-		if (!structureCanFit(structureID, tX, tY)) {		// required for structures with bounding box >= 1x1 
-			continue;
-		}
-
-		// Reject tiles with structures or enemy droids on them 
-		// (Previous testing indicated that `structureCanFit` may not account for partially built structures)
-		const gameObjects = enumRange(tX, tY, 3, ALL_PLAYERS, false);
-		let positionBlocked = false;
-		for (let i=0; i<gameObjects.length; i++) {
-			const o = gameObjects[i];
-			
-			if (o.type === STRUCTURE) {
-				if (o.x === tX && o.y === tY) {
-					positionBlocked = true;
-					break;
-				}
+			if (tX < 0 || tX >= mapWidth || tY < 0 || tY >= mapHeight) {
+				continue;
+			}
+				
+			if (!isWalkable[tX][tY]) {
+				// debug(`	${gameTime}: psl2 rejected: (${tX}, ${tY}); not reachable`);
 				continue;
 			}
 
-			if (o.type === DROID) {
-				if (playerIsEnemy[o.player]) {
+			if (isDerrickPosition[`${tX},${tY}`]) {
+				// For some reason - `structureCanFit` / the `enumRange` check below seem to miss friendly / enemy derricks.
+				continue;
+			}
+
+			if (!structureCanFit(structureID, tX, tY)) {		// required for structures with bounding box >= 1x1 
+				continue;
+			}
+
+			// Reject tiles with structures or enemy droids on them 
+			// (Previous testing indicated that `structureCanFit` may not account for partially built structures)
+			const gameObjects = enumRange(tX, tY, 3, ALL_PLAYERS, false);
+			let positionBlocked = false;
+			for (let i=0; i<gameObjects.length; i++) {
+				const o = gameObjects[i];
+				
+				if (o.type === STRUCTURE) {
 					if (o.x === tX && o.y === tY) {
 						positionBlocked = true;
 						break;
 					}
+					continue;
 				}
+
+				if (o.type === DROID) {
+					if (playerIsEnemy[o.player]) {
+						if (o.x === tX && o.y === tY) {
+							positionBlocked = true;
+							break;
+						}
+					}
+					continue;
+				}
+			}
+
+			if (positionBlocked) {
 				continue;
 			}
+
+			const z = MapTiles[tY][tX].height;
+			const loc = {'x': tX, 'y': tY, 'z': z};
+
+			if (Math.abs(z - specifiedHeight) > HEIGHT_TOLERANCE) {
+				// debug(`	${gameTime}: psl2 rejected: (${tX}, ${tY}); height (${MapTiles[tY][tX].height} !== ${specifiedHeight})`);
+				outsideOfHeightTolerance.push(loc);
+				continue;
+			}
+
+			return loc;	
 		}
-
-		if (positionBlocked) {
-			continue;
-		}
-
-		const z = MapTiles[tY][tX].height;
-		const loc = {'x': tX, 'y': tY, 'z': z};
-
-		if (Math.abs(z - specifiedHeight) > HEIGHT_TOLERANCE) {
-			// debug(`	${gameTime}: psl2 rejected: (${tX}, ${tY}); height (${MapTiles[tY][tX].height} !== ${specifiedHeight})`);
-			outsideOfHeightTolerance.push(loc);
-			continue;
-		}
-
-		return loc;	
 	}
 
 	for (let i=0; i<outsideOfHeightTolerance.length; i++) {		// if list is empty, this for-loop never runs
 		return outsideOfHeightTolerance[i];		
 	}
 
-	// debug(` ${gameTime}: pickStructLocation3() failed: could not find appropriate (${x} ${y}) for "${structureID}"`);
+	debug(`${gameTime}\t(FishBot ${me}) WARNING: pickStructLocation3() failed @ (${x} ${y}) for "${structureID}"`);
 	return undefined;
-
 }
 
 /*

@@ -1039,6 +1039,11 @@ class armyEngineering {
 	createBuildNearbyDefenceTask({buildTask, tickUID}) {
 		const cellSize = state.grid.cellSize;
 
+		const currDerrick = buildTask.payload;
+		const derrickID = currDerrick.id;
+		const x = currDerrick.x;
+		const y = currDerrick.y;
+
 		const MINIMUM_TRUCKS = 2;
 		
 		let engineeringReserve = state.g.enumGroup(ENGINEERING.ENGINEERING_RESERVE);
@@ -1048,8 +1053,7 @@ class armyEngineering {
 		}
 
 		// Select closest trucks to new location
-		const currDerrick = buildTask.payload;
-		engineeringReserve.sort((a,b) => distSq(a.x, currDerrick.x, a.y, currDerrick.y) - distSq(b.x, currDerrick.x, b.y, currDerrick.y));
+		engineeringReserve.sort((a,b) => distSq(a.x, x, a.y, y) - distSq(b.x, x, b.y, y));
 		const taskForceUnits = engineeringReserve.slice(0, MINIMUM_TRUCKS); 
 
 		if (!isStructureAvailable(buildTask.structureID, me)) {
@@ -1057,9 +1061,9 @@ class armyEngineering {
 			return undefined;
 		}
 
-		let preferredLoc = pickStructLocation3(buildTask.structureID, currDerrick.x, currDerrick.y);
+		let preferredLoc = pickStructLocation3(buildTask.structureID, x, y);
 		if (preferredLoc === undefined) {
-			debug(`createBuildNearbyDefenceTask(): pickStructLocation3() could not find a valid location`);
+			debug(`${gameTime} WARNING: createBuildNearbyDefenceTask() / pickStructLocation3: could not find a valid location near (${x}, ${y}).`);
 			return undefined;
 		}
 
@@ -1070,7 +1074,7 @@ class armyEngineering {
 		md.id = id;
 		md.taskForceID = id;
 
-		md.sectorID = currDerrick.id;			// TODO: CHECK IF "SECTORID" is the correct abstraction even though this is derrick ID (position ID?)
+		md.sectorID = derrickID;			
 		md.gx = Math.floor(preferredLoc.x / cellSize);
 		md.gy = Math.floor(preferredLoc.y / cellSize);
 		
@@ -1080,10 +1084,8 @@ class armyEngineering {
 		});		
 
 		// Assign orders for conducting & ceasing operations
-		md.orders = () => buildNearbyDefences(md.taskForceID, buildTask.structureID, preferredLoc.x, preferredLoc.y);		// lambda is necessary otherwise md.orders is not interpreted as a function
+		md.orders = () => buildNearbyDefences(md.taskForceID, buildTask.structureID, preferredLoc.x, preferredLoc.y);		
 		md.ceaseOrders = () => this.#finaliseConstruction(md, ENGINEERING.ENGINEERING_RESERVE);
-
-		// debug(`Mission creation for: _CONSTRUCT_NEARBY_DEFENCE_ -> (${preferredLoc.x}, ${preferredLoc.y}) `);			
 
 		return md;
 	}
