@@ -108,9 +108,10 @@ Some current FishBot limitations are:
 * FishBot sometimes attempts to build forward-defences around derricks which are actually too dangerous to go and capture.
 
 ## Recent updates
-* **v0.5.0** - *released **29 Jul 2026**
+* **v0.5.0** - *released **29 Jul 2026***
     * Now compatible with most maps shipped with Warzone 2100 v4.7.0 (validated by a new automatic testing pipeline).
-    * Greatly improved combat effectiveness; now up to 4 combat groups are used (supported by a greatly improved production, resupply & repair system).
+    * Greatly improved combat effectiveness; now up to 4 combat groups are used.
+    * Major overhaul of the production, resupply & repair system to support the above.
     * Improved base construction efficiency. Added build order adaptation for very low-oil maps.
 
 * **v0.4.2** - *released **10 Jul 2026***
