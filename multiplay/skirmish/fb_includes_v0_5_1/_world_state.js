@@ -319,15 +319,16 @@ class worldState {
             'bases': []
         };
 
+        // Game statistics
+        this.MAX_STRUCTURE_COUNT = {};
+        this.REPAIR_FACILITY_HARD_CAP = 3; // getStructureLimit(STRUCTURES["Repair Facility"].id);      
+
         ////////////////////////// PLAYER STATISTICS / CUSTOM METADATA //////////////////////////
         /** 
          * The numeric array index is the same as the player ID, so `state.playerInfo[me].numTrucks` is a possible & accepted access pattern.
          * @type {PlayerStatsObject[]} 
          */
         this.playerInfo;
-
-        // Game statistics
-        this.REPAIR_FACILITY_HARD_CAP = 3; // getStructureLimit(STRUCTURES["Repair Facility"].id);      // TODO: Fix this when this function is fixed.
 
         // Combat targeting
         /** @type {BrigadeInfo} */
@@ -354,12 +355,9 @@ class worldState {
         this.activeMissions = [];
         /** @type {ProductionJob[]} */
         this.activeProductionJobs = [];
-
-        // Bot attributes
-        this.botIsActive = true;
-        this.oilDominance = false;
-
+        
         // Load balancing parameters
+        this.botIsActive = true;
         this.currWorkerID = -1;
         this.TIME_BLOCK_MS = 200;
         this.INTERVALS_PER_MIN = Math.floor(60000 / this.TIME_BLOCK_MS);

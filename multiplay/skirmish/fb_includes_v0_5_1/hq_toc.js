@@ -792,22 +792,6 @@ class TacticalOperationsCenter {
 	}
 
 	/**
-	 * This function writes `oilDominance` to `state`.
-	 * @param {worldState} state
-	 * @param {boolean} isOilDominant
-	 * @returns {void}
-	 */
-	setOilDominanceStatus(state, isOilDominant) {
-
-		if (state.oilDominance === isOilDominant) {
-			return;
-		}
-
-		debug(`${gameTime}: oil dominance changed to ${isOilDominant}`);
-		state.oilDominance = isOilDominant;
-	}
-
-	/**
 	 * Updates `brigade.nearbyTargets`.
 	 * @param {worldState} state 
 	 * @param {number} brigadeID 

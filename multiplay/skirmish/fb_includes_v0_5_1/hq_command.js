@@ -42,11 +42,14 @@ class CommandCenter {
 			This constructor is intended to contain *all* FishBot parameters which change how it behaves.
 		*/
 
-		// Strategic parameters
-		this.OIL_DOMINANCE_PERCENTAGE = 60;
+		// Combat operational parameters
 		this.TARGET_SEARCH_RADIUS = 25;
 
-		// Production logistics parameters
+		// Oil strategic parameters
+		this.OIL_DOMINANCE_PERCENTAGE = 60;
+		this.isOilDominant = false;
+
+		// Production strategic parameters
 		this.MAX_TRUCKS = 8;
 
 		this.FISHBOT_BRIGADE_COMPOSITION = {
@@ -88,10 +91,10 @@ class CommandCenter {
 			'logistics_runConstruction': 60,
 			'logistics_runResupplyLogistics': 30,
 			'intel_getNearbyGroundTargets': 20,
+			'intel_updateStrategicParameters': 20,
 			'logistics_runStructureLogistics': 15,
 			'intel_getMapIntelligence': 12,
 			'intel_getAviationTargets': 10,
-			'intel_checkOilDominance': 2,
 		};
 
 		this.INTELLIGENCE_SUBTASK_NAMES = [];
@@ -196,12 +199,11 @@ class CommandCenter {
 		// i.e. tactical functions may be called directly where appropriate
 
 		switch(taskID) {
-
-			case 'intel_checkOilDominance':
-				const isOilDominant = checkOilDominance(state, this.OIL_DOMINANCE_PERCENTAGE);
-				this.toc.setOilDominanceStatus(state, isOilDominant);
-				break;
 			
+			case 'intel_updateStrategicParameters':
+				this.updateStrategicParameters(state);
+				break;
+
 			case 'intel_getNearbyGroundTargets':
 				// Update location(s) & target(s) of active combat force(s)
 				this.BRIGADE_DESIGNATIONS.forEach(brigadeID => {
@@ -236,6 +238,27 @@ class CommandCenter {
 				return;
 		}
 	
+	}
+
+	updateStrategicParameters(state) {
+
+		// Oil (the most important strategic resource)
+
+		// Warzone 2100 lacks the concepts of food / fuel for vehicles & aircraft / ammunition (VTOL only)
+		// 	- Supply of oil: Combat operations + oil capture
+		// 	- Demand of oil: production, construction, research, oil-defence construction
+
+		const playerInfo = state.playerInfo;
+		const totalDerricks = state.poi.derricks.length;
+
+		const pc = playerInfo[me]['numDerricks'] / totalDerricks * 100;
+		// debug(` ${getCurrGameTimeMinSec()}:\tcaptured ${playerInfo[me]['numDerricks']} out of ${totalDerricks} (${pc}%)`);
+		const oilDominance = (pc > this.OIL_DOMINANCE_PERCENTAGE);
+		if (this.isOilDominant != oilDominance) {
+			debug(`${getCurrGameTimeMinSec()}:\toil dominance changed to: ${oilDominance}`);
+			this.isOilDominant = oilDominance;
+		}
+
 	}
 
 	/////////////////////////////////////////////////// G3: COMBAT OPERATIONS ///////////////////////////////////////////////////
@@ -506,7 +529,7 @@ class CommandCenter {
 		
 		const adaThreat = state.fields.adaThreat;
 		const cellSize = state.grid.cellSize;
-		const IS_OIL_DOMINANT = state.oilDominance;
+		const IS_OIL_DOMINANT = this.isOilDominant;
 		const NUM_AIRCRAFT = state.playerInfo[me].numAirUnits;	
 		const AIR_UNIT_DOMINANCE = NUM_AIRCRAFT >= 10;
 		// const AIR_UNIT_SHORTAGE = NUM_AIRCRAFT === 1;
@@ -1086,7 +1109,7 @@ class CommandCenter {
 		const MY_INFANTRY_COUNT = state.playerInfo[me]["numInfantryUnits"];
 		const MY_LAND_VEHICLE_COUNT = (state.playerInfo[me]["numArmourUnits"] + state.playerInfo[me]["numADAUnits"] + 
 									   state.playerInfo[me]["numShortRangeIndirectUnits"] + state.playerInfo[me]["numLongRangeIndirectUnits"]);
-			// todo: add sensor to land vehicle count
+			// todo: add sensor + repair to land vehicle count
 		const MY_VTOL_COUNT = state.playerInfo[me]["numAirUnits"];
 
 		// Compare to limits
