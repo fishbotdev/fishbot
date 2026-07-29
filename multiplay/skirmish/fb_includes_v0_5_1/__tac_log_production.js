@@ -308,7 +308,7 @@ function produceHeavyCavalry(factory) {
 		WEAPONS["Assault Cannon"],
 		WEAPONS["Heavy Cannon"],
 		WEAPONS["Twin Assault Cannon"],
-		WEAPONS["Needle Gun"],
+		// WEAPONS["Needle Gun"],
 		WEAPONS["Rail Gun"],
 		WEAPONS["Gauss Cannon"],
 	].reverse();
