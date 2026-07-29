@@ -4,7 +4,7 @@
 
 FishBot is a Warzone 2100 AI bot compatible with Warzone 2100 **v4.6.1+**.
 
-It is designed for Tech Level 2, No-Base starts on the supported maps below. Tech Level 1 is currently not supported.
+It is designed for Tech Level 2 (No Scavenger) skirmish games on the supported maps below. Tech Level 1 is currently not supported.
 
 ## Download
 
@@ -28,11 +28,11 @@ However, at the moment I feel like Cobra already fills the gap in the other tech
 In particular, I think Cobra performs excellently on T1 in Warzone 2100 v4.6.3+. 
 
 ## Supported maps (Warzone2100 4.7.0)
-As of **v0.4.3**, FishBot works well on most "low-oil" maps shipped with the game. 
+As of **v0.5.0**, FishBot works on most "low-oil" maps shipped with the game. There might be a few lag issues with high-player count games; these are being actively worked on.
 
 FishBot is not compatible with scavengers; it currently ignores them.
 
-### 2 player (T2)
+### 2 player (T2-NoScav)
 * `Sk-Startup` (100% duel)
 * `Sk-UrbanChasm` (85% duel)
 * `Sk-HighGround` (80% duel)
@@ -40,17 +40,17 @@ FishBot is not compatible with scavengers; it currently ignores them.
 * `Vision` (95% duel)
 * `DustyMaze (2P)` (*tested manually*)
 
-### 3 player (T2)
+### 3 player (T2-NoScav)
 * `Monocot` (100% duel, 100% FFA)
 * `Gamma` (100% duel, 97% FFA)
 
-### 4 player (T2)
+### 4 player (T2-NoScav)
 * `Sk-Rush` (99% duel, 80% FFA)
 * `Sk-Rush2` (100% duel, 92% FFA)
-* `Sk-UrbanDuel` (91% duel, 78% FFA)
+* `Sk-UrbanDuel` (99% duel, 92% FFA)
 * `Sk-Mountain` (100% duel, 62% FFA)
-* `Sk-Valley` (98% duel, 67% FFA)
-* `Sk-FishNets` (93% duel, **32% FFA**)
+* `Sk-Valley` (98% duel, 85% FFA)
+* ~~`Sk-FishNets` (86% duel, **15% FFA**)~~ - **not compatible**: targeting algorithm interacts poorly with water obstacles 
 * `Sk-GreatRift` (100% duel, 72% FFA)
 * `Sk-RollingHills` (93% duel, 92% FFA) 
 * ~~`Sk-Basingstoke`~~ - **not compatible**: large unit groups get stuck during pathfinding
@@ -61,17 +61,17 @@ FishBot is not compatible with scavengers; it currently ignores them.
 * `DustyMaze-2v2` (*tested manually*)
 * `DustyMaze-FFA` (*tested manually*)
 
-### 5 player (T2)
+### 5 player (T2-NoScav)
 * `Bloat` (56% FFA)
 
-### 6 player (T2)
+### 6 player (T2-NoScav)
 * `Melting` (53% FFA)
 * `Entropy` (*tested manually*)
 
-### 7 player (T2)
+### 7 player (T2-NoScav)
 * `Thales` (*tested manually*)
 
-### 8 player (T2)
+### 8 player (T2-NoScav)
 * `Sk-Clover` (*tested manually*)
 * `Sk-MizaMaze` (*tested manually*)
 * ~~`Sk-Manhattan`~~ - **not compatible**: central river blocks land units
@@ -87,10 +87,10 @@ FishBot is not compatible with scavengers; it currently ignores them.
 * `Sk-Gridlock` (*tested manually*)
 * ~~`Sk-Cockate`~~ - **not compatible**: unit groups get stuck in the narrow base entrances
 
-### 9 player (T2)
+### 9 player (T2-NoScav)
 * `Sk-WindFury` (*tested manually*)
 
-### 10 player (T2)
+### 10 player (T2-NoScav)
 * `Emergence` (*tested manually*)
 * ~~`WaterLoop`~~ - **not compatible**: sea map
 
@@ -108,6 +108,11 @@ Some current FishBot limitations are:
 * FishBot sometimes attempts to build forward-defences around derricks which are actually too dangerous to go and capture.
 
 ## Recent updates
+* **v0.5.0** - *released **29 Jul 2026**
+    * Now compatible with most maps shipped with Warzone 2100 v4.7.0 (validated by a new automatic testing pipeline).
+    * Greatly improved combat effectiveness; now up to 4 combat groups are used (supported by a greatly improved production, resupply & repair system).
+    * Improved base construction efficiency. Added build order adaptation for very low-oil maps.
+
 * **v0.4.2** - *released **10 Jul 2026***
     * Combat improvements:
         * Improved direct-fire targeting and the effectiveness of AA units.

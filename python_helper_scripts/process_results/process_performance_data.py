@@ -176,17 +176,12 @@ def plot_comparative_histograms(
 
     fig.tight_layout()
 
-
-# ---- usage ----
-from os import getcwd
-
 #####################################################################################################################
 
-PROCESS_RESULTS_DIR = rf"{getcwd()}\python_helper_scripts\process_results\v4_perfdata\\"
 LFE = ".log"
 
-path1 = PROCESS_RESULTS_DIR + rf"03a99ae" + LFE                                              # v0.4.1 release
-path2 = PROCESS_RESULTS_DIR + rf"e11e31b" + LFE                                              # v0.4.2 release (runC2 is more expensive, rest is same; to be fixed in next release)
+path1 = rf"050" + LFE
+path2 = rf"050" + LFE   # 0.5.0 release, log file copy-pasted into the cwd
 
 #####################################################################################################################
 

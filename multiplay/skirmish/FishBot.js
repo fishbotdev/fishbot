@@ -40,10 +40,11 @@
 	- 5097 JS @ 02 May 2026: v0.4.0 release (commit `2c79f5f`)
 	- 5237 JS @ 27 Jun 2026: v0.4.1 release (commit `03a99ae`)
 	- 5330 JS @ 10 Jul 2026: v0.4.2 release (commit `3781360`)
+	- 5315 JS @ 29 Jul 2026: v0.5.0 release 
 */
 
 
-const FISHBOT_VERSION = "0.4.3dev";
+const FISHBOT_VERSION = "0.5.0";
 
 //	This file connects all remaining pieces of AI code together. It shouldn't contain any code itself.
 //	NOTE: order matters!
@@ -54,18 +55,18 @@ const FB_INCLUDES = FISHBOT_PATH + "fb_includes/";
 //	 - Show some useful debug information in the console
 //	 - Automatically colour players 0, 1, 2
 //	 - Transform Player 0 (forced human player slot) to spectator mode (used for automated bot testing)
-const DEBUG_MODE_ON = true;
+const DEBUG_MODE_ON = false;
 
 
 /*
 -- RELEASE CHECKLIST --
 1. Update FISHBOT_VERSION to latest version number. Also update the version number in the "name" property in `FishBot.json`.
 2. Disable all beacons / hackMarkTiles() used for debugging (currently just in `__tac_com_ground.js`).
-3. Run automated tests using `tests/run_tests.py`. Update `CHANGELOG.md` with the test results. Pass if no regression.
+3. Run automated tests using `tests/run_tests.py`. Update `README.md` with the test results. Pass if no regression.
 4. Extract logs from autogames (`\logs` folder) & display using `python_helper_scripts/process_performance_data.py`. Pass if no regression.
 5. Set `DEBUG_MODE_ON` = `false`.
-6. Test all supported maps in `README.md` once, against Cobra @ Medium. Pass if it can win a single game in 2 tries or less.
-7. Update LOC above (this doesn't mean anything, it's just a fun metric).
+6. Test all manually tested maps in `README.md` once, against Cobra @ Medium. Pass if it can win a single game in 3 tries or less.
+7. Update LOC above with `fishbot\python_helper_scripts\run_cloc.bat`. Ideally, without a major change in function, the LOC should remain roughly the same. Otherwise, it's just a fun metric.
 8. Update `README.md` with summary of changes.
 9. Update `CHANGELOG.md`.
 10. Commit all changes as the latest commit on the `vx.y.z-development` branch.
