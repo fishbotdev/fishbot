@@ -341,6 +341,14 @@ function getCurrGameTime() {
 	return currGameTime;
 }
 
+function getCurrGameTimeMinSec() {
+	const MS_PER_MINUTE = 60000;
+
+	const mins = String(Math.floor(gameTime / MS_PER_MINUTE)).padStart(2, '0'); 
+	const secs = String(Math.floor((gameTime % MS_PER_MINUTE) / 1000)).padStart(2, '0');;
+	return `${mins}:${secs}`;
+}
+
 function isEnemy(playerID) {
 	if (!defined(playerID)) {
 		debug("isEnemy(): playerID is undefined. Check the calling function.");
