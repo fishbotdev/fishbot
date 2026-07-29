@@ -459,6 +459,7 @@ class CommandCenter {
 		const enemyAircraft = getObjectList(TARGETS['enemyAviation']);		// todo: remove if no ADA available
 		enemyAircraft.forEach(obj => {
 			if (outsideOfRadius(obj, EFFECTIVE_ADA_RADIUS)) return;
+			if (!('isFlying' in obj)) return;
 			if (obj.isFlying !== true) return;
 			brigadeTargets["adaTargets"].push(obj);
 		});		
