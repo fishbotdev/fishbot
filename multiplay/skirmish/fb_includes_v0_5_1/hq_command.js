@@ -1263,7 +1263,7 @@ class CommandCenter {
 			for (let j=positionInResearchOrder; j<researchOrder.length; j++) {
 				if (pursueResearch(idleLabs[i], researchOrder[j].id)) {
 					positionInResearchOrder++;
-					debug(`${me}:\t${getCurrGameTimeMinSec()}\t${researchOrder[j].name}`);		
+					// debug(`${me}:\t${getCurrGameTimeMinSec()}\t${researchOrder[j].name}`);		
 					break;
 				}
 			}
