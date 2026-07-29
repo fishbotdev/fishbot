@@ -1253,48 +1253,8 @@ class CommandCenter {
 			return;
 		}
 
-		const FISHBOT_T2_CANNON_RESEARCH_PRIORITIES = [
-			RESEARCHES["APFSDS Cannon Rounds Mk3"].id,
-			"R-Struc-Power",
-			RESEARCHES["Dedicated Synaptic Link Data Analysis Mk3"].id,
-
-			RESEARCHES["Twin Assault Cannon"].id,
-			"R-Wpn-Cannon-Damage",
-			"R-Wpn-Cannon-ROF", 
-			RESEARCHES["Whirlwind AA Turret"].id,
-			RESEARCHES["Twin Assault Gun"].id,
-			RESEARCHES["Heavy Body - Tiger"].id,
-
-			RESEARCHES["Neural Synapse Research Brain"].id,
-			RESEARCHES["Dense Composite Alloys Mk2"].id,
-
-			RESEARCHES["Needle Gun"].id,
-			RESEARCHES["Rail Gun"].id,
-			RESEARCHES["Gauss Cannon"].id,
-			"R-Wpn-Rail-ROF", 
-			"R-Wpn-Rail-Accuracy",
-			"R-Wpn-Rail-Damage",
-
-			"R-Wpn-Mortar-Damage", 	
-			"R-Wpn-Mortar-ROF",
-			"R-Vehicle-Metals",
-			"R-Cyborg-Metals", 
-
-			// RESEARCHES["Advanced Engineering"].id,
-			// RESEARCHES["Advanced Repair Facility"].id,
-			RESEARCHES["Auto-Repair"].id,
-			RESEARCHES["Neural Synapse Research Brain Mk2"].id,
-
-			"R-Struc-VTOLPad-Upgrade",
-			"R-Struc-Factory-Upgrade",
-			RESEARCHES["Neural Synapse Research Brain Mk3"].id,
-		];
-
-		const FISHBOT_T2_CANNON_RESEARCH_BLACKLIST = [
-			"Flame", "Rocket", "Missile", "R-Defense", "R-Sys-VTOLStrike-Turret", "R-Wpn-PlasmaCannon", 
-		];
-
-		const proposedResearches = rnd.proposeResearch(FISHBOT_T2_CANNON_RESEARCH_PRIORITIES, FISHBOT_T2_CANNON_RESEARCH_BLACKLIST);
+		const researchPath = rnd.researchOrders.getT2CannonResearchPath();
+		const proposedResearches = rnd.proposeResearch(...researchPath);
 		const researchOrder = [...proposedResearches['highPriority'], ...proposedResearches['regularPriority']];
 		
 		let positionInResearchOrder = 0;
@@ -1303,7 +1263,7 @@ class CommandCenter {
 			for (let j=positionInResearchOrder; j<researchOrder.length; j++) {
 				if (pursueResearch(idleLabs[i], researchOrder[j].id)) {
 					positionInResearchOrder++;
-					// debug(`  ${gameTime} (FishBot ${me}): ${researchOrder[j].name}`);		
+					debug(`${me}:\t${getCurrGameTimeMinSec()}\t${researchOrder[j].name}`);		
 					break;
 				}
 			}

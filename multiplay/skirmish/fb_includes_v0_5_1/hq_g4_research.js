@@ -167,10 +167,68 @@ class FishBotResearchOrders {
 		64:59 Nexus Link Turret
 		65:59 Robotic VTOL Rearming Mk2
 	*/
+
+	getT2CannonResearchPath() {
+		const FISHBOT_T2_CANNON_RESEARCH_PRIORITIES = [
+			RESEARCHES["Dedicated Synaptic Link Data Analysis Mk3"].id,
+			RESEARCHES["APFSDS Cannon Rounds Mk3"].id,
+			"R-Struc-Power",
+
+			RESEARCHES["Twin Assault Cannon"].id,
+			RESEARCHES["Heavy Body - Tiger"].id,
+			"R-Wpn-Cannon-Damage",			
+			RESEARCHES["Dense Composite Alloys Mk2"].id,
+			RESEARCHES["Neural Synapse Research Brain"].id,
+			RESEARCHES["Neural Synapse Research Brain Mk2"].id,
+
+			RESEARCHES["Needle Gun"].id,
+			RESEARCHES["Rail Gun"].id,
+			RESEARCHES["Gauss Cannon"].id,
+			"R-Wpn-Rail-Damage",		
+
+			RESEARCHES["Twin Assault Gun"].id,
+			"R-Wpn-Cannon-ROF", 
+			"R-Wpn-Mortar-Damage",
+			
+			RESEARCHES["Light Body - Retaliation"].id,
+			RESEARCHES["Medium Body - Retribution"].id,
+			RESEARCHES["Heavy Body - Vengeance"].id,
+			
+			RESEARCHES["Whirlwind AA Turret"].id,
+			"R-Vehicle-Metals",
+			"R-Wpn-MG-Damage",
+			"R-Vehicle-Engine",
+			"R-Wpn-Mortar-ROF",
+
+			RESEARCHES["Advanced Engineering"].id,
+			RESEARCHES["Advanced Repair Facility"].id,
+			"R-Wpn-Rail-ROF", 
+			"R-Wpn-Rail-Accuracy",
+
+			RESEARCHES["Neural Synapse Research Brain Mk3"].id,
+
+			RESEARCHES["Auto-Repair"].id,
+			"R-Cyborg-Metals",
+
+			"R-Vehicle-Armor-Heat",
+			"R-Cyborg-Armor-Heat",
+			
+			"R-Struc-Factory-Upgrade",
+			"R-Struc-VTOLPad-Upgrade",
+		];
+
+		const FISHBOT_T2_CANNON_RESEARCH_BLACKLIST = [
+			"Flame", "Rocket", "Missile", "R-Defense", "R-Sys-VTOLStrike-Turret", "R-Wpn-PlasmaCannon", 
+		];
+
+		return [FISHBOT_T2_CANNON_RESEARCH_PRIORITIES, FISHBOT_T2_CANNON_RESEARCH_BLACKLIST];
+	}
 }
+
 
 class armyResearchAndDevelopment {
 	constructor() {
+		this.researchOrders = new FishBotResearchOrders();
 
 	}
 
