@@ -534,7 +534,7 @@ class CommandCenter {
 		const AIR_UNIT_DOMINANCE = NUM_AIRCRAFT >= 10;
 		// const AIR_UNIT_SHORTAGE = NUM_AIRCRAFT === 1;
 		
-		const prioritiseCasTargets = NUM_URGENT_CAS_MISSIONS >= 1 || maxCasTargets >= 4;
+		const prioritiseCasTargets = IS_OIL_DOMINANT && (NUM_URGENT_CAS_MISSIONS >= 1 || maxCasTargets >= 4);
 		const prioritiseRaidTargets = !IS_OIL_DOMINANT;
 		const prioritiseIndustrialTargets = IS_OIL_DOMINANT;
 		const SATURATION_RAID = prioritiseIndustrialTargets && AIR_UNIT_DOMINANCE;		// Saturation raid = an attack designed to overwhelm defenses
@@ -546,7 +546,7 @@ class CommandCenter {
 		});
 
 		const casPriorityTargets = [...CAS_MISSION_REQUESTS, ...airRaidTargets];
-		const raidPriorityTargets = [...airRaidTargets, ...CAS_MISSION_REQUESTS];
+		const raidPriorityTargets = [...airRaidTargets];
 
 		if (prioritiseIndustrialTargets) {
 
