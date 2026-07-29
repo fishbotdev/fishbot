@@ -1,6 +1,6 @@
 {
 	"AI": {
-		"js": "FishBot.js",
+		"js": "FishBot_v0_5_0.js",
 		"name": "FishBot v0.5.0",
 		"tip": "Flops about like a fish on land (focuses on combat)",
 		"easy_tip": "Perfectly normal (25% less power generation)",

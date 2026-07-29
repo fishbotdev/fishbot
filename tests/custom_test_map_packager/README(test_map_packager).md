@@ -28,14 +28,16 @@ To get the raw map data required for this script:
 5. Place all of extracted folders in a new folder e.g. `fishbot\tests\custom_test_map_packager\v4.7.0_base_maps`. If done correctly, there should be a new folder `v4.7.0_base_maps` inside `custom_test_map_packager` filled with around 40 subfolders.
 
 ### Step 2: Create custom maps & test files (with Player 0 overwritten with Player N+1)
-1. Open up `fishbot\tests\run_test_generator.py`.
-2. Scroll down to `__main__` and change the `BASE_MAPS_PATH` variable to point to the new directory above, e.g. `fishbot\tests\custom_test_map_packager\v4.7.0_base_maps`.
-2. Then, set the output Configuration Directory for both Production & Development folders (e.g. change the `BASE_PRODUCTION_DIRECTORY` & `BASE_DEV_DIRECTORY` variables).
-3. Finally, run `run_test_generator.py`. 
+1. Go to `fishbot\tests`.
+2. Update the FishBot version number in `CONSTANTS.py` (this is required to get the correct name of FishBot).
+3. Open up `run_test_generator.py`.
+4. Scroll down to `__main__` and change the `BASE_MAPS_PATH` variable to point to the new directory above, e.g. `fishbot\tests\custom_test_map_packager\v4.7.0_base_maps`.
+5. Then, set the output Configuration Directory for both Production & Development folders (e.g. change the `BASE_PRODUCTION_DIRECTORY` & `BASE_DEV_DIRECTORY` variables).
+6. Run `run_test_generator.py`. 
    * This will write the custom map files (in `.wz` format) to the specified output folders.
-4. Check the status report in the console to see if the write was successful.  
+7. Check the status report in the console to see if the write was successful.  
 
 ### Step 3: Force Player 0 to be a spectator
-1. Go to `fishbot\multiplay\skirmish` and open up `FishBot.js`.
+1. Go to `fishbot\multiplay\skirmish` and open up `FishBot_vx_y_z.js`.
 2. Change `DEBUG_MODE_ON` to `true`. 
    * `DEBUG_MODE` causes FishBot to call `transformPlayerToSpectator()`.

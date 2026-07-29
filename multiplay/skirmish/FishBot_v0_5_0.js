@@ -49,7 +49,7 @@ const FISHBOT_VERSION = "0.5.0";
 //	This file connects all remaining pieces of AI code together. It shouldn't contain any code itself.
 //	NOTE: order matters!
 const FISHBOT_PATH = "/multiplay/skirmish/";
-const FB_INCLUDES = FISHBOT_PATH + "fb_includes/";
+const FB_INCLUDES = FISHBOT_PATH + "fb_includes_v0_5_0/";
 
 // Enable DEBUG_MODE_ON (global) to:
 //	 - Show some useful debug information in the console
