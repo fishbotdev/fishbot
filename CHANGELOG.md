@@ -2,7 +2,7 @@
 This file is used to record the changes to FishBot between each version.
 
 ## Fishbot v0.5.0
-*Released ** Jul 2026***
+*Released **29 Jul 2026***
 ### Changes in v0.5.0
 - More supported maps
     - FishBot is now tested & working on most base maps shipped with Warzone 2100 (as of v4.7.0).
