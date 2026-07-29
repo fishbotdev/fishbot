@@ -32,7 +32,9 @@ FFA = "ffa"
 
 DEFAULT_FISHBOT_TEAM = 0
 
-FISHBOT_AI = "fishbot/multiplay/skirmish/FishBot.js"
+FISHBOT_VERSION_NUMBER = "0_5_0"       # This changes with every release (this tag is used from v0.5.0)
+
+FISHBOT_AI = f"multiplay/skirmish/FishBot_v{FISHBOT_VERSION_NUMBER}.js"
 COBRA_AI = "Cobra.js"
 PEACEMAKER_AI = "PeacemakerAI.js"
 SPECTATOR_AI = "Spectator.js"       # this is a custom spectator AI script with details below:
