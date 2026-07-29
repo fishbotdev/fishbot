@@ -63,6 +63,7 @@ import ctypes
 
 import pandas as pd
 import json
+from pathlib import Path
 
 from time import perf_counter
 
@@ -241,7 +242,7 @@ def extract_stats_from_summary_table(summary_table: List[str]) -> pd.DataFrame:
     return pd.DataFrame(rows)
 
 
-def append_match(df: pd.DataFrame, path: str) -> None:
+def append_match(df: pd.DataFrame, path: Path) -> None:
     records = df.to_dict(orient="records")
 
     with open(path, "a") as f:
@@ -255,7 +256,7 @@ def append_match(df: pd.DataFrame, path: str) -> None:
 
 def run_autogame(commands: List[str]) -> List[str]:
     # Execute normally (let WZ write directly to the console)
-    TIMEOUT_SECONDS = 180
+    TIMEOUT_SECONDS = 1200
     subprocess.run(commands, timeout=TIMEOUT_SECONDS)        # blocking (only returns once the process is finished)
     del TIMEOUT_SECONDS, commands
 
@@ -270,14 +271,17 @@ def run_autogame(commands: List[str]) -> List[str]:
     return final_game_summary_table
 
 
-def run_tests(test_file_name: str, in_progress_file_name: str, cycles: int, debug_mode: bool=False) -> float:
+def run_tests(test_file_name: str, in_progress_file_path: Path, cycles: int, debug_mode: bool=False) -> float:
+    # Command line parameters: https://github.com/Warzone2100/warzone2100/blob/ebeaaa7958f35879eea7b57474eff0c89aa4fb03/src/clparse.cpp#L21
+
     AUTOGAME_COMMAND = [
         rf"..\Warzone 2100\bin\warzone2100.exe",        # assumes WZ2100 is installed in `fishbot/Warzone 2100`
         rf'--configdir="..\Warzone 2100\PRODCONFIG"',   # assumes that the mod is loaded in a "PRODCONFIG" subfolder of the WZ2100 install location e.g. `fishbot/Warzone 2100/PRODCONFIG`
-        rf'--skirmish="{test_file_name}.json"',         # a custom challenge .json file loaded into `configdir/tests` (see `warzone2100/data/mp/tests/miza.json` for an example). The test file must be added to the 'tests' folder: https://github.com/Warzone2100/warzone2100/blob/8701c62ae68ca70da43ec915cbf6776c492e6656/src/multiint.cpp#L526
+        rf'--skirmish="{test_file_name}"',              # a custom challenge .json file loaded into `configdir/tests` (see `warzone2100/data/mp/tests/miza.json` for an example). The test file must be added to the 'tests' folder: https://github.com/Warzone2100/warzone2100/blob/8701c62ae68ca70da43ec915cbf6776c492e6656/src/multiint.cpp#L526
         rf"--enableconsole",                            # creates a console (this is where the Game State summary is printed)
         rf"--headless",                                 # runs the program without a GUI
-        rf"--autogame"                                  # automatically runs the game
+        rf"--autogame",                                 # automatically runs the game
+        rf"--nosound"                                   # removes sound from autogames
     ]
 
     print_iteration = lambda j: print(f"\n\n Iteration {j + 1} \n\n")
@@ -309,7 +313,7 @@ def run_tests(test_file_name: str, in_progress_file_name: str, cycles: int, debu
 
         ADD_DEBUG_BREAKPOINT_HERE_TO_SEE_STATS_AS_DATAFRAME = 1
 
-        append_match(df=stats, path=in_progress_file_name)
+        append_match(df=stats, path=in_progress_file_path)
 
     TIME_ENDED = perf_counter()
     round_to_2dp = lambda x: round(x, 2)
@@ -325,26 +329,27 @@ def run_tests(test_file_name: str, in_progress_file_name: str, cycles: int, debu
 
 if __name__ == "__main__":
     """
-    The intended data pipeline is:
+    Functions:
     1. Run autogame
     2. Scrape console + store into dataframe
     3. Convert dataframe + test metadata to jsonl (storing the intermediate result for data safety in case of interruptions)
-    The `results.jsonl` file will be processed back into a dataframe by the processing script.
+    
+    Note: The `results.jsonl` file will be processed back into a dataframe by a downstream processing script.
     
     The jsonl pipeline is picked because its a good compromise between code complexity, speed & human-readability.
     
      1. Writing to .log/.txt (although faster) requires a custom parser & the performance improvement is minimal 
-     for this application (the tests can take up to ~1min each; saving 0.5 seconds at best doesn't make a material difference).
+     for this application (the tests can take up to ~5min each; saving 0.5 seconds in the parsing stage doesn't make a material difference).
      
-     2. Writing to Excel (as .xlsx or .csv) adds unnecessary code complexity compared to saving & reading from jsonl.
+     2. Writing to Excel (as .xlsx or .csv) adds unnecessary code complexity.
     """
 
     clear_console()
 
     ######## PROGRAM CONFIGURATION ########
 
-    TEST_FILE_NAME = "GAMMA_1_2_COBRA_HARD_T2"        # make sure to include .json
-    NUM_CYCLES_PER_TEST = 2
+    TEST_FILE_NAME = "GAMMA_1_2_COBRA_HARD_T2.json"        # make sure that the json file exists in `%Warzone Configuration Directory%/tests`.
+    NUM_CYCLES_PER_TEST = 1
     DEBUG_ON = False
 
     COMMIT_SHA = """
@@ -363,18 +368,20 @@ if __name__ == "__main__":
 
     # === RUN CONFIGURATION CHECKS (PyCharm) ===
     # 1. Check folder: `fishbot/tests` is set as the current working directory.
-    # 2. If using a PyCharm IDE (e.g. 2026.1.2) you will need to enable the "Emulate Terminal In Output Console" option in
-    #       the "Edit Configuration" / "Run Configuration" panel to get the output of --autogame to print to the console.
-    #       VSCode appears to show the terminal output by default so no special actions may be required.
+    # 2. If using a PyCharm IDE (e.g. 2026.1.2), you will need to enable the "Emulate Terminal In Output Console" option in
+    #       the "Edit Configuration" / "Run Configuration" panel.
+    #       This is to allow the output of --autogame to be printed to the console.
+    #       VSCode appears to show the terminal output by default, so no special actions may be required for VSCode.
 
     ######## END PROGRAM CONFIGURATION ########
 
     SHORT_SHA = COMMIT_SHA.lstrip()[:7]
     OUTPUT_FILE_NAME = f"{SHORT_SHA},{TEST_FILE_NAME},{NUM_CYCLES_PER_TEST}G.jsonl"
+    OUTPUT_FILE_PATH = Path.cwd() / OUTPUT_FILE_NAME
 
     mins_to_complete = run_tests(
         test_file_name=TEST_FILE_NAME,
-        in_progress_file_name=OUTPUT_FILE_NAME,
+        in_progress_file_path=OUTPUT_FILE_PATH,
         cycles=NUM_CYCLES_PER_TEST,
         debug_mode=DEBUG_ON
     )

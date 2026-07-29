@@ -24,6 +24,11 @@ declare const startPositions: BaseObject[];
 declare const me: number;
 
 /**
+ * ```mapName``` The name of the current map.
+ */
+declare const mapName: string;
+
+/**
 * ```mapWidth``` Width of map in tiles (x). 
 */
 declare const mapWidth: number;
@@ -794,3 +799,17 @@ Send a beacon message to target player. Target may also be ```ALLIES```.
 Message is currently unused. Returns a boolean that is true on success. (3.2+ only)
  */
 declare function addBeacon(x: int, y: int, playerFilter: PlayerFilterType, message?: string): boolean;
+
+/**
+## centreView(x, y)
+
+Center the player's camera at the given position.
+ */
+declare function centreView(x: number, y: number): void;
+
+/**
+## hideInterface()
+
+Hide user interface. (3.2+ only)
+ */
+declare function hideInterface(): void;

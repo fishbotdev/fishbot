@@ -176,67 +176,12 @@ def plot_comparative_histograms(
 
     fig.tight_layout()
 
-    # # ---- ge_limit_half histogram ----
-    # plt.figure()
-    # plt.hist(df_a["ge_limit_half"], bins=bins, alpha=0.5, label=label_a)
-    # plt.hist(df_b["ge_limit_half"], bins=bins, alpha=0.5, label=label_b)
-
-    # plt.title("Histogram of ge_limit_half")
-    # plt.xlabel("ge_limit_half")
-    # plt.ylabel("Frequency")
-    # plt.legend()
-    # plt.pause(0.1)
-
-
-# ---- usage ----
-from os import getcwd
-
-"""
-OLD TEST DATA
-"""
-if False:
-    # df_before = extract_runC2(rf"{cwd()}\process_results\v4_perfdata\a2e13b4_v3_release.log")     # 98 / 100 won vs Cobra Medium (after VTOL targeting optimisation)
-
-    # df_1 = extract_runC2(rf"{cwd()}\process_results\v4_perfdata\1e3edc5_100g.log")     # 96 / 100 won vs Cobra Medium (after suppressing getEnemyBaseTargets)
-    # df_1 = extract_runC2(rf"{cwd()}\process_results\v4_perfdata\74a6f77_getAllBaseTargets_improved.log")       # Seemed to lose a lot
-    # df_before = extract_runC2(rf"{cwd()}\\" + rf"process_results\v4_perfdata\fd007a2,med,cobra,perfdata.log")        
-    # df_before = extract_runC2(rf"{cwd()}\\" + rf"process_results\v4_perfdata\27eea6b.log")        
-    # df_before = extract_runC2(rf"{cwd()}\process_results\v4_perfdata\\" + rf"975d6c2.log")        
-    df_1 = extract_runC2(rf"{cwd()}\process_results\v4_perfdata\\" + rf"691769f.log")          # After splitting functions to isolate combat 
-    # df_1 = extract_runC2(rf"{cwd()}\process_results\v4_perfdata\\" + rf"a06c2c6.log")        
-    # df_1 = extract_runC2(rf"{cwd()}\process_results\v4_perfdata\\" + rf"194010e.log")        # Removed 2x search radius changes (13 & 18 combined into 15)
-    # df_1 = extract_runC2(rf"{cwd()}\process_results\v4_perfdata\\" + rf"ae78c5e.log")        # Combined groundTarget prioritisation
-    # df_1 = extract_runC2(rf"{cwd()}\process_results\v4_perfdata\\" + rf"b9608fe.log")        
-    # df_1 = extract_runC2(rf"{cwd()}\process_results\v4_perfdata\\" + rf"f3f74e5.log")        
-    # df_1 = extract_runC2(rf"{cwd()}\process_results\v4_perfdata\\" + rf"2d4195e.log")        
-    df_2 = extract_runC2(rf"{cwd()}\process_results\v4_perfdata\\" + rf"0c6d165.log")        #  95 / 100 won against Cobra Medium (after many optimisations)
-
-    # print(df_1)
-    print(df_2)
-
-    plot_comparative_histograms(
-        df_1,
-        df_2,
-        label1="Before",
-        label2="After Optimisation"
-    )
-    plt.show()
-
 #####################################################################################################################
 
-PROCESS_RESULTS_DIR = rf"{getcwd()}\python_helper_scripts\process_results\v4_perfdata\\"
 LFE = ".log"
 
-# path1 = PROCESS_RESULTS_DIR + rf"603cca0,hard,cobra,50g" + LFE               # can be compared with 06f67d5
-# path1 = PROCESS_RESULTS_DIR + rf"5d83634,hard,cobra,50g" + LFE                              # v0.4.1 after performance optim
-# path1 = PROCESS_RESULTS_DIR + rf"1565212,hard,cobra,50g" + LFE                              # v0.4.1 after enumRangeLazy; with .filter() creating
-# path1 = PROCESS_RESULTS_DIR + rf"02d990f,hard,cobra,50g" + LFE                              # v0.4.1 after enumRangeLazy, .filter() optim
-# path1 = PROCESS_RESULTS_DIR + rf"3674546,hard,cobra,50g" + LFE                              # v0.4.1 after enumRangeLazy, enemy / friendly filter
-# path1 = PROCESS_RESULTS_DIR + rf"fbbb931,hard,cobra,50g" + LFE                             # v0.4.1 after scheduler optim
-# path1 = PROCESS_RESULTS_DIR + rf"fbbb931,hard,cobra,50g_rerun" + LFE                       # v0.4.1 after scheduler optim, with many other programs open (big difference!)
-# path1 = PROCESS_RESULTS_DIR + rf"87279a0,GAMMA_INSANE_COBRA_T2,250G" + LFE                 # new test run script; no change in behaviour
-path1 = PROCESS_RESULTS_DIR + rf"03a99ae" + LFE                                              # v0.4.1 release
-path2 = PROCESS_RESULTS_DIR + rf"e11e31b" + LFE                                              # v0.4.2 release (runC2 is more expensive, rest is same; to be fixed in next release)
+path1 = rf"050" + LFE
+path2 = rf"050" + LFE   # 0.5.0 release, log file copy-pasted into the cwd
 
 #####################################################################################################################
 

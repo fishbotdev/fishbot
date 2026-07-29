@@ -4,11 +4,11 @@
 
 FishBot is a Warzone 2100 AI bot compatible with Warzone 2100 **v4.6.1+**.
 
-It is designed for Tech Level 2, No-Base starts on the supported maps below. Tech Level 1 is currently not supported.
+It is designed for Tech Level 2 (No Scavenger) skirmish games on the supported maps below. Tech Level 1 is currently not supported.
 
 ## Download
 
-1. Start Warzone 2100. Click Options.
+1. Open Warzone 2100. Click on "Options".
 2. Click "Open Configuration Directory" in the bottom left corner.
 3. Download 📦fishbot.zip from https://github.com/fishbotdev/fishbot/releases. 
 4. Move the .zip file to 📁`mods/4.7.0/autoload/`. **To avoid any version conflicts, please remove all previous versions of FishBot**.
@@ -20,38 +20,100 @@ To check if the path is correct, you should be able to find `FishBot.js` in this
 
 If you can find `Fishbot.js` here, FishBot should automatically load on the next startup of Warzone 2100. It will then be available to select as an AI bot.
 
-## List of supported technology levels
+## Supported technology levels
 Currently, only T2 (**Technology Level 2**) starts are supported. Further support for other technology levels might be added in a future version. 
 
 However, at the moment I feel like Cobra already fills the gap in the other technology levels very well.
 
 In particular, I think Cobra performs excellently on T1 in Warzone 2100 v4.6.3+. 
 
-## List of supported maps (Warzone2100 4.7.0)
-As of the most current version **v0.4.1**, FishBot works best on large, standard "low-oil" game maps with up to ~10 derricks per player. 
-It currently only has been tested with scavengers disabled.
+## Supported maps (Warzone2100 4.7.0)
+As of **v0.5.0**, FishBot works on most "low-oil" maps shipped with the game. There might be a few lag issues with high-player count games; these are being actively worked on.
 
-The current method for determining whether or not a map is *supported* is:
-* For 2P & 3P maps, FishBot can win in T2 against a single Cobra @ Medium difficulty.
-* For higher player-count maps, it can win in a team with other FishBots.
+FishBot is not compatible with scavengers; it currently ignores them.
 
-### 2 player (T2)
-* `Sk-Startup`
-* ~~`Sk-UrbanChasm`~~ -- bankrupts itself (rigid build order)
-* ~~`Sk-HighGround`~~ -- bankrupts itself (rigid build order)
-* `Roughness`
-* `Vision`
-* `DustyMaze (2P)`
+### 2 player (T2-NoScav)
+* `Sk-Startup` (100% duel)
+* `Sk-UrbanChasm` (85% duel)
+* `Sk-HighGround` (80% duel)
+* `Roughness` (100% duel)
+* `Vision` (95% duel)
+* `DustyMaze (2P)` (*tested manually*)
 
-### 3 player (T2)
-* `Monocot`
-* `Gamma`
+### 3 player (T2-NoScav)
+* `Monocot` (100% duel, 100% FFA)
+* `Gamma` (100% duel, 97% FFA)
 
-Official support for other maps will be included in future versions. The current limitations are:
-* On very small maps with very low oil, FishBot runs out of power (and gets stuck) due to a fixed rigid build order. It can also get stuck if it doesn't claim enough derricks in the early game.
-* FishBot attempts to build forward-defences around derricks which are too dangerous to go and capture.
+### 4 player (T2-NoScav)
+* `Sk-Rush` (99% duel, 80% FFA)
+* `Sk-Rush2` (100% duel, 92% FFA)
+* `Sk-UrbanDuel` (99% duel, 92% FFA)
+* `Sk-Mountain` (100% duel, 62% FFA)
+* `Sk-Valley` (98% duel, 85% FFA)
+* ~~`Sk-FishNets` (86% duel, **15% FFA**)~~ - **not compatible**: targeting algorithm interacts poorly with water obstacles 
+* `Sk-GreatRift` (100% duel, 72% FFA)
+* `Sk-RollingHills` (93% duel, 92% FFA) 
+* ~~`Sk-Basingstoke`~~ - **not compatible**: large unit groups get stuck during pathfinding
+* `Sk-LittleEgypt` (89% duel, 42% FFA) 
+* ~~`Sk-Cockpit`~~ - **not compatible**: unit groups get stuck in the narrow base entrances
+* `Sk-Urban-Chaos` (98% duel, 92% FFA)
+* `Sk-Pyramidal` (100% duel, 78% FFA)
+* `DustyMaze-2v2` (*tested manually*)
+* `DustyMaze-FFA` (*tested manually*)
+
+### 5 player (T2-NoScav)
+* `Bloat` (56% FFA)
+
+### 6 player (T2-NoScav)
+* `Melting` (53% FFA)
+* `Entropy` (*tested manually*)
+
+### 7 player (T2-NoScav)
+* `Thales` (*tested manually*)
+
+### 8 player (T2-NoScav)
+* `Sk-Clover` (*tested manually*)
+* `Sk-MizaMaze` (*tested manually*)
+* ~~`Sk-Manhattan`~~ - **not compatible**: central river blocks land units
+* `Sk-Bananas` (*tested manually*)
+* `Sk-Wheel` (*tested manually*)
+* `Sk-Ziggurat` (*tested manually*)
+* `Sk-Concrete` (*tested manually*)
+* `Sk-ThePit` (*tested manually*)
+* ~~`Sk-HideNSneak`~~ - **not compatible**: terrain confuses the unit grouping algorithm
+* `Sk-YinYang` (*tested manually*)
+* `Sk-SandCastles` (*tested manually*)
+* `Sk-BeggarsKanyon` (*tested manually*)
+* `Sk-Gridlock` (*tested manually*)
+* ~~`Sk-Cockate`~~ - **not compatible**: unit groups get stuck in the narrow base entrances
+
+### 9 player (T2-NoScav)
+* `Sk-WindFury` (*tested manually*)
+
+### 10 player (T2-NoScav)
+* `Emergence` (*tested manually*)
+* ~~`WaterLoop`~~ - **not compatible**: sea map
+
+### How to determine if a map is supported
+The method is as follows:
+* For 2 player maps, FishBot has a 75%+ win rate (cumulatively, across both positions) against Cobra @ Medium difficulty.
+* For 3 & 4 player maps, FishBot has a:
+    * 50%+ win rate in FFA (cumulative across all positions) against Cobra @ Medium difficulty, and
+    * 75%+ win rate in duels (against Cobra @ Medium difficulty) across all pairs of positions (i.e. 1v1 with all other player slots being empty).
+* For 5 player maps and higher, FishBot is able to win a FFA game in 3 tries or less, and does not run into a breaking issue.
+
+Some current FishBot limitations are:
+* FishBot's group-movement algorithm sometimes causes large groups of units to get stuck in a tight ball.
+* FishBot does not use hover units (yet) so it struggles with maps with a lot of water.
+* FishBot sometimes attempts to build forward-defences around derricks which are actually too dangerous to go and capture.
 
 ## Recent updates
+* **v0.5.0** - *released **29 Jul 2026***
+    * Now compatible with most maps shipped with Warzone 2100 v4.7.0 (validated by a new automatic testing pipeline).
+    * Greatly improved combat effectiveness; now up to 4 combat groups are used.
+    * Major overhaul of the production, resupply & repair system to support the above.
+    * Improved base construction efficiency. Added build order adaptation for very low-oil maps.
+
 * **v0.4.2** - *released **10 Jul 2026***
     * Combat improvements:
         * Improved direct-fire targeting and the effectiveness of AA units.
@@ -77,8 +139,8 @@ Please see [`CHANGELOG.md`](CHANGELOG.md) for a detailed list of all past change
 ## Upcoming features
 The current areas for improvement are:
 * Strategic improvements (FishBot's current strategic level is: 'this is the closest target, go there').
+* Tactical-level targeting improvements (i.e. preventing target oscillation).
 * Support for T1 & T3.
-* Increased support for popular skirmish maps.
 
 ## Background and Goals
 FishBot was initially forked from NullBot v3. I acknowledge and appreciate the work of the NullBot team in creating the foundation for this body of work. As of v0.4.0, not much of the original code remains, but I am grateful for the structural and spiritual influence of the original work.
@@ -91,10 +153,11 @@ My goal is to make FishBot a generally useful bot which could be packaged with t
 As mentioned above, I'd like it to be genuinely fun to play with, both as a teammate and as an opponent! 
 Admittedly, there is a long way to go - but I am hoping that one day I am able to make this wish come true. 
 
-## Software Documentation
-jsdocs are used throughout the code. Additionally, `wz2100-js-api.d.ts` is used to indicate the typing of commonly used JS API functions and global variables from the Warzone 2100 game engine. The addition of `jsconfig.json` allows VSCode to understand the various symbols within the project, allowing for some type checking and code navigation. The intent of these documentation features is to make changing the software easier.
+## Documentation
 
-For a high-level view of the FishBot software system, please see `docs\ARCHITECTURE.md` for some documentation of the software system architecture.
+* For a high-level view of the FishBot software system, please see `docs\ARCHITECTURE.md`.
+* To get set up with development, please see `docs\DEVELOPMENT.md`.
+* For a detailed list of changes from version to version, please see `CHANGELOG.md`.
 
 ## Licensing Information (GPL 2.0)
 

@@ -1,0 +1,11 @@
+{
+	"AI": {
+		"js": "FishBot_v0_5_0.js",
+		"name": "FishBot v0.5.0",
+		"tip": "Flops about like a fish on land (focuses on combat)",
+		"easy_tip": "Perfectly normal (25% less power generation)",
+		"medium_tip": "A little fishy (no bonuses)",
+		"hard_tip": "Tries unsuccessfully to hide its growing power (~1.5x more power bonus)",
+		"insane_tip": "Mega sus (~2x power bonus, with prebuilt base structures)"
+	}
+}

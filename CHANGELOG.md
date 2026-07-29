@@ -1,6 +1,35 @@
 # Changelog
 This file is used to record the changes to FishBot between each version.
 
+## Fishbot v0.5.0
+*Released ** Jul 2026***
+### Changes in v0.5.0
+- More supported maps
+    - FishBot is now tested & working on most base maps shipped with Warzone 2100 (as of v4.7.0).
+- Combat improvements
+    - Now uses 4 smaller BCTs rather than 2 larger BCTs, which improves combat effectiveness (due to reduced overcrowding).
+    - Improved effectiveness of repair units & repair facilities.
+- Production & resupply improvements
+    - Depleted BCTs (Brigade Combat Teams) are now automatically recombined into other BCTs, preserving fighting strength.
+    - Optimised production weights to produce a better mix of units per BCT.
+    - Now tracks active production jobs for more accurate production to meet demand.
+- Construction improvements
+    - Build order adaptation: 
+        - Now matches the number of generators to the number of derricks & VTOL rearming pads to the number of VTOLs.
+        - VTOL infrastructure & factory modules are no longer constructed in very low oil situations.
+    - Improved base construction efficiency.
+- Test infrastructure improvements
+    - Automated testing:
+        - Added a new test pipeline to allow FishBot to be automatically tested on all base maps with up to 8 other players (see `fishbot\tests`).
+        - Added a GUI interface for running tests, replacing the old .bat file runners (see `fishbot\python_helper_scripts\spectate_map\spectate_map.py`).
+    - Debug Mode:
+        - On game start, the camera now centers on FishBot's base.
+
+#### Test results (Warzone 2100 v4.7.0)
+As of this version (FishBot `v0.5.0`), FishBot is now automatically tested on all standard 2 - 5 player maps against Cobra @ Medium difficulty (T2-NoBase, No-Scav, High Power Level).
+
+It is tested in both duel (1v1) & FFA (1v1v1v1) modes, on all combinations of positions. The final results are aggregated into a percentage which can be found in `README.md`.
+
 ## Fishbot v0.4.2
 *Released **10 Jul 2026***
 ### Changes in v0.4.2

@@ -1,0 +1,163 @@
+/*
+	This file is part of FishBot, a Warzone 2100 AI.
+
+	FishBot is free software; you can redistribute it and/or modify
+	it under the terms of the GNU General Public License as published by
+	the Free Software Foundation; either version 2 of the License, or
+	(at your option) any later version.
+
+	FishBot is distributed in the hope that it will be useful,
+	but WITHOUT ANY WARRANTY; without even the implied warranty of
+	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+	GNU General Public License for more details.
+
+	You should have received a copy of the GNU General Public License along with this program. 
+	If not, see <https://www.gnu.org/licenses/>.
+*/
+
+class armyAviation {
+	constructor() {
+
+	}
+
+	#createAirStrikeRequest({missionType, target, priority, numAircraft}) {
+		return {
+			missionType: missionType,
+			target: target,
+			priority: priority,
+			numAircraft: numAircraft,
+		};
+	}
+
+	/**
+	 * Creates a request for a CAS mission from a provided `targetObject`.
+	 * @param {DroidObject | StructureObject | FeatureObject} targetObject 
+	 * @returns {AirStrikeMissionRequest}
+	 */
+	translateIntoCASRequest(targetObject, priority) {
+		return this.#createAirStrikeRequest({
+			'missionType': MISSION_TYPE.CAS_STRIKE, 
+			'target': targetObject,
+			'priority': priority,
+			'numAircraft': 2		
+		});
+	}
+	
+	/**
+	 * Creates a request for an air raid mission from a provided `targetObject`.
+	 * @param {DroidObject | StructureObject | FeatureObject} targetObject 
+	 * @returns {AirStrikeMissionRequest}
+	 */
+	translateIntoRaidRequest(targetObject, priority) {
+		return this.#createAirStrikeRequest({
+			'missionType': MISSION_TYPE.AIR_RAID, 
+			'target': targetObject,
+			'priority': priority,
+			'numAircraft': 2		
+		});
+	}
+
+	/**
+	 * Creates a request for an air raid mission from a provided `targetObject`.
+	 * @param {DroidObject | StructureObject | FeatureObject} targetObject 
+	 * @returns {AirStrikeMissionRequest}
+	 */
+	translateIntoDASRequest(targetObject, priority) {
+		return this.#createAirStrikeRequest({
+			'missionType': MISSION_TYPE.DAS_STRIKE, 
+			'target': targetObject,
+			'priority': priority,
+			'numAircraft': 2		
+		});
+	}
+
+	#createMissionOrders() {
+		return {
+			'id': undefined, 
+			'missionType': undefined, 
+			'missionStatus': MISSION_STATUS.FAILED_CREATION, 
+			'priority': MISSION_PRIORITY.LOW, 
+			'taskForceID': undefined, 
+			'orders': undefined, 
+			'ceaseOrders': undefined,
+			'timeStarted': -2,
+			'timeCompleted': -1,
+			
+			'target': undefined,
+		};
+	}
+
+	createVtolStagingMission() {
+		// this is the default behaviour of all AIR_RESERVE aircraft
+
+		// it returns either:
+		// 	- missionData object (according to missionDataTemplate), if mission successfully created, OR
+		//	- undefined, if mission was not able to be created	
+
+		let md = this.#createMissionOrders();
+
+		// Create mission details
+		md.id = "MISSION_TYPE.VTOL_STAGING_MISSION";
+		md.taskForceID = DIVISION.AIR_RESERVE;			// breaks the normal pattern: id === reserveGroup for a default action
+
+		// Assign orders for conducting & ceasing operations			
+		md.orders = () => rearmVtolGroup(md.taskForceID);		
+		md.ceaseOrders = () => {return;};	// doesn't do anything
+
+		return md;
+	}
+	
+	createAirStrikeMission({targetInfo, numRaidAircraft=1, tickUID=undefined, type="AIR_STRIKE_GENERIC"}) {
+		// It returns either:
+		// 	- missionData object (according to missionDataTemplate), if mission successfully created, OR
+		//	- undefined, if mission was not able to be created	 
+
+		let airReserve = state.g.enumGroup(DIVISION.AIR_RESERVE);
+		if (airReserve.length < numRaidAircraft) {
+			return undefined;
+		}
+
+		let md = this.#createMissionOrders();
+
+		// Create mission details
+		const id = getCurrGameTime() + `_${type}_` + tickUID;
+		md.id = id;
+		md.taskForceID = id;
+
+		let taskForceUnits = airReserve.slice(0, numRaidAircraft);  
+		if (airReserve.length > numRaidAircraft) {
+			let armedAircraft = airReserve.filter(aircraft => vtolArmed(aircraft));		
+			if (armedAircraft.length >= numRaidAircraft) {
+				taskForceUnits = armedAircraft.slice(0, numRaidAircraft);
+			}
+		}
+
+		taskForceUnits.forEach((droid) => {
+			state.g.addDroidToGroup({groupID: md.taskForceID, droidID: droid.id});
+			state.g.removeDroidFromGroup({groupID: DIVISION.AIR_RESERVE, droidID: droid.id});
+		});		
+
+		md.target = targetInfo;
+
+		// Assign orders for conducting & ceasing operations			
+		md.orders = () => doAirStrike(targetInfo, md.taskForceID);		
+		md.ceaseOrders = () => this.#finaliseVtolMission(md);
+
+		return md;
+	}
+
+	#finaliseVtolMission(md) {
+		const taskForceUnits = state.g.enumGroup(md.taskForceID);
+		if (taskForceUnits.length === 0) {
+			return;
+		} 
+		
+		// Else release resources
+		taskForceUnits.forEach((droid) => {
+			state.g.addDroidToGroup({groupID: DIVISION.AIR_RESERVE, droidID: droid.id});
+		});	
+		state.g.deleteGroup(md.taskForceID);
+
+		md.timeCompleted = getCurrGameTime();
+	}
+}

@@ -15,14 +15,26 @@
 	If not, see <https://www.gnu.org/licenses/>.
 """
 
-# This file is intended to be a header file used in all test scripts.
+# This file is intended to be a header file used across all files in the `fishbot/tests` folder.
+
+NO_BASES = 1
+NO_SCAVENGERS = 0
+HIGH_POWER_LEVEL = 2
+TECH_LEVEL_2 = 2
 
 EASY_DIFFICULTY = "Easy"
 MEDIUM_DIFFICULTY = "Medium"
 HARD_DIFFICULTY = "Hard"
 INSANE_DIFFICULTY = "Insane"
 
-FISHBOT_AI = "fishbot/multiplay/skirmish/FishBot.js"
+DUEL = "duel"
+FFA = "ffa"
+
+DEFAULT_FISHBOT_TEAM = 0
+
+FISHBOT_VERSION_NUMBER = "0_5_0"       # This changes with every release (this tag is used from v0.5.0)
+
+FISHBOT_AI = f"multiplay/skirmish/FishBot_v{FISHBOT_VERSION_NUMBER}.js"
 COBRA_AI = "Cobra.js"
 PEACEMAKER_AI = "PeacemakerAI.js"
 SPECTATOR_AI = "Spectator.js"       # this is a custom spectator AI script with details below:
