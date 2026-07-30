@@ -51,8 +51,8 @@ class CommandCenter {
 		// Construction parameters
 		/** @type {ConstructionParameters} */
 		this.CONSTRUCTION_PARAMETERS = {
-			MAX_GENERATORS_AND_POWER_MODULES: 1,
-			MAX_VTOL_REARMING_PADS: 1, 
+			MAX_GENERATORS_AND_POWER_MODULES: 2,
+			MAX_VTOL_REARMING_PADS: 2, 
 			SHOULD_BUILD_VTOLS: false,
 			SHOULD_USE_FACTORY_MODULES: false,
 		}
@@ -252,6 +252,7 @@ class CommandCenter {
 	 * Updates FishBot's strategic parameters with evolution of the game state.
 	 * The intent is: `state` stores the objective world, while `hq_command` stores the decisions based on observations of the state.
 	 * @param {worldState} state 
+	 * @returns {void} Writes directly to `this`.
 	 */
 	updateStrategicParameters(state) {
 

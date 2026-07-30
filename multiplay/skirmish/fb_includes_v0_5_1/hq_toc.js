@@ -87,13 +87,10 @@ class TacticalOperationsCenter {
 				md.missionStatus = MISSION_STATUS.IN_PROGRESS;
 			}
 
-			let retval = md.orders();
+			const retval = md.orders();
 
 			// Process return value for in-progress missions
 			if (md.missionStatus === MISSION_STATUS.IN_PROGRESS) {
-
-				// debug(`retval.status ${retval.status}`);
-				// debug("");
 				switch (retval.status) {
 					case MISSION_STATUS.SUCCEEDED:
 
@@ -113,6 +110,7 @@ class TacticalOperationsCenter {
 						continue;		// continue processing the next mission
 					default:
 						// do nothing
+						debug(`${me}:  ${getCurrGameTime()}\tWARNING: could not understand return-code "${retval.status}" for in-progress mission "${md.id}"`);
 				}
 			}
 		}
@@ -120,7 +118,6 @@ class TacticalOperationsCenter {
 		// actively prunes the list after management (this mutates state)
 		state.activeMissions = currActiveMissions;
 	}
-
 
 	/**
 	 * Note: This function shouldn't make decisions. It is the responsibility of higher command to determine which missions are worth doing.
@@ -145,30 +142,6 @@ class TacticalOperationsCenter {
 			}
 
 		});
-	}
-
-	/**
-	 * 
-	 * @param {worldState} state 
-	 * @param {Array} intelTasks 
-	 * @returns {void}
-	 */
-	assignIntelMissions(state, intelTasks) {
-
-		for (let i=0; i<intelTasks.length; i++) {
-
-			const missionType = intelTasks[i].missionType;
-			const payload = intelTasks[i].payload;
-			const priority = intelTasks[i].priority;
-
-			const missionData = this.createNewMission({missionType: missionType, priority: priority}, payload, i);
-			
-			if (defined(missionData)) {
-				state.activeMissions.push(missionData);
-				// debug(`scheduled ${missionData.id} (${missionType}) @${gameTime}`);
-				continue;
-			} 
-		}
 	}
 
 	/**
