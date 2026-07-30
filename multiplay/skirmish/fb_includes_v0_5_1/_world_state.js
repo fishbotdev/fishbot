@@ -688,8 +688,8 @@ class worldStateBuilder {
             if (limit === NEGATIVE_ONE) {
                 limit = 1;
             }
-            debug(`\t${name}: ${limit}`);
             maxStructureCounts.set(name, limit);      
+            // debug(`\t${name}: ${limit}`);
         }
         return maxStructureCounts;
     }
