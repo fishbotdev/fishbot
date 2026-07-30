@@ -608,6 +608,10 @@ class armyEngineering {
 			const structCount = counts['count'];
 			
 			// Implement construction adaptations
+			// 0. Implement custom structure limits set in skirmish settings
+			if (structCount >= state.getMaxStructureCount(STRUCTURE_NAME)) {
+				continue;
+			}
 			// 1. Adapt power generators to number of derricks
 			if (["Power Generator", "Power Module"].includes(STRUCTURE_NAME)) {
 				if (structCount >= parameters.MAX_GENERATORS_AND_POWER_MODULES) {
