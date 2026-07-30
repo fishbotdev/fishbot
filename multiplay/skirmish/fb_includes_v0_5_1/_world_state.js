@@ -366,17 +366,13 @@ class worldState {
 
     /**
      * Returns an array containing the playerIDs of alive players.
+     * @returns {number[]}
      */
-    enumLivingPlayers() {   
-        let livingPlayerIDs = [];
-
-        this.playerInfo.forEach(p => {
-            if (p["numTotalUnits"] !== 0 || p["numFactories"] !== 0) {
-                livingPlayerIDs.push(p.playerID);
-            }
-        });
-
-        return livingPlayerIDs;
+    enumLivingPlayers() {
+        /** @param {PlayerStatsObject} p */
+        const isLiving = (p) => p.numTotalUnits !== 0 || p.numFactories !== 0;
+        
+        return this.playerInfo.filter(isLiving).map(p => p.playerID);
     }
 
     /**
