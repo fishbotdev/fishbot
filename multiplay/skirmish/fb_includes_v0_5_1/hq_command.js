@@ -312,7 +312,8 @@ class CommandCenter {
 		const generatorsRequired = Math.ceil((MY_DERRICK_COUNT + 1) / 4);		// + 1 is here to provide extra capacity
 		const MIN_GENERATORS = 2;
 
-		const MAX_GENERATORS_AND_POWER_MODULES = clampValue(generatorsRequired, MIN_GENERATORS, state.MAX_STRUCTURE_COUNT["Power Generator"]);
+		const MAX_GENERATORS_AND_POWER_MODULES = clampValue(generatorsRequired, MIN_GENERATORS, state.getMaxStructureCount("Power Generator"));
+
 		const USE_VTOL = (MY_DERRICK_COUNT >= 8);
 		const USE_FACTORY_MODULES = (MY_DERRICK_COUNT >= 6);
 		const MY_VTOL_COUNT = state.playerInfo[me]['numAirUnits'];
@@ -856,7 +857,7 @@ class CommandCenter {
 					// (so it should not be overwritten by the conservative danger level implemented by abort mission)
 					break;
 				default:
-					// Do nothing / ignore missions like default mission "HELP_CONSTRUCT"
+					// Ignore missions like default mission "HELP_CONSTRUCT"
 			}
 		});
 		
@@ -865,7 +866,10 @@ class CommandCenter {
 		// Command then terminates, if there are no available trucks this tick (avoids expensive planning tasks)
 		const trucksUnavailable = (state.g.enumGroup(ENGINEERING.ENGINEERING_RESERVE).length === 0) && 
 								  (state.g.enumGroup(ENGINEERING.BASE_BUILDER).length === 0);
+
 		if (trucksUnavailable) {
+			// debug(`${getCurrGameTimeMinSec()} WARNING: No trucks to execute construction actions.`);
+			// debug(`Active construction missions | oilcap: ${activeOilCapTaskIDs.length} |  basebuild: ${activeBaseBuildTasks.length}  | defencebuild: ${activeDefenceBuildTaskIDs.length}  | repairCenter: ${activeRepairCenterBuildTaskIDs.length}`);
 			return;
 		}
 
@@ -916,7 +920,7 @@ class CommandCenter {
 			const newFacilityLocations = options["newFacilityLocations"];
 			const demolitionLocations = options["demolitionLocations"];
 
-			const BELOW_REPAIR_FACILITY_HARD_CAP = myRepairFacilities.length < state.MAX_STRUCTURE_COUNT["Repair Facility"];
+			const BELOW_REPAIR_FACILITY_HARD_CAP = myRepairFacilities.length < state.getMaxStructureCount("Repair Facility");
 
 			const NEW_FACILITY_REQUESTED = newFacilityLocations.length !== 0;
 

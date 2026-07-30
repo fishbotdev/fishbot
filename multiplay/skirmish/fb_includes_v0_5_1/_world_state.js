@@ -400,6 +400,20 @@ class worldState {
         }
     }
 
+    /**
+     * Returns the maximum structure count.
+     * @param {string} structureName 
+     * @returns {number}
+     */
+    getMaxStructureCount(structureName) {
+        const maxStructureCount = this.MAX_STRUCTURE_COUNT.get(structureName);
+        if (maxStructureCount == null) {
+            debug(`${getCurrGameTimeMinSec()}\tWARNING: undefined "${structureName}" passed to state.MAX_STRUCTURE_COUNT. Returning 1.`);
+            return 1;
+        }
+        return maxStructureCount;
+    }
+
 }
 
 
