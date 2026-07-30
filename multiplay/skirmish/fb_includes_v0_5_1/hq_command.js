@@ -497,10 +497,9 @@ class CommandCenter {
 
 		// Fire Support Targeting
 		// Intent: Suppress enemy infantry (FishBot is vulnerable to massed cyborgs) then destroy indirect fires, defences & ADA.
-		const EFFECTIVE_FIRE_SUPPORT_RADIUS = 18;
+		const EFFECTIVE_FIRE_SUPPORT_RADIUS = 16;
 
 		const primaryIndirectFireTargets = [...enemyInfantry, ...enemyDefenses, ...enemyIndirectFire, ...enemyADA, ...enemyIndustrial, ...enemyArmor];
-		primaryIndirectFireTargets.sort((a,b) => directFireHeuristic(a,b));
 		const secondaryIndirectFireTargets = [...enemyConstructor, ...enemyUtility];
 
 		primaryIndirectFireTargets.forEach(obj => {
