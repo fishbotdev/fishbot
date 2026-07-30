@@ -212,6 +212,7 @@ function moveBrigadeToAttack(state, brigadeID, groundTargets) {
 	const AA_UNITS = [];
 	const SENSOR_UNITS = [];
 	const REPAIR_UNITS = [];
+	const CONSTRUCTOR_UNITS = [];
 
 	const brigadeUnits = state.g.enumGroup(brigadeID);
 	brigadeUnits.forEach(droid => {
@@ -235,6 +236,9 @@ function moveBrigadeToAttack(state, brigadeID, groundTargets) {
 				break;
 			case DIVISION.MAINTENANCE_RESERVE:
 				REPAIR_UNITS.push(droid);
+				break;
+			case ENGINEERING.ENGINEERING_RESERVE:
+				CONSTRUCTOR_UNITS.push(droid);
 				break;
 			default:
 				debug(`tac_com_ground -> brigadeUnit classifier failed for ${droid.name} (${droid.id})`);
@@ -361,6 +365,9 @@ function moveBrigadeToAttack(state, brigadeID, groundTargets) {
 
 	// MECHANIC (REPAIR) UNITS
 	REPAIR_UNITS.forEach(droid => fixNearestDamaged(droid));
+
+	// CONSTRUCTOR (TRUCK) UNITS
+	CONSTRUCTOR_UNITS.forEach(droid => maintainPosition(droid));
 
 	// DEBUG
 	if (false) {

@@ -812,7 +812,8 @@ class TacticalOperationsCenter {
             [DIVISION.SHORT_RANGE_FIRE_SUPPORT_RESERVE, maxBrigadeComposition.MAX_MORTAR],
             [DIVISION.AIR_DEFENCE_RESERVE, maxBrigadeComposition.MAX_ADA],
             [DIVISION.SENSOR_RESERVE, maxBrigadeComposition.MAX_SENSOR],
-            [DIVISION.MAINTENANCE_RESERVE, maxBrigadeComposition.MAX_REPAIR]
+            [DIVISION.MAINTENANCE_RESERVE, maxBrigadeComposition.MAX_REPAIR],
+			[ENGINEERING.ENGINEERING_RESERVE, maxBrigadeComposition.MAX_CONSTRUCTOR],
 		]);
 
         const needsRepair = (unit, category, cyborgRepairThreshold, vehicleRepairThreshold) => {

@@ -68,7 +68,8 @@ class CommandCenter {
 			'MAX_SENSOR': 1,
 			'MAX_INFANTRY': 6,
 			'MAX_REPAIR': 1,
-		}
+			'MAX_CONSTRUCTOR': 1,
+		};
 		this.TOTAL_UNITS_PER_BRIGADE = Object.values(this.FISHBOT_BRIGADE_COMPOSITION).reduce((a, b) => a + b, 0);
 
 		this.NUMBER_OF_BRIGADES = 4;
@@ -82,7 +83,8 @@ class CommandCenter {
 			'MAX_ADA': this.FISHBOT_BRIGADE_COMPOSITION['MAX_ADA'],
 			'MAX_SENSOR': 1,
 			'MAX_INFANTRY': Math.ceil(this.FISHBOT_BRIGADE_COMPOSITION['MAX_INFANTRY'] * this.NUMBER_OF_BRIGADES / 2),
-			'MAX_REPAIR': 1
+			'MAX_REPAIR': 1,
+			'MAX_CONSTRUCTOR': 0,
 		};
 		this.TOTAL_RESERVE_UNITS = Object.values(this.FISHBOT_RESERVE_COMPOSITION).reduce((a, b) => a + b, 0);
 
@@ -958,7 +960,7 @@ class CommandCenter {
 	 */
 	#getBctCombatUnitCount(state, brigadeID) {
 		const brigadeComposition = state.brigades[brigadeID]["composition"]; 
-		const EXCLUDED_CATEGORIES = [DIVISION.AIR_DEFENCE_RESERVE, DIVISION.SENSOR_RESERVE, DIVISION.MAINTENANCE_RESERVE];
+		const EXCLUDED_CATEGORIES = [DIVISION.AIR_DEFENCE_RESERVE, DIVISION.SENSOR_RESERVE, DIVISION.MAINTENANCE_RESERVE, ENGINEERING.ENGINEERING_RESERVE];
 
 		let unitCount = 0;
 		for (const [category, btnComposition] of brigadeComposition) {
@@ -1002,7 +1004,8 @@ class CommandCenter {
 			DIVISION.SHORT_RANGE_FIRE_SUPPORT_RESERVE, 
 			DIVISION.AIR_DEFENCE_RESERVE, 
 			DIVISION.SENSOR_RESERVE,
-			DIVISION.MAINTENANCE_RESERVE
+			DIVISION.MAINTENANCE_RESERVE,
+			ENGINEERING.ENGINEERING_RESERVE,
 		];
 
 		/** @type {Map<number, DroidObject[]>} */
