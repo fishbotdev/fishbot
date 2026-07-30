@@ -309,12 +309,10 @@ class CommandCenter {
 		/*
 			CONSTRUCTION PARAMETERS
 		*/
-		const generatorsRequired = Math.ceil(MY_DERRICK_COUNT / 4);
-		const clamp = (value, min, max) => Math.min(Math.max(value, min), max);
+		const generatorsRequired = Math.ceil((MY_DERRICK_COUNT + 1) / 4);		// + 1 is here to provide extra capacity
 		const MIN_GENERATORS = 2;
-		const MAX_GENERATORS = 10;	// todo: use `getStructureLimit()`.
-		
-		const MAX_GENERATORS_AND_POWER_MODULES = clamp(generatorsRequired, MIN_GENERATORS, MAX_GENERATORS);
+
+		const MAX_GENERATORS_AND_POWER_MODULES = clampValue(generatorsRequired, MIN_GENERATORS, state.MAX_STRUCTURE_COUNT["Power Generator"]);
 		const USE_VTOL = (MY_DERRICK_COUNT >= 8);
 		const USE_FACTORY_MODULES = (MY_DERRICK_COUNT >= 6);
 		const MY_VTOL_COUNT = state.playerInfo[me]['numAirUnits'];
