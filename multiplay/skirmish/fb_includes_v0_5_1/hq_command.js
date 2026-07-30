@@ -918,7 +918,7 @@ class CommandCenter {
 			const newFacilityLocations = options["newFacilityLocations"];
 			const demolitionLocations = options["demolitionLocations"];
 
-			const BELOW_REPAIR_FACILITY_HARD_CAP = myRepairFacilities.length < state.REPAIR_FACILITY_HARD_CAP;
+			const BELOW_REPAIR_FACILITY_HARD_CAP = myRepairFacilities.length < state.MAX_STRUCTURE_COUNT["Repair Facility"];
 
 			const NEW_FACILITY_REQUESTED = newFacilityLocations.length !== 0;
 

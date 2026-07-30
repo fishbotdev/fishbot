@@ -320,8 +320,8 @@ class worldState {
         };
 
         // Game statistics
-        this.MAX_STRUCTURE_COUNT = {};
-        this.REPAIR_FACILITY_HARD_CAP = 3; // getStructureLimit(STRUCTURES["Repair Facility"].id);      
+        /** @type {Map<string, number>} */
+        this.MAX_STRUCTURE_COUNT = new Map();
 
         ////////////////////////// PLAYER STATISTICS / CUSTOM METADATA //////////////////////////
         /** 
@@ -658,6 +658,43 @@ class worldStateBuilder {
     }
 
     /**
+     * Queries the game engine for the maximum allowable count of all base structures.
+     * As of Warzone 2100 v4.7.0, `getStructureLimit` will only return the *default* structure limit unless it is called *AFTER* `eventStartLevel()` is called. 
+     * Returns a map from *human-readable* name (which is the same way you would access `BASE_STRUCTURES`) to a number.
+     * @returns {Map<string, number>} 
+     */
+    #initialiseMaxStructureCounts() {
+        const maxStructureCounts = new Map();
+        const NEGATIVE_ONE = 0xFFFFFFFF;        // `getStructureLimit` returns this for some values
+
+        const STRUCTURE_TYPES = [
+            "Command Center", 
+            "Command Relay Center", 
+            "Cyborg Factory", 
+            "Factory", 
+            "Laser Satellite Command Post", 
+            "Power Generator", 
+            "Repair Facility", 
+            "Research Facility", 
+            "VTOL Factory", 
+            "VTOL Rearming Pad",
+        ];
+
+        for (const [name, structureData] of Object.entries(BASE_STRUCTURES)) {
+            if (!STRUCTURE_TYPES.includes(name)) {
+                continue;
+            }
+            let limit = getStructureLimit(structureData.id, me);
+            if (limit === NEGATIVE_ONE) {
+                limit = 1;
+            }
+            debug(`\t${name}: ${limit}`);
+            maxStructureCounts.set(name, limit);      
+        }
+        return maxStructureCounts;
+    }
+
+    /**
      *  Initialises `state` with:
      *  - FishBot grouping system `state.g`, 
      *  - default POIs (bases & derricks) `state.poi.derricks` & `state.poi.bases`,
@@ -690,5 +727,6 @@ class worldStateBuilder {
 
         state.brigades = this.#initialiseBrigades(state);
 
+        state.MAX_STRUCTURE_COUNT = this.#initialiseMaxStructureCounts(); 
     }
 }

@@ -212,8 +212,8 @@ if (false) {
 /**
     ```STRUCTURES```: Object which contains all WZ2100 structure information extracted from the Stats global.
 */
-let STRUCTURES = {};
-let BASE_STRUCTURES = {};   
+const STRUCTURES = {};
+const BASE_STRUCTURES = {};   
 
 /*
 For each structure, e.g. STRUCTURE["Factory"], STRUCTURE["Pepperpot Pit"] the parameters are:
