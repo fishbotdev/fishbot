@@ -46,7 +46,6 @@ class CommandCenter {
 		this.TARGET_SEARCH_RADIUS = 25;
 
 		// Oil strategic parameters
-		this.OIL_DOMINANCE_PERCENTAGE = 60;
 		this.isOilDominant = false;
 
 		// Production strategic parameters
@@ -91,10 +90,10 @@ class CommandCenter {
 			'logistics_runConstruction': 60,
 			'logistics_runResupplyLogistics': 30,
 			'intel_getNearbyGroundTargets': 20,
-			'intel_updateStrategicParameters': 20,
 			'logistics_runStructureLogistics': 15,
 			'intel_getMapIntelligence': 12,
 			'intel_getAviationTargets': 10,
+			'intel_updateStrategicParameters': 6,
 		};
 
 		this.INTELLIGENCE_SUBTASK_NAMES = [];
@@ -240,23 +239,57 @@ class CommandCenter {
 	
 	}
 
+	/**
+	 * Updates FishBot's strategic parameters with evolution of the game state.
+	 * The intent is: `state` stores the objective world, while `hq_command` stores the decisions based on observations of the state.
+	 * @param {worldState} state 
+	 */
 	updateStrategicParameters(state) {
 
-		// Oil (the most important strategic resource)
-
-		// Warzone 2100 lacks the concepts of food / fuel for vehicles & aircraft / ammunition (VTOL only)
-		// 	- Supply of oil: Combat operations + oil capture
-		// 	- Demand of oil: production, construction, research, oil-defence construction
-
+		// Gather information from state
 		const playerInfo = state.playerInfo;
-		const totalDerricks = state.poi.derricks.length;
+		const TOTAL_DERRICKS = state.poi.derricks.length;
+		const MY_DERRICK_COUNT = playerInfo[me].numDerricks;
 
-		const pc = playerInfo[me]['numDerricks'] / totalDerricks * 100;
-		// debug(` ${getCurrGameTimeMinSec()}:\tcaptured ${playerInfo[me]['numDerricks']} out of ${totalDerricks} (${pc}%)`);
-		const oilDominance = (pc > this.OIL_DOMINANCE_PERCENTAGE);
-		if (this.isOilDominant != oilDominance) {
-			debug(`${getCurrGameTimeMinSec()}:\toil dominance changed to: ${oilDominance}`);
-			this.isOilDominant = oilDominance;
+		const livingPlayers = state.enumLivingPlayers();
+		const ALIVE_PLAYER_COUNT = Math.max(livingPlayers.length, 1);
+
+		const DOMINANT_OIL_SHARE = 1.2;
+
+		// The following code sets the current FishBot strategic parameters
+
+		/*
+		Oil parameters (the most important strategic resource)
+		Warzone 2100 lacks the concepts of food / fuel for vehicles & aircraft / ammunition (VTOL only)
+			- Supply of oil: Combat operations + oil capture
+		 	- Demand of oil: production, construction, research, oil-defence construction
+		*/
+		const DERRICKS_PER_PLAYER = Math.ceil(TOTAL_DERRICKS / ALIVE_PLAYER_COUNT);
+		const o = [];
+
+		if (livingPlayers.length > 0) {
+			livingPlayers.forEach(playerID => {
+				o.push([playerID, playerInfo[playerID].numDerricks / DERRICKS_PER_PLAYER]);
+			});
+
+			o.sort((a, b) => b[1] - a[1]);			// largest to smallest oil share
+			
+			const oilShare = new Map(o);
+
+			const largestOilSharePlayer = o[0][0];
+			const LARGEST_OIL_SHARE = oilShare.get(largestOilSharePlayer);
+			const MY_OIL_SHARE = oilShare.get(me);
+
+			const BIG_OIL_SHARE = (MY_OIL_SHARE > DOMINANT_OIL_SHARE) || (MY_DERRICK_COUNT >= Math.ceil(0.85 * TOTAL_DERRICKS));
+			const BIGGEST_OIL_SHARE = MY_OIL_SHARE >= LARGEST_OIL_SHARE;
+
+			const oilDominance = BIG_OIL_SHARE && BIGGEST_OIL_SHARE;
+
+			if (this.isOilDominant != oilDominance) {
+				const derrickCount = `${MY_DERRICK_COUNT} out of ${TOTAL_DERRICKS} (${Math.ceil(MY_DERRICK_COUNT / TOTAL_DERRICKS * 100)}%)`;
+				debug(`${me}:  ${getCurrGameTimeMinSec()}:\t oil dominance changed to: ${oilDominance} (${derrickCount})`);
+				this.isOilDominant = oilDominance;
+			}
 		}
 
 	}
