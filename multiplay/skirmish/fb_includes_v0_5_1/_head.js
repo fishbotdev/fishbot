@@ -221,6 +221,19 @@
  * @property {AirStrikeMissionRequest[]} casTargets
  */
 
+
+/*
+	HQ_COMMAND STRATEGIC PARAMETERS
+*/
+
+/**
+ * @typedef {Object} ConstructionParameters
+ * @property {number} MAX_GENERATORS_AND_POWER_MODULES 
+ * @property {number} MAX_VTOL_REARMING_PADS 
+ * @property {boolean} SHOULD_BUILD_VTOLS 
+ * @property {boolean} SHOULD_USE_FACTORY_MODULES 
+ */
+
 /*
     MISSION CONSTANTS
 */

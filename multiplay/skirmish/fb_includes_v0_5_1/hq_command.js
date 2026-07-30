@@ -48,6 +48,15 @@ class CommandCenter {
 		// Oil strategic parameters
 		this.isOilDominant = false;
 
+		// Construction parameters
+		/** @type {ConstructionParameters} */
+		this.CONSTRUCTION_PARAMETERS = {
+			MAX_GENERATORS_AND_POWER_MODULES: 1,
+			MAX_VTOL_REARMING_PADS: 1, 
+			SHOULD_BUILD_VTOLS: false,
+			SHOULD_USE_FACTORY_MODULES: false,
+		}
+
 		// Production strategic parameters
 		this.MAX_TRUCKS = 8;
 
@@ -246,6 +255,8 @@ class CommandCenter {
 	 */
 	updateStrategicParameters(state) {
 
+		const DEBUG_PREFIX = `${me}:  ${getCurrGameTimeMinSec()}:\t`;
+
 		// Gather information from state
 		const playerInfo = state.playerInfo;
 		const TOTAL_DERRICKS = state.poi.derricks.length;
@@ -267,6 +278,8 @@ class CommandCenter {
 		const DERRICKS_PER_PLAYER = Math.ceil(TOTAL_DERRICKS / ALIVE_PLAYER_COUNT);
 		const o = [];
 
+		let oilDominance = false;
+
 		if (livingPlayers.length > 0) {
 			livingPlayers.forEach(playerID => {
 				o.push([playerID, playerInfo[playerID].numDerricks / DERRICKS_PER_PLAYER]);
@@ -283,14 +296,32 @@ class CommandCenter {
 			const BIG_OIL_SHARE = (MY_OIL_SHARE > DOMINANT_OIL_SHARE) || (MY_DERRICK_COUNT >= Math.ceil(0.85 * TOTAL_DERRICKS));
 			const BIGGEST_OIL_SHARE = MY_OIL_SHARE >= LARGEST_OIL_SHARE;
 
-			const oilDominance = BIG_OIL_SHARE && BIGGEST_OIL_SHARE;
-
-			if (this.isOilDominant != oilDominance) {
-				const derrickCount = `${MY_DERRICK_COUNT} out of ${TOTAL_DERRICKS} (${Math.ceil(MY_DERRICK_COUNT / TOTAL_DERRICKS * 100)}%)`;
-				debug(`${me}:  ${getCurrGameTimeMinSec()}:\t oil dominance changed to: ${oilDominance} (${derrickCount})`);
-				this.isOilDominant = oilDominance;
-			}
+			oilDominance = BIG_OIL_SHARE && BIGGEST_OIL_SHARE;
 		}
+
+		if (this.isOilDominant != oilDominance) {
+			const derrickCount = `${MY_DERRICK_COUNT} out of ${TOTAL_DERRICKS} (${Math.ceil(MY_DERRICK_COUNT / TOTAL_DERRICKS * 100)}%)`;
+			debug(`${DEBUG_PREFIX} oil dominance changed to: ${oilDominance} (${derrickCount})`);
+			this.isOilDominant = oilDominance;
+		}
+
+		/*
+			CONSTRUCTION PARAMETERS
+		*/
+		const generatorsRequired = Math.ceil(MY_DERRICK_COUNT / 4);
+		const clamp = (value, min, max) => Math.min(Math.max(value, min), max);
+		const MIN_GENERATORS = 2;
+		const MAX_GENERATORS = 10;	// todo: use `getStructureLimit()`.
+		
+		const MAX_GENERATORS_AND_POWER_MODULES = clamp(generatorsRequired, MIN_GENERATORS, MAX_GENERATORS);
+		const USE_VTOL = (MY_DERRICK_COUNT >= 8);
+		const USE_FACTORY_MODULES = (MY_DERRICK_COUNT >= 6);
+		const MY_VTOL_COUNT = state.playerInfo[me]['numAirUnits'];
+
+		this.CONSTRUCTION_PARAMETERS.MAX_GENERATORS_AND_POWER_MODULES = MAX_GENERATORS_AND_POWER_MODULES;
+		this.CONSTRUCTION_PARAMETERS.MAX_VTOL_REARMING_PADS = MY_VTOL_COUNT;
+		this.CONSTRUCTION_PARAMETERS.SHOULD_BUILD_VTOLS = USE_VTOL;
+		this.CONSTRUCTION_PARAMETERS.SHOULD_USE_FACTORY_MODULES = USE_FACTORY_MODULES;
 
 	}
 
@@ -839,27 +870,13 @@ class CommandCenter {
 			return;
 		}
 
-		// Set adaptation parameters (todo: move to strategic layer)
-		// const totalDerricks = state.poi.derricks.length;		// used to determine 'low-oil ness' (estimate derricks / player).
-		const MY_DERRICK_COUNT = state.playerInfo[me]['numDerricks'];
-
-		const generatorsRequired = Math.ceil(MY_DERRICK_COUNT / 4);
-		const clamp = (value, min, max) => Math.min(Math.max(value, min), max);
-		const MIN_GENERATORS = 2;
-		const MAX_GENERATORS = 10;	// todo: use `getStructureLimit()`.
-		const MAX_GENERATORS_AND_POWER_MODULES = clamp(generatorsRequired, MIN_GENERATORS, MAX_GENERATORS);
-
-		const USE_VTOL = (MY_DERRICK_COUNT >= 8);
-		const USE_FACTORY_MODULES = (MY_DERRICK_COUNT >= 6);
-		const MY_VTOL_COUNT = state.playerInfo[me]['numAirUnits'];
-
 		const approvedConstructionTasks = [];
 
 		// BASE BUILD
 		const MAX_BASE_BUILD_TASKS = 1;
 		const baseBuildDeficit = MAX_BASE_BUILD_TASKS - activeBaseBuildTasks.length;
 		if (baseBuildDeficit > 0) {
-			const requestedBaseBuildTasks = engineering.requestBaseConstruction(state, MAX_GENERATORS_AND_POWER_MODULES, USE_VTOL, USE_FACTORY_MODULES, MY_VTOL_COUNT);
+			const requestedBaseBuildTasks = engineering.requestBaseConstruction(state, this.CONSTRUCTION_PARAMETERS);
 			approvedConstructionTasks.push(...requestedBaseBuildTasks.slice(0, 1));
 		}
 
