@@ -678,33 +678,33 @@ class worldStateBuilder {
      * @returns {Map<string, number>} 
      */
     #initialiseMaxStructureCounts() {
+        const MODULE_NAMES = ["Factory Module", "Power Module", "Research Module"];
+        const MODULES_PER_FACTORY = 2;
+
         const maxStructureCounts = new Map();
-        const NEGATIVE_ONE = 0xFFFFFFFF;        // `getStructureLimit` returns this for some values
+        
+        const NEGATIVE_ONE = 0xFFFFFFFF;        // `getStructureLimit` returns this for some structures. They have been omitted below, so there is no need to handle it (yet).
 
-        const STRUCTURE_TYPES = [
-            "Command Center", 
-            "Command Relay Center", 
-            "Cyborg Factory", 
-            "Factory", 
-            "Laser Satellite Command Post", 
-            "Power Generator", 
-            "Repair Facility", 
-            "Research Facility", 
-            "VTOL Factory", 
-            "VTOL Rearming Pad",
-        ];
-
-        for (const [name, structureData] of Object.entries(BASE_STRUCTURES)) {
-            if (!STRUCTURE_TYPES.includes(name)) {
+        for (const [name, structureData] of Object.entries(BASE_STRUCTURES)) {      
+            if (MODULE_NAMES.includes(name)) {
+                continue;   
+            }
+            if (["Oil Derrick"].includes(name)) {
+                maxStructureCounts.set(name, 256);      // some large value
                 continue;
             }
-            let limit = getStructureLimit(structureData.id, me);
-            if (limit === NEGATIVE_ONE) {
-                limit = 1;
-            }
+            const limit = getStructureLimit(structureData.id, me);
+
             maxStructureCounts.set(name, limit);      
-            // debug(`\t${name}: ${limit}`);
         }
+
+        const MAX_FACTORY_MODULES = (maxStructureCounts.get("Factory") + maxStructureCounts.get("VTOL Factory")) * MODULES_PER_FACTORY;
+        maxStructureCounts.set("Factory Module", MAX_FACTORY_MODULES);
+        maxStructureCounts.set("Power Module", maxStructureCounts.get("Power Generator"));
+        maxStructureCounts.set("Research Module", maxStructureCounts.get("Research Facility"));
+
+        // for (const [name, limit] of maxStructureCounts)     debug(`\t${name}: ${limit}`);
+
         return maxStructureCounts;
     }
 
