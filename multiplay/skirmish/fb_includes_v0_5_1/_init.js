@@ -19,7 +19,6 @@
 const state = new worldState();
 
 const stateBuilder = new worldStateBuilder();
-stateBuilder.initialise(state);
 
 // Initialise divisional command
 
@@ -44,6 +43,3 @@ const rnd = new armyResearchAndDevelopment();
 
 // Commander: Makes all decisions
 const hq = new CommandCenter();
-
-hq.setDefaultMissions(state);			
-hq.setSchedulerParameters(state);

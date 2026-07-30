@@ -185,6 +185,12 @@ function eventStartLevel() {
 		setupDebugMode();		// Debug mode is enabled for development & automated testing 
 	}
 
+	// Set up state, default missions & scheduler parameters
+	// These functions are called here because functions like: `getStructureLimit()` only return the correct value once `eventStartLevel` is called.
+	stateBuilder.initialise(state);
+	hq.setDefaultMissions(state);			
+	hq.setSchedulerParameters(state);
+
 	// One time use: start initial construction tasks immediately
 	const initialTrucks = enumDroid(me, DROID_CONSTRUCT);
 	initialTrucks.forEach((droid, idx) => {
