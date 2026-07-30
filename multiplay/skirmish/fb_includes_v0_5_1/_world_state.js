@@ -319,15 +319,16 @@ class worldState {
             'bases': []
         };
 
+        // Game statistics
+        /** @type {Map<string, number>} */
+        this.MAX_STRUCTURE_COUNT = new Map();
+
         ////////////////////////// PLAYER STATISTICS / CUSTOM METADATA //////////////////////////
         /** 
          * The numeric array index is the same as the player ID, so `state.playerInfo[me].numTrucks` is a possible & accepted access pattern.
          * @type {PlayerStatsObject[]} 
          */
         this.playerInfo;
-
-        // Game statistics
-        this.REPAIR_FACILITY_HARD_CAP = 3; // getStructureLimit(STRUCTURES["Repair Facility"].id);      // TODO: Fix this when this function is fixed.
 
         // Combat targeting
         /** @type {BrigadeInfo} */
@@ -354,12 +355,9 @@ class worldState {
         this.activeMissions = [];
         /** @type {ProductionJob[]} */
         this.activeProductionJobs = [];
-
-        // Bot attributes
-        this.botIsActive = true;
-        this.oilDominance = false;
-
+        
         // Load balancing parameters
+        this.botIsActive = true;
         this.currWorkerID = -1;
         this.TIME_BLOCK_MS = 200;
         this.INTERVALS_PER_MIN = Math.floor(60000 / this.TIME_BLOCK_MS);
@@ -368,17 +366,13 @@ class worldState {
 
     /**
      * Returns an array containing the playerIDs of alive players.
+     * @returns {number[]}
      */
-    enumLivingPlayers() {   
-        let livingPlayerIDs = [];
-
-        this.playerInfo.forEach(p => {
-            if (p["numTotalUnits"] !== 0 || p["numFactories"] !== 0) {
-                livingPlayerIDs.push(p.playerID);
-            }
-        });
-
-        return livingPlayerIDs;
+    enumLivingPlayers() {
+        /** @param {PlayerStatsObject} p */
+        const isLiving = (p) => p.numTotalUnits !== 0 || p.numFactories !== 0;
+        
+        return this.playerInfo.filter(isLiving).map(p => p.playerID);
     }
 
     /**
@@ -404,6 +398,20 @@ class worldState {
         } else {
             return false;
         }
+    }
+
+    /**
+     * Returns the maximum structure count.
+     * @param {string} structureName 
+     * @returns {number}
+     */
+    getMaxStructureCount(structureName) {
+        const maxStructureCount = this.MAX_STRUCTURE_COUNT.get(structureName);
+        if (maxStructureCount == null) {
+            debug(`${getCurrGameTimeMinSec()}\tWARNING: undefined "${structureName}" passed to state.MAX_STRUCTURE_COUNT. Returning 1.`);
+            return 1;
+        }
+        return maxStructureCount;
     }
 
 }
@@ -664,6 +672,43 @@ class worldStateBuilder {
     }
 
     /**
+     * Queries the game engine for the maximum allowable count of all base structures.
+     * As of Warzone 2100 v4.7.0, `getStructureLimit` will only return the *default* structure limit unless it is called *AFTER* `eventStartLevel()` is called. 
+     * Returns a map from *human-readable* name (which is the same way you would access `BASE_STRUCTURES`) to a number.
+     * @returns {Map<string, number>} 
+     */
+    #initialiseMaxStructureCounts() {
+        const MODULE_NAMES = ["Factory Module", "Power Module", "Research Module"];
+        const MODULES_PER_FACTORY = 2;
+
+        const maxStructureCounts = new Map();
+        
+        const NEGATIVE_ONE = 0xFFFFFFFF;        // `getStructureLimit` returns this for some structures. They have been omitted below, so there is no need to handle it (yet).
+
+        for (const [name, structureData] of Object.entries(BASE_STRUCTURES)) {      
+            if (MODULE_NAMES.includes(name)) {
+                continue;   
+            }
+            if (["Oil Derrick"].includes(name)) {
+                maxStructureCounts.set(name, 256);      // some large value
+                continue;
+            }
+            const limit = getStructureLimit(structureData.id, me);
+
+            maxStructureCounts.set(name, limit);      
+        }
+
+        const MAX_FACTORY_MODULES = (maxStructureCounts.get("Factory") + maxStructureCounts.get("VTOL Factory")) * MODULES_PER_FACTORY;
+        maxStructureCounts.set("Factory Module", MAX_FACTORY_MODULES);
+        maxStructureCounts.set("Power Module", maxStructureCounts.get("Power Generator"));
+        maxStructureCounts.set("Research Module", maxStructureCounts.get("Research Facility"));
+
+        // for (const [name, limit] of maxStructureCounts)     debug(`\t${name}: ${limit}`);
+
+        return maxStructureCounts;
+    }
+
+    /**
      *  Initialises `state` with:
      *  - FishBot grouping system `state.g`, 
      *  - default POIs (bases & derricks) `state.poi.derricks` & `state.poi.bases`,
@@ -696,5 +741,6 @@ class worldStateBuilder {
 
         state.brigades = this.#initialiseBrigades(state);
 
+        state.MAX_STRUCTURE_COUNT = this.#initialiseMaxStructureCounts(); 
     }
 }

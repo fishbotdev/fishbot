@@ -42,11 +42,22 @@ class CommandCenter {
 			This constructor is intended to contain *all* FishBot parameters which change how it behaves.
 		*/
 
-		// Strategic parameters
-		this.OIL_DOMINANCE_PERCENTAGE = 60;
+		// Combat operational parameters
 		this.TARGET_SEARCH_RADIUS = 25;
 
-		// Production logistics parameters
+		// Oil strategic parameters
+		this.isOilDominant = false;
+
+		// Construction parameters
+		/** @type {ConstructionParameters} */
+		this.CONSTRUCTION_PARAMETERS = {
+			MAX_GENERATORS_AND_POWER_MODULES: 2,
+			MAX_VTOL_REARMING_PADS: 2, 
+			SHOULD_BUILD_VTOLS: false,
+			SHOULD_USE_FACTORY_MODULES: false,
+		}
+
+		// Production strategic parameters
 		this.MAX_TRUCKS = 8;
 
 		this.FISHBOT_BRIGADE_COMPOSITION = {
@@ -91,7 +102,7 @@ class CommandCenter {
 			'logistics_runStructureLogistics': 15,
 			'intel_getMapIntelligence': 12,
 			'intel_getAviationTargets': 10,
-			'intel_checkOilDominance': 2,
+			'intel_updateStrategicParameters': 6,
 		};
 
 		this.INTELLIGENCE_SUBTASK_NAMES = [];
@@ -196,12 +207,11 @@ class CommandCenter {
 		// i.e. tactical functions may be called directly where appropriate
 
 		switch(taskID) {
-
-			case 'intel_checkOilDominance':
-				const isOilDominant = checkOilDominance(state, this.OIL_DOMINANCE_PERCENTAGE);
-				this.toc.setOilDominanceStatus(state, isOilDominant);
-				break;
 			
+			case 'intel_updateStrategicParameters':
+				this.updateStrategicParameters(state);
+				break;
+
 			case 'intel_getNearbyGroundTargets':
 				// Update location(s) & target(s) of active combat force(s)
 				this.BRIGADE_DESIGNATIONS.forEach(brigadeID => {
@@ -236,6 +246,83 @@ class CommandCenter {
 				return;
 		}
 	
+	}
+
+	/**
+	 * Updates FishBot's strategic parameters with evolution of the game state.
+	 * The intent is: `state` stores the objective world, while `hq_command` stores the decisions based on observations of the state.
+	 * @param {worldState} state 
+	 * @returns {void} Writes directly to `this`.
+	 */
+	updateStrategicParameters(state) {
+
+		const DEBUG_PREFIX = `${me}:  ${getCurrGameTimeMinSec()}:\t`;
+
+		// Gather information from state
+		const playerInfo = state.playerInfo;
+		const TOTAL_DERRICKS = state.poi.derricks.length;
+		const MY_DERRICK_COUNT = playerInfo[me].numDerricks;
+
+		const livingPlayers = state.enumLivingPlayers();
+		const ALIVE_PLAYER_COUNT = Math.max(livingPlayers.length, 1);
+
+		const DOMINANT_OIL_SHARE = 1.2;
+
+		// The following code sets the current FishBot strategic parameters
+
+		/*
+		Oil parameters (the most important strategic resource)
+		Warzone 2100 lacks the concepts of food / fuel for vehicles & aircraft / ammunition (VTOL only)
+			- Supply of oil: Combat operations + oil capture
+		 	- Demand of oil: production, construction, research, oil-defence construction
+		*/
+		const DERRICKS_PER_PLAYER = Math.ceil(TOTAL_DERRICKS / ALIVE_PLAYER_COUNT);
+		const o = [];
+
+		let oilDominance = false;
+
+		if (livingPlayers.length > 0) {
+			livingPlayers.forEach(playerID => {
+				o.push([playerID, playerInfo[playerID].numDerricks / DERRICKS_PER_PLAYER]);
+			});
+
+			o.sort((a, b) => b[1] - a[1]);			// largest to smallest oil share
+			
+			const oilShare = new Map(o);
+
+			const largestOilSharePlayer = o[0][0];
+			const LARGEST_OIL_SHARE = oilShare.get(largestOilSharePlayer);
+			const MY_OIL_SHARE = oilShare.get(me);
+
+			const BIG_OIL_SHARE = (MY_OIL_SHARE > DOMINANT_OIL_SHARE) || (MY_DERRICK_COUNT >= Math.ceil(0.85 * TOTAL_DERRICKS));
+			const BIGGEST_OIL_SHARE = MY_OIL_SHARE >= LARGEST_OIL_SHARE;
+
+			oilDominance = BIG_OIL_SHARE && BIGGEST_OIL_SHARE;
+		}
+
+		if (this.isOilDominant != oilDominance) {
+			const derrickCount = `${MY_DERRICK_COUNT} out of ${TOTAL_DERRICKS} (${Math.ceil(MY_DERRICK_COUNT / TOTAL_DERRICKS * 100)}%)`;
+			debug(`${DEBUG_PREFIX} oil dominance changed to: ${oilDominance} (${derrickCount})`);
+			this.isOilDominant = oilDominance;
+		}
+
+		/*
+			CONSTRUCTION PARAMETERS
+		*/
+		const generatorsRequired = Math.ceil((MY_DERRICK_COUNT + 1) / 4);		// + 1 is here to provide extra capacity
+		const MIN_GENERATORS = 2;
+
+		const MAX_GENERATORS_AND_POWER_MODULES = clampValue(generatorsRequired, MIN_GENERATORS, state.getMaxStructureCount("Power Generator"));
+
+		const USE_VTOL = (MY_DERRICK_COUNT >= 8);
+		const USE_FACTORY_MODULES = (MY_DERRICK_COUNT >= 6);
+		const MY_VTOL_COUNT = state.playerInfo[me]['numAirUnits'];
+
+		this.CONSTRUCTION_PARAMETERS.MAX_GENERATORS_AND_POWER_MODULES = MAX_GENERATORS_AND_POWER_MODULES;
+		this.CONSTRUCTION_PARAMETERS.MAX_VTOL_REARMING_PADS = MY_VTOL_COUNT;
+		this.CONSTRUCTION_PARAMETERS.SHOULD_BUILD_VTOLS = USE_VTOL;
+		this.CONSTRUCTION_PARAMETERS.SHOULD_USE_FACTORY_MODULES = USE_FACTORY_MODULES;
+
 	}
 
 	/////////////////////////////////////////////////// G3: COMBAT OPERATIONS ///////////////////////////////////////////////////
@@ -459,6 +546,7 @@ class CommandCenter {
 		const enemyAircraft = getObjectList(TARGETS['enemyAviation']);		// todo: remove if no ADA available
 		enemyAircraft.forEach(obj => {
 			if (outsideOfRadius(obj, EFFECTIVE_ADA_RADIUS)) return;
+			if (!('isFlying' in obj)) return;
 			if (obj.isFlying !== true) return;
 			brigadeTargets["adaTargets"].push(obj);
 		});		
@@ -505,12 +593,12 @@ class CommandCenter {
 		
 		const adaThreat = state.fields.adaThreat;
 		const cellSize = state.grid.cellSize;
-		const IS_OIL_DOMINANT = state.oilDominance;
+		const IS_OIL_DOMINANT = this.isOilDominant;
 		const NUM_AIRCRAFT = state.playerInfo[me].numAirUnits;	
 		const AIR_UNIT_DOMINANCE = NUM_AIRCRAFT >= 10;
 		// const AIR_UNIT_SHORTAGE = NUM_AIRCRAFT === 1;
 		
-		const prioritiseCasTargets = NUM_URGENT_CAS_MISSIONS >= 1 || maxCasTargets >= 4;
+		const prioritiseCasTargets = IS_OIL_DOMINANT && (NUM_URGENT_CAS_MISSIONS >= 1 || maxCasTargets >= 4);
 		const prioritiseRaidTargets = !IS_OIL_DOMINANT;
 		const prioritiseIndustrialTargets = IS_OIL_DOMINANT;
 		const SATURATION_RAID = prioritiseIndustrialTargets && AIR_UNIT_DOMINANCE;		// Saturation raid = an attack designed to overwhelm defenses
@@ -522,7 +610,7 @@ class CommandCenter {
 		});
 
 		const casPriorityTargets = [...CAS_MISSION_REQUESTS, ...airRaidTargets];
-		const raidPriorityTargets = [...airRaidTargets, ...CAS_MISSION_REQUESTS];
+		const raidPriorityTargets = [...airRaidTargets];
 
 		if (prioritiseIndustrialTargets) {
 
@@ -769,7 +857,7 @@ class CommandCenter {
 					// (so it should not be overwritten by the conservative danger level implemented by abort mission)
 					break;
 				default:
-					// Do nothing / ignore missions like default mission "HELP_CONSTRUCT"
+					// Ignore missions like default mission "HELP_CONSTRUCT"
 			}
 		});
 		
@@ -778,23 +866,12 @@ class CommandCenter {
 		// Command then terminates, if there are no available trucks this tick (avoids expensive planning tasks)
 		const trucksUnavailable = (state.g.enumGroup(ENGINEERING.ENGINEERING_RESERVE).length === 0) && 
 								  (state.g.enumGroup(ENGINEERING.BASE_BUILDER).length === 0);
+
 		if (trucksUnavailable) {
+			// debug(`${getCurrGameTimeMinSec()} WARNING: No trucks to execute construction actions.`);
+			// debug(`Active construction missions | oilcap: ${activeOilCapTaskIDs.length} |  basebuild: ${activeBaseBuildTasks.length}  | defencebuild: ${activeDefenceBuildTaskIDs.length}  | repairCenter: ${activeRepairCenterBuildTaskIDs.length}`);
 			return;
 		}
-
-		// Set adaptation parameters (todo: move to strategic layer)
-		// const totalDerricks = state.poi.derricks.length;		// used to determine 'low-oil ness' (estimate derricks / player).
-		const MY_DERRICK_COUNT = state.playerInfo[me]['numDerricks'];
-
-		const generatorsRequired = Math.ceil(MY_DERRICK_COUNT / 4);
-		const clamp = (value, min, max) => Math.min(Math.max(value, min), max);
-		const MIN_GENERATORS = 2;
-		const MAX_GENERATORS = 10;	// todo: use `getStructureLimit()`.
-		const MAX_GENERATORS_AND_POWER_MODULES = clamp(generatorsRequired, MIN_GENERATORS, MAX_GENERATORS);
-
-		const USE_VTOL = (MY_DERRICK_COUNT >= 8);
-		const USE_FACTORY_MODULES = (MY_DERRICK_COUNT >= 6);
-		const MY_VTOL_COUNT = state.playerInfo[me]['numAirUnits'];
 
 		const approvedConstructionTasks = [];
 
@@ -802,7 +879,7 @@ class CommandCenter {
 		const MAX_BASE_BUILD_TASKS = 1;
 		const baseBuildDeficit = MAX_BASE_BUILD_TASKS - activeBaseBuildTasks.length;
 		if (baseBuildDeficit > 0) {
-			const requestedBaseBuildTasks = engineering.requestBaseConstruction(state, MAX_GENERATORS_AND_POWER_MODULES, USE_VTOL, USE_FACTORY_MODULES, MY_VTOL_COUNT);
+			const requestedBaseBuildTasks = engineering.requestBaseConstruction(state, this.CONSTRUCTION_PARAMETERS);
 			approvedConstructionTasks.push(...requestedBaseBuildTasks.slice(0, 1));
 		}
 
@@ -843,7 +920,7 @@ class CommandCenter {
 			const newFacilityLocations = options["newFacilityLocations"];
 			const demolitionLocations = options["demolitionLocations"];
 
-			const BELOW_REPAIR_FACILITY_HARD_CAP = myRepairFacilities.length < state.REPAIR_FACILITY_HARD_CAP;
+			const BELOW_REPAIR_FACILITY_HARD_CAP = myRepairFacilities.length < state.getMaxStructureCount("Repair Facility");
 
 			const NEW_FACILITY_REQUESTED = newFacilityLocations.length !== 0;
 
@@ -1085,7 +1162,7 @@ class CommandCenter {
 		const MY_INFANTRY_COUNT = state.playerInfo[me]["numInfantryUnits"];
 		const MY_LAND_VEHICLE_COUNT = (state.playerInfo[me]["numArmourUnits"] + state.playerInfo[me]["numADAUnits"] + 
 									   state.playerInfo[me]["numShortRangeIndirectUnits"] + state.playerInfo[me]["numLongRangeIndirectUnits"]);
-			// todo: add sensor to land vehicle count
+			// todo: add sensor + repair to land vehicle count
 		const MY_VTOL_COUNT = state.playerInfo[me]["numAirUnits"];
 
 		// Compare to limits

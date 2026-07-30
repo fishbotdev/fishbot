@@ -185,11 +185,21 @@ function eventStartLevel() {
 		setupDebugMode();		// Debug mode is enabled for development & automated testing 
 	}
 
+	// Set up state, default missions & scheduler parameters
+	// These functions are called here because functions like: `getStructureLimit()` only return the correct value once `eventStartLevel` is called.
+	stateBuilder.initialise(state);
+	hq.setDefaultMissions(state);			
+	hq.setSchedulerParameters(state);
+
 	// One time use: start initial construction tasks immediately
 	const initialTrucks = enumDroid(me, DROID_CONSTRUCT);
-	initialTrucks.forEach(droid => {
+	initialTrucks.forEach((droid, idx) => {
 		orderDroidLoc(droid, DORDER_MOVE, droid.x + 1, droid.y + 1);		// From NullBot: apparently trucks can sometimes get stuck when a building is placed on top of them
-		state.g.addDroidToGroup({groupID: ENGINEERING.BASE_BUILDER, droidID: droid.id});
+		if (idx < 3) {
+			state.g.addDroidToGroup({groupID: ENGINEERING.BASE_BUILDER, droidID: droid.id});
+		} else {
+			state.g.addDroidToGroup({groupID: ENGINEERING.ENGINEERING_RESERVE, droidID: droid.id});
+		}
 	});
 	queue("runConstructionLogistics");				
 	queue("runMissionManager");

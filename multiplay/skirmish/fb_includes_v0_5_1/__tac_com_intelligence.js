@@ -274,20 +274,3 @@ function createPlayerInfoEntry(playerID) {
         'repairFacilityFbObjects': []
     };
 }
-
-
-/**
- * Checks if the current player owns more than a certain percentage of derricks on the map. 
- * O(1) complexity.
- * @param {worldState} state 
- * @param {number} oilDominancePercentage 
- * @returns {boolean}
- */
-function checkOilDominance(state, oilDominancePercentage) {
-    const playerInfo = state.playerInfo;
-    const totalDerricks = state.poi.derricks.length;
-
-    const pc = playerInfo[me]['numDerricks'] / totalDerricks * 100;
-    // debug(` ${gameTime}: captured ${playerInfo[i]['numDerricks']} out of ${totalDerricks} (${pc}%)`);
-    return (pc > oilDominancePercentage);        
-}

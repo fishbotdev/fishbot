@@ -64,6 +64,17 @@ function distSq(x1, x2, y1, y2) {
 }
 
 /**
+ * Clamps a numeric value between in a provided minimum value `min` and maximum value `max`.
+ * @param {number} value 
+ * @param {number} min 
+ * @param {number} max 
+ * @returns {number}
+ */
+function clampValue(value, min, max) {
+	return Math.min(Math.max(value, min), max);
+}
+
+/**
  * Converts a number `n` to its binary string representation (to 20 bits).
  * @param {number} n integer
  * @returns {string} binary string representation (to 20 bits) e.g. `"00001000010000100001"`

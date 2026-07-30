@@ -721,6 +721,8 @@ declare function getDroidLimit(player?: number, droidType?: droidTypeType): numb
  * ## getStructureLimit(structureName[, player])
  * 
  * Returns build limits for a structure.
+ * FishBot note: `getStructureLimit` will only return the *default* structure limits unless it is called *AFTER* `eventStartLevel()` is called. 
+ * For some structures, getStructureLimit will also return -1 (interpreted as unsigned int by JS). You should handle this in code using something like: 'const NEGATIVE_ONE = 0xFFFFFFFF;'.
  */
 declare function getStructureLimit(structureName: string, player?: number): number;
 

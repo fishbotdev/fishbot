@@ -480,16 +480,10 @@ class armyEngineering {
 	/**
 	 * Yields the next base structure to be constructed.
 	 * @param {worldState} state
-	 * @param {number} maxGenerators
-	 * @param {boolean} useVtols
-	 * @param {boolean} useFactoryModules
-	 * @param {number} myVtolCount
+	 * @param {ConstructionParameters} parameters
 	 * @returns 
 	 */
-	requestBaseConstruction(state, maxGenerators, useVtols, useFactoryModules, myVtolCount) {
-		const MAX_GENERATORS_AND_POWER_MODULES = maxGenerators;
-		const USE_VTOL = useVtols;	
-		const USE_FACTORY_MODULES = useFactoryModules;
+	requestBaseConstruction(state, parameters) {
 
 		const MODULES_PER_FACTORY = 2;
 				
@@ -614,21 +608,25 @@ class armyEngineering {
 			const structCount = counts['count'];
 			
 			// Implement construction adaptations
+			// 0. Implement custom structure limits set in skirmish settings
+			if (structCount >= state.getMaxStructureCount(STRUCTURE_NAME)) {
+				continue;
+			}
 			// 1. Adapt power generators to number of derricks
 			if (["Power Generator", "Power Module"].includes(STRUCTURE_NAME)) {
-				if (structCount >= MAX_GENERATORS_AND_POWER_MODULES) {
+				if (structCount >= parameters.MAX_GENERATORS_AND_POWER_MODULES) {
 					continue;
 				}	
 			}
 			// 2. Remove VTOLs if unused
 			if (["VTOL Factory", "VTOL Rearming Pad"].includes(STRUCTURE_NAME)) {
-				if (!USE_VTOL) {	
+				if (!parameters.SHOULD_BUILD_VTOLS) {	
 					continue;
 				}
 			}
 			// 3. Remove extra factory modules (e.g. as a result of VTOL Factory removal).
 			if (["Factory Module"].includes(STRUCTURE_NAME)) {
-				if (!USE_FACTORY_MODULES) {
+				if (!parameters.SHOULD_USE_FACTORY_MODULES) {
 					continue;
 				}
 				const factoryCount = structureCounts.get(STRUCTURES["Factory"])['count'];
@@ -642,7 +640,7 @@ class armyEngineering {
 			}
 			// 4. Match rearming pads to the number of VTOLs
 			if (["VTOL Rearming Pad"].includes(STRUCTURE_NAME)) {
-				if (structCount >= myVtolCount) {
+				if (structCount >= parameters.MAX_VTOL_REARMING_PADS) {
 					continue;
 				}
 			}
