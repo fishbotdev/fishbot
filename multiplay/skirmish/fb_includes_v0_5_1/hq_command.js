@@ -802,11 +802,10 @@ class CommandCenter {
 				moveBrigadeToAttack(state, brigadeID, groundTargets);				
 			});
 
-			// Manage reserves
-			// Temporary: Move reserves to pre-emptively reinforce BCT0
+			// Manage reserves: temporary: Move reserves to pre-emptively reinforce BCT0
 			const reserveGroupIDs = [DIVISION.HEAVY_CAV_RESERVE, DIVISION.LIGHT_CAV_RESERVE, DIVISION.INFANTRY_RESERVE, DIVISION.SHORT_RANGE_FIRE_SUPPORT_RESERVE, DIVISION.SENSOR_RESERVE, DIVISION.AIR_DEFENCE_RESERVE, DIVISION.MAINTENANCE_RESERVE];
-			const x = brigadeLocations[0].x;
-			const y = brigadeLocations[0].y;
+			const x = state.brigades[DIVISION.FIRST_BCT]['location'].x;
+			const y = state.brigades[DIVISION.FIRST_BCT]['location'].y;
 			moveReservesToShadow(reserveGroupIDs, x, y);
 		}
 
