@@ -42,16 +42,31 @@ class CommandCenter {
 			This constructor is intended to contain *all* FishBot parameters which change how it behaves.
 		*/
 
+		// Oil strategic parameters
+		this.isOilDominant = false;
+
 		// Combat operational parameters
 		this.TARGET_SEARCH_RADIUS = 25;
 
-		// Targeting (tactical parameters)
-		this.IMMEDIATE_RADIUS = 8;
+		// Ground targeting (tactical parameters)
+		this.IMMEDIATE_DIRECT_FIRE_RADIUS = 8;
 		this.EFFECTIVE_FIRE_SUPPORT_RADIUS = 16;
 		this.EFFECTIVE_ADA_RADIUS = 14;
 
-		// Oil strategic parameters
-		this.isOilDominant = false;
+		// Aviation parameters
+		/** @type {AviationParameters} */
+		this.AVIATION_PARAMETERS = {
+			totalNumAircraft: 0,
+			prioritiseCasTargets: false,
+			prioritiseIndustrialTargets: false,
+			prioritiseRaidTargets: false,
+			SATURATION_RAID_ACTIVE: false,
+			STANDARD_THREAT_THRESHOLD: 0,
+			URGENT_THREAT_THRESHOLD: 0,
+			SATURATION_THREAT_THRESHOLD: 0,
+			CAS_SUPPORT_RADIUS: 25,
+			UNITS_FOR_ADA_STRIKE: 3,
+		};
 
 		// Construction parameters
 		/** @type {ConstructionParameters} */
@@ -328,6 +343,55 @@ class CommandCenter {
 		this.CONSTRUCTION_PARAMETERS.SHOULD_BUILD_VTOLS = USE_VTOL;
 		this.CONSTRUCTION_PARAMETERS.SHOULD_USE_FACTORY_MODULES = USE_FACTORY_MODULES;
 
+		/*
+			AVIATION
+		*/
+		const IS_OIL_DOMINANT = this.isOilDominant;
+		const NUM_AIRCRAFT = state.playerInfo[me].numAirUnits;	
+		const AIR_UNIT_DOMINANCE = NUM_AIRCRAFT >= 10;
+
+		let maxCasTargets = 0;
+		let numUrgentCasMissions = 0;
+
+		this.BRIGADE_DESIGNATIONS.forEach(id => {
+			const casStrikeRequests = state.brigades[id]['casStrikeRequests'];
+
+			const targetsInRadius = casStrikeRequests.length;
+			maxCasTargets = Math.max(maxCasTargets, targetsInRadius);
+
+			casStrikeRequests.forEach(r => {
+				if (r.priority === MISSION_PRIORITY.URGENT) {
+					numUrgentCasMissions += 1
+				}
+			});
+		});
+
+		const prioritiseCasTargets = IS_OIL_DOMINANT && (numUrgentCasMissions >= 1 || maxCasTargets >= 4);
+		const prioritiseRaidTargets = !IS_OIL_DOMINANT;
+		const prioritiseIndustrialTargets = IS_OIL_DOMINANT;
+		const SATURATION_RAID_ACTIVE = prioritiseIndustrialTargets && AIR_UNIT_DOMINANCE;
+		const SATURATION_THREAT_THRESHOLD = 2;	// 2 per cell is OK, anything higher = avoid	
+
+		/*
+			Set no-fly regions; 
+				0 = avoids all anti-air defences, 
+				0.69 > 0.33 * 2 = allow 1 tile over from a single air defence. 
+			Modify value to match "hq_toc/updateSpatialFields" filter.
+		*/
+		const STANDARD_THREAT_THRESHOLD = IS_OIL_DOMINANT ? 0.69 : 0;		
+		const URGENT_THREAT_THRESHOLD = 2;
+
+		this.AVIATION_PARAMETERS.totalNumAircraft = NUM_AIRCRAFT;
+		this.AVIATION_PARAMETERS.prioritiseCasTargets = prioritiseCasTargets;
+		this.AVIATION_PARAMETERS.prioritiseRaidTargets = prioritiseRaidTargets;
+		this.AVIATION_PARAMETERS.prioritiseIndustrialTargets = prioritiseIndustrialTargets;
+		this.AVIATION_PARAMETERS.SATURATION_RAID_ACTIVE = SATURATION_RAID_ACTIVE;
+
+		this.AVIATION_PARAMETERS.STANDARD_THREAT_THRESHOLD = STANDARD_THREAT_THRESHOLD;
+		this.AVIATION_PARAMETERS.URGENT_THREAT_THRESHOLD = URGENT_THREAT_THRESHOLD;
+		this.AVIATION_PARAMETERS.SATURATION_THREAT_THRESHOLD = SATURATION_THREAT_THRESHOLD;
+		this.AVIATION_PARAMETERS.CAS_SUPPORT_RADIUS = 25;
+		this.AVIATION_PARAMETERS.UNITS_FOR_ADA_STRIKE = 3;
 	}
 
 	/////////////////////////////////////////////////// G3: COMBAT OPERATIONS ///////////////////////////////////////////////////
@@ -459,7 +523,7 @@ class CommandCenter {
 		/** @param {(DroidObject | StructureObject | FeatureObject)[]} targetList */
 		const addDirectFireTargetByProximity = (targetList) => {
 			targetList.forEach(obj => {
-				if (outsideOfRadius(obj, this.IMMEDIATE_RADIUS)) {
+				if (outsideOfRadius(obj, this.IMMEDIATE_DIRECT_FIRE_RADIUS)) {
 					targetsOutOfRange.push(obj);
 				}
 				brigadeTargets["directFireTargets"].push(obj);
@@ -549,78 +613,111 @@ class CommandCenter {
 	}
 
 	/**
+	 * Terminates aviation missions which are TWO PRIORITY LEVELS below. e.g. If new URGENT task -> cancel HIGH missions.
+	 * @param {worldState} state 
+	 * @param {AviationParameters} parameters 
+	 * @returns {number[]}
+	 */
+	#filterPriorityAirMissions(state, parameters) {
+
+		const adaThreat = state.fields.adaThreat;
+		const cellSize = state.grid.cellSize;
+		/** @type {PositionInfo[]} */
+		const GROUP_POSITIONS = [];
+		this.BRIGADE_DESIGNATIONS.forEach(brigadeID => {
+			GROUP_POSITIONS.push(state.brigades[brigadeID].location);
+		})
+
+		const OFFENSIVE_MISSION_TYPES = [MISSION_TYPE.CAS_STRIKE, MISSION_TYPE.AIR_RAID, MISSION_TYPE.DAS_STRIKE];
+		const activeMissions = this.toc.getActiveAviationMissions(state).filter(m => OFFENSIVE_MISSION_TYPES.includes(m.missionType));
+		
+		const activeTargetIDs = [];		// Intent: Even if cancelled, I want this knowledge that this task was present so that it can be pre-emptively removed from the target candidate list.
+		
+		activeMissions.forEach(c => {
+			activeTargetIDs.push(c.target.id);
+
+			const currObj = getObject(c.target.type, c.target.player, c.target.id);
+			if (currObj == null) 	return;
+
+			if (parameters.prioritiseCasTargets && c.missionType !== MISSION_TYPE.CAS_STRIKE) {
+				// debug(`removed DAS / RAID mission to make room for CAS`);
+				c.missionStatus = MISSION_STATUS.ABORT;
+				return;
+			}
+
+			let threatThreshold = (c.priority === MISSION_PRIORITY.URGENT) ? parameters.URGENT_THREAT_THRESHOLD : parameters.STANDARD_THREAT_THRESHOLD;
+			if (parameters.SATURATION_RAID_ACTIVE) {
+				threatThreshold  = parameters.SATURATION_THREAT_THRESHOLD;
+			}
+
+			const gx = Math.floor(currObj.x / cellSize); 
+			const gy = Math.floor(currObj.y / cellSize);
+			if (adaThreat[gx][gy] > threatThreshold) {
+				// debug(`	removed ACTIVE: ${currObj.name} (${c.missionType}) @ grid (${currObj.x} ${currObj.y})`);
+				c.missionStatus = MISSION_STATUS.ABORT;		
+				return;
+			}
+
+			const nearPosition = (gameObj, groupPos) => {return distSq(gameObj.x, groupPos.x, gameObj.y, groupPos.y) <= parameters.CAS_SUPPORT_RADIUS ** 2};
+			if (c.missionType === MISSION_TYPE.CAS_STRIKE) {
+				if (!GROUP_POSITIONS.some(p => nearPosition(currObj, p))) {
+					// debug(`aborted CAS_STRIKE: ${c.target.name} @ ${gameTime}, too far away`);
+					c.missionStatus = MISSION_STATUS.ABORT;					
+					return;
+				}
+			}
+		});
+
+		return activeTargetIDs;
+	}
+
+	/**
 	 * This function returns a list of prioritised Droid / Structure Objects (fresh data) which can be directly used in the `__tac` functions.
 	 * @param {worldState} state 
+	 * @param {AviationParameters} parameters
 	 * @returns {(AirStrikeMissionRequest)[]}	
 	 */
-	#prioritiseAviationTargets(state) {
+	#prioritiseAviationTargets(state, parameters) {
 
 		const airRaidTargets = state.aviationTargets['raidTargets'];
 		const industrialTargets = state.aviationTargets['productionTargets'];
 		const adaTargets = state.aviationTargets['adaTargets'];
+		adaTargets.forEach(t => {t.numAircraft = parameters.UNITS_FOR_ADA_STRIKE;});
 		const indirectFireTargets = state.aviationTargets['indirectFireTargets'];
 		const defensiveStructureTargets = state.aviationTargets['defensiveStructureTargets'];
 
-		/** @type {PositionInfo[]} */
-		const GROUP_POSITIONS = [];
+		const adaThreat = state.fields.adaThreat;
+		const cellSize = state.grid.cellSize;
+
 		/** @type {AirStrikeMissionRequest[]} */
-		const CAS_MISSION_REQUESTS = [];
-
-		let maxCasTargets = 0;
-
-		const BRIGADES = state.brigades;
+		const casTargets = [];
 		this.BRIGADE_DESIGNATIONS.forEach(id => {
-			GROUP_POSITIONS.push(BRIGADES[id]['location']);
-
-			const casStrikeRequests = BRIGADES[id]['casStrikeRequests'];
-			maxCasTargets = Math.max(maxCasTargets, casStrikeRequests.length);
-			CAS_MISSION_REQUESTS.push(...casStrikeRequests);
+			casTargets.push(...state.brigades[id]['casStrikeRequests']);
 		});
-
-		const NUM_URGENT_CAS_MISSIONS = CAS_MISSION_REQUESTS.filter(r => r.priority === MISSION_PRIORITY.URGENT).length;
-		CAS_MISSION_REQUESTS.sort((a, b) => b.priority - a.priority);
-
+		casTargets.sort((a, b) => b.priority - a.priority);		// todo: prioritise based on brigade need (e.g. brigade weights); to be passed in 'parameters'
 		
 		const aviationTargets = [];
 		let targetCandidates = [];
-		
-		const adaThreat = state.fields.adaThreat;
-		const cellSize = state.grid.cellSize;
-		const IS_OIL_DOMINANT = this.isOilDominant;
-		const NUM_AIRCRAFT = state.playerInfo[me].numAirUnits;	
-		const AIR_UNIT_DOMINANCE = NUM_AIRCRAFT >= 10;
-		// const AIR_UNIT_SHORTAGE = NUM_AIRCRAFT === 1;
-		
-		const prioritiseCasTargets = IS_OIL_DOMINANT && (NUM_URGENT_CAS_MISSIONS >= 1 || maxCasTargets >= 4);
-		const prioritiseRaidTargets = !IS_OIL_DOMINANT;
-		const prioritiseIndustrialTargets = IS_OIL_DOMINANT;
-		const SATURATION_RAID = prioritiseIndustrialTargets && AIR_UNIT_DOMINANCE;		// Saturation raid = an attack designed to overwhelm defenses
 
-		// const minAircraft = (AIR_UNIT_SHORTAGE && !IS_OIL_DOMINANT) ? 1 : 2;
-
-		adaTargets.forEach(t => {
-			t.numAircraft = 3;
-		});
-
-		const casPriorityTargets = [...CAS_MISSION_REQUESTS, ...airRaidTargets];
+		const casPriorityTargets = [...casTargets, ...airRaidTargets];
 		const raidPriorityTargets = [...airRaidTargets];
 
-		if (prioritiseIndustrialTargets) {
+		if (parameters.prioritiseIndustrialTargets) {
 
-			if (prioritiseCasTargets) {
-				targetCandidates = [...CAS_MISSION_REQUESTS, ...adaTargets, ...indirectFireTargets, ...defensiveStructureTargets, ...industrialTargets, ...airRaidTargets];
+			if (parameters.prioritiseCasTargets) {
+				targetCandidates = [...casTargets, ...adaTargets, ...indirectFireTargets, ...defensiveStructureTargets, ...industrialTargets, ...airRaidTargets];
 			} else {
-				// Pure industrial strike
-				if (SATURATION_RAID) {
+				// Industrial strike
+				if (parameters.SATURATION_RAID_ACTIVE) {
 					targetCandidates = [...adaTargets, ...industrialTargets, ...indirectFireTargets, ...defensiveStructureTargets, ...casPriorityTargets];
 				} else {
 					targetCandidates = [...industrialTargets, ...indirectFireTargets, ...adaTargets, ...defensiveStructureTargets, ...casPriorityTargets];			
 				}
 			}
 
-		} else if (prioritiseCasTargets) {
+		} else if (parameters.prioritiseCasTargets) {
 			targetCandidates = casPriorityTargets;
-		} else if (prioritiseRaidTargets) {
+		} else if (parameters.prioritiseRaidTargets) {
 			targetCandidates = raidPriorityTargets;
 		} else {
 			targetCandidates = casPriorityTargets;
@@ -630,91 +727,36 @@ class CommandCenter {
 			// debug(`${gameTime}: no target candidates; (CAS/RAID/IND = ${prioritiseIndustrialTargets}, ${prioritiseCasTargets}, ${prioritiseRaidTargets})`);
 			return aviationTargets;
 		} 
-
-		// Terminate current missions which are TWO PRIORITY LEVELS below e.g.
-		// If new URGENT task -> cancel HIGH missions 
-		const OFFENSIVE_MISSION_TYPES = [MISSION_TYPE.CAS_STRIKE, MISSION_TYPE.AIR_RAID, MISSION_TYPE.DAS_STRIKE];
-
-		const activeMissions = this.toc.getActiveAviationMissions(state).filter(m => OFFENSIVE_MISSION_TYPES.includes(m.missionType));
-
-		const activeTargetIDs = [];
-
-		/*
-			Set no-fly regions; 
-				0 = avoids all anti-air defences, 
-				0.69 > 0.33 * 2 = allow 1 tile over from a single air defence. 
-			Modify value to match "hq_toc/updateSpatialFields" filter.
-		*/
-		const STANDARD_THREAT_THRESHOLD = IS_OIL_DOMINANT ? 0.69 : 0;		
-		const URGENT_THREAT_THRESHOLD = 2;
 		
-		for (let i=0; i<activeMissions.length; i++) {
-			let c = activeMissions[i];
-			activeTargetIDs.push(c.target.id);
-
-			const currObj = getObject(c.target.type, c.target.player, c.target.id);
-			if (currObj == null) {
-				continue;
-			}
-
-			if (prioritiseCasTargets && c.missionType !== MISSION_TYPE.CAS_STRIKE) {
-				// debug(`removed DAS / RAID mission to make room for CAS`);
-				c.missionStatus = MISSION_STATUS.ABORT;
-				continue;
-			}
-
-			if (!SATURATION_RAID) {
-				const gx = Math.floor(currObj.x / cellSize); 
-				const gy = Math.floor(currObj.y / cellSize);
-
-				const threatThreshold = (c.priority === MISSION_PRIORITY.URGENT) ? URGENT_THREAT_THRESHOLD : STANDARD_THREAT_THRESHOLD;
-
-				if (adaThreat[gx][gy] > threatThreshold) {
-					// debug(`	removed ACTIVE: ${currObj.name} (${c.missionType}) @ grid (${currObj.x} ${currObj.y})`);
-					c.missionStatus = MISSION_STATUS.ABORT;		
-					continue;
-				}
-			}
-
-			const nearPosition = (gameObj, groupPos) => {return distSq(gameObj.x, groupPos.x, gameObj.y, groupPos.y) <= this.TARGET_SEARCH_RADIUS ** 2};
-
-			if (c.missionType === MISSION_TYPE.CAS_STRIKE) {
-				if (!GROUP_POSITIONS.some(p => nearPosition(currObj, p))) {
-					// debug(`aborted CAS_STRIKE: ${c.target.name} @ ${gameTime}, too far away`);
-					c.missionStatus = MISSION_STATUS.ABORT;					
-					continue;
-				}
-			}
-		}
+		const activeTargetObjIDs = this.#filterPriorityAirMissions(state, parameters);
 		
-		// Remove already active missions
+		// Remove already active missions from the target candidate pool
 		let newAviationTargets = [], existingAviationTargets = [];
 
-		for (let i=0; i<targetCandidates.length; i++) {
-			const missionRequest = targetCandidates[i];
+		targetCandidates.forEach(missionRequest => {
 
-			const c = missionRequest.target;
-
-			const threatThreshold = (missionRequest.priority === MISSION_PRIORITY.URGENT) ? URGENT_THREAT_THRESHOLD : STANDARD_THREAT_THRESHOLD;
-
-			if (!SATURATION_RAID) {
-				const gx = Math.floor(c.x / cellSize); 
-				const gy = Math.floor(c.y / cellSize);
-				if (adaThreat[gx][gy] > threatThreshold) {
-					// debug(`	removed CANDIDATE, adaThreat: ${c.name} @ grid (${c.x} ${c.y})`);
-					continue;
-				}
+			let threatThreshold = (missionRequest.priority === MISSION_PRIORITY.URGENT) ? parameters.URGENT_THREAT_THRESHOLD : parameters.STANDARD_THREAT_THRESHOLD;
+			if (parameters.SATURATION_RAID_ACTIVE) {
+				threatThreshold  = parameters.SATURATION_THREAT_THRESHOLD;
 			}
 
-			if (activeTargetIDs.includes(c.id)) {
+			const obj = missionRequest.target;
+			const gx = Math.floor(obj.x / cellSize); 
+			const gy = Math.floor(obj.y / cellSize);
+			if (adaThreat[gx][gy] > threatThreshold) {
+				// debug(`	removed CANDIDATE, adaThreat: ${c.name} @ grid (${c.x} ${c.y})`);
+				return;
+			}
+
+			if (activeTargetObjIDs.includes(obj.id)) {
 				existingAviationTargets.push(missionRequest);
 			} else {
 				newAviationTargets.push(missionRequest);
 			}
-		}
+		});
 
 		aviationTargets.push(...newAviationTargets);
-		const TOO_MANY_AIRCRAFT = newAviationTargets.length <= Math.floor(NUM_AIRCRAFT / 2);
+		const TOO_MANY_AIRCRAFT = newAviationTargets.length <= Math.floor(parameters.totalNumAircraft / 2);
 		if (TOO_MANY_AIRCRAFT) {
 			aviationTargets.push(...existingAviationTargets);
 		}
@@ -768,7 +810,7 @@ class CommandCenter {
 			moveReservesToShadow(reserveGroupIDs, x, y);
 		}
 
-		const aviationTargets = this.#prioritiseAviationTargets(state);
+		const aviationTargets = this.#prioritiseAviationTargets(state, this.AVIATION_PARAMETERS);
 
 		this.toc.assignAviationMissions(state, aviationTargets);					
 	}

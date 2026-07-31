@@ -234,6 +234,20 @@
  * @property {boolean} SHOULD_USE_FACTORY_MODULES 
  */
 
+/**
+ * @typedef {Object} AviationParameters
+ * @property {number} totalNumAircraft
+ * @property {boolean} prioritiseCasTargets 
+ * @property {boolean} prioritiseRaidTargets 
+ * @property {boolean} prioritiseIndustrialTargets 
+ * @property {boolean} SATURATION_RAID_ACTIVE 
+ * @property {number} STANDARD_THREAT_THRESHOLD
+ * @property {number} URGENT_THREAT_THRESHOLD
+ * @property {number} SATURATION_THREAT_THRESHOLD
+ * @property {number} CAS_SUPPORT_RADIUS
+ * @property {number} UNITS_FOR_ADA_STRIKE
+ */
+
 /*
     MISSION CONSTANTS
 */
