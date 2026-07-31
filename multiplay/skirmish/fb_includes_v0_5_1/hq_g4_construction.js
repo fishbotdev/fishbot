@@ -515,20 +515,19 @@ class armyEngineering {
 			STRUCTURES["Research Facility"],
 			STRUCTURES["Research Module"],
 
-			STRUCTURES["Factory Module"],
-			STRUCTURES["Factory Module"],
-
 			STRUCTURES["VTOL Rearming Pad"],
+			STRUCTURES["Factory Module"],
+			STRUCTURES["Factory Module"],
 
 			STRUCTURES["Power Generator"],		// inserting here in the case that more power than expected is captured
 				STRUCTURES["Power Module"],
 
-			STRUCTURES["Factory Module"],
-			STRUCTURES["VTOL Rearming Pad"],
 			STRUCTURES["Research Facility"],
 			STRUCTURES["Research Module"],
-
 			STRUCTURES["VTOL Rearming Pad"],
+			STRUCTURES["VTOL Rearming Pad"],
+			STRUCTURES["Factory Module"],
+
 			STRUCTURES["Research Facility"],
 			STRUCTURES["Research Module"],
 			STRUCTURES["VTOL Rearming Pad"],
