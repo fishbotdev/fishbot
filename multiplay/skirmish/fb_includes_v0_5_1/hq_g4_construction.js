@@ -324,11 +324,11 @@ class armyEngineering {
 				continue;
 			}
 			
-			const regularContestedDerrick = tileIsBurning(d.x, d.y) || (enemyDerricksNearby > 0 && friendlyDefencesNearby === 0);		// todo to split
+			const regularContestedDerrick = tileIsBurning(d.x, d.y) || (enemyDerricksNearby > 0 && friendlyDefencesNearby === 0);		
 			if (regularContestedDerrick) {
 				normalPrioOil.unshift(makePrimaryDefence(d));
 			} else {
-				normalPrioOil.unshift(makePrimaryDefence(d));
+				normalPrioOil.push(makePrimaryDefence(d));
 			}
 		}
 
