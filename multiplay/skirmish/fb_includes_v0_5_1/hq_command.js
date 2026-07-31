@@ -45,6 +45,11 @@ class CommandCenter {
 		// Combat operational parameters
 		this.TARGET_SEARCH_RADIUS = 25;
 
+		// Targeting (tactical parameters)
+		this.IMMEDIATE_RADIUS = 8;
+		this.EFFECTIVE_FIRE_SUPPORT_RADIUS = 16;
+		this.EFFECTIVE_ADA_RADIUS = 14;
+
 		// Oil strategic parameters
 		this.isOilDominant = false;
 
@@ -409,8 +414,7 @@ class CommandCenter {
 		}
 
 		// Direct Fire Targeting
-		const IMMEDIATE_RADIUS = 8;
-
+		// Intent: only attack what is readily attackable & in front of the brigade
 		const directFireHeuristic = (a,b) => {
 			const aDist = distSq(x, a.x, y, a.y);
 			const bDist = distSq(x, b.x, y, b.y);
@@ -455,7 +459,7 @@ class CommandCenter {
 		/** @param {(DroidObject | StructureObject | FeatureObject)[]} targetList */
 		const addDirectFireTargetByProximity = (targetList) => {
 			targetList.forEach(obj => {
-				if (outsideOfRadius(obj, IMMEDIATE_RADIUS)) {
+				if (outsideOfRadius(obj, this.IMMEDIATE_RADIUS)) {
 					targetsOutOfRange.push(obj);
 				}
 				brigadeTargets["directFireTargets"].push(obj);
@@ -496,32 +500,24 @@ class CommandCenter {
 		}
 
 		// Fire Support Targeting
-		// Intent: Suppress enemy infantry (FishBot is vulnerable to massed cyborgs) then destroy indirect fires, defences & ADA.
-		const EFFECTIVE_FIRE_SUPPORT_RADIUS = 16;
-
+		// Intent: Suppress enemy infantry then destroy defences, indirect fires & ADA.
 		const primaryIndirectFireTargets = [...enemyInfantry, ...enemyDefenses, ...enemyIndirectFire, ...enemyADA, ...enemyIndustrial, ...enemyArmor];
 		const secondaryIndirectFireTargets = [...enemyConstructor, ...enemyUtility];
 
 		primaryIndirectFireTargets.forEach(obj => {
-			if (outsideOfRadius(obj, EFFECTIVE_FIRE_SUPPORT_RADIUS)) {
-				// targetsOutOfRange.push(obj);
-				return;
-			}
+			if (outsideOfRadius(obj, this.EFFECTIVE_FIRE_SUPPORT_RADIUS)) 	return;
 			brigadeTargets["fireSupportTargets"].push(obj);
 		});
 
 		secondaryIndirectFireTargets.forEach(obj => {
-			if (outsideOfRadius(obj, EFFECTIVE_FIRE_SUPPORT_RADIUS)) {
-				// targetsOutOfRange.push(obj);
-				return;
-			}
+			if (outsideOfRadius(obj, this.EFFECTIVE_FIRE_SUPPORT_RADIUS)) 	return;
 			brigadeTargets["fireSupportTargets"].push(obj);
 		});		
 
 		// CAS Targeting (Close Air Support)
 		// Intent: `casTargets` should be a list of mission requests interpretable by a following call of `#prioritiseAviationTargets`.
-		const primaryCASTargets = [...enemyIndirectFire, ...enemyADA];
-		const secondaryCASTargets = [...enemyArmor, ...enemyDefenses];
+		const primaryCASTargets = [...enemyIndirectFire];
+		const secondaryCASTargets = [...enemyADA, ...enemyArmor, ...enemyDefenses];
 
 		const isHealthy = (obj) => obj.health > 25;
 		secondaryCASTargets.forEach(obj => {
@@ -540,11 +536,9 @@ class CommandCenter {
 
 		// ADA Targeting (Air Defense Artillery)
 		// Intent: Concentrate fire on one target.
-		const EFFECTIVE_ADA_RADIUS = 14;
-
 		const enemyAircraft = getObjectList(TARGETS['enemyAviation']);		// todo: remove if no ADA available
 		enemyAircraft.forEach(obj => {
-			if (outsideOfRadius(obj, EFFECTIVE_ADA_RADIUS)) return;
+			if (outsideOfRadius(obj, this.EFFECTIVE_ADA_RADIUS)) return;
 			if (!('isFlying' in obj)) return;
 			if (obj.isFlying !== true) return;
 			brigadeTargets["adaTargets"].push(obj);

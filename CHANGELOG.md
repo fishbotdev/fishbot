@@ -12,6 +12,7 @@ This file is used to record the changes to FishBot between each version.
         - Improved transition from T2 to T3 Cannon technologies (better focus on Tiger/Vengeance bodies & Rail Gun/Gauss Cannon).
 - Bug fixes
     - Custom structure limits (in the skirmish settings) are now supported.
+    - Fixed mortar units ignoring their targeting priorities.
 
 
 ## Fishbot v0.5.0
