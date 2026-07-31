@@ -50,7 +50,7 @@ class CommandCenter {
 
 		// Ground targeting (tactical parameters)
 		this.IMMEDIATE_DIRECT_FIRE_RADIUS = 8;
-		this.EFFECTIVE_FIRE_SUPPORT_RADIUS = 16;
+		this.EFFECTIVE_FIRE_SUPPORT_RADIUS = 14;		// todo this should be adaptive - when the brigade has a sensor this is better
 		this.EFFECTIVE_ADA_RADIUS = 14;
 
 		// Aviation parameters
@@ -518,6 +518,7 @@ class CommandCenter {
 		const secondaryDirectFireTargets = [...enemyIndirectFire, ...enemyADA, ...enemyIndustrial];
 		const tertiaryDirectFireTargets = [...enemyConstructor, ...enemyUtility];
 
+		const directFireTargetsInRange = [];
 		const targetsOutOfRange = [];		// this will also be ordered in the priority order specified in `primaryDirectFireTargets`
 
 		/** @param {(DroidObject | StructureObject | FeatureObject)[]} targetList */
@@ -526,7 +527,7 @@ class CommandCenter {
 				if (outsideOfRadius(obj, this.IMMEDIATE_DIRECT_FIRE_RADIUS)) {
 					targetsOutOfRange.push(obj);
 				}
-				brigadeTargets["directFireTargets"].push(obj);
+				directFireTargetsInRange.push(obj);
 			});
 		};
 
@@ -534,12 +535,14 @@ class CommandCenter {
 		addDirectFireTargetByProximity(secondaryDirectFireTargets);
 		addDirectFireTargetByProximity(tertiaryDirectFireTargets);
 
-		brigadeTargets["directFireTargets"].sort((a,b) => directFireHeuristic(a,b));		// this ignores the primary/secondary/tertiary ordering above
+		directFireTargetsInRange.sort((a,b) => directFireHeuristic(a,b));		// Note: this ignores the primary/secondary/tertiary ordering above (temporary)
+
+		brigadeTargets['directFireTargets'].push(...directFireTargetsInRange);
 
 		const MAX_DIRECT_FIRE_TARGETS = 8;
-		const FURTHER_TARGETS_REQUIRED = MAX_DIRECT_FIRE_TARGETS - brigadeTargets['directFireTargets'].length;
-		if (FURTHER_TARGETS_REQUIRED > 0) {
-			brigadeTargets['directFireTargets'].push(...targetsOutOfRange.slice(FURTHER_TARGETS_REQUIRED));
+		const targetDeficit = MAX_DIRECT_FIRE_TARGETS - brigadeTargets['directFireTargets'].length;
+		if (targetDeficit > 0) {
+			brigadeTargets['directFireTargets'].push(...targetsOutOfRange.slice(targetDeficit));
 		}
 
 		if (false) {
@@ -576,7 +579,12 @@ class CommandCenter {
 		secondaryIndirectFireTargets.forEach(obj => {
 			if (outsideOfRadius(obj, this.EFFECTIVE_FIRE_SUPPORT_RADIUS)) 	return;
 			brigadeTargets["fireSupportTargets"].push(obj);
-		});		
+		});
+
+		const NO_FIRE_SUPPORT_TARGETS_IN_RANGE = (brigadeTargets["fireSupportTargets"].length === 0);
+		if (NO_FIRE_SUPPORT_TARGETS_IN_RANGE) {
+			brigadeTargets["fireSupportTargets"].push(...directFireTargetsInRange);		// fallback
+		}		
 
 		// CAS Targeting (Close Air Support)
 		// Intent: `casTargets` should be a list of mission requests interpretable by a following call of `#prioritiseAviationTargets`.
