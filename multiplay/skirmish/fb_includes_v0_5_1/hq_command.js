@@ -285,8 +285,6 @@ class CommandCenter {
 	 */
 	updateStrategicParameters(state) {
 
-		const DEBUG_PREFIX = `${me}:  ${getCurrGameTimeMinSec()}:\t`;
-
 		// Gather information from state
 		const playerInfo = state.playerInfo;
 		const TOTAL_DERRICKS = state.poi.derricks.length;
@@ -331,7 +329,7 @@ class CommandCenter {
 
 		if (this.isOilDominant != oilDominance) {
 			const derrickCount = `${MY_DERRICK_COUNT} out of ${TOTAL_DERRICKS} (${Math.ceil(MY_DERRICK_COUNT / TOTAL_DERRICKS * 100)}%)`;
-			debug(`${DEBUG_PREFIX} oil dominance changed to: ${oilDominance} (${derrickCount})`);
+			deb(`oil dominance changed to: ${oilDominance} (${derrickCount})`);
 			this.isOilDominant = oilDominance;
 		}
 

@@ -164,7 +164,7 @@ function getTruckStartingLocation() {
 		if (truckDistSq > MAX_SQ_DISTANCE) {
 			startingLocation[0] = u.x;
 			startingLocation[1] = u.y;
-			debug(`${gameTime}: Using truck location (${u.x}, ${u.y}) as the startLoc.`);
+			deb(`Using truck location (${u.x}, ${u.y}) as the startLoc.`);
 			break;
 		}
 	}
@@ -358,6 +358,16 @@ function getCurrGameTimeMinSec() {
 	const mins = String(Math.floor(gameTime / MS_PER_MINUTE)).padStart(2, '0'); 
 	const secs = String(Math.floor((gameTime % MS_PER_MINUTE) / 1000)).padStart(2, '0');;
 	return `${mins}:${secs}`;
+}
+
+/**
+ * Custom debug which prefixes inbuilt `debug()` with playerID & readable game time (mm:ss).
+ * @param {string[]} values
+ * @returns {void}
+ */
+function deb(...values) {
+	const DEBUG_PREFIX = `F${me}:  ${getCurrGameTimeMinSec()}:  `;
+	debug(`${DEBUG_PREFIX} ${values}`);
 }
 
 function isEnemy(playerID) {
