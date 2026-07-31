@@ -5,14 +5,15 @@ This file is used to record the changes to FishBot between each version.
 *Released **x Aug 2026***
 ### Changes in v0.5.1
 - Strategic improvements
-    - Can compare its oil situation relative to other players. Aviation targeting is now more strongly influenced by oil situation.
+    - Can compare its oil situation relative to other players. Aviation targeting is now influenced directly by FishBot's oil situation.
 - Operational improvements
 - Tactical improvements
     - Research:
         - Improved transition from T2 to T3 Cannon technologies (better focus on Tiger/Vengeance bodies & Rail Gun/Gauss Cannon).
-- Bug fixes
+- Bug fixes:
     - Custom structure limits (in the skirmish settings) are now supported.
-    - Fixed mortar units ignoring their targeting priorities.
+    - Fixed mortar units having incorrect targeting priorities.
+    - Fixed trucks ignoring newly-built enemy defences.
 
 
 ## Fishbot v0.5.0
