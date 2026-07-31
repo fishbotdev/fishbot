@@ -753,6 +753,9 @@ declare function pursueResearch(labStructure: StructureObject, research: string)
 ## enumResearch()
 
 Returns an array of all research objects that are currently and immediately available for research.
+
+FishBot note: This does not return important parameters such as: `r.name`, `r.researchPoints`, `r.researchPower`, `r.resultComponents` & `r.requiredResearch`.
+Instead, it returns parameters similar to the `Stats.Research` global.
  */
 declare function enumResearch(): BaseObject[];
 

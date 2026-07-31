@@ -43,15 +43,18 @@ class CommandCenter {
 		*/
 
 		// Oil strategic parameters
-		this.isOilDominant = false;
+		this.isOilDominant = false;					// reports whether or not FishBot has enough oil (for the time being)
 
-		// Combat operational parameters
-		this.TARGET_SEARCH_RADIUS = 25;
+		// Intelligence parameters
+		this.TARGET_SEARCH_RADIUS = 25;				// how many tiles away from the brigadeLocation to look for enemies (impacts computational performance)
 
-		// Ground targeting (tactical parameters)
-		this.IMMEDIATE_DIRECT_FIRE_RADIUS = 8;
-		this.EFFECTIVE_FIRE_SUPPORT_RADIUS = 14;		// todo this should be adaptive - when the brigade has a sensor this is better
-		this.EFFECTIVE_ADA_RADIUS = 14;
+		// Ground targeting
+		/** @type {GroundForceParameters} */
+		this.GROUND_FORCE_PARAMETERS = {
+			IMMEDIATE_DIRECT_FIRE_RADIUS: 8,
+			EFFECTIVE_FIRE_SUPPORT_RADIUS: 14,		// todo: this should be adaptive - when the brigade has a sensor, this is better
+			EFFECTIVE_ADA_RADIUS: 14,
+		}
 
 		// Aviation parameters
 		/** @type {AviationParameters} */
@@ -109,6 +112,12 @@ class CommandCenter {
 		this.VEHICLE_REPAIR_THRESHOLD = 30;
 		this.CYBORG_REPAIR_THRESHOLD = 45;
 		
+		// Research parameters
+		/** @type {ResearchParameters} */
+		this.RESEARCH_PARAMETERS = {
+			
+		};
+
 		// Task scheduling parameters
 		// Add regular, high priority, high computational load tasks to the start of the list.
 		// The naming convention is important as this allows the handlers in _run.js to run the correct function.
@@ -291,10 +300,10 @@ class CommandCenter {
 		// The following code sets the current FishBot strategic parameters
 
 		/*
-		Oil parameters (the most important strategic resource)
-		Warzone 2100 lacks the concepts of food / fuel for vehicles & aircraft / ammunition (VTOL only)
-			- Supply of oil: Combat operations + oil capture
-		 	- Demand of oil: production, construction, research, oil-defence construction
+			Oil parameters (the most important strategic resource)
+			Warzone 2100 lacks the concepts of food / fuel for vehicles & aircraft / ammunition (VTOL only)
+				- Supply of oil: Combat operations + oil capture (at the moment - free)
+				- Demand of oil: production, construction, research
 		*/
 		const DERRICKS_PER_PLAYER = Math.ceil(TOTAL_DERRICKS / ALIVE_PLAYER_COUNT);
 		const o = [];
@@ -370,16 +379,14 @@ class CommandCenter {
 		const prioritiseRaidTargets = !IS_OIL_DOMINANT;
 		const prioritiseIndustrialTargets = IS_OIL_DOMINANT;
 		const SATURATION_RAID_ACTIVE = prioritiseIndustrialTargets && AIR_UNIT_DOMINANCE;
-		const SATURATION_THREAT_THRESHOLD = 2;	// 2 per cell is OK, anything higher = avoid	
-
-		/*
-			Set no-fly regions; 
-				0 = avoids all anti-air defences, 
-				0.69 > 0.33 * 2 = allow 1 tile over from a single air defence. 
-			Modify value to match "hq_toc/updateSpatialFields" filter.
-		*/
+		
+		// The following thresholds set no-fly regions. Modify the threshold to match the "hq_toc/updateSpatialFields" spatial filter.
+		//	0 => avoids all anti-air defences, 
+		//	0.69 > (0.33 * 2) => allows targeting 1 cell over from a single air defence. 
+		//	2 => allows 2 air defences in one isolated cell (with no cells directly adjacent containing anti-air defences) or adjacent air defences - 1 per cell.
 		const STANDARD_THREAT_THRESHOLD = IS_OIL_DOMINANT ? 0.69 : 0;		
 		const URGENT_THREAT_THRESHOLD = 2;
+		const SATURATION_THREAT_THRESHOLD = 2;	
 
 		this.AVIATION_PARAMETERS.totalNumAircraft = NUM_AIRCRAFT;
 		this.AVIATION_PARAMETERS.prioritiseCasTargets = prioritiseCasTargets;
@@ -416,10 +423,10 @@ class CommandCenter {
 	 * This function returns a list of prioritised Droid / Structure Objects (fresh data) which can be directly used in the `__tac` functions.
 	 * @param {worldState} state 
 	 * @param {number} brigadeID 
+	 * @param {GroundForceParameters} parameters
 	 * @returns {BrigadeTargets} Intent: (DroidObject | StructureObject)[]	
 	 */
-	#prioritiseBrigadeTargets(state, brigadeID) {
-
+	#prioritiseBrigadeTargets(state, brigadeID, parameters) {
 		/** @type {BrigadeTargets} */
 		const brigadeTargets = {
 			"directFireTargets": [], 
@@ -524,7 +531,7 @@ class CommandCenter {
 		/** @param {(DroidObject | StructureObject | FeatureObject)[]} targetList */
 		const addDirectFireTargetByProximity = (targetList) => {
 			targetList.forEach(obj => {
-				if (outsideOfRadius(obj, this.IMMEDIATE_DIRECT_FIRE_RADIUS)) {
+				if (outsideOfRadius(obj, parameters.IMMEDIATE_DIRECT_FIRE_RADIUS)) {
 					targetsOutOfRange.push(obj);
 				}
 				directFireTargetsInRange.push(obj);
@@ -572,12 +579,12 @@ class CommandCenter {
 		const secondaryIndirectFireTargets = [...enemyConstructor, ...enemyUtility];
 
 		primaryIndirectFireTargets.forEach(obj => {
-			if (outsideOfRadius(obj, this.EFFECTIVE_FIRE_SUPPORT_RADIUS)) 	return;
+			if (outsideOfRadius(obj, parameters.EFFECTIVE_FIRE_SUPPORT_RADIUS)) 	return;
 			brigadeTargets["fireSupportTargets"].push(obj);
 		});
 
 		secondaryIndirectFireTargets.forEach(obj => {
-			if (outsideOfRadius(obj, this.EFFECTIVE_FIRE_SUPPORT_RADIUS)) 	return;
+			if (outsideOfRadius(obj, parameters.EFFECTIVE_FIRE_SUPPORT_RADIUS)) 	return;
 			brigadeTargets["fireSupportTargets"].push(obj);
 		});
 
@@ -605,12 +612,11 @@ class CommandCenter {
 			brigadeTargets['casTargets'].unshift(missionRequest);
 		});
 
-
 		// ADA Targeting (Air Defense Artillery)
 		// Intent: Concentrate fire on one target.
-		const enemyAircraft = getObjectList(TARGETS['enemyAviation']);		// todo: remove if no ADA available
+		const enemyAircraft = getObjectList(TARGETS['enemyAviation']);		
 		enemyAircraft.forEach(obj => {
-			if (outsideOfRadius(obj, this.EFFECTIVE_ADA_RADIUS)) return;
+			if (outsideOfRadius(obj, parameters.EFFECTIVE_ADA_RADIUS)) return;
 			if (!('isFlying' in obj)) return;
 			if (obj.isFlying !== true) return;
 			brigadeTargets["adaTargets"].push(obj);
@@ -794,7 +800,7 @@ class CommandCenter {
 
 				// const CLOSEST_ENEMY_BASE = intelligence.findClosestEnemyBase(state, brigadeLocation.x, brigadeLocation.y); 			
 
-				const groundTargets = this.#prioritiseBrigadeTargets(state, brigadeID);
+				const groundTargets = this.#prioritiseBrigadeTargets(state, brigadeID, this.GROUND_FORCE_PARAMETERS);
 				this.toc.setBrigadeCASStrikeRequests(state, brigadeID, groundTargets['casTargets']);
 
 				if (this.#noTargetsAvailable(groundTargets)) {
@@ -1370,8 +1376,8 @@ class CommandCenter {
 			return;
 		}
 
-		const researchPath = rnd.researchOrders.getT2CannonResearchPath();
-		const proposedResearches = rnd.proposeResearch(...researchPath);
+		const researchPath = rnd.researchOrders.getT2CannonResearchPath();		// hardcoded for now
+		const proposedResearches = rnd.proposeResearch(...researchPath, this.RESEARCH_PARAMETERS);
 		const researchOrder = [...proposedResearches['highPriority'], ...proposedResearches['regularPriority']];
 		
 		let positionInResearchOrder = 0;

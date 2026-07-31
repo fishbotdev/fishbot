@@ -21,6 +21,9 @@ class FishBotResearchOrders {
 
 	}
 
+	/**
+	 * @returns {(string[])[]}
+	 */
 	getT2CannonResearchPath() {
 		/* Example FishBot v0.5.1 research order (7c-Thales, with basically infinite oil):
 			04:43 Dedicated Synaptic Link Data Analysis Mk3
@@ -168,11 +171,15 @@ class armyResearchAndDevelopment {
 
 	}
 
-	proposeResearch(researchPriorities, researchBlacklist) {
+	/**
+	 * Chooses the next research (from the list of available researches) using the provided research priorities.
+	 * @param {string[]} researchPriorities 
+	 * @param {string[]} researchBlacklist 
+	 * @param {ResearchParameters} parameters 
+	 */
+	proposeResearch(researchPriorities, researchBlacklist, parameters) {
 
 		const currAvailableResearches = enumResearch();		
-		// Note: this does not return important parameters such as: r.researchPoints / r.researchPower / r.resultComponents / r.requiredResearch.
-		//	It returns parameters similar to the Stats.Research global.
 		// debug(`${gameTime} (FishBot ${me}): `);
 		// currAvailableResearches.forEach(r => {
 		// 	debug(`\t- ${r.id}`);

@@ -227,14 +227,6 @@
 */
 
 /**
- * @typedef {Object} ConstructionParameters
- * @property {number} MAX_GENERATORS_AND_POWER_MODULES 
- * @property {number} MAX_VTOL_REARMING_PADS 
- * @property {boolean} SHOULD_BUILD_VTOLS 
- * @property {boolean} SHOULD_USE_FACTORY_MODULES 
- */
-
-/**
  * @typedef {Object} AviationParameters
  * @property {number} totalNumAircraft
  * @property {boolean} prioritiseCasTargets 
@@ -247,6 +239,26 @@
  * @property {number} CAS_SUPPORT_RADIUS
  * @property {number} UNITS_FOR_ADA_STRIKE
  */
+
+/**
+ * @typedef {Object} GroundForceParameters
+ * @property {number} IMMEDIATE_DIRECT_FIRE_RADIUS
+ * @property {number} EFFECTIVE_FIRE_SUPPORT_RADIUS
+ * @property {number} EFFECTIVE_ADA_RADIUS
+ */
+
+/**
+ * @typedef {Object} ConstructionParameters
+ * @property {number} MAX_GENERATORS_AND_POWER_MODULES 
+ * @property {number} MAX_VTOL_REARMING_PADS 
+ * @property {boolean} SHOULD_BUILD_VTOLS 
+ * @property {boolean} SHOULD_USE_FACTORY_MODULES 
+ */
+
+/**
+ * @typedef {Object} ResearchParameters
+ */
+
 
 /*
     MISSION CONSTANTS
