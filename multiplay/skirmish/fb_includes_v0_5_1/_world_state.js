@@ -298,16 +298,10 @@ class worldState {
 
         ////////////////////////// SPATIAL AWARENESS //////////////////////////
         /**
-         *  The "grid" is the core component of FishBot's spatial awareness system. 
-         *  @type {fbGrid} 
+         * This stores all map-related data which is parsed once on game start.
+         * @type {MapData}
          */
-        this.grid = new fbGrid();
-
-        /**
-         *  Spatial fields, derived from the dimensions of the grid, are used for decision making.
-         *  @type {SpatialFieldsObject} 
-         */
-        this.fields;
+        this.mapData;
 
         /**
          *  This object stores data about fixed points of interest on the game map.
@@ -318,6 +312,18 @@ class worldState {
             /** @type {PlayerHomeBaseObject[]} */
             'bases': []
         };
+
+        /**
+         *  The "grid" is the core component of FishBot's spatial awareness system. 
+         *  @type {fbGrid} 
+         */
+        this.grid = new fbGrid();
+
+        /**
+         *  Spatial fields, derived from the dimensions of the grid, are used for decision making.
+         *  @type {SpatialFieldsObject} 
+         */
+        this.fields;
 
         // Game statistics
         /** @type {Map<string, number>} */
@@ -352,7 +358,9 @@ class worldState {
         // Mission management system
         /** @type {fbGroup} */
         this.g;
+
         this.activeMissions = [];
+
         /** @type {ProductionJob[]} */
         this.activeProductionJobs = [];
         
@@ -575,23 +583,71 @@ class worldStateBuilder {
     }
 
     /**
-     * TODO: Add jsdocs & add consolidate all other useful map-data related definitions here
+     * This function initialises all map-related data. 
+     * As `getWalkableTiles() is computationally-intense, it should only be called once on game start.
+     * @returns {MapData}
      */
     #initialiseMapTiles() {
+        /** @type {MapData} */
+        const mapData = {};
 
-        const yMap = generateRange(mapHeight);
-        const xMap = generateRange(mapWidth);
+        //////////////////////// VARIABLE DEFINITIONS ////////////////////////
+        const HALF_MAP_WIDTH = Math.floor(mapWidth / 2);
+        const HALF_MAP_HEIGHT = Math.floor(mapHeight / 2);
 
-        yMap.forEach(y => {
-            const mapRow = [];
+        const walkableTiles = getWalkableTiles();
 
-            xMap.forEach(x => {
-                // mapRow.push(MapTiles[y][x].height);      // uncomment for height
-                mapRow.push(MapTiles[y][x].terrainType);    // uncomment for different terrain type; see: https://github.com/Warzone2100/warzone2100/blob/00ca862eb87e8d22462ee97b4d2b8ab9ee30a451/lib/wzmaplib/include/wzmaplib/terrain_type.h#L26 for terrainType enum
-            });
-
-            debug(`"${mapRow}",`);      // python script processes list of comma-delimited strings
+        /** @type {(boolean[])[]} */
+        const isWalkable = create2DGrid(mapWidth, mapHeight, () => {return false;});
+        walkableTiles.forEach(b => {
+            const x = b[0];
+            const y = b[1];
+            isWalkable[x][y] = true;
         });
+
+        /** @type {(boolean[])[]} */
+        const isDerrickPosition = create2DGrid(mapWidth, mapHeight, () => {return false;});
+        derrickPositions.forEach(d => {
+            isDerrickPosition[d.x][d.y] = true;
+        });
+
+        /** @type {Coordinate[]} */
+        const QUADRANT_SEARCH_PATTERN = [
+            // This pattern: up and to the right (Q3)
+            [0, 0], 
+            [1, 0], [0, 1], 
+            [1, 1], [2, 0], [0, 2],
+            [1, 2], [2, 1], [3, 0], [0, 3],
+            [2, 2], [1, 3], [3, 1], [4, 0], [0, 4],
+            [3, 2], [2, 3], [1, 4], [4, 1], [5, 0], [0, 5]
+        ];
+
+        //////////////////////// WRITING VARIABLES ////////////////////////
+        mapData['HALF_MAP_WIDTH'] = HALF_MAP_WIDTH;
+        mapData['HALF_MAP_HEIGHT'] = HALF_MAP_HEIGHT;
+
+        mapData['walkableTiles'] = walkableTiles;
+        mapData['isWalkable'] = isWalkable;
+
+        mapData['isDerrickPosition'] = isDerrickPosition;
+
+        mapData['QUADRANT_SEARCH_PATTERN'] = QUADRANT_SEARCH_PATTERN;
+
+        // const yMap = generateRange(mapHeight);
+        // const xMap = generateRange(mapWidth);
+
+        // yMap.forEach(y => {
+        //     const mapRow = [];
+
+        //     xMap.forEach(x => {
+        //         // mapRow.push(MapTiles[y][x].height);      // uncomment for height
+        //         mapRow.push(MapTiles[y][x].terrainType);    // uncomment for different terrain type; see: https://github.com/Warzone2100/warzone2100/blob/00ca862eb87e8d22462ee97b4d2b8ab9ee30a451/lib/wzmaplib/include/wzmaplib/terrain_type.h#L26 for terrainType enum
+        //     });
+
+        //     debug(`"${mapRow}",`);      // python script processes list of comma-delimited strings
+        // });
+
+        return mapData;
 
     }
 
@@ -718,7 +774,7 @@ class worldStateBuilder {
      * @returns {void}
      */
     initialise(state) {
-        // this.#initialiseMapTiles();
+        state.mapData = this.#initialiseMapTiles();
 
         state.g = this.#initialiseFbGroupingSystem();
 

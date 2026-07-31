@@ -352,6 +352,8 @@ class armyIntelligence {
 		const cellSize = state.grid.cellSize;
 		const grid = state.grid.grid;
 
+		const isWalkable = state.mapData.isWalkable;
+
 		/** @type {Coordinate[]} */
 		const visited = [];
 		const isVisited = new Array(xMax * yMax).fill(false);
@@ -405,7 +407,6 @@ class armyIntelligence {
 					continue;
 				}
 				
-				// **
 				if (grid[ox][oy]['targetStructures'].length > 0 || grid[ox][oy]['targetUnits'].length > 0) {
 					const potentialTargets = [...grid[ox][oy]['targetStructures'], ...grid[ox][oy]['targetUnits']];
 					for (let j=0; j<potentialTargets.length; j++) {

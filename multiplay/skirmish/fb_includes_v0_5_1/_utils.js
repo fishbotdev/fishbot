@@ -174,7 +174,7 @@ function getTruckStartingLocation() {
 
 
 /**
- * Returns the BFS order of all walkable tiles from the player's base location (or the location of one of the initial trucks).
+ * Returns the BFS order of the coordinates of all walkable tiles from the player's base location (or the location of one of the initial trucks).
  * @returns {Coordinate[]} i.e. array of 'tuples'
  */
 function getWalkableTiles() {
@@ -306,7 +306,7 @@ function drawLine(startX, startY, endX, endY) {
  * @param {FbObject} obj
  * @returns {boolean}
  */
-const gameObjectNoLongerExists = (obj) => {
+function gameObjectNoLongerExists(obj) {
 	if (getObject(obj.type, obj.player, obj.id) == null) {
 		return true;
 	} else {

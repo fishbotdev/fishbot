@@ -22,7 +22,7 @@ class FishBotResearchOrders {
 	}
 
 	/**
-	 * @returns {(string[])[]}
+	 * @returns {[string[], string[]]}
 	 */
 	getT2CannonResearchPath() {
 		/* Example FishBot v0.5.1 research order (7c-Thales, with basically infinite oil):

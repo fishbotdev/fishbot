@@ -50,6 +50,17 @@
 ///////////////////////////////////////////// WORLD STATE /////////////////////////////////////////////
 
 /**
+ * Type definitions for `worldState.mapData`.
+ * @typedef {Object} MapData
+ * @property {number} HALF_MAP_WIDTH Half of the `mapWidth` (integer)
+ * @property {number} HALF_MAP_HEIGHT Half of the `mapHeight` (integer)
+ * @property {Coordinate[]} walkableTiles BFS order of the coordinates of all walkable tiles from the player's base location
+ * @property {(boolean[])[]} isWalkable Lookup table used for construction and ground unit targeting
+ * @property {(boolean[])[]} isDerrickPosition Lookup table used for construction
+ * @property {Coordinate[]} QUADRANT_SEARCH_PATTERN Lookup table used for construction
+ */
+
+/**
  * Type definitions for `worldState.fields`.
  * @typedef {Object} SpatialFieldsObject
  * @property {number[][]} adaThreat

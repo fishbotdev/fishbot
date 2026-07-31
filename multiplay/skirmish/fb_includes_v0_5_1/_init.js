@@ -18,7 +18,8 @@
 // Initialise world state
 const state = new worldState();
 
-const stateBuilder = new worldStateBuilder();
+// Note: `stateBuilder.initialise(state)` should be called in `eventStartLevel` after the skirmish game is fully initialised.
+const stateBuilder = new worldStateBuilder();	
 
 // Initialise divisional command
 

@@ -15,30 +15,6 @@
 	If not, see <https://www.gnu.org/licenses/>.
 */
 
-const QUADRANT_SEARCH_PATTERN = [
-	// This pattern: up and to the right (Q3)
-	[0, 0], 
-	[1, 0], [0, 1], 
-	[1, 1], [2, 0], [0, 2],
-	[1, 2], [2, 1], [3, 0], [0, 3],
-	[2, 2], [1, 3], [3, 1], [4, 0], [0, 4],
-	[3, 2], [2, 3], [1, 4], [4, 1], [5, 0], [0, 5]
-];
-const HALF_MAP_WIDTH = Math.floor(mapWidth / 2);
-const HALF_MAP_HEIGHT = Math.floor(mapHeight / 2);
-
-const walkableTiles = getWalkableTiles();
-const isWalkable = create2DGrid(mapWidth, mapHeight, () => {return false;});
-walkableTiles.forEach(b => {
-	const x = b[0];
-	const y = b[1];
-	isWalkable[x][y] = true;
-});
-const isDerrickPosition = {};
-derrickPositions.forEach(d => {
-	isDerrickPosition[`${d.x},${d.y}`] = true;
-});
-
 /**
  * Iterates through ranged walkable tiles from the player's base to determine the position of base structures.
  * Replaces the inbuilt `pickStructLocation`. Unlike `pickStructLocation`, it accounts for terrain obstacles.
@@ -46,6 +22,9 @@ derrickPositions.forEach(d => {
  * @returns 
  */
 function pickBaseStructLocation(structureID) {
+
+	const walkableTiles = state.mapData.walkableTiles;
+	const isWalkable = state.mapData.isWalkable;
 
 	const BBOX_3x3_STRUCTURES = [STRUCTURES["Factory"].id, STRUCTURES["VTOL Factory"].id, STRUCTURES["Laser Satellite Command Post"].id, STRUCTURES["Satellite Uplink Center"].id];
 	const BBOX_2x2_STRUCTURES = [STRUCTURES["Command Center"].id, STRUCTURES["Command Relay Center"].id, STRUCTURES["Power Generator"].id, STRUCTURES["Research Facility"].id];
@@ -108,6 +87,12 @@ function pickBaseStructLocation(structureID) {
  */
 function pickStructLocation3(structureID, x, y) {
 
+	const HALF_MAP_WIDTH = state.mapData.HALF_MAP_WIDTH;
+	const HALF_MAP_HEIGHT = state.mapData.HALF_MAP_HEIGHT;
+	const QUADRANT_SEARCH_PATTERN = state.mapData.QUADRANT_SEARCH_PATTERN;
+	const isWalkable = state.mapData.isWalkable;
+	const isDerrickPosition = state.mapData.isDerrickPosition;
+
 	const specifiedHeight = MapTiles[y][x].height;		// Uses this to try the match the height.
 	const HEIGHT_TOLERANCE = 33;
 	
@@ -138,7 +123,7 @@ function pickStructLocation3(structureID, x, y) {
 				continue;
 			}
 
-			if (isDerrickPosition[`${tX},${tY}`]) {
+			if (isDerrickPosition[tX][tY]) {
 				// For some reason - `structureCanFit` / the `enumRange` check below seem to miss friendly / enemy derricks.
 				continue;
 			}

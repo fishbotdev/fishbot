@@ -427,6 +427,9 @@ class CommandCenter {
 	 * @returns {BrigadeTargets} Intent: (DroidObject | StructureObject)[]	
 	 */
 	#prioritiseBrigadeTargets(state, brigadeID, parameters) {
+
+		const isWalkable = state.mapData.isWalkable;
+
 		/** @type {BrigadeTargets} */
 		const brigadeTargets = {
 			"directFireTargets": [], 

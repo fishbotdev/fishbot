@@ -183,6 +183,8 @@ class armyEngineering {
 		const controlStability = state.fields.controlStability;
 		const enemyUnitThreat = state.fields.enemyUnitThreat;
 
+		const isWalkable = state.mapData.isWalkable;
+
 		const MAX_CONTROL = 5;
 		const PROXIMITY_RADIUS = 9;
 

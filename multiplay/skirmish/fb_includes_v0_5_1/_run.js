@@ -110,7 +110,7 @@ function setupFishBot() {
 }
 
 /**
- * This function is intended to be used during development & automated testing.
+ * This function is used during development & automated testing.
  * @returns {void}
  */
 function setupDebugMode() {
@@ -178,6 +178,10 @@ function setupDebugMode() {
 	hideInterface();
 }
 
+/**
+ * This is the start hook for FishBot. Include all initialisation code here to be run once at the start of the game.
+ * @returns {void}
+ */
 function eventStartLevel() {
 	queue("setupFishBot", me * 100);	
 	
@@ -191,11 +195,13 @@ function eventStartLevel() {
 	hq.setDefaultMissions(state);			
 	hq.setSchedulerParameters(state);
 
-	// One time use: start initial construction tasks immediately
+	// Assign trucks to relevant groups & start construction tasks immediately
 	const initialTrucks = enumDroid(me, DROID_CONSTRUCT);
+	const MAX_BASE_BUILDERS = 3;
 	initialTrucks.forEach((droid, idx) => {
-		orderDroidLoc(droid, DORDER_MOVE, droid.x + 1, droid.y + 1);		// From NullBot: apparently trucks can sometimes get stuck when a building is placed on top of them
-		if (idx < 3) {
+		// From NullBot: apparently trucks can sometimes get stuck when a building is placed on top of them, so the next line is here to prevent that.
+		orderDroidLoc(droid, DORDER_MOVE, droid.x + 1, droid.y + 1);		
+		if (idx < MAX_BASE_BUILDERS) {
 			state.g.addDroidToGroup({groupID: ENGINEERING.BASE_BUILDER, droidID: droid.id});
 		} else {
 			state.g.addDroidToGroup({groupID: ENGINEERING.ENGINEERING_RESERVE, droidID: droid.id});
