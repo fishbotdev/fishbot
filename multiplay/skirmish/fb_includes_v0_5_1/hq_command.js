@@ -824,6 +824,7 @@ class CommandCenter {
 		const cellSize = state.grid.cellSize;
 
 		const enemyUnitThreat = state.fields.enemyUnitThreat;
+		const enemyStaticDefenceThreat = state.fields.enemyStaticDefenceThreat;
 
 		// New mission planning system has implemented .gx, .gy grid references for all missions
 		// This allows the following algorithm:
@@ -832,7 +833,7 @@ class CommandCenter {
 		//	3. Cancel mission
 		activeRemoteMissions.forEach(md => {
 			// Check unit threat at grid ref
-			if (enemyUnitThreat[md.gx][md.gy] === 0) {
+			if (enemyUnitThreat[md.gx][md.gy] === 0 && enemyStaticDefenceThreat[md.gx][md.gy] === 0) {
 				return;
 			}
 			
@@ -885,10 +886,7 @@ class CommandCenter {
 					break;
 				case MISSION_TYPE.CONSTRUCT_REPAIR_CENTER:
 				case MISSION_TYPE.DEMOLISH_REPAIR_CENTER:
-					activeRepairCenterBuildTaskIDs.push(missionData.sectorID);
-
-					// Repair center tasks should not be added to the remoteMissions list because the danger level is set within the hq_g4 function 
-					// (so it should not be overwritten by the conservative danger level implemented by abort mission)
+					activeRepairCenterBuildTaskIDs.push(missionData.sectorID);		// should follow different cancellation logic
 					break;
 				default:
 					// Ignore missions like default mission "HELP_CONSTRUCT"
