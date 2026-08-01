@@ -190,8 +190,11 @@ function eventStartLevel() {
 		setupDebugMode();		// Debug mode is enabled for development & automated testing 
 	}
 
-	// `initialise` functions are called here because functions like: `getStructureLimit()` only return the correct value at the point where `eventStartLevel` is called.
+	// `initialise` functions are called here because functions like: `getStructureLimit()` only return the correct value 
+	// 		at the point where `eventStartLevel()` is called.
+	const stateBuilder = new worldStateBuilder();			
 	stateBuilder.initialise(state);
+
 	hq.initialise(state);
 
 	// Assign trucks to relevant groups & start construction tasks immediately

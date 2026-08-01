@@ -15,13 +15,11 @@
 	If not, see <https://www.gnu.org/licenses/>.
 */
 
-// Initialise world state
+/**
+ * 	**WORLD STATE**
+ * 	- `state` stores information about the map & the current game state.
+ */
 const state = new worldState();
-
-// Note: While the class is initialised below, `stateBuilder.initialise(state)` should be called in `eventStartLevel` after the skirmish game is fully initialised.
-const stateBuilder = new worldStateBuilder();	
-
-// Initialise divisional command
 
 /**
  *	**G2 - INTELLIGENCE**
@@ -52,6 +50,6 @@ const rnd = new armyResearchAndDevelopment();
 
 /**
  * 	**COMMANDER**
- * 	Makes strategic decisions (with support of G2 - G4). Implements with the support of G2 - G4.
+ * 	- Makes strategic decisions (with support of G2 - G4). Implements with the support of G2 - G4.
  */
 const hq = new CommandCenter();
