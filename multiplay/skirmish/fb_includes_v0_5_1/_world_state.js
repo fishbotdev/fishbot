@@ -50,10 +50,12 @@
 /**
 	fbGroup: FISHBOT v3 CUSTOM GROUPING SYSTEM
 
-	Fishbot custom implementation of inbuilt "groups"
-	Fishbot requires transient, one-to-many labelling to support its ability to maneuver & control multiple groups of units simultaneously.
-    Construction and aviation use this capability extensively.
-	As of Warzone 2100 v4.6.1, neither the built-in groups, nor labels, are suitable for transient, one-to-many labelling.
+	FishBot uses a grouping system (sometimes containing only 2-3 units per group) to support its ability to multitask. 
+    A unit generally only has 1 group at a time, but that group needs to change regularly.
+    I tried using both the built-in 'groups' and 'labels' initially, but found them to be unsuitable for this purpose.
+
+    For example, construction and combat use the grouping system to assign some units to go and perform a 'mission' (e.g. go build a derrick).
+        On mission completion (or failure, or abortion), the mission manager returns the assigned units to a 'reserve', from where they can be assigned to another group.
 */
 class fbGroup {
 
@@ -160,21 +162,11 @@ class fbGroup {
  */
 class fbGrid {
 
-    /**
-     * Constructor for `fbGrid`. Both `numXCells` and `numYCells` are optional arguments; they both have to specified if you want a custom grid size.
-     * @param {number?} numXCells 
-     * @param {number?} numYCells 
-     */
-    constructor(numXCells=null, numYCells=null) {
+    constructor() {
         this.cellSize = 10;     // in game tiles
-
-        if (numXCells == null || numYCells == null) {    
-            this.numXCells = Math.ceil(mapWidth / this.cellSize);
-            this.numYCells = Math.ceil(mapHeight / this.cellSize);
-        } else {
-            this.numXCells = numXCells;
-            this.numYCells = numYCells;
-        }
+        
+        this.numXCells = Math.ceil(mapWidth / this.cellSize);
+        this.numYCells = Math.ceil(mapHeight / this.cellSize);
 
         const createStandardFbGridCell = (gx, gy) => this.createNewFbGridCell(gx, gy);
         /** @type {FbGridCell[][]} */
@@ -221,7 +213,7 @@ class fbGrid {
             'friendlyStructures': [],
         };
 
-        if (!defined(this.grid)) {
+        if (this.grid == null) {
             debug(`WARNING: grid.enumRange() could not read from undefined grid.`);
             return result;
         }
@@ -320,7 +312,7 @@ class worldState {
         this.grid = new fbGrid();
 
         /**
-         *  Spatial fields, derived from the dimensions of the grid, are used for decision making.
+         *  Spatial fields are representations of information on the grid (e.g. locations of anti-air defences), and are used for decision making.
          *  @type {SpatialFieldsObject} 
          */
         this.fields;
@@ -335,6 +327,8 @@ class worldState {
          * @type {PlayerStatsObject[]} 
          */
         this.playerInfo;
+
+        ////////////////////////// FISHBOT METADATA (CONSIDER MOVING THIS TO HQ_COMMAND) //////////////////////////
 
         // Combat targeting
         /** @type {BrigadeInfo} */
@@ -428,16 +422,15 @@ class worldState {
 class worldStateBuilder {
 
     /**
-     * Returns a new `fbGroup` with FishBot base group IDs initialised. 
+     * Returns a new `fbGroup` with default FishBot group IDs initialised. 
      * @returns {fbGroup} 
      */
     #initialiseFbGroupingSystem() {
-        let g = new fbGroup();
+        const g = new fbGroup();
 
         for (const d in DIVISION) {
             g.createGroup(DIVISION[d]);
         }
-        
         for (const e in ENGINEERING) {
             g.createGroup(ENGINEERING[e]);
         }
@@ -584,7 +577,7 @@ class worldStateBuilder {
 
     /**
      * This function initialises all map-related data. 
-     * As `getWalkableTiles() is computationally-intense, it should only be called once on game start.
+     * As `getWalkableTiles()` is computationally intense, it should only be called once on game start.
      * @returns {MapData}
      */
     #initialiseMapTiles() {
@@ -595,9 +588,9 @@ class worldStateBuilder {
         const HALF_MAP_WIDTH = Math.floor(mapWidth / 2);
         const HALF_MAP_HEIGHT = Math.floor(mapHeight / 2);
 
-        // Define "walkable" & "reachable" tiles. Accounts for initial (destroyable?) terrain features.
-        //  "Walkable" => can I place another object on that tile (be it a droid, structure or feature)? Useful for building.
-        //  "Reachable" => can I path to an adjacent tile? Useful for determining if a oil resource / location is reachable by a truck.
+        // Define "walkable" & "reachable" tiles. Accounts for initial terrain features (both destroyable + non-destroyable are treated equally).
+        //  - "Walkable" => can I place another object on that tile (be it a droid, structure or feature)? Useful for building.
+        //  - "Reachable" => can I path to an adjacent tile? Useful for determining if a oil resource / location is reachable by a truck.
 
         /** @type {(boolean[])[]} */
         const isBaseNonWalkableTile = create2DGrid(mapWidth, mapHeight, () => {return false;});
@@ -740,7 +733,7 @@ class worldStateBuilder {
 
         /** @type {Coordinate[]} */
         const QUADRANT_SEARCH_PATTERN = [
-            // This pattern: up and to the right (Q3)
+            // Searches in a positive-x & positive-y direction 
             [0, 0], 
             [1, 0], [0, 1], 
             [1, 1], [2, 0], [0, 2],
@@ -751,8 +744,8 @@ class worldStateBuilder {
 
         const heightMap = create2DGrid(mapWidth, mapHeight, (x, y) => MapTiles[y][x].height);       // The inbuilt `MapTiles` is referenced with [y][x]. This has been changed inside FishBot to use the conventional (x, y) referencing. 
       
+        // Enable this block to print out a heightmap of your map in the console
         if (false) {
-            // Enable this block to print out a heightmap of your map in the console
             for (let y=0; y<mapHeight; y++) {       
                 let text = ``;
                 for (let x=0; x<mapWidth; x++) {
@@ -857,8 +850,9 @@ class worldStateBuilder {
 
     /**
      * Queries the game engine for the maximum allowable count of all base structures.
-     * As of Warzone 2100 v4.7.0, `getStructureLimit` will only return the *default* structure limit unless it is called *AFTER* `eventStartLevel()` is called. 
-     * Returns a map from *human-readable* name (which is the same way you would access `BASE_STRUCTURES`) to a number.
+     *   Returns a Map from the *human-readable* structure name (which is the same way you would access `BASE_STRUCTURES`) to a number (the maximum allowable count for that structure).
+     * Note: As of Warzone 2100 v4.7.0, `getStructureLimit` will only return the *default* structure limit if it is called too early. 
+     *   To return the correct limits, `getStructureLimit` should be called during `eventStartLevel()`, or afterward. 
      * @returns {Map<string, number>} 
      */
     #initialiseMaxStructureCounts() {
@@ -893,11 +887,7 @@ class worldStateBuilder {
     }
 
     /**
-     *  Initialises `state` with:
-     *  - FishBot grouping system `state.g`, 
-     *  - default POIs (bases & derricks) `state.poi.derricks` & `state.poi.bases`,
-     *  - default player information,
-     *  - 
+     * Initialises `state` with default parameters.
      * @param {worldState} state 
      * @returns {void}
      */

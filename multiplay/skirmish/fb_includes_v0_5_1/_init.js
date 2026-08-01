@@ -18,29 +18,40 @@
 // Initialise world state
 const state = new worldState();
 
-// Note: `stateBuilder.initialise(state)` should be called in `eventStartLevel` after the skirmish game is fully initialised.
+// Note: While the class is initialised below, `stateBuilder.initialise(state)` should be called in `eventStartLevel` after the skirmish game is fully initialised.
 const stateBuilder = new worldStateBuilder();	
 
 // Initialise divisional command
 
-// G2 - INTELLIGENCE:
-//  Responsible for intelligence operations, threat awareness, counterintelligence, and all-source intelligence production to inform the commander about the enemy and operational environment
+/**
+ *	**G2 - INTELLIGENCE**
+	- Analyses terrain (e.g. `state.poi`, `state.mapData`) & enemy locations (e.g. `state.fields`) and dispositions (e.g. `state.playerInfo`). 
+ 	- Provides the raw information for targeting (`state.grid`).
+ 	- (In WZ2100, 'weather' doesn't exist).
+ */
 const intelligence = new armyIntelligence();
 
-// G3 - OPERATIONS:
-// 	The largest staff section, responsible for planning, coordinating, and executing all operations, training, and force structure changes.
-
+/**
+ * 	**G3 - OPERATIONS**
+	- Responsible for planning, coordinating, and executing all operations (e.g. functions in `hq_gX` & mission management in `hq_toc`).
+ */
 const aviation = new armyAviation();
 
 const groundForces = new armyGroundOperations();
 
-// G4 - LOGISTICS:
-//	Manages all supply, maintenance, transportation, and support services to ensure the logistical readiness of the division. 
+/**
+ * 	**G4 - LOGISTICS**
+ * 	- Responsible for supply (e.g. production), maintenance (e.g. repair) & support services (e.g. research).
+ * 	- (In WZ2100, 'transportation' of supplies (e.g. fuel, ammunition) doesn't exist).
+ */
 const supply = new armySupply();
 
 const engineering = new armyEngineering();
 
 const rnd = new armyResearchAndDevelopment();
 
-// Commander: Makes strategic decisions
+/**
+ * 	**COMMANDER**
+ * 	Makes strategic decisions (with support of G2 - G4). Implements with the support of G2 - G4.
+ */
 const hq = new CommandCenter();

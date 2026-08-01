@@ -208,7 +208,7 @@ class armyResearchAndDevelopment {
 
 		for (let i=0; i<researchPriorities.length; i++) {
 			const f = highPriorityUnsorted.find(r => r.id.includes(researchPriorities[i]));
-			if (defined(f)) {
+			if (f != null) {
 				highPriority.push(f);
 			}
 		}

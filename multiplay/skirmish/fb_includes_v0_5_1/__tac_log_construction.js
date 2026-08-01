@@ -421,7 +421,7 @@ function buildSingleModule(taskForceID, structureID, x, y, finishedNumModules) {
 	// Check if the base structure is present
 	let struct = enumRange(x, y, 3).filter(obj => {
 		const structureObj = STRUCTURES[obj.name];		// lookup obj.name in STRUCTURES
-		if (defined(structureObj)) {
+		if (structureObj != null) {
 			if (baseStructureTypeIDs.includes(structureObj.id) && obj.x === x && obj.y === y) {
 				return true;
 			}
