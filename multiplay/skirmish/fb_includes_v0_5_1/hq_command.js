@@ -229,67 +229,6 @@ class CommandCenter {
 
 	///////////////////////////////////////////////////     STRATEGY     ///////////////////////////////////////////////////
 
-	
-
-	/////////////////////////////////////////////////// G2: INTELLIGENCE ///////////////////////////////////////////////////
-
-	/**
-	 * 	For performance reasons, this function was changed from linear to distributed.
-	 * 	The intent is:
-	 * 	1. Intelligence mission/task is scheduled
-	 * 	2. Mission is either immediately run or scheduled to run by the global mission manager
-	 * 	3. Observations are compiled into the global 'state' by the `toc`
-	 * @param {worldState} state
-	 * @param {string} taskID
-	 * @returns {void}
-	 */
-	runIntelligence(state, taskID) {
-		
-		// Note: For performance reasons, anything which can be executed immediately should not use the mission management system.
-		// i.e. tactical functions may be called directly where appropriate
-
-		switch(taskID) {
-			
-			case 'intel_updateStrategicParameters':
-				this.updateStrategicParameters(state);
-				break;
-
-			case 'intel_getNearbyGroundTargets':
-				// Update location(s) & target(s) of active combat force(s)
-				this.BRIGADE_DESIGNATIONS.forEach(brigadeID => {
-					const brigadeLocation = groundForces.getForceMedianLocation(brigadeID);
-					this.toc.setBrigadeLocation(state, brigadeID, brigadeLocation);
-
-					const nearbyTargets = intelligence.getTargetClassesInRadius(state, brigadeLocation, this.TARGET_SEARCH_RADIUS);
-					this.toc.addBrigadeTargets(state, brigadeID, nearbyTargets);
-				});
-				break;
-
-			case 'intel_getAviationTargets':
-				const raidTargets = intelligence.getTargetsNearDerricks(state);
-				const baseTargets = intelligence.getBaseTargets(state);
-				this.toc.setAviationTargets(
-					state, 
-					raidTargets, 
-					baseTargets['productionTargets'], 
-					baseTargets['adaTargets'],  
-					baseTargets['indirectFireTargets'],  
-					baseTargets['defensiveStructureTargets']
-				);
-				break;
-
-			case 'intel_getMapIntelligence':
-				const rawObjectData = getDroidsAndStructsByPlayer();
-				this.toc.updateCoreIntel(state, rawObjectData);
-				break;
-				
-			default:
-				debug(`	WARNING / runIntelligence(): could not understand ${taskID} @ ${gameTime}`);
-				return;
-		}
-	
-	}
-
 	/**
 	 * Updates FishBot's strategic parameters with evolution of the game state.
 	 * The intent is `_world_state.js` stores the objective world, while `hq_command.js` stores the decisions based on observations of that state.
@@ -423,6 +362,65 @@ class CommandCenter {
 		this.AVIATION_PARAMETERS.SATURATION_THREAT_THRESHOLD = SATURATION_THREAT_THRESHOLD;
 		this.AVIATION_PARAMETERS.CAS_SUPPORT_RADIUS = 25;
 		this.AVIATION_PARAMETERS.UNITS_FOR_ADA_STRIKE = 3;
+	}
+	
+	/////////////////////////////////////////////////// G2: INTELLIGENCE ///////////////////////////////////////////////////
+
+	/**
+	 * 	For performance reasons, this function was changed from linear to distributed.
+	 * 	The intent is:
+	 * 	1. Intelligence mission/task is scheduled
+	 * 	2. Mission is either immediately run or scheduled to run by the global mission manager
+	 * 	3. Observations are compiled into the global 'state' by the `toc`
+	 * @param {worldState} state
+	 * @param {string} taskID
+	 * @returns {void}
+	 */
+	runIntelligence(state, taskID) {
+		
+		// Note: For performance reasons, anything which can be executed immediately should not use the mission management system.
+		// i.e. tactical functions may be called directly where appropriate
+
+		switch(taskID) {
+			
+			case 'intel_updateStrategicParameters':
+				this.updateStrategicParameters(state);
+				break;
+
+			case 'intel_getNearbyGroundTargets':
+				// Update location(s) & target(s) of active combat force(s)
+				this.BRIGADE_DESIGNATIONS.forEach(brigadeID => {
+					const brigadeLocation = groundForces.getForceMedianLocation(brigadeID);
+					this.toc.setBrigadeLocation(state, brigadeID, brigadeLocation);
+
+					const nearbyTargets = intelligence.getTargetClassesInRadius(state, brigadeLocation, this.TARGET_SEARCH_RADIUS);
+					this.toc.addBrigadeTargets(state, brigadeID, nearbyTargets);
+				});
+				break;
+
+			case 'intel_getAviationTargets':
+				const raidTargets = intelligence.getTargetsNearDerricks(state);
+				const baseTargets = intelligence.getBaseTargets(state);
+				this.toc.setAviationTargets(
+					state, 
+					raidTargets, 
+					baseTargets['productionTargets'], 
+					baseTargets['adaTargets'],  
+					baseTargets['indirectFireTargets'],  
+					baseTargets['defensiveStructureTargets']
+				);
+				break;
+
+			case 'intel_getMapIntelligence':
+				const rawObjectData = getDroidsAndStructsByPlayer();
+				this.toc.updateCoreIntel(state, rawObjectData);
+				break;
+				
+			default:
+				debug(`	WARNING / runIntelligence(): could not understand ${taskID} @ ${gameTime}`);
+				return;
+		}
+	
 	}
 
 	/////////////////////////////////////////////////// G3: COMBAT OPERATIONS ///////////////////////////////////////////////////
