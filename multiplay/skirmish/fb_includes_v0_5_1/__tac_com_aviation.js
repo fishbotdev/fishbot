@@ -15,10 +15,11 @@
 	If not, see <https://www.gnu.org/licenses/>.
 */
 
-/*
-	Drivers for VTOL handling
-*/
-
+/**
+ * Driver for rearming VTOLs.
+ * @param {DroidObject} droid
+ * @returns {void}
+ */
 function vtolRearm(droid) {
 	if (droid.order === DORDER_REARM) {
 		return;
@@ -26,111 +27,66 @@ function vtolRearm(droid) {
 	orderDroid(droid, DORDER_REARM);		
 }
 
-function vtolArmed(droid, percent) {
+/**
+ * Returns if the `armed` parameter of a droid weapon is bigger than the given `percentage`.
+ * @param {DroidObject} droid 
+ * @param {number} percentage 
+ * @returns {boolean}
+ */
+function vtolArmed(droid, percentage) {
 
-	if (!isVTOL(droid)) 	
-		return true; 	// edge case
-
-	const COMBAT_INEFFECTIVE = 25;
-
-	// first, check if ammunition is critically low, return false
-	for (let i = 0; i < droid.weapons.length; ++i)
-		if (droid.weapons[i].armed <= COMBAT_INEFFECTIVE)
-			return false;
-
-	// else, do not interrupt attacking units
-	if (droid.order === DORDER_ATTACK)		
+	const weaponArmedPercentage = droid.weapons[0]?.armed;		// Note: `droid.armed` returns '0'.
+	if (weaponArmedPercentage == null) {
+		deb(`WARNING: vtolArmed() was called with a droid "${droid.name}" (id: ${droid.id}) that does not have "droid.weapons". Returned 'true'.`);
 		return true;
-
-	// finally, do the actual check
-	for (let i = 0; i < droid.weapons.length; ++i)
-		if (droid.weapons[i].armed >= percent)
-			return true;
-	return false;
-}
-
-/*
-	TAC SOP: VTOL GROUP REARMING
-*/
-function rearmVtolGroup(taskForceID) {
-	// HACK: this will always return false so it will always be in progress
+	}
 	
-	const taskForceUnits = state.g.enumGroup(taskForceID);
-	if (taskForceUnits.length === 0) {
-		return {status: MISSION_STATUS.IN_PROGRESS};
+	const COMBAT_INEFFECTIVE = 25;
+	if (weaponArmedPercentage <= COMBAT_INEFFECTIVE) 	{
+		return false;		// this has the effect of cancelling attacking if it can't attack any more
 	}
 
-	// niceDebug("rearmVtolGroup; vtols detected in AIR_RESERVE");
-	for (let i = 0; i < taskForceUnits.length; ++i) {
-		let droid = taskForceUnits[i];
-		if (!vtolArmed(droid,99)) {
+	if (droid.order === DORDER_ATTACK) 		{
+		return true;		// otherwise does not interrupt attacking units
+	}
+
+	if (weaponArmedPercentage >= percentage) {
+		return true;
+	} else {
+		return false;
+	}
+}
+
+/**
+ * TAC SOP: VTOL GROUP REARMING
+ * @param {string | number} taskForceID 
+ * @returns 
+ */
+function rearmVtolGroup(taskForceID) {
+	const taskForceUnits = state.g.enumGroup(taskForceID);
+	taskForceUnits.forEach(droid => {
+		if (!vtolArmed(droid, 99)) {
 			vtolRearm(droid);
 		}
-	}
+	});
 	return {status: MISSION_STATUS.IN_PROGRESS};
 }
 
-/*
-	TAC SOP: AIR RECONNAISSANCE
-*/
+/**
+ * TAC SOP: AIR STRIKE
+ * @param {DroidObject} targetObj 
+ * @param {string | number} taskForceID 
+ */
+function doAirStrike(targetObj, taskForceID) {
 
-function doAirRecon(x, y, weaponsHot=false, taskForceID) {
-	// 24 Nov: modified to reconnoiter coordinates x, y
-
-	// Standard return values for tactical functions
-	//   - true if destination has been reached
-	//   - false if destination has not been reached
-	//	 - undefined if its not possible to complete the mission
-	
-	// niceDebug("tactics/doAirRecon: got x, y, holdFire, taskForceID", x, y, holdFire, taskForceID);
-
-	const taskForceUnits = state.g.enumGroup(taskForceID);
-	
-	if (taskForceUnits.length === 0) {
-		// niceDebug("tactics/doAirRecon: terminated - 0 group size");
-		return {status: MISSION_STATUS.FAILED};		// scout aircraft were killed or reassigned
-	}
-
-	for (let i=0; i<taskForceUnits.length; i++) {
-		let droid = taskForceUnits[i];
-		// niceDebug("tactics/doAirRecon: inside do something")
-
-		// If the VTOL is already at the target x, y, return {status: MISSION_STATUS.SUCCEEDED};
-		if (distSq(droid.x, x, droid.y, y) < 8 ** 2) {
-			// if within 8 tiles, target coordinates have been reconnoitered, return true (mission success)
-			return {status: MISSION_STATUS.SUCCEEDED};		
-		}
-
-		// Else, go to the location
-		if (weaponsHot) {
-			if (!vtolArmed(droid, 99)) {		
-				vtolRearm(droid);
-			} else {
-				orderDroidLoc(droid, DORDER_SCOUT, x, y);
-			}
-		} else {
-			orderDroidLoc(droid, DORDER_MOVE, x, y);
-		}		
-	}
-
-	return {status: MISSION_STATUS.IN_PROGRESS};
-}
-
-/*
-	TAC SOP: AIR STRIKE
-*/
-function doAirStrike(targetInfo, taskForceID) {
-
-	const obj = getObject(targetInfo.type, targetInfo.player, targetInfo.id);
+	const obj = getObject(targetObj.type, targetObj.player, targetObj.id);
 	if (obj === null) {								// target destroyed (mission succeeded)
-		// debug(`succeeded ${taskForceID}`);
 		return {status: MISSION_STATUS.SUCCEEDED};
 	}
 
 	const strikeUnits = state.g.enumGroup(taskForceID);
 	if (strikeUnits.length === 0) {
-		// debug(`failed ${taskForceID}, 0 group length`);
-		return {status: MISSION_STATUS.FAILED};		// strike aircraft were killed
+		return {status: MISSION_STATUS.FAILED};		// e.g. strike aircraft were killed
 	}
 
 	let numReady = 0;
@@ -146,8 +102,6 @@ function doAirStrike(targetInfo, taskForceID) {
 		return {status: MISSION_STATUS.IN_PROGRESS};
 	}
 		
-	// Else conduct strike
 	strikeUnits.forEach((droid) => attackTarget(droid, obj));
-
 	return {status: MISSION_STATUS.IN_PROGRESS};
 }

@@ -392,7 +392,7 @@ interface DroidObject extends BaseObject {
   propulsion: string;
 
   /** The weapon components of the droid, as an array. Contains 'name', 'id', 'armed' percentage and 'lastFired' properties. (3.2+ only) */
-  weapons: object;    
+  weapons: DroidObject[];    
 
   /** Defined for transporters only: Total cargo capacity (number of items that will fit may depend on their size). (3.2+ only) */
   cargoCapacity: number;

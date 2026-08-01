@@ -15,9 +15,10 @@
 	If not, see <https://www.gnu.org/licenses/>.
 */
 
-/*
-	Driver for using a repair facility at base
-*/
+/**
+ * Driver for using a repair facility.
+ * @param {string | number} taskForceID 
+ */
 function returnForRepair(taskForceID) {
 
 	const unitsToRepair = state.g.enumGroup(taskForceID);
