@@ -149,6 +149,11 @@ class CommandCenter {
 
 	/////////////////////////////////////////////////// STATE INITIALISATION ///////////////////////////////////////////////////
 
+	initialise(state) {
+		this.setDefaultMissions(state);			
+		this.setSchedulerParameters(state);
+	}
+
 	/**
 	 * 
 	 * @param {worldState} state 
