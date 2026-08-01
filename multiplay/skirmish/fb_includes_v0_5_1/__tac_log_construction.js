@@ -24,20 +24,21 @@
 function pickBaseStructLocation(structureID) {
 
 	const walkableTiles = state.mapData.walkableTiles;
-	const isWalkable = state.mapData.isWalkable;
+	const isPlaceable = state.mapData.isWalkable;
 
 	const BBOX_3x3_STRUCTURES = [STRUCTURES["Factory"].id, STRUCTURES["VTOL Factory"].id, STRUCTURES["Laser Satellite Command Post"].id, STRUCTURES["Satellite Uplink Center"].id];
 	const BBOX_2x2_STRUCTURES = [STRUCTURES["Command Center"].id, STRUCTURES["Command Relay Center"].id, STRUCTURES["Power Generator"].id, STRUCTURES["Research Facility"].id];
 
-	let BBOX_COORDS = [[-1, -1], [-1, 0], [-1, 1], [0, 1], [1, 1], [1, 0], [1, -1], [0, -1]];
-	const BBOX_3X3_COORDS = [[-2, -2], [-2, -1], [-2, 0], [-2, 1], [-2, 2], [-1, 2], [0, 2], [1, 2], [2, 2], [2, 1], [2, 0], [2, -1], [2, -2], [1, -2], [0, -2], [-1, -2]];
-	const BBOX_2X2_COORDS = [[-2, -2], [-2, -1], [-2, 0], [-2, 1], [-2, 2], [-1, 1], [0, 1], [1, 1], [1, 0], [1, -1], [1, -2], [0, -2], [-1, -2]];
-	
+	const BBOX_1X1_STRUCTURES = [[-1, -1], [-1, 0], [-1, 1], [0, 1], [1, 1], [1, 0], [1, -1], [0, -1]];
+	let BBOX_COORDS = BBOX_1X1_STRUCTURES;
+		
 	if (BBOX_3x3_STRUCTURES.includes(structureID)) {
 		// coordinate for a 3x3 structure is the center tile of the structure
+		const BBOX_3X3_COORDS = [[-2, -2], [-2, -1], [-2, 0], [-2, 1], [-2, 2], [-1, 2], [0, 2], [1, 2], [2, 2], [2, 1], [2, 0], [2, -1], [2, -2], [1, -2], [0, -2], [-1, -2]];
 		BBOX_COORDS = BBOX_3X3_COORDS;
 	} else if (BBOX_2x2_STRUCTURES.includes(structureID)) {
 		// coordinate for a 2x2 structure is the bottom right tile of the structure ((7, 16) center = (7, 15), (6, 15), (6, 16))
+		const BBOX_2X2_COORDS = [[-2, -2], [-2, -1], [-2, 0], [-2, 1], [-2, 2], [-1, 1], [0, 1], [1, 1], [1, 0], [1, -1], [1, -2], [0, -2], [-1, -2]];
 		BBOX_COORDS = BBOX_2X2_COORDS
 	}
 	
@@ -62,7 +63,7 @@ function pickBaseStructLocation(structureID) {
 				break;
 			}
 
-			if (!isWalkable[x1][y1]) {
+			if (!isPlaceable[x1][y1]) {
 				boundingBoxTestFailed = true;
 				break;
 			}
@@ -90,22 +91,26 @@ function pickStructLocation3(structureID, x, y) {
 	const HALF_MAP_WIDTH = state.mapData.HALF_MAP_WIDTH;
 	const HALF_MAP_HEIGHT = state.mapData.HALF_MAP_HEIGHT;
 	const QUADRANT_SEARCH_PATTERN = state.mapData.QUADRANT_SEARCH_PATTERN;
-	const isWalkable = state.mapData.isWalkable;
-	const isDerrickPosition = state.mapData.isDerrickPosition;
 
-	const specifiedHeight = MapTiles[y][x].height;		// Uses this to try the match the height.
-	const HEIGHT_TOLERANCE = 33;
-	
-	if (!isWalkable[x][y]) {
+	const isPlaceable = state.mapData.isWalkable;
+	const isReachable = state.mapData.isReachable;
+	const isDerrickPosition = state.mapData.isDerrickPosition;
+	const heightMap = state.mapData.heightMap;
+
+	const playerIsEnemy = [];
+	state.playerInfo.forEach(p => playerIsEnemy.push(p.isFriendly));
+
+	if (!isReachable[x][y]) {
 		// debug(` ${gameTime}: pickStructLocation3() failed: (${x} ${y}) for "${structureID}" is not reachable with wheels. Check caller function.`);
 		return undefined;
 	}
 
-	const playerIsEnemy = [];
-	state.playerInfo.forEach(p => playerIsEnemy.push(p.isFriendly));		// TODO: Better way to access state than to access out of context?
+	const specifiedHeight = heightMap[x][y];			// Uses this to try the match the height
+	const HEIGHT_TOLERANCE = 33;						// arbitrary value which seems to work
 
 	const outsideOfHeightTolerance = [];
 
+	// Bias towards the quadrant closest to the center of the map
 	const xDirection = (x > HALF_MAP_WIDTH) ? -1 : 1;
 	const yDirection = (y > HALF_MAP_HEIGHT) ? -1 : 1;
 
@@ -118,8 +123,8 @@ function pickStructLocation3(structureID, x, y) {
 				continue;
 			}
 				
-			if (!isWalkable[tX][tY]) {
-				// debug(`	${gameTime}: psl2 rejected: (${tX}, ${tY}); not reachable`);
+			if (!isPlaceable[tX][tY]) {
+				// debug(`	${gameTime}: psl2 rejected: (${tX}, ${tY}); cannot place structure on tile`);
 				continue;
 			}
 
@@ -162,11 +167,11 @@ function pickStructLocation3(structureID, x, y) {
 				continue;
 			}
 
-			const z = MapTiles[tY][tX].height;
+			const z = heightMap[tY][tX];
 			const loc = {'x': tX, 'y': tY, 'z': z};
 
 			if (Math.abs(z - specifiedHeight) > HEIGHT_TOLERANCE) {
-				// debug(`	${gameTime}: psl2 rejected: (${tX}, ${tY}); height (${MapTiles[tY][tX].height} !== ${specifiedHeight})`);
+				// deb(`psl3 rejected: (${tX}, ${tY}); height (${z} !== ${specifiedHeight})`);
 				outsideOfHeightTolerance.push(loc);
 				continue;
 			}

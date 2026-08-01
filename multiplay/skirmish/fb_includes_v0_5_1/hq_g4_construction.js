@@ -82,6 +82,7 @@ class armyEngineering {
 		const unclaimedDerricksInCell = state.fields.unclaimedDerricksInCell;
 		const enemyStaticDefenceThreat = state.fields.enemyStaticDefenceThreat;
 		const enemyUnitThreat = state.fields.enemyUnitThreat;
+		const isReachable = state.mapData.isReachable;
 
 		const DEBUG_ON = false;
 		let debugGrid = create2DGrid(numXCells, numYCells, (...args) => {return "_";});
@@ -100,6 +101,8 @@ class armyEngineering {
 				const derricksInCell = grid[gx][gy].derricks;
 				for (let i=0; i<derricksInCell.length; i++) {
 					const d = derricksInCell[i];
+
+					if (!isReachable[d.x][d.y]) continue;
 
 					// Check for existing mission
 					if (activeOilCapTaskIDs.indexOf(d.id) !== -1) continue; 									// found 'CONSTRUCT_OIL_DERRICK' task
@@ -183,7 +186,8 @@ class armyEngineering {
 		const controlStability = state.fields.controlStability;
 		const enemyUnitThreat = state.fields.enemyUnitThreat;
 
-		const isWalkable = state.mapData.isWalkable;
+		// Note: tiles with Oil Resources are treated as non-walkable, so we use the 'isReachable' lookup table instead.
+		const isReachable = state.mapData.isReachable;		
 
 		const MAX_CONTROL = 5;
 		const PROXIMITY_RADIUS = 9;
@@ -202,9 +206,12 @@ class armyEngineering {
 		let highPrioOil = [], normalPrioOil = [];		
 		let seenDerricks = [];
 
-		// debug(``);
 		for (let i=0; i<derricks.length; i++) {
 			const d = derricks[i];
+
+			if (!isReachable[d.x][d.y]) {		
+				continue;
+			}
 
 			// the following replicates the old 'sector' system grouping of derricks
 			let previouslySeen = false;
@@ -233,10 +240,6 @@ class armyEngineering {
 
 			if (controlStability[d.gx][d.gy] <= -1 * MAX_CONTROL) {		// TODO: move this prioritisation to hq_command (decisions on options should be made in command)
 				// debug(`skipped ${d.id}: (${d.gx}, ${d.gy}); control too large (${controlStability[d.gx][d.gy]})`);
-				continue;
-			}
-
-			if (!isWalkable[d.x][d.y]) {		
 				continue;
 			}
 

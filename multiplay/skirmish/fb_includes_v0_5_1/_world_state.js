@@ -595,20 +595,110 @@ class worldStateBuilder {
         const HALF_MAP_WIDTH = Math.floor(mapWidth / 2);
         const HALF_MAP_HEIGHT = Math.floor(mapHeight / 2);
 
-        const walkableTiles = getWalkableTiles();
+        // Define "walkable" & "reachable" tiles. Accounts for initial (destroyable?) terrain features.
+        //  "Walkable" => can I place another object on that tile (be it a droid, structure or feature)? Useful for building.
+        //  "Reachable" => can I path to an adjacent tile? Useful for determining if a oil resource / location is reachable by a truck.
+
+        /** @type {(boolean[])[]} */
+        const isBaseNonWalkableTile = create2DGrid(mapWidth, mapHeight, () => {return false;});
+
+        // Some features have a bounding box which is larger than 1. These are defined below in an ad-hoc fashion.
+        // For example, for the *Snowy Tree2* feature, `features.json` gives a 'breadth' = 'width' = 1 (ref: https://github.com/Warzone2100/warzone2100/blob/d9863cf7d5ccea3125d3e95e3ed094f52d05b27c/data/base/stats/features.json#L663) 
+        //   but in the actual game, *Snowy Tree2* seems to have a 2x2 collision box!
+        // Note: "*Snowy Tree2*" (e.g. 2c-Roughness) that is centered at [85, 48] would have other tiles at [84, 48], [84, 47], [85, 47]. 
+        //   This is consistent with how other 2x2 base structures are treated e.g. Power Generator / Research Facility.
+        const FEATURE_NAMES_2X2 = ["*Snowy Tree2*", "*LargeCoolingTower*", "*NuclearPowerStation*", "*OldFactory*", "Indirectweaponslab", "Nanolab", ]; 
+        const FEATURE_NAMES_3X3 = ["*Building 1*", "*Building 2*", "*Building 3*", "*Building 7*", "*Building 8*", "*Building 11*", ];
+
+        const OFFSET_2X2 = [[0, 0], [0, -1], [-1, 0], [-1, -1]];
+        const OFFSET_3X3 = [[0, 0], [-1, -1], [-1, 0], [-1, 1], [0, 1], [1, 1], [1, 0], [1, -1], [0, -1]];
+
+        // Note: `enumFeature` includes oil derrick positions too so `isDerrickPosition` is not required yet.
+        const allFeatures = enumFeature(ALL_PLAYERS);   
+        
+        const SHOW_FEATURES = false;        // enable this to see all features highlighted with red highlight
+
+        allFeatures.forEach(feature => {
+            const x = feature.x, y = feature.y;
+            const featureName = feature.name;
+
+            if (SHOW_FEATURES)  debug(`${featureName} (id: ${feature.id}) (${x}, ${y})`);
+            if (FEATURE_NAMES_2X2.includes(featureName)) {
+                OFFSET_2X2.forEach(o => {
+                    const ox = x + o[0];
+                    const oy = y + o[1];
+                    isBaseNonWalkableTile[ox][oy] = true;
+                    if (SHOW_FEATURES)  hackMarkTiles(ox, oy);              
+                });
+            } else if (FEATURE_NAMES_3X3.includes(featureName)) {
+                OFFSET_3X3.forEach(o => {
+                    const ox = x + o[0];
+                    const oy = y + o[1];
+                    isBaseNonWalkableTile[ox][oy] = true;
+                    if (SHOW_FEATURES)  hackMarkTiles(ox, oy);               
+                });
+            } else if (featureName === "Oil Resource") {
+                // Explicitly showing that Oil Resources are treated as non-walkable.
+                // Walkable is a check used by the targeting algorithm to determine if a target is valid or not.
+                isBaseNonWalkableTile[feature.x][feature.y] = true;     
+            } else {
+                isBaseNonWalkableTile[feature.x][feature.y] = true;
+                if (SHOW_FEATURES)  hackMarkTiles(feature.x, feature.y);     
+            }
+        });
+
+        // Remove the very edges of the map since these are likely to be invalid tiles
+        const xEdge = generateRange(mapWidth);
+        const yEdge = generateRange(mapHeight);
+        xEdge.forEach(x => {
+            isBaseNonWalkableTile[x][0] = true;
+            isBaseNonWalkableTile[x][mapHeight - 1] = true;
+        });
+        yEdge.forEach(y => {
+            isBaseNonWalkableTile[0][y] = true;
+            isBaseNonWalkableTile[mapWidth - 1][y] = true;
+        });
+
+        // Remove all water + cliffs
+        for (let x=0; x<mapWidth; x++) {
+            for (let y=0; y<mapHeight; y++) {
+                const terrainType = MapTiles[y][x].terrainType;     
+                // For the `terrainType` enum, see: https://github.com/Warzone2100/warzone2100/blob/00ca862eb87e8d22462ee97b4d2b8ab9ee30a451/lib/wzmaplib/include/wzmaplib/terrain_type.h#L26 
+                if (terrainType === TER_CLIFFFACE || terrainType === TER_WATER) {
+                    isBaseNonWalkableTile[x][y] = true;
+                }
+            }
+        }
+
+        const walkableTiles = getWalkableTiles(isBaseNonWalkableTile);
 
         /** @type {(boolean[])[]} */
         const isWalkable = create2DGrid(mapWidth, mapHeight, () => {return false;});
+
+        /** @type {(boolean[])[]} */
+        const isReachable = create2DGrid(mapWidth, mapHeight, () => {return false;});
+
         walkableTiles.forEach(b => {
             const x = b[0];
             const y = b[1];
             isWalkable[x][y] = true;
+            isReachable[x][y] = true;
+            // hackMarkTiles(x, y);        // Uncomment this to see all the walkable tiles on the map that the algorithm found
         });
 
         /** @type {(boolean[])[]} */
         const isDerrickPosition = create2DGrid(mapWidth, mapHeight, () => {return false;});
+                
+		const ADJACENT_TILE_OFFSETS = [[0, 1], [0, -1], [-1, 0], [1, 0]];
+
         derrickPositions.forEach(d => {
             isDerrickPosition[d.x][d.y] = true;
+            
+            // If one of the adjacent tiles are walkable, then the derrick should be classed as reachable (but not walkable, since a unit cannot occupy an Oil Resource tile)
+            if (ADJACENT_TILE_OFFSETS.some(o => isWalkable[d.x + o[0]][d.y + o[1]])) {      
+                markTile(d.x, d.y);    // Uncomment this to see the reachable oil derricks on the map
+                isReachable[d.x][d.y] = true;
+            }
         });
 
         /** @type {Coordinate[]} */
@@ -622,30 +712,31 @@ class worldStateBuilder {
             [3, 2], [2, 3], [1, 4], [4, 1], [5, 0], [0, 5]
         ];
 
+        const heightMap = create2DGrid(mapWidth, mapHeight, (x, y) => MapTiles[y][x].height);       // The inbuilt `MapTiles` is referenced with [y][x]. This has been changed inside FishBot to use the conventional (x, y) referencing. 
+      
+        if (false) {
+            // Enable this block to print out a heightmap of your map in the console
+            for (let y=0; y<mapHeight; y++) {       
+                let text = ``;
+                for (let x=0; x<mapWidth; x++) {
+                    text += `${heightMap[x][y]},`.padStart(5, " ");
+                }
+                debug(text);
+            }
+        }
+
         //////////////////////// WRITING VARIABLES ////////////////////////
         mapData['HALF_MAP_WIDTH'] = HALF_MAP_WIDTH;
         mapData['HALF_MAP_HEIGHT'] = HALF_MAP_HEIGHT;
 
         mapData['walkableTiles'] = walkableTiles;
         mapData['isWalkable'] = isWalkable;
+        mapData['isReachable'] = isReachable;
 
         mapData['isDerrickPosition'] = isDerrickPosition;
 
         mapData['QUADRANT_SEARCH_PATTERN'] = QUADRANT_SEARCH_PATTERN;
-
-        // const yMap = generateRange(mapHeight);
-        // const xMap = generateRange(mapWidth);
-
-        // yMap.forEach(y => {
-        //     const mapRow = [];
-
-        //     xMap.forEach(x => {
-        //         // mapRow.push(MapTiles[y][x].height);      // uncomment for height
-        //         mapRow.push(MapTiles[y][x].terrainType);    // uncomment for different terrain type; see: https://github.com/Warzone2100/warzone2100/blob/00ca862eb87e8d22462ee97b4d2b8ab9ee30a451/lib/wzmaplib/include/wzmaplib/terrain_type.h#L26 for terrainType enum
-        //     });
-
-        //     debug(`"${mapRow}",`);      // python script processes list of comma-delimited strings
-        // });
+        mapData['heightMap'] = heightMap;
 
         return mapData;
 

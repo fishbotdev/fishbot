@@ -85,13 +85,15 @@ class armyGroundOperations {
 	 * @returns {PositionInfo} `medianLocation` (if units exist); else `baseLocation`.
 	 */
 	getForceMedianLocation(brigadeID) {
-		const getUnitsIn = (brigadeID) => state.g.enumGroup(brigadeID);
+		const heightMap = state.mapData.heightMap;
 
+		const getUnitsIn = (brigadeID) => state.g.enumGroup(brigadeID);
+		
 		const brigadeUnits = getUnitsIn(brigadeID);
 
 		const baseX = baseLocation.x;
 		const baseY = baseLocation.y;
-		const baseZ = MapTiles[baseLocation.y][baseLocation.x].height;
+		const baseZ = heightMap[baseX][baseY];
 		const basePosition = {'x': baseX, 'y': baseY, 'z': baseZ};
 		if (brigadeUnits.length === 0) {
 			return basePosition;
@@ -111,8 +113,9 @@ class armyGroundOperations {
 		// Find median
 		const medianX = Math.floor(arrayMedian(droidX));
 		const medianY = Math.floor(arrayMedian(droidY));
+		const medianZ = heightMap[medianX][medianY];
 		
-		return {"x": medianX, "y": medianY, "z": MapTiles[medianY][medianX].height};
+		return {"x": medianX, "y": medianY, "z": medianZ};
 	}
 
 }

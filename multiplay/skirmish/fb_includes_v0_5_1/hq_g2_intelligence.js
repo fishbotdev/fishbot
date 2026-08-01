@@ -352,7 +352,7 @@ class armyIntelligence {
 		const cellSize = state.grid.cellSize;
 		const grid = state.grid.grid;
 
-		const isWalkable = state.mapData.isWalkable;
+		const isReachable = state.mapData.isReachable;
 
 		/** @type {Coordinate[]} */
 		const visited = [];
@@ -367,7 +367,7 @@ class armyIntelligence {
 		const MAX_ITERS = Math.min(xMax * yMax, MAX_CELLS * MAX_CELLS);
 		let iters = 0;
 
-		const nonWalkableTileTargets = [];
+		const unreachableTargets = [];
 		
 		// Formatted as [x, y, manhattanDistance]
 		// const NEIGHBOUR_OFFSETS = [[-1, -1, 2], [-1, 0, 1], [-1, 1, 2], [0, 1, 1], [1, 1, 2], [1, 0, 1], [1, -1, 2], [0, -1, 1]];
@@ -415,11 +415,11 @@ class armyIntelligence {
 						if (obj == null) {
 							continue;
 						}
-						if (isWalkable[obj.x][obj.y]) {		// this is here to handle targets on water terrain / islands. FishBot will ignore these for now.
+						if (isReachable[obj.x][obj.y]) {		// this is here to handle targets on water terrain / islands. FishBot will ignore these for now.
 							// debug(`${gameTime}: intel/findClosestTarget: BFS in ${iters} iterations (returning ${obj.name} (${obj.x}, ${obj.y})).`);
 							return obj;
 						} else {
-							nonWalkableTileTargets.push(obj);
+							unreachableTargets.push(obj);
 						}
 					};
 				}
@@ -431,10 +431,10 @@ class armyIntelligence {
 			iters++;
 		}
 
-		for (let i=0; i<nonWalkableTileTargets.length; i++) {
-			const obj = nonWalkableTileTargets[i];
-			debug(`${gameTime}\t(FishBot ${me}): findClosestTarget() returned nonWalkableTileTarget: "${obj.name}" (type: ${obj.type}, player: ${obj.player}, id: ${obj.id})`);
-			return nonWalkableTileTargets[i];
+		for (let i=0; i<unreachableTargets.length; i++) {
+			const obj = unreachableTargets[i];
+			debug(`${gameTime}\t(FishBot ${me}): findClosestTarget() returned unreachableTarget: "${obj.name}" (type: ${obj.type}, player: ${obj.player}, id: ${obj.id})`);
+			return unreachableTargets[i];
 		}
 
 		// debug(`${gameTime}: intel/findClosestTarget: BFS in ${iters} iterations: no targets found.`);

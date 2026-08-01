@@ -426,7 +426,7 @@ class CommandCenter {
 	 */
 	#prioritiseBrigadeTargets(state, brigadeID, parameters) {
 
-		const isWalkable = state.mapData.isWalkable;
+		const isReachable = state.mapData.isReachable;
 
 		/** @type {BrigadeTargets} */
 		const brigadeTargets = {
@@ -455,8 +455,8 @@ class CommandCenter {
 				const obj = getObject(t.type, t.player, t.id);
 				if (obj == null) {
 					return;
-				} 	
-				if (isWalkable[obj.x][obj.y]) {		// This captures if the potential target is on an island / water terrain. FishBot will ignore these targets for now.
+				} 
+				if (isReachable[obj.x][obj.y]) {		// This captures if the potential target is on an island / water terrain. FishBot will ignore these targets for now.
 					objectList.push(obj);
 				}
 			});
@@ -792,7 +792,7 @@ class CommandCenter {
 			const brigadeLocations = [];
 
 			// Move combat brigades
-			if (DEBUG_MODE_ON) hackMarkTiles();		
+			// if (DEBUG_MODE_ON) hackMarkTiles();		
 
 			this.BRIGADE_DESIGNATIONS.forEach((brigadeID) => {
 

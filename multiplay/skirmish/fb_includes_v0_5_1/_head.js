@@ -55,9 +55,11 @@
  * @property {number} HALF_MAP_WIDTH Half of the `mapWidth` (integer)
  * @property {number} HALF_MAP_HEIGHT Half of the `mapHeight` (integer)
  * @property {Coordinate[]} walkableTiles BFS order of the coordinates of all walkable tiles from the player's base location
- * @property {(boolean[])[]} isWalkable Lookup table used for construction and ground unit targeting
+ * @property {(boolean[])[]} isWalkable Lookup table; walkable = whether or not another object can be placed on top of that tile
+ * @property {(boolean[])[]} isReachable Lookup table; reachable = whether or not an adjacent tile can be pathed to
  * @property {(boolean[])[]} isDerrickPosition Lookup table used for construction
  * @property {Coordinate[]} QUADRANT_SEARCH_PATTERN Lookup table used for construction
+ * @property {(number[])[]} heightMap Height map keyed by (x, y). Usage example: `state.mapData.heightMap[x][y]`.
  */
 
 /**
@@ -170,7 +172,7 @@
  * Generic FishBot 'Position' object.
  * @property {number} x 
  * @property {number} y
- * @property {number} z map height at (x,y), obtained from `MapTiles[y][x].height`.
+ * @property {number} z Map height at (x,y), obtained from `MapTiles[y][x].height` or `state.mapData.heightMap[x][y]`.
  */
 
 /** 
