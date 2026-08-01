@@ -54,7 +54,7 @@ class CommandCenter {
 			IMMEDIATE_DIRECT_FIRE_RADIUS: 8,
 			EFFECTIVE_FIRE_SUPPORT_RADIUS: 14,		// todo: this should be adaptive - when the brigade has a sensor, this is better
 			EFFECTIVE_ADA_RADIUS: 14,
-		}
+		};
 
 		// Aviation parameters
 		/** @type {AviationParameters} */
@@ -74,11 +74,18 @@ class CommandCenter {
 		// Construction parameters
 		/** @type {ConstructionParameters} */
 		this.CONSTRUCTION_PARAMETERS = {
+			// Concurrency
+			MAX_PARALLEL_BASE_BUILD_TASKS: 1,
+			MAX_PARALLEL_OIL_CAP_TASKS: 4,
+			MAX_PARALLEL_DEFENCE_BUILD_TASKS: 1,
+			MAX_PARALLEL_REPAIR_CENTER_BUILD_TASKS: 1,
+
+			// Structure limits
 			MAX_GENERATORS_AND_POWER_MODULES: 2,
 			MAX_VTOL_REARMING_PADS: 2, 
 			SHOULD_BUILD_VTOLS: false,
 			SHOULD_USE_FACTORY_MODULES: false,
-		}
+		};
 
 		// Production parameters
 		this.MAX_TRUCKS = 8;
@@ -91,7 +98,7 @@ class CommandCenter {
 			'MAX_SENSOR': 1,
 			'MAX_INFANTRY': 6,
 			'MAX_REPAIR': 1,
-		}
+		};
 		this.TOTAL_UNITS_PER_BRIGADE = Object.values(this.FISHBOT_BRIGADE_COMPOSITION).reduce((a, b) => a + b, 0);
 
 		this.NUMBER_OF_BRIGADES = 4;
@@ -220,6 +227,10 @@ class CommandCenter {
 		}
 	}
 
+	///////////////////////////////////////////////////     STRATEGY     ///////////////////////////////////////////////////
+
+	
+
 	/////////////////////////////////////////////////// G2: INTELLIGENCE ///////////////////////////////////////////////////
 
 	/**
@@ -281,7 +292,7 @@ class CommandCenter {
 
 	/**
 	 * Updates FishBot's strategic parameters with evolution of the game state.
-	 * The intent is: `state` stores the objective world, while `hq_command` stores the decisions based on observations of the state.
+	 * The intent is `_world_state.js` stores the objective world, while `hq_command.js` stores the decisions based on observations of that state.
 	 * @param {worldState} state 
 	 * @returns {void} Writes directly to `this`.
 	 */
@@ -338,6 +349,19 @@ class CommandCenter {
 		/*
 			CONSTRUCTION PARAMETERS
 		*/
+
+		// Concurrency
+		const MAX_PARALLEL_BASE_BUILD_TASKS = 1;
+		const MAX_PARALLEL_OIL_CAP_TASKS = 4;
+		const MAX_PARALLEL_DEFENCE_BUILD_TASKS = (gameTime < 180000) ? 1 : 2;		// hack; tuned for Gamma
+		const MAX_PARALLEL_REPAIR_CENTER_BUILD_TASKS = 1;
+
+		this.CONSTRUCTION_PARAMETERS.MAX_PARALLEL_BASE_BUILD_TASKS = MAX_PARALLEL_BASE_BUILD_TASKS;
+		this.CONSTRUCTION_PARAMETERS.MAX_PARALLEL_OIL_CAP_TASKS = MAX_PARALLEL_OIL_CAP_TASKS;
+		this.CONSTRUCTION_PARAMETERS.MAX_PARALLEL_DEFENCE_BUILD_TASKS = MAX_PARALLEL_DEFENCE_BUILD_TASKS;
+		this.CONSTRUCTION_PARAMETERS.MAX_PARALLEL_REPAIR_CENTER_BUILD_TASKS = MAX_PARALLEL_REPAIR_CENTER_BUILD_TASKS;
+
+		// Structure limit adaptation
 		const generatorsRequired = Math.ceil((MY_DERRICK_COUNT + 1) / 4);		// + 1 is here to provide extra capacity
 		const MIN_GENERATORS = 2;
 
@@ -925,37 +949,28 @@ class CommandCenter {
 		const approvedConstructionTasks = [];
 
 		// BASE BUILD
-		const MAX_BASE_BUILD_TASKS = 1;
-		const baseBuildDeficit = MAX_BASE_BUILD_TASKS - activeBaseBuildTasks.length;
+		const baseBuildDeficit = this.CONSTRUCTION_PARAMETERS.MAX_PARALLEL_BASE_BUILD_TASKS - activeBaseBuildTasks.length;
 		if (baseBuildDeficit > 0) {
 			const requestedBaseBuildTasks = engineering.requestBaseConstruction(state, this.CONSTRUCTION_PARAMETERS);
-			approvedConstructionTasks.push(...requestedBaseBuildTasks.slice(0, 1));
+			approvedConstructionTasks.push(...requestedBaseBuildTasks.slice(0, baseBuildDeficit));
 		}
 
 		// OIL CAP
-		const MAX_OIL_CAP_TASKS = 4; 
-		const oilCapDeficit = MAX_OIL_CAP_TASKS - activeOilCapTaskIDs.length;
+		const oilCapDeficit = this.CONSTRUCTION_PARAMETERS.MAX_PARALLEL_OIL_CAP_TASKS - activeOilCapTaskIDs.length;
 		if (oilCapDeficit > 0) {
 			const sectorOilCapTasks = engineering.generateOilCaptureOptions(state, activeOilCapTaskIDs);
 			approvedConstructionTasks.push(...sectorOilCapTasks.slice(0, oilCapDeficit));
 		}
 	
 		// DERRICK DEFENCES
-		const MAX_CONCURRENT_FORTIFICATION_TASKS = (gameTime < 180000) ? 1 : 2;		// hack; tuned for Gamma
-		const ACTIVE_FORTIFICATION_TASKS = activeDefenceBuildTaskIDs.length;
-		const fortificationDeficit = MAX_CONCURRENT_FORTIFICATION_TASKS - ACTIVE_FORTIFICATION_TASKS;
-
+		const fortificationDeficit = this.CONSTRUCTION_PARAMETERS.MAX_PARALLEL_DEFENCE_BUILD_TASKS - activeDefenceBuildTaskIDs.length;
 		if (fortificationDeficit > 0) {
 			const sectorDefenceTasks = engineering.generateOilDefenceConstructionOptions(state, activeDefenceBuildTaskIDs);
-			const approvedSectorDefenceTasks = sectorDefenceTasks.slice(0, fortificationDeficit);
-			approvedConstructionTasks.push(...approvedSectorDefenceTasks);
+			approvedConstructionTasks.push(...sectorDefenceTasks.slice(0, fortificationDeficit));
 		}
 
 		// LOCAL REPAIR CENTERS	
-		const MAX_CONCURRENT_REPAIR_CENTER_BUILDS = 1;
-		const ACTIVE_REPAIR_CENTER_TASKS = activeRepairCenterBuildTaskIDs.length;
-		const repairCenterEmptyTaskSlots = MAX_CONCURRENT_REPAIR_CENTER_BUILDS - ACTIVE_REPAIR_CENTER_TASKS;
-
+		const repairCenterEmptyTaskSlots = this.CONSTRUCTION_PARAMETERS.MAX_PARALLEL_REPAIR_CENTER_BUILD_TASKS - activeRepairCenterBuildTaskIDs.length;
 		if (repairCenterEmptyTaskSlots > 0) {
 
 			const myRepairFacilities = state.playerInfo[me]["repairFacilityFbObjects"];
@@ -972,8 +987,6 @@ class CommandCenter {
 			const BELOW_REPAIR_FACILITY_HARD_CAP = myRepairFacilities.length < state.getMaxStructureCount("Repair Facility");
 
 			const NEW_FACILITY_REQUESTED = newFacilityLocations.length !== 0;
-
-			// debug(`	${gameTime}: BELOW_REPAIR_FACILITY_HARD_CAP: ${BELOW_REPAIR_FACILITY_HARD_CAP} (${myRepairFacilities.length} / ${state.REPAIR_FACILITY_HARD_CAP}), NEW_FACILITY_REQUESTED: ${NEW_FACILITY_REQUESTED}`);
 
 			if (NEW_FACILITY_REQUESTED) {
 				if (BELOW_REPAIR_FACILITY_HARD_CAP) {
