@@ -14,7 +14,7 @@ This file is used to record the changes to FishBot between each version.
     - Custom structure limits (in the skirmish settings) are now supported.
     - Fixed mortar units having incorrect targeting priorities.
     - Fixed trucks ignoring newly-built enemy defences.
-
+    - Fixed trucks getting stuck trying to build derricks & structures in non-reachable locations (e.g. behind destroyable features). FishBot will now ignore these locations.
 
 ## Fishbot v0.5.0
 *Released **29 Jul 2026***
