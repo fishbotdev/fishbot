@@ -607,16 +607,60 @@ class worldStateBuilder {
         //   but in the actual game, *Snowy Tree2* seems to have a 2x2 collision box!
         // Note: "*Snowy Tree2*" (e.g. 2c-Roughness) that is centered at [85, 48] would have other tiles at [84, 48], [84, 47], [85, 47]. 
         //   This is consistent with how other 2x2 base structures are treated e.g. Power Generator / Research Facility.
-        const FEATURE_NAMES_2X2 = ["*Snowy Tree2*", "*LargeCoolingTower*", "*NuclearPowerStation*", "*OldFactory*", "Indirectweaponslab", "Nanolab", ]; 
-        const FEATURE_NAMES_3X3 = ["*Building 1*", "*Building 2*", "*Building 3*", "*Building 7*", "*Building 8*", "*Building 11*", ];
+        const FEATURE_NAMES_2X2 = [
+            "*Wrecked Building 9*",
+            "*Wrecked Building 17*",
+            "*Snowy Tree2*", 
+            "*LargeCoolingTower*", 
+            "*NuclearPowerStation*", 
+            "*OldFactory*", 
+            "Powerlab", 
+            "Laseropticslab", 
+            "Rotaryweaponslab", 
+            "Heavyweaponslab", 
+            "Advancedmaterialslab", 
+            "Aerodynamicslab",
+            "Nanolab", 
+            "Indirectweaponslab", 
+        ]; 
+        const FEATURE_NAMES_3X3 = [
+            "*Building 1*", 
+            "*Building 2*", 
+            "*Building 3*", 
+            "*Building 7*", 
+            "*Building 8*", 
+            "*Building 11*", 
+            "*Wrecked Building 16*",
+        ];
+        const FEATURE_NAMES_2X1 = [     // horizontal 
+            "*Building 10*",
+            "*Building 12*",
+            "Warehouse",
+            "*Warehouse2*",
+        ];
+        const FEATURE_NAMES_1X2 = [     // vertical 
+            "Wrecked Tanker",
+            "*Warehouse3*",
+        ];
 
         const OFFSET_2X2 = [[0, 0], [0, -1], [-1, 0], [-1, -1]];
         const OFFSET_3X3 = [[0, 0], [-1, -1], [-1, 0], [-1, 1], [0, 1], [1, 1], [1, 0], [1, -1], [0, -1]];
+        const OFFSET_2X1 = [[0, 0], [-1, 0]];       // horizontal
+        const OFFSET_1X2 = [[0, 0], [0, -1]];       // vertical
 
         // Note: `enumFeature` includes oil derrick positions too so `isDerrickPosition` is not required yet.
         const allFeatures = enumFeature(ALL_PLAYERS);   
         
         const SHOW_FEATURES = false;        // enable this to see all features highlighted with red highlight
+
+        const setBaseNonWalkableTiles = (x, y, offsets) => {
+            offsets.forEach(o => {
+                const ox = x + o[0];
+                const oy = y + o[1];
+                isBaseNonWalkableTile[ox][oy] = true;
+                if (SHOW_FEATURES)  hackMarkTiles(ox, oy);              
+            });
+        }
 
         allFeatures.forEach(feature => {
             const x = feature.x, y = feature.y;
@@ -624,22 +668,15 @@ class worldStateBuilder {
 
             if (SHOW_FEATURES)  debug(`${featureName} (id: ${feature.id}) (${x}, ${y})`);
             if (FEATURE_NAMES_2X2.includes(featureName)) {
-                OFFSET_2X2.forEach(o => {
-                    const ox = x + o[0];
-                    const oy = y + o[1];
-                    isBaseNonWalkableTile[ox][oy] = true;
-                    if (SHOW_FEATURES)  hackMarkTiles(ox, oy);              
-                });
+                setBaseNonWalkableTiles(x, y, OFFSET_2X2);
             } else if (FEATURE_NAMES_3X3.includes(featureName)) {
-                OFFSET_3X3.forEach(o => {
-                    const ox = x + o[0];
-                    const oy = y + o[1];
-                    isBaseNonWalkableTile[ox][oy] = true;
-                    if (SHOW_FEATURES)  hackMarkTiles(ox, oy);               
-                });
+                setBaseNonWalkableTiles(x, y, OFFSET_3X3);
+            } else if (FEATURE_NAMES_2X1.includes(featureName)) {
+                setBaseNonWalkableTiles(x, y, OFFSET_2X1);
+            } else if (FEATURE_NAMES_1X2.includes(featureName)) {
+                setBaseNonWalkableTiles(x, y, OFFSET_1X2);
             } else if (featureName === "Oil Resource") {
-                // Explicitly showing that Oil Resources are treated as non-walkable.
-                // Walkable is a check used by the targeting algorithm to determine if a target is valid or not.
+                // Explicitly showing that Oil Resources are treated as a 1x1 non-walkable feature.
                 isBaseNonWalkableTile[feature.x][feature.y] = true;     
             } else {
                 isBaseNonWalkableTile[feature.x][feature.y] = true;
@@ -696,7 +733,7 @@ class worldStateBuilder {
             
             // If one of the adjacent tiles are walkable, then the derrick should be classed as reachable (but not walkable, since a unit cannot occupy an Oil Resource tile)
             if (ADJACENT_TILE_OFFSETS.some(o => isWalkable[d.x + o[0]][d.y + o[1]])) {      
-                markTile(d.x, d.y);    // Uncomment this to see the reachable oil derricks on the map
+                // markTile(d.x, d.y);    // Uncomment this to see the reachable oil derricks on the map
                 isReachable[d.x][d.y] = true;
             }
         });

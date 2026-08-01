@@ -230,8 +230,8 @@ function getWalkableTiles(isBaseNonReachableTile) {
 	let iters = 0;
 	
 	// Formatted as [x, y, manhattanDistance]
-	const NEIGHBOUR_OFFSETS = [[-1, -1, 2], [-1, 0, 1], [-1, 1, 2], [0, 1, 1], [1, 1, 2], [1, 0, 1], [1, -1, 2], [0, -1, 1]];		// allows for diagonal movement
-	// const NEIGHBOUR_OFFSETS = [[-1, 0, 1], [0, 1, 1], [1, 0, 1], [0, -1, 1]];		// up / down / left / right movement only
+	// const NEIGHBOUR_OFFSETS = [[-1, -1, 2], [-1, 0, 1], [-1, 1, 2], [0, 1, 1], [1, 1, 2], [1, 0, 1], [1, -1, 2], [0, -1, 1]];		// allows for diagonal movement (more optimistic estimate of walkable tiles)
+	const NEIGHBOUR_OFFSETS = [[-1, 0, 1], [0, 1, 1], [1, 0, 1], [0, -1, 1]];		// up / down / left / right movement only (more conservative estimate of walkable tiles)
 
 	while (toSearch.length != 0 && iters < MAX_ITERS) {
 		const node = toSearch.shift();
