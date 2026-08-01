@@ -126,7 +126,7 @@ class armyAviation {
 
 		let taskForceUnits = airReserve.slice(0, numRaidAircraft);  
 		if (airReserve.length > numRaidAircraft) {
-			let armedAircraft = airReserve.filter(aircraft => vtolArmed(aircraft));		
+			let armedAircraft = airReserve.filter(aircraft => vtolArmed(aircraft, 85));		
 			if (armedAircraft.length >= numRaidAircraft) {
 				taskForceUnits = armedAircraft.slice(0, numRaidAircraft);
 			}
