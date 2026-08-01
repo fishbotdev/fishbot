@@ -19,12 +19,12 @@
  * This file implements FishBot's *strategic* layer.
  * 
  * All of FishBot's reasoning and decision-making functions are implemented here:
- * 	- runIntelligence (gathers information from the map & stores in `state`)
- * 	- runCombatOperations (directs combat units to move around)
- * 	- runConstructionLogistics (directs trucks to build / demolish stuff)
- * 	- runResupplyLogistics (assigns newly produced units into combat groups)
- * 	- runProductionLogistics (directs factories to build new units depending on supply requirements)
- * 	- runResearchLogistics (directs labs to research)
+	- `runIntelligence` (gathers information from the map & stores in `state`)
+	- `runCombatOperations` (directs combat units to move around)
+	- `runConstructionLogistics` (directs trucks to build / demolish stuff)
+ 	- `runResupplyLogistics` (assigns newly produced units into combat groups)
+ 	- `runProductionLogistics` (directs factories to build new units depending on supply requirements)
+	- `runResearchLogistics` (directs labs to research)
  * 
  * Architecture notes:
  * The functions in this class:
@@ -80,7 +80,7 @@ class CommandCenter {
 			SHOULD_USE_FACTORY_MODULES: false,
 		}
 
-		// Production strategic parameters
+		// Production parameters
 		this.MAX_TRUCKS = 8;
 
 		this.FISHBOT_BRIGADE_COMPOSITION = {
@@ -113,9 +113,11 @@ class CommandCenter {
 		this.CYBORG_REPAIR_THRESHOLD = 45;
 		
 		// Research parameters
+		const defaultResearchPath = rnd.researchOrders.getT2CannonResearchPath();
+
 		/** @type {ResearchParameters} */
 		this.RESEARCH_PARAMETERS = {
-			
+			path: defaultResearchPath,
 		};
 
 		// Task scheduling parameters
@@ -1377,8 +1379,7 @@ class CommandCenter {
 			return;
 		}
 
-		const researchPath = rnd.researchOrders.getT2CannonResearchPath();		// hardcoded for now
-		const proposedResearches = rnd.proposeResearch(...researchPath, this.RESEARCH_PARAMETERS);
+		const proposedResearches = rnd.proposeResearch(this.RESEARCH_PARAMETERS);
 		const researchOrder = [...proposedResearches['highPriority'], ...proposedResearches['regularPriority']];
 		
 		let positionInResearchOrder = 0;

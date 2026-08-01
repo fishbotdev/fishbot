@@ -42,5 +42,5 @@ const engineering = new armyEngineering();
 
 const rnd = new armyResearchAndDevelopment();
 
-// Commander: Makes all decisions
+// Commander: Makes strategic decisions
 const hq = new CommandCenter();

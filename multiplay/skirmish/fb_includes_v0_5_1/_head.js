@@ -268,8 +268,15 @@
  * @property {boolean} SHOULD_USE_FACTORY_MODULES 
  */
 
+/** 
+ * @typedef {Object} ResearchPath
+ * @property {string[]} researchPriorities 
+ * @property {string[]} researchBlacklist  
+ */
+
 /**
  * @typedef {Object} ResearchParameters
+ * @property {ResearchPath} path
  */
 
 

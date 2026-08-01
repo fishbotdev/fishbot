@@ -731,7 +731,7 @@ class worldStateBuilder {
         derrickPositions.forEach(d => {
             isDerrickPosition[d.x][d.y] = true;
             
-            // If one of the adjacent tiles are walkable, then the derrick should be classed as reachable (but not walkable, since a unit cannot occupy an Oil Resource tile)
+            // If one of the adjacent tiles are walkable, then the derrick should be classed as reachable (but not walkable, since a unit / structure cannot occupy an Oil Resource tile)
             if (ADJACENT_TILE_OFFSETS.some(o => isWalkable[d.x + o[0]][d.y + o[1]])) {      
                 // markTile(d.x, d.y);    // Uncomment this to see the reachable oil derricks on the map
                 isReachable[d.x][d.y] = true;

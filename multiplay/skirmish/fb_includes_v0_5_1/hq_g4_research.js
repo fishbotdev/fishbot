@@ -22,7 +22,7 @@ class FishBotResearchOrders {
 	}
 
 	/**
-	 * @returns {[string[], string[]]}
+	 * @returns {ResearchPath} Research priorities and & blacklist for Cannons @ Tech Level 2 (T2).
 	 */
 	getT2CannonResearchPath() {
 		/* Example FishBot v0.5.1 research order (7c-Thales, with basically infinite oil):
@@ -160,7 +160,10 @@ class FishBotResearchOrders {
 			"Flame", "Rocket", "Missile", "R-Defense", "R-Sys-VTOLStrike-Turret", "R-Wpn-PlasmaCannon", 
 		];
 
-		return [FISHBOT_T2_CANNON_RESEARCH_PRIORITIES, FISHBOT_T2_CANNON_RESEARCH_BLACKLIST];
+		return {
+			'researchPriorities': FISHBOT_T2_CANNON_RESEARCH_PRIORITIES, 
+			'researchBlacklist': FISHBOT_T2_CANNON_RESEARCH_BLACKLIST,
+		};
 	}
 }
 
@@ -168,16 +171,15 @@ class FishBotResearchOrders {
 class armyResearchAndDevelopment {
 	constructor() {
 		this.researchOrders = new FishBotResearchOrders();
-
 	}
 
 	/**
-	 * Chooses the next research (from the list of available researches) using the provided research priorities.
-	 * @param {string[]} researchPriorities 
-	 * @param {string[]} researchBlacklist 
+	 * Chooses the next research (from the list of available researches) using the provided research path.
 	 * @param {ResearchParameters} parameters 
 	 */
-	proposeResearch(researchPriorities, researchBlacklist, parameters) {
+	proposeResearch(parameters) {
+		const researchPriorities = parameters.path.researchPriorities;
+		const researchBlacklist = parameters.path.researchBlacklist;
 
 		const currAvailableResearches = enumResearch();		
 		// debug(`${gameTime} (FishBot ${me}): `);
