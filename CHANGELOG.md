@@ -4,18 +4,18 @@ This file is used to record the changes to FishBot between each version.
 ## Fishbot v0.5.1
 *Released **x Aug 2026***
 ### Changes in v0.5.1
-- Strategic improvements
-    - Can compare its oil situation relative to other players. Aviation targeting is now influenced directly by FishBot's oil situation.
-- Operational improvements
-- Tactical improvements
-    - Research:
-        - Improved transition from T2 to T3 Cannon technologies (better focus on Tiger/Vengeance bodies & Rail Gun/Gauss Cannon).
+- Tactics:
+    - Can now compare its oil situation relative to other players. Aviation targeting now reflects FishBot's oil situation.
+    - Improved research transition from T2 to T3 Cannon technologies (better focus on Tiger/Vengeance bodies & Rail Gun/Gauss Cannon).
 - Bug fixes:
     - Construction:
         - Custom structure limits (in the skirmish settings) are now supported.
         - Fixed trucks ignoring newly-constructed enemy defences.
-        - Fixed trucks getting stuck trying to build structures/derricks in non-reachable locations (e.g. behind destroyable features). FishBot will now ignore these locations.
+        - Fixed trucks getting stuck trying to build structures/derricks in non-reachable locations (e.g. behind destroyable features). FishBot will now ignore these locations permanently.
     - Fixed mortar units having incorrect targeting priorities.
+- Technical changes:
+    - Consolidated all of FishBot's strategic thinking in one place. In the future, this will make it easier to implement more intelligent strategies.
+
 
 ## Fishbot v0.5.0
 *Released **29 Jul 2026***
