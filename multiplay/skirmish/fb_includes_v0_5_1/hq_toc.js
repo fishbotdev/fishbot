@@ -44,12 +44,11 @@ class TacticalOperationsCenter {
 	}
 
 	/**
-	 * 
+	 * This function manages the queue of missions, executes in-progress missions & prunes the `state.activeMissions` list after processing.
 	 * @param {worldState} state 
-	 * @returns 
+	 * @returns {void}
 	 */
 	manageMissions(state) {
-		// This function manages the queue of missions; it is a state mutator
 
 		if (state.activeMissions.length === 0) {
 			return;
@@ -110,7 +109,7 @@ class TacticalOperationsCenter {
 						continue;		// continue processing the next mission
 					default:
 						// do nothing
-						debug(`${me}:  ${getCurrGameTime()}\tWARNING: could not understand return-code "${retval.status}" for in-progress mission "${md.id}"`);
+						warn(`Could not understand return code: "${retval.status}" for in-progress mission "${md.id}". Skipping.`);
 				}
 			}
 		}
@@ -136,7 +135,7 @@ class TacticalOperationsCenter {
 
 			const missionData = this.createNewMission({missionType: missionType, priority: priority}, target, NUM_UNITS, tickUID);
 				
-			if (defined(missionData)) {
+			if (missionData != undefined) {
 				// debug(`Scheduled AIR_STRIKE (${missionType}) for:`, missionData.id, newMissionRequest.name, newMissionRequest.type, newMissionRequest.player, newMissionRequest.id);
 				state.activeMissions.push(missionData);
 			}
@@ -185,15 +184,14 @@ class TacticalOperationsCenter {
 	}
 
 	/**
-	 * This function returns either:
-	 * - `missionID`, if mission was created successfully
-	 * - `undefined`, if mission was not created
-	 * @param {*} missionData object containing `missionType: number` and `priority: number`.
+	 * @param {Object} missionData 
+	 * @param {number} missionData.missionType
+	 * @param {number} missionData.priority
 	 * @param  {...any} args arguments containing mission information & administrative data (e.g. `tickUID` is used to differentiate the same type of mission started on the same decision tick).
-	 * @returns 
+	 * @returns {ConstructionMissionData | CombatMissionData | undefined}
 	 */
 	createNewMission({missionType, priority=MISSION_PRIORITY.LOW}, ...args) {
-		let md = undefined; 	
+		let md; 	
 
 		switch (missionType) {
 			case MISSION_TYPE.ABORT_MISSION:
@@ -203,68 +201,66 @@ class TacticalOperationsCenter {
 				AVIATION MISSIONS
 			*/
 			case MISSION_TYPE.VTOL_STAGING_MISSION:
-				md = aviation.createVtolStagingMission();		
+				md = aviation.createVtolStagingMission({missionType: missionType});		
 				break;
 			case MISSION_TYPE.CAS_STRIKE:
-				md = aviation.createAirStrikeMission({targetInfo: args[0], numRaidAircraft: args[1], tickUID: args[2], type: "CAS_STRIKE"});
+				md = aviation.createAirStrikeMission({missionType: missionType, target: args[0], numRaidAircraft: args[1], tickUID: args[2], type: "CAS_STRIKE"});
 				break;
 			case MISSION_TYPE.AIR_RAID:
-				md = aviation.createAirStrikeMission({targetInfo: args[0], numRaidAircraft: args[1], tickUID: args[2], type: "AIR_RAID"});
+				md = aviation.createAirStrikeMission({missionType: missionType, target: args[0], numRaidAircraft: args[1], tickUID: args[2], type: "AIR_RAID"});
 				break;
 			case MISSION_TYPE.DAS_STRIKE:
-				md = aviation.createAirStrikeMission({targetInfo: args[0], numRaidAircraft: args[1], tickUID: args[2], type: "DAS_STRIKE"});
+				md = aviation.createAirStrikeMission({missionType: missionType, target: args[0], numRaidAircraft: args[1], tickUID: args[2], type: "DAS_STRIKE"});
 				break;
 
 			/*
 				GROUND MISSIONS
 			*/
 			case MISSION_TYPE.RETURN_FOR_REPAIR:
-				md = groundForces.createReturnForRepairMission();
+				md = groundForces.createReturnForRepairMission({missionType: missionType});
 				break;
 
 			/*
 				CONSTRUCTION MISSIONS
 			*/
 			case MISSION_TYPE.HELP_CONSTRUCT:
-				md = engineering.createHelpConstructTask();		
+				md = engineering.createHelpConstructTask({missionType: missionType});		
 				break;
 			case MISSION_TYPE.CONSTRUCT_OIL_DERRICK:
-				md = engineering.createBuildDerrickTask({buildTask: args[0], tickUID: args[1]});
+				md = engineering.createBuildDerrickTask({missionType: missionType, buildTask: args[0], tickUID: args[1]});
 				break;
 			case MISSION_TYPE.CONSTRUCT_BASE_STRUCTURE:
-				md = engineering.createBuildBaseStructureTask({buildTask: args[0], tickUID: args[1]});		
+				md = engineering.createBuildBaseStructureTask({missionType: missionType, buildTask: args[0], tickUID: args[1]});		
 				break;
 			case MISSION_TYPE.CONSTRUCT_SINGLE_MODULE:
-				md = engineering.createBuildSingleModuleTask({buildTask: args[0], tickUID: args[1]});
+				md = engineering.createBuildSingleModuleTask({missionType: missionType, buildTask: args[0], tickUID: args[1]});
 				break;
 			case MISSION_TYPE.CONSTRUCT_NEARBY_DEFENCE:
-				md = engineering.createBuildNearbyDefenceTask({buildTask: args[0], tickUID: args[1]});		
+				md = engineering.createBuildNearbyDefenceTask({missionType: missionType, buildTask: args[0], tickUID: args[1]});		
 				break;
 			case MISSION_TYPE.CONSTRUCT_ALL_DERRICKS_IN_SECTOR:
-				md = engineering.createBuildAllDerricksInSectorTask({buildTask: args[0], tickUID: args[1]});
+				md = engineering.createBuildAllDerricksInSectorTask({missionType: missionType, buildTask: args[0], tickUID: args[1]});
 				break;
 			case MISSION_TYPE.CONSTRUCT_REPAIR_CENTER:
-				md = engineering.createBuildRepairCenterTask({buildTask: args[0], tickUID: args[1]});		
+				md = engineering.createBuildRepairCenterTask({missionType: missionType, buildTask: args[0], tickUID: args[1]});		
 				break;
 			case MISSION_TYPE.DEMOLISH_REPAIR_CENTER:
-				md = engineering.createDemolishRepairCenterTask({buildTask: args[0], tickUID: args[1]})		
+				md = engineering.createDemolishRepairCenterTask({missionType: missionType, buildTask: args[0], tickUID: args[1]})		
 				break;	
 			default:	
 				// Do nothing
 		}
 
-		if (md !== undefined) {
-			// If mission is valid, mission data (md) is defined
-			md.missionStatus = MISSION_STATUS.NOT_STARTED;
-			md.missionType = missionType;
-			md.priority = priority;	
-			md.timeStarted = getCurrGameTime();
-
-			// If valid mission, return missionData to higher level command, else, return undefined
-			return md;			
-		} else {
-			return undefined;		 
+		// If valid mission, return missionData to higher level command, else, return undefined
+		if (md == undefined) {
+			return undefined;
 		}
+		
+		// If mission is valid, mission data (md) is defined
+		md.missionStatus = MISSION_STATUS.NOT_STARTED;
+		md.priority = priority;	
+		md.timeStarted = gameTime;
+		return md;			
 	}
 
 	#debugPrintSpatialField(heatmap, name) {
@@ -438,7 +434,8 @@ class TacticalOperationsCenter {
 		const baseControlRadius = Math.min(EQUIDIVISION_RADIUS, Math.ceil(30 / cellSize));
 
 		state.poi.bases.forEach(b => {
-			if (!livingPlayers.includes(b.playerID)) return;
+			if (b.playerID == null) 	return;
+			if (!livingPlayers.includes(b.playerID)) 	return;
 			
 			if (isEnemy(b.playerID)) {
 				this.#floodFillSquareRegion(state.fields['controlStability'], numXCells, numYCells, b.gx, b.gy, baseControlRadius, -5);
@@ -795,14 +792,13 @@ class TacticalOperationsCenter {
 	 * Updates unit lists for each battalion in a brigade.
 	 * @param {worldState} state 
 	 * @param {number} brigadeID 
-	 * @param {Object} maxBrigadeComposition  
-     * @param {number} vehicleRepairThreshold
-     * @param {number} cyborgRepairThreshold
+     * @param {ProductionParameters} parameters
 	 * @returns {void}
 	 */
-    updateBrigadeSupplyStatus(state, brigadeID, maxBrigadeComposition, vehicleRepairThreshold, cyborgRepairThreshold) {
+    updateBrigadeSupplyStatus(state, brigadeID, parameters) {
         
-		const brigadeComposition = state.brigades[brigadeID]["composition"]
+		const brigadeComposition = state.brigades[brigadeID]["composition"];
+		const maxBrigadeComposition = parameters.BRIGADE_COMPOSITION;
 
 		/** @type {Map<number, number>} */
         const maxUnitsByCategory = new Map([
@@ -843,11 +839,11 @@ class TacticalOperationsCenter {
 
             const currBattalion = brigadeComposition.get(category);
 			if (currBattalion == null) {
-				debug(`${gameTime} WARNING: attempted to get non-existent category "${category}" in brigadeComposition.`);
+				warn(`attempted to get non-existent category "${category}" in brigadeComposition.`);
 				return;
 			}
 			
-            if (needsRepair(unit, category, cyborgRepairThreshold, vehicleRepairThreshold)) {
+            if (needsRepair(unit, category, parameters.CYBORG_REPAIR_THRESHOLD, parameters.VEHICLE_REPAIR_THRESHOLD)) {
                 currBattalion["damagedUnitList"].push(unit);
             } else {
                 currBattalion["healthyUnitList"].push(unit);
@@ -858,7 +854,7 @@ class TacticalOperationsCenter {
         for (const [category, battalionComposition] of brigadeComposition) {
             const maxUnitCount = maxUnitsByCategory.get(category);
 			if (maxUnitCount == null) {
-				debug(`${gameTime} WARNING: attempted to get non-existent maxUnitCount for category "${category}".`);
+				warn(`attempted to get non-existent maxUnitCount for category "${category}".`);
 				return;
 			}
 
@@ -979,6 +975,6 @@ class TacticalOperationsCenter {
 			return;
 		}
 
-		debug(`${gameTime}: WARNING: removeFromActiveProductionJobs() failed to remove: ${itemToRemove}`)
+		warn(`removeFromActiveProductionJobs() failed to remove: "${itemToRemove}". Ignoring.`)
 	}
 }

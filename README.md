@@ -108,6 +108,11 @@ Some current FishBot limitations are:
 * FishBot sometimes attempts to build forward-defences around derricks which are actually too dangerous to go and capture.
 
 ## Recent updates
+* **v0.5.1** - *released **_ Aug 2026***
+    * Now supports custom structure limits in skirmish settings.
+    * Fixed other construction issues e.g. trying to build behind destroyable features, and trucks ignoring (some) dangerous situations.
+    * Improved research transition from T2 to T3 (Cannon path). FishBot will now unlock Tiger / Vengeance bodies and Rail Gun / Gauss Cannon much earlier.
+
 * **v0.5.0** - *released **29 Jul 2026***
     * Now compatible with most maps shipped with Warzone 2100 v4.7.0 (validated by a new automatic testing pipeline).
     * Greatly improved combat effectiveness; now up to 4 combat groups are used.
@@ -127,12 +132,6 @@ Some current FishBot limitations are:
         * Base structure positions now account for terrain obstacles.
     * Improved TL2 to TL3 research transition (now focuses on Gauss Cannon tree).
     * FishBot now follows the same rules as human players on game start (will no longer produce Hover Trucks before the Command Center is built).
-
-* **v0.4.0** -- *released **02 May 2026***
-    * FishBot now divides its army into 2 main groups ('brigades') with 1 reserve group.
-    * FishBot now uses repair facilities, and forward-builds these near active combat brigades.
-    * Production is no longer randomised (now depends on current brigade demand).
-    * Various construction fixes and improvements (please see [`CHANGELOG.md`](CHANGELOG.md) for a full list of changes).
 
 Please see [`CHANGELOG.md`](CHANGELOG.md) for a detailed list of all past changes.
 

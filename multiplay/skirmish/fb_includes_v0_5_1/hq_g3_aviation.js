@@ -71,93 +71,104 @@ class armyAviation {
 		});
 	}
 
-	#createMissionOrders() {
+	/**
+	 * Factory function for `CombatMissionData`.
+	 * @param {number} missionType
+	 * @param {number | string} id
+	 * @param {number | string} groupID
+	 * @param {DroidObject | StructureObject | undefined} target
+	 * @returns {CombatMissionData}
+	 */
+	#createMissionOrders(missionType, id, groupID, target) {
 		return {
-			'id': undefined, 
-			'missionType': undefined, 
+			'id': id, 
+			'missionType': missionType, 
 			'missionStatus': MISSION_STATUS.FAILED_CREATION, 
 			'priority': MISSION_PRIORITY.LOW, 
-			'taskForceID': undefined, 
-			'orders': undefined, 
-			'ceaseOrders': undefined,
+			'taskForceID': groupID, 
+			'orders': () => {}, 
+			'ceaseOrders': () => {},
 			'timeStarted': -2,
 			'timeCompleted': -1,
-			
-			'target': undefined,
+			'target': target,
 		};
 	}
 
-	createVtolStagingMission() {
-		// this is the default behaviour of all AIR_RESERVE aircraft
+	/**
+	 * Mission cleanup function (releases units back to the reserves).
+	 * @param {CombatMissionData} md 
+	 * @returns {void} Writes `timeCompleted` to missionData.
+	 */
+	#finaliseVtolMission(md) {
+		const taskForceUnits = state.g.enumGroup(md.taskForceID);
+		taskForceUnits.forEach(droid => state.g.addDroidToGroup({groupID: DIVISION.AIR_RESERVE, droidID: droid.id}));
+		
+		state.g.deleteGroup(md.taskForceID);
+		md.timeCompleted = gameTime;
+	}
 
-		// it returns either:
-		// 	- missionData object (according to missionDataTemplate), if mission successfully created, OR
-		//	- undefined, if mission was not able to be created	
+	/**
+	 * This is the default behaviour of all AIR_RESERVE aircraft. `groupID` should be `DIVISION.AIR_RESERVE`.
+	 * @param {Object} missionConfig
+	 * @param {number} missionConfig.missionType
+	 * @returns {CombatMissionData}
+	 */
+	createVtolStagingMission({missionType}) {
+		const target = undefined;
+		const md =  this.#createMissionOrders(missionType, "VTOL_STAGING_MISSION", DIVISION.AIR_RESERVE, target);
 
-		let md = this.#createMissionOrders();
-
-		// Create mission details
-		md.id = "MISSION_TYPE.VTOL_STAGING_MISSION";
-		md.taskForceID = DIVISION.AIR_RESERVE;			// breaks the normal pattern: id === reserveGroup for a default action
-
-		// Assign orders for conducting & ceasing operations			
 		md.orders = () => rearmVtolGroup(md.taskForceID);		
-		md.ceaseOrders = () => {return;};	// doesn't do anything
-
+		md.ceaseOrders = () => {};
 		return md;
 	}
 	
-	createAirStrikeMission({targetInfo, numRaidAircraft=1, tickUID=undefined, type="AIR_STRIKE_GENERIC"}) {
-		// It returns either:
-		// 	- missionData object (according to missionDataTemplate), if mission successfully created, OR
-		//	- undefined, if mission was not able to be created	 
-
-		let airReserve = state.g.enumGroup(DIVISION.AIR_RESERVE);
+	/**
+	 * Creates an "Air Strike" mission for execution in the mission manager system.
+	 * @param {Object} missionConfig
+	 * @param {number} missionConfig.missionType
+	 * @param {DroidObject | StructureObject} missionConfig.target game object
+	 * @param {number} missionConfig.numRaidAircraft the number of aircraft assigned
+	 * @param {number} missionConfig.tickUID uid to distinguish between missions scheduled in the same tick
+	 * @param {string} missionConfig.type user-label for the mission (to help during debugging)
+	 * @returns {CombatMissionData | undefined} Returns undefined if the mission was not able to be created.
+	 */
+	createAirStrikeMission({missionType, target, numRaidAircraft, tickUID, type}) {
+		
+		const airReserve = state.g.enumGroup(DIVISION.AIR_RESERVE);
 		if (airReserve.length < numRaidAircraft) {
 			return undefined;
 		}
 
-		let md = this.#createMissionOrders();
+		const id = gameTime + `_${type}_` + tickUID;
 
-		// Create mission details
-		const id = getCurrGameTime() + `_${type}_` + tickUID;
-		md.id = id;
-		md.taskForceID = id;
-
-		let taskForceUnits = airReserve.slice(0, numRaidAircraft);  
-		if (airReserve.length > numRaidAircraft) {
-			let armedAircraft = airReserve.filter(aircraft => vtolArmed(aircraft));		
-			if (armedAircraft.length >= numRaidAircraft) {
-				taskForceUnits = armedAircraft.slice(0, numRaidAircraft);
+		// Select ready units
+		const readyUnits = [], notReadyUnits = [];
+		for (let i=0; i<airReserve.length; i++) {
+			const aircraft = airReserve[i];	
+			if (!vtolArmed(aircraft, 85)) {
+				notReadyUnits.push(aircraft);
+				continue;
 			}
+			readyUnits.push(aircraft);
+			if (readyUnits.length >= numRaidAircraft) {
+				break;
+			}	
+		}
+		const taskForceUnits = readyUnits;
+		const deficit = numRaidAircraft - taskForceUnits.length;
+		if (deficit > 0) {
+			taskForceUnits.push(...notReadyUnits.slice(0, deficit));
 		}
 
+		const md = this.#createMissionOrders(missionType, id, id, target);		
 		taskForceUnits.forEach((droid) => {
 			state.g.addDroidToGroup({groupID: md.taskForceID, droidID: droid.id});
 			state.g.removeDroidFromGroup({groupID: DIVISION.AIR_RESERVE, droidID: droid.id});
-		});		
-
-		md.target = targetInfo;
-
-		// Assign orders for conducting & ceasing operations			
-		md.orders = () => doAirStrike(targetInfo, md.taskForceID);		
+		});
+		md.orders = () => doAirStrike(target, id);		
 		md.ceaseOrders = () => this.#finaliseVtolMission(md);
-
+		
 		return md;
 	}
 
-	#finaliseVtolMission(md) {
-		const taskForceUnits = state.g.enumGroup(md.taskForceID);
-		if (taskForceUnits.length === 0) {
-			return;
-		} 
-		
-		// Else release resources
-		taskForceUnits.forEach((droid) => {
-			state.g.addDroidToGroup({groupID: DIVISION.AIR_RESERVE, droidID: droid.id});
-		});	
-		state.g.deleteGroup(md.taskForceID);
-
-		md.timeCompleted = getCurrGameTime();
-	}
 }

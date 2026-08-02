@@ -132,7 +132,7 @@ const DEBUG_MODE_ON = true;
 	include(FB_INCLUDES + "hq_toc.js");
 	include(FB_INCLUDES + "hq_command.js");		
 
-	// The following two files contain event handlers and the hook for starting the game. 
+	// The following three files contain event handlers and the hook for starting the game. 
 	// The files must be included in this order.
 	include(FB_INCLUDES + "_init.js");	
 	include(FB_INCLUDES + "_events.js");						

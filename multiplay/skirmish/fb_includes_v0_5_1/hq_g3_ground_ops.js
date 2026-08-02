@@ -22,40 +22,41 @@ class armyGroundOperations {
 		
 	}
 
-	#createMissionOrders() {
+	/**
+	 * Factory function for `CombatMissionData`.
+	 * @param {number} missionType
+	 * @param {number | string} id
+	 * @param {number | string} groupID
+	 * @param {DroidObject | StructureObject | undefined} target
+	 * @returns {CombatMissionData}
+	 */
+	#createMissionOrders(missionType, id, groupID, target) {
 		return {
-			'id': undefined, 
-			'missionType': undefined, 
+			'id': id, 
+			'missionType': missionType, 
 			'missionStatus': MISSION_STATUS.FAILED_CREATION, 
 			'priority': MISSION_PRIORITY.LOW, 
-			'taskForceID': undefined, 
-			'orders': undefined, 
-			'ceaseOrders': undefined,
+			'taskForceID': groupID, 
+			'orders': () => {}, 
+			'ceaseOrders': () => {},
 			'timeStarted': -2,
 			'timeCompleted': -1,
-			
-			'target': undefined,
+			'target': target,
 		};
 	}
+	/**
+	 * This is the default behaviour of all RETURN_FOR_REPAIR vehicles.
+	 * Units are moved out of the 'repair' group by resupplyLogisitics. This will move the droid into its appropriate reserve group.
+	 * @param {Object} missionConfig
+	 * @param {number} missionConfig.missionType
+	 * @returns {CombatMissionData}
+	 */
+	createReturnForRepairMission({missionType}) {
+		const target = undefined;
+		const md =  this.#createMissionOrders(missionType, "RETURN_FOR_REPAIR", DIVISION.RETURNING_FOR_REPAIR, target);
 
-	createReturnForRepairMission() {
-		// this is the default behaviour of all RETURN_FOR_REPAIR vehicles.
-		// Units are moved out of the 'repair' group by resupplyLogisitics; which will move the droid into its appropriate reserve group
-
-		// it returns either:
-		// 	- missionData object (according to missionDataTemplate), if mission successfully created, OR
-		//	- undefined, if mission was not able to be created	
-
-		let md = this.#createMissionOrders();
-
-		// Create mission details
-		md.id = "MISSION_TYPE.RETURN_FOR_REPAIR";
-		md.taskForceID = DIVISION.RETURNING_FOR_REPAIR;			// breaks the normal pattern: id === reserveGroup for a default action
-
-		// Assign orders for conducting & ceasing operations			
-		md.orders = () => returnForRepair(md.taskForceID);		
-		md.ceaseOrders = () => {return;};	// doesn't do anything
-
+		md.orders = () => returnForRepair(md.taskForceID);	
+		md.ceaseOrders = () => {};
 		return md;
 	}
 
@@ -85,13 +86,15 @@ class armyGroundOperations {
 	 * @returns {PositionInfo} `medianLocation` (if units exist); else `baseLocation`.
 	 */
 	getForceMedianLocation(brigadeID) {
-		const getUnitsIn = (brigadeID) => state.g.enumGroup(brigadeID);
+		const heightMap = state.mapData.heightMap;
 
+		const getUnitsIn = (brigadeID) => state.g.enumGroup(brigadeID);
+		
 		const brigadeUnits = getUnitsIn(brigadeID);
 
 		const baseX = baseLocation.x;
 		const baseY = baseLocation.y;
-		const baseZ = MapTiles[baseLocation.y][baseLocation.x].height;
+		const baseZ = heightMap[baseX][baseY];
 		const basePosition = {'x': baseX, 'y': baseY, 'z': baseZ};
 		if (brigadeUnits.length === 0) {
 			return basePosition;
@@ -111,8 +114,9 @@ class armyGroundOperations {
 		// Find median
 		const medianX = Math.floor(arrayMedian(droidX));
 		const medianY = Math.floor(arrayMedian(droidY));
+		const medianZ = heightMap[medianX][medianY];
 		
-		return {"x": medianX, "y": medianY, "z": MapTiles[medianY][medianX].height};
+		return {"x": medianX, "y": medianY, "z": medianZ};
 	}
 
 }

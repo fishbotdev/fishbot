@@ -25,6 +25,36 @@
 	TYPE DEFINITIONS
 */
 
+/**
+ * @typedef {Object} ConstructionMissionData
+ * @property {number | string} id 		Unique ID to designate this particular mission
+ * @property {number} missionType		Mission type (integer; defined in _head.js)
+ * @property {number} missionStatus		Mission status (integer; defined in _head.js)
+ * @property {number} priority			Mission priority (integer; defined in _head.js)
+ * @property {number | string} taskForceID	
+ * @property {Function} orders			Mission action callback
+ * @property {Function} ceaseOrders		Mission cleanup callback
+ * @property {number} timeStarted		= `gameTime` at mission start
+ * @property {number} timeCompleted
+ * @property {string} sectorID			Position parameter: (v0.3.0 sector system / object uid)
+ * @property {number} gx				Position parameter: grid x coordinate (v0.4.0 sector system)
+ * @property {number} gy				Position parameter: grid y coordinate (v0.4.0 sector system)
+ */
+
+/**
+ * @typedef {Object} CombatMissionData
+ * @property {number | string} id Unique ID to designate this particular mission
+ * @property {number} missionType 
+ * @property {number} missionStatus
+ * @property {number} priority
+ * @property {number | string} taskForceID Group ID for units assigned to this mission (typically the same as 'id')
+ * @property {Function} orders
+ * @property {Function} ceaseOrders
+ * @property {number} timeStarted
+ * @property {number} timeCompleted
+ * @property {DroidObject | StructureObject | undefined} target
+ */
+
 ///////////////////////////////////////////// INTELLIGENCE /////////////////////////////////////////////
 
 /**
@@ -48,6 +78,19 @@
  */
 
 ///////////////////////////////////////////// WORLD STATE /////////////////////////////////////////////
+
+/**
+ * Type definitions for `worldState.mapData`.
+ * @typedef {Object} MapData
+ * @property {number} HALF_MAP_WIDTH Half of the `mapWidth` (integer)
+ * @property {number} HALF_MAP_HEIGHT Half of the `mapHeight` (integer)
+ * @property {Coordinate[]} walkableTiles BFS order of the coordinates of all walkable tiles from the player's base location
+ * @property {(boolean[])[]} isWalkable Lookup table; walkable = whether or not another object can be placed on top of that tile
+ * @property {(boolean[])[]} isReachable Lookup table; reachable = whether or not an adjacent tile can be pathed to
+ * @property {(boolean[])[]} isDerrickPosition Lookup table used for construction
+ * @property {Coordinate[]} QUADRANT_SEARCH_PATTERN Lookup table used for construction
+ * @property {(number[])[]} heightMap Height map keyed by (x, y). Usage example: `state.mapData.heightMap[x][y]`.
+ */
 
 /**
  * Type definitions for `worldState.fields`.
@@ -159,7 +202,7 @@
  * Generic FishBot 'Position' object.
  * @property {number} x 
  * @property {number} y
- * @property {number} z map height at (x,y), obtained from `MapTiles[y][x].height`.
+ * @property {number} z Map height at (x,y), obtained from `MapTiles[y][x].height` or `state.mapData.heightMap[x][y]`.
  */
 
 /** 
@@ -223,15 +266,75 @@
 
 
 /*
-	HQ_COMMAND STRATEGIC PARAMETERS
+	STRATEGIC PARAMETERS
 */
 
 /**
+ * @typedef {Object} AviationParameters
+ * @property {number} totalNumAircraft
+ * @property {boolean} prioritiseCasTargets 
+ * @property {boolean} prioritiseRaidTargets 
+ * @property {boolean} prioritiseIndustrialTargets 
+ * @property {boolean} SATURATION_RAID_ACTIVE 
+ * @property {number} STANDARD_THREAT_THRESHOLD
+ * @property {number} URGENT_THREAT_THRESHOLD
+ * @property {number} SATURATION_THREAT_THRESHOLD
+ * @property {number} CAS_SUPPORT_RADIUS
+ * @property {number} UNITS_FOR_ADA_STRIKE
+ */
+
+/**
+ * @typedef {Object} GroundForceParameters
+ * @property {number} IMMEDIATE_DIRECT_FIRE_RADIUS
+ * @property {number} EFFECTIVE_FIRE_SUPPORT_RADIUS
+ * @property {number} EFFECTIVE_ADA_RADIUS
+ */
+
+/**
  * @typedef {Object} ConstructionParameters
+ * @property {number} MAX_PARALLEL_BASE_BUILD_TASKS
+ * @property {number} MAX_PARALLEL_OIL_CAP_TASKS
+ * @property {number} MAX_PARALLEL_DEFENCE_BUILD_TASKS
+ * @property {number} MAX_PARALLEL_REPAIR_CENTER_BUILD_TASKS
+ * 
  * @property {number} MAX_GENERATORS_AND_POWER_MODULES 
  * @property {number} MAX_VTOL_REARMING_PADS 
  * @property {boolean} SHOULD_BUILD_VTOLS 
  * @property {boolean} SHOULD_USE_FACTORY_MODULES 
+ */
+
+/** 
+ * @typedef {Object} ResearchPath
+ * @property {string[]} researchPriorities 
+ * @property {string[]} researchBlacklist  
+ */
+
+/**
+ * @typedef {Object} ResearchParameters
+ * @property {ResearchPath} path
+ */
+
+/**
+ * @typedef {Object} ProductionParameters
+ * @property {boolean} CAN_DESIGN_UNITS
+ * 
+ * @property {boolean} SHOULD_PRODUCE_TRUCKS
+ * @property {number} MAX_TRUCKS_THIS_TICK
+ * @property {boolean} CYBORG_CONSTRUCTOR_AVAILABLE
+ * @property {number} MAX_TRUCKS	Unit limit
+ * 
+ * @property {Map<number, number>} BRIGADE_WEIGHTS
+ * @property {Object} BRIGADE_COMPOSITION
+ * @property {number} TOTAL_UNITS_PER_BRIGADE
+ * 
+ * @property {Map<number, number>} UNIT_WEIGHTS
+ * @property {number} DEFAULT_LAND_UNIT_CATEGORY
+ * @property {boolean} SHOULD_PRODUCE_INFANTRY
+ * @property {boolean} SHOULD_PRODUCE_VTOLS
+ * @property {boolean} SHOULD_PRODUCE_LAND_VEHICLES
+ * 
+ * @property {number} VEHICLE_REPAIR_THRESHOLD
+ * @property {number} CYBORG_REPAIR_THRESHOLD
  */
 
 /*

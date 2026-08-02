@@ -103,7 +103,7 @@ function classifyGameObject(obj) {
 
             default:
                 flags |= OBJ_FLAGS.TRACKED_PROPULSION;
-                debug(`WARNING	intelligence/#classifyObject(): obj.propulsion was not understood: ${obj.propulsion}`);
+                warn(`intelligence / classifyGameObject(): obj.propulsion was not understood: "${obj.propulsion}" for "${obj.name}". Defaulted to 'TRACKED_PROPULSION'.`);
         }
 
         // Droid-specific capability

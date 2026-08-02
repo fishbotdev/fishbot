@@ -15,30 +15,6 @@
 	If not, see <https://www.gnu.org/licenses/>.
 */
 
-const QUADRANT_SEARCH_PATTERN = [
-	// This pattern: up and to the right (Q3)
-	[0, 0], 
-	[1, 0], [0, 1], 
-	[1, 1], [2, 0], [0, 2],
-	[1, 2], [2, 1], [3, 0], [0, 3],
-	[2, 2], [1, 3], [3, 1], [4, 0], [0, 4],
-	[3, 2], [2, 3], [1, 4], [4, 1], [5, 0], [0, 5]
-];
-const HALF_MAP_WIDTH = Math.floor(mapWidth / 2);
-const HALF_MAP_HEIGHT = Math.floor(mapHeight / 2);
-
-const walkableTiles = getWalkableTiles();
-const isWalkable = create2DGrid(mapWidth, mapHeight, () => {return false;});
-walkableTiles.forEach(b => {
-	const x = b[0];
-	const y = b[1];
-	isWalkable[x][y] = true;
-});
-const isDerrickPosition = {};
-derrickPositions.forEach(d => {
-	isDerrickPosition[`${d.x},${d.y}`] = true;
-});
-
 /**
  * Iterates through ranged walkable tiles from the player's base to determine the position of base structures.
  * Replaces the inbuilt `pickStructLocation`. Unlike `pickStructLocation`, it accounts for terrain obstacles.
@@ -47,18 +23,22 @@ derrickPositions.forEach(d => {
  */
 function pickBaseStructLocation(structureID) {
 
+	const walkableTiles = state.mapData.walkableTiles;
+	const isPlaceable = state.mapData.isWalkable;
+
 	const BBOX_3x3_STRUCTURES = [STRUCTURES["Factory"].id, STRUCTURES["VTOL Factory"].id, STRUCTURES["Laser Satellite Command Post"].id, STRUCTURES["Satellite Uplink Center"].id];
 	const BBOX_2x2_STRUCTURES = [STRUCTURES["Command Center"].id, STRUCTURES["Command Relay Center"].id, STRUCTURES["Power Generator"].id, STRUCTURES["Research Facility"].id];
 
-	let BBOX_COORDS = [[-1, -1], [-1, 0], [-1, 1], [0, 1], [1, 1], [1, 0], [1, -1], [0, -1]];
-	const BBOX_3X3_COORDS = [[-2, -2], [-2, -1], [-2, 0], [-2, 1], [-2, 2], [-1, 2], [0, 2], [1, 2], [2, 2], [2, 1], [2, 0], [2, -1], [2, -2], [1, -2], [0, -2], [-1, -2]];
-	const BBOX_2X2_COORDS = [[-2, -2], [-2, -1], [-2, 0], [-2, 1], [-2, 2], [-1, 1], [0, 1], [1, 1], [1, 0], [1, -1], [1, -2], [0, -2], [-1, -2]];
-	
+	const BBOX_1X1_STRUCTURES = [[-1, -1], [-1, 0], [-1, 1], [0, 1], [1, 1], [1, 0], [1, -1], [0, -1]];
+	let BBOX_COORDS = BBOX_1X1_STRUCTURES;
+		
 	if (BBOX_3x3_STRUCTURES.includes(structureID)) {
 		// coordinate for a 3x3 structure is the center tile of the structure
+		const BBOX_3X3_COORDS = [[-2, -2], [-2, -1], [-2, 0], [-2, 1], [-2, 2], [-1, 2], [0, 2], [1, 2], [2, 2], [2, 1], [2, 0], [2, -1], [2, -2], [1, -2], [0, -2], [-1, -2]];
 		BBOX_COORDS = BBOX_3X3_COORDS;
 	} else if (BBOX_2x2_STRUCTURES.includes(structureID)) {
 		// coordinate for a 2x2 structure is the bottom right tile of the structure ((7, 16) center = (7, 15), (6, 15), (6, 16))
+		const BBOX_2X2_COORDS = [[-2, -2], [-2, -1], [-2, 0], [-2, 1], [-2, 2], [-1, 1], [0, 1], [1, 1], [1, 0], [1, -1], [1, -2], [0, -2], [-1, -2]];
 		BBOX_COORDS = BBOX_2X2_COORDS
 	}
 	
@@ -83,7 +63,7 @@ function pickBaseStructLocation(structureID) {
 				break;
 			}
 
-			if (!isWalkable[x1][y1]) {
+			if (!isPlaceable[x1][y1]) {
 				boundingBoxTestFailed = true;
 				break;
 			}
@@ -108,19 +88,29 @@ function pickBaseStructLocation(structureID) {
  */
 function pickStructLocation3(structureID, x, y) {
 
-	const specifiedHeight = MapTiles[y][x].height;		// Uses this to try the match the height.
-	const HEIGHT_TOLERANCE = 33;
-	
-	if (!isWalkable[x][y]) {
+	const HALF_MAP_WIDTH = state.mapData.HALF_MAP_WIDTH;
+	const HALF_MAP_HEIGHT = state.mapData.HALF_MAP_HEIGHT;
+	const QUADRANT_SEARCH_PATTERN = state.mapData.QUADRANT_SEARCH_PATTERN;
+
+	const isPlaceable = state.mapData.isWalkable;
+	const isReachable = state.mapData.isReachable;
+	const isDerrickPosition = state.mapData.isDerrickPosition;
+	const heightMap = state.mapData.heightMap;
+
+	const playerIsEnemy = [];
+	state.playerInfo.forEach(p => playerIsEnemy.push(p.isFriendly));
+
+	if (!isReachable[x][y]) {
 		// debug(` ${gameTime}: pickStructLocation3() failed: (${x} ${y}) for "${structureID}" is not reachable with wheels. Check caller function.`);
 		return undefined;
 	}
 
-	const playerIsEnemy = [];
-	state.playerInfo.forEach(p => playerIsEnemy.push(p.isFriendly));		// TODO: Better way to access state than to access out of context?
+	const specifiedHeight = heightMap[x][y];			// Uses this to try the match the height
+	const HEIGHT_TOLERANCE = 33;						// arbitrary value which seems to work
 
 	const outsideOfHeightTolerance = [];
 
+	// Bias towards the quadrant closest to the center of the map
 	const xDirection = (x > HALF_MAP_WIDTH) ? -1 : 1;
 	const yDirection = (y > HALF_MAP_HEIGHT) ? -1 : 1;
 
@@ -133,12 +123,12 @@ function pickStructLocation3(structureID, x, y) {
 				continue;
 			}
 				
-			if (!isWalkable[tX][tY]) {
-				// debug(`	${gameTime}: psl2 rejected: (${tX}, ${tY}); not reachable`);
+			if (!isPlaceable[tX][tY]) {
+				// debug(`	${gameTime}: psl2 rejected: (${tX}, ${tY}); cannot place structure on tile`);
 				continue;
 			}
 
-			if (isDerrickPosition[`${tX},${tY}`]) {
+			if (isDerrickPosition[tX][tY]) {
 				// For some reason - `structureCanFit` / the `enumRange` check below seem to miss friendly / enemy derricks.
 				continue;
 			}
@@ -177,11 +167,11 @@ function pickStructLocation3(structureID, x, y) {
 				continue;
 			}
 
-			const z = MapTiles[tY][tX].height;
+			const z = heightMap[tX][tY];
 			const loc = {'x': tX, 'y': tY, 'z': z};
 
 			if (Math.abs(z - specifiedHeight) > HEIGHT_TOLERANCE) {
-				// debug(`	${gameTime}: psl2 rejected: (${tX}, ${tY}); height (${MapTiles[tY][tX].height} !== ${specifiedHeight})`);
+				// deb(`psl3 rejected: (${tX}, ${tY}); height (${z} !== ${specifiedHeight})`);
 				outsideOfHeightTolerance.push(loc);
 				continue;
 			}
@@ -194,7 +184,7 @@ function pickStructLocation3(structureID, x, y) {
 		return outsideOfHeightTolerance[i];		
 	}
 
-	debug(`${gameTime}\t(FishBot ${me}) WARNING: pickStructLocation3() failed @ (${x} ${y}) for "${structureID}"`);
+	warn(`pickStructLocation3() failed @ (${x} ${y}) for "${structureID}"`);
 	return undefined;
 }
 
@@ -431,7 +421,7 @@ function buildSingleModule(taskForceID, structureID, x, y, finishedNumModules) {
 	// Check if the base structure is present
 	let struct = enumRange(x, y, 3).filter(obj => {
 		const structureObj = STRUCTURES[obj.name];		// lookup obj.name in STRUCTURES
-		if (defined(structureObj)) {
+		if (structureObj != null) {
 			if (baseStructureTypeIDs.includes(structureObj.id) && obj.x === x && obj.y === y) {
 				return true;
 			}
@@ -440,13 +430,13 @@ function buildSingleModule(taskForceID, structureID, x, y, finishedNumModules) {
 	});
 
 	if (struct.length >= 2) {
-		debug(`buildSingleModule(): failed, somehow there is more than one module at ${x}, ${y}.`);
+		warn(`buildSingleModule(): failed, somehow there is more than one module at ${x}, ${y}.`);
 		return {status: MISSION_STATUS.FAILED};	
 	}
 
 	// Case 1: base structure does not exist (terminate)
 	if (struct.length === 0) {
-		debug(`buildSingleModule(): baseStructureType for ${structureID} does not exist at ${x}, ${y}. Ending build task...`);
+		// debug(`buildSingleModule(): baseStructureType for ${structureID} does not exist at ${x}, ${y}. Ending build task...`);
 		return {status: MISSION_STATUS.FAILED};
 	}
 
