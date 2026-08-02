@@ -66,7 +66,7 @@ function markTile(x, y) {
  */
 function arrayMedian(arr) {
 	if (arr.length === 0) {
-		debug(`${gameTime}: WARNING: array length passed to "arrayMedian()" is 0. Will return "undefined".`);
+		warn(`Array length passed to "arrayMedian()" is 0. Will return "undefined".`);
 	}
 	const sorted = [...arr].sort((a, b) => a - b);
 	const mid = Math.floor(sorted.length / 2);

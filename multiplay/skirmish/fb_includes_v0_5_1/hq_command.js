@@ -546,7 +546,7 @@ class CommandCenter {
 				break;
 				
 			default:
-				deb(`WARNING:  runIntelligence(): could not understand "${taskID}". Ignoring.`);
+				warn(`runIntelligence(): could not understand "${taskID}". Ignoring.`);
 				return;
 		}
 	
@@ -1068,8 +1068,8 @@ class CommandCenter {
 								  (state.g.enumGroup(ENGINEERING.BASE_BUILDER).length === 0);
 
 		if (trucksUnavailable) {
-			// debug(`${getCurrGameTimeMinSec()} WARNING: No trucks to execute construction actions.`);
-			// debug(`Active construction missions | oilcap: ${activeOilCapTaskIDs.length} |  basebuild: ${activeBaseBuildTasks.length}  | defencebuild: ${activeDefenceBuildTaskIDs.length}  | repairCenter: ${activeRepairCenterBuildTaskIDs.length}`);
+			// warn(`No trucks to execute construction actions.`);
+			// deb(`Active construction missions | oilcap: ${activeOilCapTaskIDs.length} |  basebuild: ${activeBaseBuildTasks.length}  | defencebuild: ${activeDefenceBuildTaskIDs.length}  | repairCenter: ${activeRepairCenterBuildTaskIDs.length}`);
 			return;
 		}
 
@@ -1269,7 +1269,7 @@ class CommandCenter {
 				const deficit = btnComposition['deficit'];
 				const battalionReserve = reserveUnits.get(category);
 				if (battalionReserve == null) {
-					debug(`${gameTime}: WARNING: tried to get reserve units from non-existent category "${category}". Skipping.`);
+					warn(`Tried to get reserve units from non-existent category "${category}". Skipping.`);
 					continue;
 				}
 
@@ -1315,7 +1315,7 @@ class CommandCenter {
 			activeProductionJobs.forEach(j => {
 				const FACTORY_ID = j['factory'].id;
 				if (!factoryIdList.includes(FACTORY_ID)) {
-					deb(`WARNING: removed ProductionJob "${FACTORY_ID} | ${j['type']}" as Factory "${FACTORY_ID}" was not found.`);
+					warn(`Removed ProductionJob "${FACTORY_ID} | ${j['type']}" as Factory "${FACTORY_ID}" was not found.`);
 					this.toc.removeFromActiveProductionJobs(state, j['factory'], j['type']);
 				}
 			});
@@ -1347,7 +1347,7 @@ class CommandCenter {
 
 				let brigadeWeight = this.PRODUCTION_RESUPPLY_PARAMETERS.BRIGADE_WEIGHTS.get(brigadeID);
 				if (brigadeWeight == null) {
-					deb(`WARNING: brigadeWeight for "${brigadeID}" returned null (missing). Defaulting to 1.0`);
+					warn(`brigadeWeight for "${brigadeID}" returned null (missing). Defaulting to 1.0`);
 					brigadeWeight = 1.0;
 				}
 
@@ -1374,7 +1374,7 @@ class CommandCenter {
 			}
 			if (landUnitQueue.length === 0) {
 				landUnitQueue.push(this.PRODUCTION_RESUPPLY_PARAMETERS.DEFAULT_LAND_UNIT_CATEGORY);
-				deb(`WARNING: empty queue; landVehicleCategory defaulting to: "${this.PRODUCTION_RESUPPLY_PARAMETERS.DEFAULT_LAND_UNIT_CATEGORY}"`);
+				warn(`empty landUnitQueue; landVehicleCategory defaulting to: "${this.PRODUCTION_RESUPPLY_PARAMETERS.DEFAULT_LAND_UNIT_CATEGORY}"`);
 			}
 
 			if (false) {

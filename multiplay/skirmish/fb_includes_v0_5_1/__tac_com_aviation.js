@@ -37,7 +37,7 @@ function vtolArmed(droid, percentage) {
 
 	const weaponArmedPercentage = droid.weapons[0]?.armed;		// Note: `droid.armed` returns '0'.
 	if (weaponArmedPercentage == null) {
-		deb(`WARNING: vtolArmed() was called with a droid "${droid.name}" (id: ${droid.id}) that does not have "droid.weapons". Returned 'true'.`);
+		warn(`vtolArmed(): called with a droid "${droid.name}" (id: ${droid.id}) that does not have "droid.weapons". Returned 'true'.`);
 		return true;
 	}
 	

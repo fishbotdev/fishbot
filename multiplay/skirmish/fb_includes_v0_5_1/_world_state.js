@@ -213,11 +213,6 @@ class fbGrid {
             'friendlyStructures': [],
         };
 
-        if (this.grid == null) {
-            debug(`WARNING: grid.enumRange() could not read from undefined grid.`);
-            return result;
-        }
-
         const cx = Math.floor(x / this.cellSize);
         const cy = Math.floor(y / this.cellSize);
         const gr = Math.ceil(radius / this.cellSize);
@@ -410,7 +405,7 @@ class worldState {
     getMaxStructureCount(structureName) {
         const maxStructureCount = this.MAX_STRUCTURE_COUNT.get(structureName);
         if (maxStructureCount == null) {
-            debug(`${getCurrGameTimeMinSec()}\tWARNING: undefined "${structureName}" passed to state.MAX_STRUCTURE_COUNT. Returning 1.`);
+            warn(`undefined "${structureName}" passed to state.MAX_STRUCTURE_COUNT. Returning 1.`);
             return 1;
         }
         return maxStructureCount;
@@ -543,7 +538,7 @@ class worldStateBuilder {
         const b = [];
 
         if (startPositions.length !== maxPlayers) {
-            debug(`WARNING: ${startPositions.length} !== ${maxPlayers}! Weird behaviour may result: e.g. playerInfo might be unsynced with base locations.`);
+            warn(`${startPositions.length} !== ${maxPlayers}! Weird behaviour may result: e.g. playerInfo might be unsynced with base locations.`);
         }
 
         for (let i=0; i<startPositions.length; i++) {

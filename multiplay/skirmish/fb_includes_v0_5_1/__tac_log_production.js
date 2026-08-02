@@ -525,7 +525,7 @@ function produceLandUnitCategory(category, factory) {
 			productionStarted = productionStarted || produceHeavyRepair(factory);
 			break;
 		default:
-			debug(`${gameTime}: WARNING: produceLandUnitCategory() did not understand "${category}"; falling back to light cav production.`);
+			warn(`produceLandUnitCategory() did not understand "${category}". Falling back to light cav production.`);
 			productionStarted = productionStarted || produceLightCavalry(factory);
 	}
 

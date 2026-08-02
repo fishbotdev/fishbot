@@ -184,7 +184,7 @@ function pickStructLocation3(structureID, x, y) {
 		return outsideOfHeightTolerance[i];		
 	}
 
-	debug(`${gameTime}\t(FishBot ${me}) WARNING: pickStructLocation3() failed @ (${x} ${y}) for "${structureID}"`);
+	warn(`pickStructLocation3() failed @ (${x} ${y}) for "${structureID}"`);
 	return undefined;
 }
 
@@ -430,13 +430,13 @@ function buildSingleModule(taskForceID, structureID, x, y, finishedNumModules) {
 	});
 
 	if (struct.length >= 2) {
-		debug(`buildSingleModule(): failed, somehow there is more than one module at ${x}, ${y}.`);
+		warn(`buildSingleModule(): failed, somehow there is more than one module at ${x}, ${y}.`);
 		return {status: MISSION_STATUS.FAILED};	
 	}
 
 	// Case 1: base structure does not exist (terminate)
 	if (struct.length === 0) {
-		debug(`buildSingleModule(): baseStructureType for ${structureID} does not exist at ${x}, ${y}. Ending build task...`);
+		// debug(`buildSingleModule(): baseStructureType for ${structureID} does not exist at ${x}, ${y}. Ending build task...`);
 		return {status: MISSION_STATUS.FAILED};
 	}
 

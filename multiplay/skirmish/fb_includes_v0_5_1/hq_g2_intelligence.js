@@ -334,7 +334,7 @@ class armyIntelligence {
 		if (enemyBases.length > 0) {
 			return enemyBases[0];
 		} else {
-			// debug(`${gameTime}: WARNING: closestEnemyBase not found - returning player's home base location instead.`);
+			// warn(`closestEnemyBase not found - returning player's home base location instead.`);
 			return state.poi.bases[me];
 		}
 	}

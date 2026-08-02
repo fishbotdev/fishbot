@@ -839,7 +839,7 @@ class TacticalOperationsCenter {
 
             const currBattalion = brigadeComposition.get(category);
 			if (currBattalion == null) {
-				debug(`${gameTime} WARNING: attempted to get non-existent category "${category}" in brigadeComposition.`);
+				warn(`attempted to get non-existent category "${category}" in brigadeComposition.`);
 				return;
 			}
 			
@@ -854,7 +854,7 @@ class TacticalOperationsCenter {
         for (const [category, battalionComposition] of brigadeComposition) {
             const maxUnitCount = maxUnitsByCategory.get(category);
 			if (maxUnitCount == null) {
-				debug(`${gameTime} WARNING: attempted to get non-existent maxUnitCount for category "${category}".`);
+				warn(`attempted to get non-existent maxUnitCount for category "${category}".`);
 				return;
 			}
 
@@ -975,6 +975,6 @@ class TacticalOperationsCenter {
 			return;
 		}
 
-		debug(`${gameTime}: WARNING: removeFromActiveProductionJobs() failed to remove: ${itemToRemove}`)
+		warn(`removeFromActiveProductionJobs() failed to remove: "${itemToRemove}". Ignoring.`)
 	}
 }

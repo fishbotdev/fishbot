@@ -45,7 +45,7 @@ class armySupply {
 				case DIVISION.MAINTENANCE_RESERVE:
 					return maxBrigadeComposition['MAX_REPAIR'];
 				default:
-					deb(`WARNING: prioritiseLandVehicleCategory / getMaxUnits(): failed to recognise "${category}". Returning 1.`)
+					warn(`prioritiseLandVehicleCategory / getMaxUnits(): failed to recognise "${category}". Returning 1.`)
 					return 1;
 			}
 		}
@@ -53,7 +53,7 @@ class armySupply {
 		const getDeficit = (category) => {
 			const battalionComposition = brigadeComposition.get(category);
 			if (battalionComposition == null) {
-				deb(`WARNING: prioritiseLandVehicleCategory / getDeficit(): Attempted to get non-existent 'deficit' for category "${category}". Returning 0.`);
+				warn(`prioritiseLandVehicleCategory / getDeficit(): Attempted to get non-existent 'deficit' for category "${category}". Returning 0.`);
 				return 0;
 			}
 			return battalionComposition["deficit"];
@@ -65,7 +65,7 @@ class armySupply {
 			const normDeficit = getNormDeficit(category);
 			let weight = parameters.UNIT_WEIGHTS.get(category);
 			if (weight == null) {
-				deb(`WARNING: prioritiseLandVehicleCategory / makeCategory(): weight for "${category}" returned null (missing). Defaulting to 0.5.`);
+				warn(`prioritiseLandVehicleCategory / makeCategory(): weight for "${category}" returned null (missing). Defaulting to 0.5.`);
 				weight = 0.5;
 			}
 			return {
