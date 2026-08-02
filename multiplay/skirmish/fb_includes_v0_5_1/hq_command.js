@@ -169,7 +169,7 @@ class CommandCenter {
 			'logistics_runStructureLogistics': 15,
 			'intel_getMapIntelligence': 12,
 			'intel_getAviationTargets': 10,
-			'intel_updateStrategicParameters': 6,
+			'runStrategy': 6,
 		};
 
 		this.INTELLIGENCE_SUBTASK_NAMES = [];
@@ -503,11 +503,8 @@ class CommandCenter {
 	/////////////////////////////////////////////////// G2: INTELLIGENCE ///////////////////////////////////////////////////
 
 	/**
-	 * 	For performance reasons, this function was changed from linear to distributed.
-	 * 	The intent is:
-	 * 	1. Intelligence mission/task is scheduled
-	 * 	2. Mission is either immediately run or scheduled to run by the global mission manager
-	 * 	3. Observations are compiled into the global 'state' by the `toc`
+	 * Gathers game information directly from the game engine and stores it in the shared `state`.
+	 * 	Also performs targeting.
 	 * @param {worldState} state
 	 * @param {string} taskID
 	 * @returns {void}
@@ -518,10 +515,6 @@ class CommandCenter {
 		// i.e. tactical functions may be called directly where appropriate
 
 		switch(taskID) {
-			
-			case 'intel_updateStrategicParameters':
-				this.updateStrategicParameters(state);
-				break;
 
 			case 'intel_getNearbyGroundTargets':
 				// Update location(s) & target(s) of active combat force(s)
@@ -553,7 +546,7 @@ class CommandCenter {
 				break;
 				
 			default:
-				debug(`	WARNING / runIntelligence(): could not understand ${taskID} @ ${gameTime}`);
+				deb(`WARNING:  runIntelligence(): could not understand "${taskID}". Ignoring.`);
 				return;
 		}
 	
@@ -991,7 +984,7 @@ class CommandCenter {
 
 	/////////////////////////////////////////////////// G4: LOGISTICS ///////////////////////////////////////////////////
 	/**
-	 * 
+	 * This function aborts active construction missions where conditions at the build site have become too dangerous.
 	 * @param {worldState} state 
 	 * @param {Array} activeRemoteMissions
 	 */
@@ -1033,7 +1026,7 @@ class CommandCenter {
 	}
 
 	/**
-	 * 
+	 * Organises the construction of structures, e.g. base building, oil capture (derricks & oil-defences) & repair facilities.
 	 * @param {worldState} state 
 	 */
 	runConstructionLogistics(state) {
@@ -1137,6 +1130,10 @@ class CommandCenter {
 		this.toc.assignConstructionTasks(state, approvedConstructionTasks);
 	}
 
+	/**
+	 * This function returns repaired droids to the reserves.
+	 * @param {worldState} state 
+	 */
 	#recoverRepairedUnits(state) {
 		const repairedUnits = state.g.enumGroup(DIVISION.RETURNING_FOR_REPAIR);
 		repairedUnits.forEach(droid => {
@@ -1169,7 +1166,7 @@ class CommandCenter {
 	 * This function:
 	 * - returns repaired units to active duty 
 	 * - assigns reserve units to active brigade combat teams
-	 * - assigns damaged units for repair (if the BCT is powerful enough)
+	 * - assigns damaged units for repair
 	 * @param {worldState} state 
 	 * @returns {void}
 	 */
@@ -1290,7 +1287,7 @@ class CommandCenter {
 	}
 
 	/**
-	 * Decides which land vehicles, cyborgs & VTOLs to produce.
+	 * Organises the production of land vehicles, cyborgs & VTOLs.
 	 * @param {worldState} state 
 	 * @returns {void}
 	 */
@@ -1459,7 +1456,7 @@ class CommandCenter {
 	}
 
 	/**
-	 * Decides what to research.
+	 * Organises research, using the provided research path.
 	 * @param {worldState} state 
 	 */
 	runResearchLogistics(state) {
@@ -1476,7 +1473,8 @@ class CommandCenter {
 		for (let i=0; i<idleLabs.length; i++) {
 
 			for (let j=positionInResearchOrder; j<researchOrder.length; j++) {
-				if (pursueResearch(idleLabs[i], researchOrder[j].id)) {
+				const researchStarted = pursueResearch(idleLabs[i], researchOrder[j].id);
+				if (researchStarted) {		// This check avoids conflicts with allies (shared-research mode)
 					positionInResearchOrder++;
 					// debug(`${me}:\t${getCurrGameTimeMinSec()}\t${researchOrder[j].name}`);		
 					break;

@@ -35,6 +35,14 @@ function runGameEndedWatchdog() {
 	}
 }
 
+function runStrategy() {
+	if (state.botIsActive) {
+		if (state.WORKER_IDS['runStrategy'][state.currWorkerID]) {
+			hq.updateStrategicParameters(state);
+		}
+	}
+}
+
 function runIntelligence() {
 
 	const subtasks = hq.INTELLIGENCE_SUBTASK_NAMES;
@@ -104,6 +112,7 @@ function setupFishBot() {
 	setTimer("runConstructionLogistics", state.TIME_BLOCK_MS);
 	setTimer("runStructureLogistics", state.TIME_BLOCK_MS);
 	setTimer("runResupplyLogistics", state.TIME_BLOCK_MS);
+	setTimer("runStrategy", state.TIME_BLOCK_MS);
 	setTimer("runMissionManager", state.TIME_BLOCK_MS);
 
 	setTimer("runGameEndedWatchdog", 60000);
