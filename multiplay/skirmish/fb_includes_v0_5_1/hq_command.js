@@ -182,28 +182,9 @@ class CommandCenter {
 	 * @param {worldState} state 
 	 */
 	initialise(state) {
-		this.setDefaultMissions(state);			
+		this.toc.setDefaultMissions(state);			
 		this.setSchedulerParameters(state);
 		this.updateStrategicParameters(state);		// initialises all strategic parameters to realistic values
-	}
-
-	/**
-	 * 
-	 * @param {worldState} state 
-	 */
-	setDefaultMissions(state) {
-		// TODO: mutates the state. move to hq_toc
-
-		// Aviation - rearming
-		const md1 = this.toc.createNewMission({missionType: MISSION_TYPE.VTOL_STAGING_MISSION, priority: MISSION_PRIORITY.LOW});		
-
-		// Construction - helping construct around base
-		const md2 = this.toc.createNewMission({missionType: MISSION_TYPE.HELP_CONSTRUCT, priority: MISSION_PRIORITY.LOW});
-		
-		// Ground forces - return for repair
-		const md3 = this.toc.createNewMission({missionType: MISSION_TYPE.RETURN_FOR_REPAIR, priority: MISSION_PRIORITY.LOW});		
-
-		state.activeMissions.push(md1, md2, md3);
 	}
 
 	/**
@@ -238,8 +219,7 @@ class CommandCenter {
 			const taskHash = taskID * 2654435761;
 			taskID++;
 
-			// Creating long arrays of 'true' & 'false' in memory allows for simple lookup using the time index, 
-			// instead of using .includes() in final application in _run.js (more computationally efficient)
+			// Creating long arrays of 'true' & 'false' in memory allows for simple lookup using the time index
 			for (let i=0; i<r.length; i++) {
 				const hash = taskHash + r[i] * 1013904223;
 

@@ -22,7 +22,6 @@ class TacticalOperationsCenter {
 	}
 	
 	/**
-	 * 
 	 * @param {worldState} state 
 	 * @returns 
 	 */
@@ -33,7 +32,6 @@ class TacticalOperationsCenter {
 	}
 
 	/**
-	 * 
 	 * @param {worldState} state 
 	 * @returns 
 	 */
@@ -261,6 +259,21 @@ class TacticalOperationsCenter {
 		md.priority = priority;	
 		md.timeStarted = gameTime;
 		return md;			
+	}
+
+	/**
+	 * Sets the default behaviours of the bot for the specified `missionTypes`.
+	 * @param {worldState} state 
+	 */
+	setDefaultMissions(state) {
+
+		const md1 = this.createNewMission({missionType: MISSION_TYPE.VTOL_STAGING_MISSION, priority: MISSION_PRIORITY.LOW});		
+
+		const md2 = this.createNewMission({missionType: MISSION_TYPE.HELP_CONSTRUCT, priority: MISSION_PRIORITY.LOW});
+		
+		const md3 = this.createNewMission({missionType: MISSION_TYPE.RETURN_FOR_REPAIR, priority: MISSION_PRIORITY.LOW});		
+
+		state.activeMissions.push(md1, md2, md3);
 	}
 
 	#debugPrintSpatialField(heatmap, name) {
