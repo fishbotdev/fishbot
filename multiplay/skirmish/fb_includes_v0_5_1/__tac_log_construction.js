@@ -167,7 +167,7 @@ function pickStructLocation3(structureID, x, y) {
 				continue;
 			}
 
-			const z = heightMap[tY][tX];
+			const z = heightMap[tX][tY];
 			const loc = {'x': tX, 'y': tY, 'z': z};
 
 			if (Math.abs(z - specifiedHeight) > HEIGHT_TOLERANCE) {
