@@ -259,8 +259,8 @@ function moveBrigadeToAttack(state, brigadeID, groundTargets) {
 	const isTooFarFromBrigade = (droid) => distSq(droid.x, LOCATION_X, droid.y, LOCATION_Y) > 6 ** 2;
 
 	const _distSqToClosestDroid = (droid) => distSq(droid.x, closestDroidToTarget.x, droid.y, closestDroidToTarget.y);
-	const dfDsqToTarget = _distSqToClosestDroid(DIRECT_FIRE_TARGET);
-	const isNearFrontLine = (droid) => _distSqToClosestDroid(droid) < 6 ** 2;
+
+	const isNearFrontLine = (droid) => _distSqToClosestDroid(droid) <= 4 ** 2;
 
 	const moveToClosestDroid = (droid) => orderDroidLoc(droid, DORDER_MOVE, closestDroidToTarget.x, closestDroidToTarget.y);
 	
