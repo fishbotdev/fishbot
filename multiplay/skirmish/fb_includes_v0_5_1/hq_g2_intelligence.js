@@ -434,11 +434,10 @@ class armyIntelligence {
 
 		for (let i=0; i<unreachableTargets.length; i++) {
 			const obj = unreachableTargets[i];
-			debug(`${gameTime}\t(FishBot ${me}): findClosestTarget() returned unreachableTarget: "${obj.name}" (type: ${obj.type}, player: ${obj.player}, id: ${obj.id})`);
+			warn(`findClosestTarget(): returned unreachableTarget "${obj.name}" (type: ${obj.type}, player: ${obj.player}, id: ${obj.id})`);
 			return unreachableTargets[i];
 		}
 
-		// debug(`${gameTime}: intel/findClosestTarget: BFS in ${iters} iterations: no targets found.`);
 		return undefined;
 	}
 		

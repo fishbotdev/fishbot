@@ -160,15 +160,14 @@ class armyAviation {
 			taskForceUnits.push(...notReadyUnits.slice(0, deficit));
 		}
 
+		const md = this.#createMissionOrders(missionType, id, id, target);		
 		taskForceUnits.forEach((droid) => {
-			state.g.addDroidToGroup({groupID: id, droidID: droid.id});
+			state.g.addDroidToGroup({groupID: md.taskForceID, droidID: droid.id});
 			state.g.removeDroidFromGroup({groupID: DIVISION.AIR_RESERVE, droidID: droid.id});
 		});
-
-		const md = this.#createMissionOrders(missionType, id, id, target);
-
 		md.orders = () => doAirStrike(target, id);		
 		md.ceaseOrders = () => this.#finaliseVtolMission(md);
+		
 		return md;
 	}
 

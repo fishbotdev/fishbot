@@ -289,9 +289,9 @@ class CommandCenter {
 
 		/*
 			Oil parameters (the most important strategic resource)
-			Warzone 2100 lacks the concepts of food / fuel for vehicles & aircraft / ammunition (VTOL only)
-				- Supply of oil: Combat operations + oil capture (at the moment - free)
-				- Demand of oil: production, construction, research
+			Warzone 2100 lacks the concepts of food, fuel for vehicles & aircraft and ammunition (VTOL only).
+				- Supply of oil: Combat operations + oil capture (at the moment - no cost to construct a derrick)
+				- Demand of oil: Production, construction, research
 		*/
 		const DERRICKS_PER_PLAYER = Math.ceil(TOTAL_DERRICKS / ALIVE_PLAYER_COUNT);
 		const o = [];
