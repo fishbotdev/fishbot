@@ -438,7 +438,8 @@ class TacticalOperationsCenter {
 		const baseControlRadius = Math.min(EQUIDIVISION_RADIUS, Math.ceil(30 / cellSize));
 
 		state.poi.bases.forEach(b => {
-			if (!livingPlayers.includes(b.playerID)) return;
+			if (b.playerID == null) 	return;
+			if (!livingPlayers.includes(b.playerID)) 	return;
 			
 			if (isEnemy(b.playerID)) {
 				this.#floodFillSquareRegion(state.fields['controlStability'], numXCells, numYCells, b.gx, b.gy, baseControlRadius, -5);
@@ -795,14 +796,13 @@ class TacticalOperationsCenter {
 	 * Updates unit lists for each battalion in a brigade.
 	 * @param {worldState} state 
 	 * @param {number} brigadeID 
-	 * @param {Object} maxBrigadeComposition  
-     * @param {number} vehicleRepairThreshold
-     * @param {number} cyborgRepairThreshold
+     * @param {ProductionParameters} parameters
 	 * @returns {void}
 	 */
-    updateBrigadeSupplyStatus(state, brigadeID, maxBrigadeComposition, vehicleRepairThreshold, cyborgRepairThreshold) {
+    updateBrigadeSupplyStatus(state, brigadeID, parameters) {
         
-		const brigadeComposition = state.brigades[brigadeID]["composition"]
+		const brigadeComposition = state.brigades[brigadeID]["composition"];
+		const maxBrigadeComposition = parameters.BRIGADE_COMPOSITION;
 
 		/** @type {Map<number, number>} */
         const maxUnitsByCategory = new Map([
@@ -847,7 +847,7 @@ class TacticalOperationsCenter {
 				return;
 			}
 			
-            if (needsRepair(unit, category, cyborgRepairThreshold, vehicleRepairThreshold)) {
+            if (needsRepair(unit, category, parameters.CYBORG_REPAIR_THRESHOLD, parameters.VEHICLE_REPAIR_THRESHOLD)) {
                 currBattalion["damagedUnitList"].push(unit);
             } else {
                 currBattalion["healthyUnitList"].push(unit);

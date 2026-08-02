@@ -236,7 +236,7 @@
 
 
 /*
-	HQ_COMMAND STRATEGIC PARAMETERS
+	STRATEGIC PARAMETERS
 */
 
 /**
@@ -284,6 +284,28 @@
  * @property {ResearchPath} path
  */
 
+/**
+ * @typedef {Object} ProductionParameters
+ * @property {boolean} CAN_DESIGN_UNITS
+ * 
+ * @property {boolean} SHOULD_PRODUCE_TRUCKS
+ * @property {number} MAX_TRUCKS_THIS_TICK
+ * @property {boolean} CYBORG_CONSTRUCTOR_AVAILABLE
+ * @property {number} MAX_TRUCKS	Unit limit
+ * 
+ * @property {Map<number, number>} BRIGADE_WEIGHTS
+ * @property {Object} BRIGADE_COMPOSITION
+ * @property {number} TOTAL_UNITS_PER_BRIGADE
+ * 
+ * @property {Map<number, number>} UNIT_WEIGHTS
+ * @property {number} DEFAULT_LAND_UNIT_CATEGORY
+ * @property {boolean} SHOULD_PRODUCE_INFANTRY
+ * @property {boolean} SHOULD_PRODUCE_VTOLS
+ * @property {boolean} SHOULD_PRODUCE_LAND_VEHICLES
+ * 
+ * @property {number} VEHICLE_REPAIR_THRESHOLD
+ * @property {number} CYBORG_REPAIR_THRESHOLD
+ */
 
 /*
     MISSION CONSTANTS
