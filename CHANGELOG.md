@@ -11,10 +11,11 @@ This file is used to record the changes to FishBot between each version.
     - Research:
         - Improved transition from T2 to T3 Cannon technologies (better focus on Tiger/Vengeance bodies & Rail Gun/Gauss Cannon).
 - Bug fixes:
-    - Custom structure limits (in the skirmish settings) are now supported.
+    - Construction:
+        - Custom structure limits (in the skirmish settings) are now supported.
+        - Fixed trucks ignoring newly-constructed enemy defences.
+        - Fixed trucks getting stuck trying to build structures/derricks in non-reachable locations (e.g. behind destroyable features). FishBot will now ignore these locations.
     - Fixed mortar units having incorrect targeting priorities.
-    - Fixed trucks ignoring newly-built enemy defences.
-    - Fixed trucks getting stuck trying to build derricks & structures in non-reachable locations (e.g. behind destroyable features). FishBot will now ignore these locations.
 
 ## Fishbot v0.5.0
 *Released **29 Jul 2026***
