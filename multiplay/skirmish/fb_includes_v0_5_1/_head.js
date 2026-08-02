@@ -25,6 +25,36 @@
 	TYPE DEFINITIONS
 */
 
+/**
+ * @typedef {Object} ConstructionMissionData
+ * @property {number | string} id 		Unique ID to designate this particular mission
+ * @property {number} missionType		Mission type (integer; defined in _head.js)
+ * @property {number} missionStatus		Mission status (integer; defined in _head.js)
+ * @property {number} priority			Mission priority (integer; defined in _head.js)
+ * @property {number | string} taskForceID	
+ * @property {Function} orders			Mission action callback
+ * @property {Function} ceaseOrders		Mission cleanup callback
+ * @property {number} timeStarted		= `gameTime` at mission start
+ * @property {number} timeCompleted
+ * @property {string} sectorID			Position parameter: (v0.3.0 sector system / object uid)
+ * @property {number} gx				Position parameter: grid x coordinate (v0.4.0 sector system)
+ * @property {number} gy				Position parameter: grid y coordinate (v0.4.0 sector system)
+ */
+
+/**
+ * @typedef {Object} CombatMissionData
+ * @property {number | string} id Unique ID to designate this particular mission
+ * @property {number} missionType 
+ * @property {number} missionStatus
+ * @property {number} priority
+ * @property {number | string} taskForceID Group ID for units assigned to this mission (typically the same as 'id')
+ * @property {Function} orders
+ * @property {Function} ceaseOrders
+ * @property {number} timeStarted
+ * @property {number} timeCompleted
+ * @property {DroidObject | StructureObject | undefined} target
+ */
+
 ///////////////////////////////////////////// INTELLIGENCE /////////////////////////////////////////////
 
 /**

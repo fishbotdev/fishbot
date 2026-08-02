@@ -22,40 +22,41 @@ class armyGroundOperations {
 		
 	}
 
-	#createMissionOrders() {
+	/**
+	 * Factory function for `CombatMissionData`.
+	 * @param {number} missionType
+	 * @param {number | string} id
+	 * @param {number | string} groupID
+	 * @param {DroidObject | StructureObject | undefined} target
+	 * @returns {CombatMissionData}
+	 */
+	#createMissionOrders(missionType, id, groupID, target) {
 		return {
-			'id': undefined, 
-			'missionType': undefined, 
+			'id': id, 
+			'missionType': missionType, 
 			'missionStatus': MISSION_STATUS.FAILED_CREATION, 
 			'priority': MISSION_PRIORITY.LOW, 
-			'taskForceID': undefined, 
-			'orders': undefined, 
-			'ceaseOrders': undefined,
+			'taskForceID': groupID, 
+			'orders': () => {}, 
+			'ceaseOrders': () => {},
 			'timeStarted': -2,
 			'timeCompleted': -1,
-			
-			'target': undefined,
+			'target': target,
 		};
 	}
+	/**
+	 * This is the default behaviour of all RETURN_FOR_REPAIR vehicles.
+	 * Units are moved out of the 'repair' group by resupplyLogisitics. This will move the droid into its appropriate reserve group.
+	 * @param {Object} missionConfig
+	 * @param {number} missionConfig.missionType
+	 * @returns {CombatMissionData}
+	 */
+	createReturnForRepairMission({missionType}) {
+		const target = undefined;
+		const md =  this.#createMissionOrders(missionType, "RETURN_FOR_REPAIR", DIVISION.RETURNING_FOR_REPAIR, target);
 
-	createReturnForRepairMission() {
-		// this is the default behaviour of all RETURN_FOR_REPAIR vehicles.
-		// Units are moved out of the 'repair' group by resupplyLogisitics; which will move the droid into its appropriate reserve group
-
-		// it returns either:
-		// 	- missionData object (according to missionDataTemplate), if mission successfully created, OR
-		//	- undefined, if mission was not able to be created	
-
-		let md = this.#createMissionOrders();
-
-		// Create mission details
-		md.id = "MISSION_TYPE.RETURN_FOR_REPAIR";
-		md.taskForceID = DIVISION.RETURNING_FOR_REPAIR;			// breaks the normal pattern: id === reserveGroup for a default action
-
-		// Assign orders for conducting & ceasing operations			
-		md.orders = () => returnForRepair(md.taskForceID);		
-		md.ceaseOrders = () => {return;};	// doesn't do anything
-
+		md.orders = () => returnForRepair(md.taskForceID);	
+		md.ceaseOrders = () => {};
 		return md;
 	}
 

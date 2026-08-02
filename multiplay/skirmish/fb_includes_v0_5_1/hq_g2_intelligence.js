@@ -323,6 +323,7 @@ class armyIntelligence {
 		/** @type {PlayerHomeBaseObject[]} */
 		const enemyBases = [];
 		bases.forEach(b => {
+			if (b.playerID == null) 	return;
 			if (b.isEnemy && aliveEnemyPlayers.includes(b.playerID)) {
 				enemyBases.push(b);
 			}

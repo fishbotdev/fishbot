@@ -17,12 +17,6 @@
 
 /////////////////////////////////    Debugging functions    /////////////////////////////////
 
-function getCurrGameTime() {
-	// This function exists in the case I want to change the time units
-	const currGameTime = gameTime;
-	return currGameTime;
-}
-
 function getCurrGameTimeMinSec() {
 	const MS_PER_MINUTE = 60000;
 
@@ -38,6 +32,15 @@ function getCurrGameTimeMinSec() {
  */
 function deb(...values) {
 	const DEBUG_PREFIX = `F${me}:  ${getCurrGameTimeMinSec()}:  `;
+	debug(`${DEBUG_PREFIX} ${values}`);
+}
+
+/**
+ * Custom debug which prefixes the inbuilt `debug()` with: playerID, a readable game time (format: `mm:ss`) and "WARNING".
+ * @param  {...any} values 
+ */
+function warn(...values) {
+	const DEBUG_PREFIX = `F${me}:  ${getCurrGameTimeMinSec()}:  WARNING  `;
 	debug(`${DEBUG_PREFIX} ${values}`);
 }
 

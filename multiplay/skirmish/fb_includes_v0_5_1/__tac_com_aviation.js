@@ -74,7 +74,7 @@ function rearmVtolGroup(taskForceID) {
 
 /**
  * TAC SOP: AIR STRIKE
- * @param {DroidObject} targetObj 
+ * @param {DroidObject | StructureObject} targetObj 
  * @param {string | number} taskForceID 
  */
 function doAirStrike(targetObj, taskForceID) {
