@@ -17,16 +17,16 @@
 
 
 /*
-
 	FishBot Introduction
 
-	This is a Warzone 2100 bot designed for Tech Level 2+ duels (1v1) on low-oil maps (the maps that ship with WZ2100 as of v4.6.1+). 
-	Ironically, it does not work on sea maps :D. FishBot was developed to win against Insane difficulty AI (while it is Medium difficulty). 
+	This is a Warzone 2100 bot designed for Tech Level 2 starts on low oil maps (no scavengers).
+	Ironically, it does not work on sea maps :D. 
+	FishBot was originally developed to win against Insane difficulty AI (while it is Medium difficulty). 
 
 	FishBot's winning strategy revolves around intelligent, highly aggressive, combined-arms warfare. It arranges each type of unit on 
 	the battlefield in a way which maximises their destructive effects while protecting the friendly force.
 	
-	For challengers - I recommend to play against FishBot on Easy mode (or at very low gamespeed) when first playing against it.
+	For challengers - I recommend to play against FishBot on Easy mode (or at very low gamespeed) when first playing against it!
 
 	Project started: 15 Oct 2025
 
@@ -41,6 +41,7 @@
 	- 5237 JS @ 27 Jun 2026: v0.4.1 release (commit `03a99ae`)
 	- 5330 JS @ 10 Jul 2026: v0.4.2 release (commit `3781360`)
 	- 5315 JS @ 29 Jul 2026: v0.5.0 release 
+	- 5580 JS @ 04 Aug 2026: v0.5.1 release
 */
 
 
@@ -55,13 +56,13 @@ const FB_INCLUDES = FISHBOT_PATH + "fb_includes_v0_5_1/";
 //	 - Show some useful debug information in the console
 //	 - Automatically colour players 0, 1, 2
 //	 - Transform Player 0 (forced human player slot) to spectator mode (used for automated bot testing)
-const DEBUG_MODE_ON = true;
+const DEBUG_MODE_ON = false;
 
 
 /*
 -- RELEASE CHECKLIST --
 1. Update FISHBOT_VERSION to latest version number. Also update the version number in the "name" property in `FishBot.json`.
-2. Disable all beacons / hackMarkTiles() used for debugging (currently just in `__tac_com_ground.js`).
+2. Disable all beacons / hackMarkTiles() used for debugging.
 3. Run automated tests using `tests/run_tests.py`. Update `README.md` with the test results. Pass if no regression.
 4. Extract logs from autogames (`\logs` folder) & display using `python_helper_scripts/process_performance_data.py`. Pass if no regression.
 5. Set `DEBUG_MODE_ON` = `false`.

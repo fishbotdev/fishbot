@@ -2,7 +2,7 @@
 This file is used to record the changes to FishBot between each version.
 
 ## Fishbot v0.5.1
-*Released **x Aug 2026***
+*Released **04 Aug 2026***
 ### Changes in v0.5.1
 - Tactics:
     - Can now compare its oil situation relative to other players. Aviation targeting now reflects FishBot's oil situation.

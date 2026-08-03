@@ -28,44 +28,44 @@ However, at the moment I feel like Cobra already fills the gap in the other tech
 In particular, I think Cobra performs excellently on T1 in Warzone 2100 v4.6.3+. 
 
 ## Supported maps (Warzone2100 4.7.0)
-As of **v0.5.0**, FishBot works on most "low-oil" maps shipped with the game. There might be a few lag issues with high-player count games; these are being actively worked on.
+As of **v0.5.1**, FishBot works on most "low-oil" maps shipped with the game. There might be a few lag issues with high-player count games; these are being actively worked on.
 
 FishBot is not compatible with scavengers; it currently ignores them.
 
 ### 2 player (T2-NoScav)
 * `Sk-Startup` (100% duel)
-* `Sk-UrbanChasm` (85% duel)
+* `Sk-UrbanChasm` (80% duel)
 * `Sk-HighGround` (80% duel)
 * `Roughness` (100% duel)
-* `Vision` (95% duel)
+* `Vision` (90% duel)
 * `DustyMaze (2P)` (*tested manually*)
 
 ### 3 player (T2-NoScav)
 * `Monocot` (100% duel, 100% FFA)
-* `Gamma` (100% duel, 97% FFA)
+* `Gamma` (100% duel, 93% FFA)
 
 ### 4 player (T2-NoScav)
-* `Sk-Rush` (99% duel, 80% FFA)
-* `Sk-Rush2` (100% duel, 92% FFA)
-* `Sk-UrbanDuel` (99% duel, 92% FFA)
-* `Sk-Mountain` (100% duel, 62% FFA)
-* `Sk-Valley` (98% duel, 85% FFA)
-* ~~`Sk-FishNets` (86% duel, **15% FFA**)~~ - **not compatible**: targeting algorithm interacts poorly with water obstacles 
-* `Sk-GreatRift` (100% duel, 72% FFA)
-* `Sk-RollingHills` (93% duel, 92% FFA) 
+* `Sk-Rush` (100% duel, 68% FFA)
+* `Sk-Rush2` (95% duel, 85% FFA)
+* `Sk-UrbanDuel` (97% duel, 90% FFA)
+* `Sk-Mountain` (99% duel, 82% FFA)
+* `Sk-Valley` (97% duel, 72% FFA)
+* ~~`Sk-FishNets` (93% duel, **35% FFA**)~~ - **not compatible**: does not handle being attacked over water obstacles well
+* `Sk-GreatRift` (99% duel, 68% FFA)
+* `Sk-RollingHills` (90% duel, 80% FFA) 
 * ~~`Sk-Basingstoke`~~ - **not compatible**: large unit groups get stuck during pathfinding
-* `Sk-LittleEgypt` (89% duel, 42% FFA) 
+* `Sk-LittleEgypt` (88% duel, 48% FFA) 
 * ~~`Sk-Cockpit`~~ - **not compatible**: unit groups get stuck in the narrow base entrances
-* `Sk-Urban-Chaos` (98% duel, 92% FFA)
-* `Sk-Pyramidal` (100% duel, 78% FFA)
+* `Sk-Urban-Chaos` (98% duel, 85% FFA)
+* `Sk-Pyramidal` (100% duel, 92% FFA)
 * `DustyMaze-2v2` (*tested manually*)
 * `DustyMaze-FFA` (*tested manually*)
 
 ### 5 player (T2-NoScav)
-* `Bloat` (56% FFA)
+* `Bloat` (60% FFA)
 
 ### 6 player (T2-NoScav)
-* `Melting` (53% FFA)
+* `Melting` (57% FFA)
 * `Entropy` (*tested manually*)
 
 ### 7 player (T2-NoScav)
@@ -108,16 +108,16 @@ Some current FishBot limitations are:
 * FishBot sometimes attempts to build forward-defences around derricks which are actually too dangerous to go and capture.
 
 ## Recent updates
-* **v0.5.1** - *released **_ Aug 2026***
+* **v0.5.1** - *released **04 Aug 2026***
     * Now supports custom structure limits in skirmish settings.
     * Fixed other construction issues e.g. trying to build behind destroyable features, and trucks ignoring (some) dangerous situations.
-    * Improved research transition from T2 to T3 (Cannon path). FishBot will now unlock Tiger / Vengeance bodies and Rail Gun / Gauss Cannon much earlier.
+    * Improved research transition from T2 to T3 (Cannon path). FishBot will now unlock Tiger / Vengeance bodies and Rail Gun / Gauss Cannon earlier.
 
 * **v0.5.0** - *released **29 Jul 2026***
     * Now compatible with most maps shipped with Warzone 2100 v4.7.0 (validated by a new automatic testing pipeline).
     * Greatly improved combat effectiveness; now up to 4 combat groups are used.
-    * Major overhaul of the production, resupply & repair system to support the above.
-    * Improved base construction efficiency. Added build order adaptation for very low-oil maps.
+    * Major overhaul of the production, resupply & repair systems to support the above.
+    * Improved base construction efficiency & added build order adaptation for very low-oil maps.
 
 * **v0.4.2** - *released **10 Jul 2026***
     * Combat improvements:
