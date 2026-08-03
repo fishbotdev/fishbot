@@ -419,18 +419,14 @@ class CommandCenter {
 	/////////////////////////////////////////////////// G2: INTELLIGENCE ///////////////////////////////////////////////////
 
 	/**
-	 * Gathers game information directly from the game engine and stores it in the shared `state`.
-	 * 	Also performs targeting.
+	 * Performs targeting & writes the result to `state`.
 	 * @param {worldState} state
-	 * @param {string} taskID
+	 * @param {string} taskName
 	 * @returns {void}
 	 */
-	runIntelligence(state, taskID) {
-		
-		// Note: For performance reasons, anything which can be executed immediately should not use the mission management system.
-		// i.e. tactical functions may be called directly where appropriate
+	runTargeting(state, taskName) {
 
-		switch(taskID) {
+		switch(taskName) {
 
 			case 'intel_getNearbyGroundTargets':
 				// Update location(s) & target(s) of active combat force(s)
@@ -456,16 +452,20 @@ class CommandCenter {
 				);
 				break;
 
-			case 'intel_getMapIntelligence':
-				const rawObjectData = getDroidsAndStructsByPlayer();
-				this.toc.updateCoreIntel(state, rawObjectData);
-				break;
-				
 			default:
-				warn(`runIntelligence(): could not understand "${taskID}". Ignoring.`);
+				warn(`runTargeting(): could not understand "${taskName}". Ignoring.`);
 				return;
 		}
-	
+	}
+
+	/**
+	 * Gathers game information directly from the game engine and stores it in the shared `state`.
+	 * @param {worldState} state
+	 * @returns {void}
+	 */
+	runIntelligence(state) {
+		const rawObjectData = getDroidsAndStructsByPlayer();
+		this.toc.updateCoreIntel(state, rawObjectData);	
 	}
 
 	/////////////////////////////////////////////////// G3: COMBAT OPERATIONS ///////////////////////////////////////////////////

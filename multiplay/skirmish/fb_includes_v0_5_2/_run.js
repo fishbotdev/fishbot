@@ -44,13 +44,19 @@ function runStrategy() {
 }
 
 function runIntelligence() {
+	if (state.botIsActive) {
+		if (state.WORKER_IDS['intel_getMapIntelligence'][state.currWorkerID]) {
+			hq.runIntelligence(state);
+		}
+	}
+}
 
-	const subtasks = ['intel_getNearbyGroundTargets', 'intel_getAviationTargets', 'intel_getMapIntelligence'];
-
+function runTargeting() {
+	const subtasks = ['intel_getNearbyGroundTargets', 'intel_getAviationTargets'];
 	if (state.botIsActive) {
 		for (let i=0; i<subtasks.length; i++) {
 			if (state.WORKER_IDS[subtasks[i]][state.currWorkerID]) {
-				hq.runIntelligence(state, subtasks[i]);
+				hq.runTargeting(state, subtasks[i]);
 			}
 		}
 	}
@@ -108,6 +114,7 @@ function setupFishBot() {
 	// This function queued with a player-specific delay          
 	setTimer("scheduleCoreFunctions", state.TIME_BLOCK_MS);
 	setTimer("runIntelligence", state.TIME_BLOCK_MS);
+	setTimer("runTargeting", state.TIME_BLOCK_MS);
 	setTimer("runC2", state.TIME_BLOCK_MS);
 	setTimer("runConstructionLogistics", state.TIME_BLOCK_MS);
 	setTimer("runStructureLogistics", state.TIME_BLOCK_MS);
