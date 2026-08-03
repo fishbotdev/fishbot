@@ -6,6 +6,9 @@ FishBot is a Warzone 2100 AI bot compatible with Warzone 2100 **v4.6.1+**.
 
 It is designed for Tech Level 2 (No Scavenger) skirmish games on the supported maps below. Tech Level 1 is currently not supported.
 
+![FishBot using two unit groups to attack two bases simultaneously.](docs/images/fishbot-v0.5.1.png)
+*Figure 1: FishBot **v0.5.1** using two unit groups to attack two bases simultaneously.*
+
 ## Download
 
 1. Open Warzone 2100. Click on "Options".
