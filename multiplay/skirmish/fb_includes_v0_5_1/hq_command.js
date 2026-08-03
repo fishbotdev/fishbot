@@ -173,8 +173,6 @@ class CommandCenter {
 		
 	}
 
-	/////////////////////////////////////////////////// STATE INITIALISATION ///////////////////////////////////////////////////
-
 	/**
 	 * @param {worldState} state 
 	 */
@@ -283,11 +281,10 @@ class CommandCenter {
 		const MAX_INFANTRY = BRIGADE_COMPOSITION['MAX_INFANTRY'];
 		const TOTAL_UNITS_PER_BRIGADE = this.PRODUCTION_RESUPPLY_PARAMETERS.TOTAL_UNITS_PER_BRIGADE;
 		
-		const TRUCK_HARD_LIMIT = getDroidLimit(me, DROID_CONSTRUCT);
+		const TRUCK_HARD_LIMIT = state.getMaxUnitCount("DROID_CONSTRUCT");
 		const TRUCK_SOFT_LIMIT = Math.min(TRUCK_HARD_LIMIT, MAX_TRUCKS);
 
-		const COMBAT_UNIT_HARD_LIMIT = getDroidLimit(me, DROID_WEAPON) - TRUCK_SOFT_LIMIT;
-
+		const COMBAT_UNIT_HARD_LIMIT = state.getMaxUnitCount("DROID_WEAPON") - TRUCK_SOFT_LIMIT;
 		const INFANTRY_UNIT_SOFT_LIMIT = MAX_INFANTRY * (NUMBER_OF_BRIGADES + 1);		// "+1" includes reserve
 		const LAND_VEHICLE_SOFT_LIMIT = (TOTAL_UNITS_PER_BRIGADE - MAX_INFANTRY) * (NUMBER_OF_BRIGADES + 1);
 		const VTOL_UNIT_HARD_LIMIT = COMBAT_UNIT_HARD_LIMIT - LAND_VEHICLE_SOFT_LIMIT - INFANTRY_UNIT_SOFT_LIMIT;
