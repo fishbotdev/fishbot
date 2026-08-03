@@ -158,9 +158,8 @@ class CommandCenter {
 
 		// Task scheduling parameters
 		// Add regular, high priority, high computational load tasks to the start of the list.
-		// The naming convention is important as this allows the handlers in _run.js to run the correct function.
-		// e.g. label intelligence tasks with 'intel_'.
-		this.REQUESTS_PER_MINUTE = {
+		// Update `_run.js` if any of the below task names change.
+		this.TASK_SCHEDULE = {
 			'combat_runC2': 60,
 			'global_missionManager': 60,
 			'logistics_runConstruction': 60,
@@ -171,9 +170,7 @@ class CommandCenter {
 			'intel_getAviationTargets': 10,
 			'runStrategy': 6,
 		};
-
-		this.INTELLIGENCE_SUBTASK_NAMES = [];
-
+		
 	}
 
 	/////////////////////////////////////////////////// STATE INITIALISATION ///////////////////////////////////////////////////
@@ -183,66 +180,8 @@ class CommandCenter {
 	 */
 	initialise(state) {
 		this.toc.setDefaultMissions(state);			
-		this.setSchedulerParameters(state);
+		this.toc.setSchedulerParameters(state, this.TASK_SCHEDULE);
 		this.updateStrategicParameters(state);		// initialises all strategic parameters to realistic values
-	}
-
-	/**
-	 * 
-	 * @param {worldState} state 
-	 */
-	setSchedulerParameters(state) {
-		// TODO: mutates the state. move to hq_toc
-
-		const SHOW_SCHEDULER_PARAMS = false;
-		const INTERVALS_PER_MIN = state.INTERVALS_PER_MIN;
-
-		const r = generateRange(INTERVALS_PER_MIN);		
-		let usedTimeBlocks = [];
-
-		let taskID = 1;
-
-		for (const [task, requestsPerMin] of Object.entries(this.REQUESTS_PER_MINUTE)) {
-
-			// Classify
-			if (task.includes("intel_")) {
-				this.INTELLIGENCE_SUBTASK_NAMES.push(task);
-			}
-
-			// Initialise the schedule; a multiplicative-hash-function is used to produce a 'random' phase offset
-			state.WORKER_IDS[task] = [];		// make a new list
-
-			let u = [];		// debugging	
-
-			const requestInterval = Math.floor(INTERVALS_PER_MIN / requestsPerMin);
-
-			const taskHash = taskID * 2654435761;
-			taskID++;
-
-			// Creating long arrays of 'true' & 'false' in memory allows for simple lookup using the time index
-			for (let i=0; i<r.length; i++) {
-				const hash = taskHash + r[i] * 1013904223;
-
-				if (hash % requestInterval !== 0) {
-					state.WORKER_IDS[task].push(false);			
-				} else {
-					state.WORKER_IDS[task].push(true);
-					usedTimeBlocks.push(i);		// for debugging
-					u.push(i);
-				}
-			}
-
-			if (SHOW_SCHEDULER_PARAMS) {
-				u.sort((a,b) => a - b);
-				debug(`"${task}" used timeslots: ${u}`);
-			}
-			
-		}
-
-		if (SHOW_SCHEDULER_PARAMS) {
-			usedTimeBlocks.sort((a,b) => a - b);
-			debug(`used timeslots: ${usedTimeBlocks}`);
-		}
 	}
 
 	///////////////////////////////////////////////////     STRATEGY     ///////////////////////////////////////////////////

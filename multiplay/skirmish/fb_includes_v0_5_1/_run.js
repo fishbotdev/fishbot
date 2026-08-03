@@ -45,7 +45,7 @@ function runStrategy() {
 
 function runIntelligence() {
 
-	const subtasks = hq.INTELLIGENCE_SUBTASK_NAMES;
+	const subtasks = ['intel_getNearbyGroundTargets', 'intel_getAviationTargets', 'intel_getMapIntelligence'];
 
 	if (state.botIsActive) {
 		for (let i=0; i<subtasks.length; i++) {
@@ -100,7 +100,7 @@ function runMissionManager() {
 
 function scheduleCoreFunctions() {
 	if (state.botIsActive) {
-		state.currWorkerID = Math.floor(gameTime / state.TIME_BLOCK_MS) % state.INTERVALS_PER_MIN;
+		state.currWorkerID = Math.floor(gameTime / state.TIME_BLOCK_MS) % state.BLOCKS_PER_MIN;
 	}
 }
 

@@ -357,7 +357,7 @@ class worldState {
         this.botIsActive = true;
         this.currWorkerID = -1;
         this.TIME_BLOCK_MS = 200;
-        this.INTERVALS_PER_MIN = Math.floor(60000 / this.TIME_BLOCK_MS);
+        this.BLOCKS_PER_MIN = Math.floor(60000 / this.TIME_BLOCK_MS);
 		this.WORKER_IDS = {};
     }
 
