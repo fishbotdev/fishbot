@@ -308,7 +308,7 @@ function produceHeavyCavalry(factory) {
 		WEAPONS["Assault Cannon"],
 		WEAPONS["Heavy Cannon"],
 		WEAPONS["Twin Assault Cannon"],
-		WEAPONS["Needle Gun"],
+		// WEAPONS["Needle Gun"],
 		WEAPONS["Rail Gun"],
 		WEAPONS["Gauss Cannon"],
 	].reverse();
@@ -513,7 +513,7 @@ function produceLandUnitCategory(category, factory) {
 			productionStarted = productionStarted || produceLightCavalry(factory);
 			break;
 		case DIVISION.SHORT_RANGE_FIRE_SUPPORT_RESERVE:
-			productionStarted = productionStarted || produceLandAPFireSupport(factory);
+			productionStarted = productionStarted || produceLandFireSupportGeneric(factory);
 			break;
 		case DIVISION.AIR_DEFENCE_RESERVE:
 			productionStarted = productionStarted || produceHighVolumeAAUnit(factory);
@@ -525,7 +525,7 @@ function produceLandUnitCategory(category, factory) {
 			productionStarted = productionStarted || produceHeavyRepair(factory);
 			break;
 		default:
-			debug(`${gameTime}: WARNING: produceLandUnitCategory() did not understand "${category}"; falling back to light cav production.`);
+			warn(`produceLandUnitCategory() did not understand "${category}". Falling back to light cav production.`);
 			productionStarted = productionStarted || produceLightCavalry(factory);
 	}
 

@@ -50,10 +50,12 @@
 /**
 	fbGroup: FISHBOT v3 CUSTOM GROUPING SYSTEM
 
-	Fishbot custom implementation of inbuilt "groups"
-	Fishbot requires transient, one-to-many labelling to support its ability to maneuver & control multiple groups of units simultaneously.
-    Construction and aviation use this capability extensively.
-	As of Warzone 2100 v4.6.1, neither the built-in groups, nor labels, are suitable for transient, one-to-many labelling.
+	FishBot uses a grouping system (sometimes containing only 2-3 units per group) to support its ability to multitask. 
+    A unit generally only has 1 group at a time, but that group needs to change regularly.
+    I tried using both the built-in 'groups' and 'labels' initially, but found them to be unsuitable for this purpose.
+
+    For example, construction and combat use the grouping system to assign some units to go and perform a 'mission' (e.g. go build a derrick).
+        On mission completion (or failure, or abortion), the mission manager returns the assigned units to a 'reserve', from where they can be assigned to another group.
 */
 class fbGroup {
 
@@ -160,21 +162,11 @@ class fbGroup {
  */
 class fbGrid {
 
-    /**
-     * Constructor for `fbGrid`. Both `numXCells` and `numYCells` are optional arguments; they both have to specified if you want a custom grid size.
-     * @param {number?} numXCells 
-     * @param {number?} numYCells 
-     */
-    constructor(numXCells=null, numYCells=null) {
+    constructor() {
         this.cellSize = 10;     // in game tiles
-
-        if (numXCells == null || numYCells == null) {    
-            this.numXCells = Math.ceil(mapWidth / this.cellSize);
-            this.numYCells = Math.ceil(mapHeight / this.cellSize);
-        } else {
-            this.numXCells = numXCells;
-            this.numYCells = numYCells;
-        }
+        
+        this.numXCells = Math.ceil(mapWidth / this.cellSize);
+        this.numYCells = Math.ceil(mapHeight / this.cellSize);
 
         const createStandardFbGridCell = (gx, gy) => this.createNewFbGridCell(gx, gy);
         /** @type {FbGridCell[][]} */
@@ -220,11 +212,6 @@ class fbGrid {
             'friendlyUnits': [],
             'friendlyStructures': [],
         };
-
-        if (!defined(this.grid)) {
-            debug(`WARNING: grid.enumRange() could not read from undefined grid.`);
-            return result;
-        }
 
         const cx = Math.floor(x / this.cellSize);
         const cy = Math.floor(y / this.cellSize);
@@ -298,16 +285,10 @@ class worldState {
 
         ////////////////////////// SPATIAL AWARENESS //////////////////////////
         /**
-         *  The "grid" is the core component of FishBot's spatial awareness system. 
-         *  @type {fbGrid} 
+         * This stores all map-related data which is parsed once on game start.
+         * @type {MapData}
          */
-        this.grid = new fbGrid();
-
-        /**
-         *  Spatial fields, derived from the dimensions of the grid, are used for decision making.
-         *  @type {SpatialFieldsObject} 
-         */
-        this.fields;
+        this.mapData;
 
         /**
          *  This object stores data about fixed points of interest on the game map.
@@ -319,6 +300,25 @@ class worldState {
             'bases': []
         };
 
+        /**
+         *  The "grid" is the core component of FishBot's spatial awareness system. 
+         *  @type {fbGrid} 
+         */
+        this.grid = new fbGrid();
+
+        /**
+         *  Spatial fields are representations of information on the grid (e.g. locations of anti-air defences), and are used for decision making.
+         *  @type {SpatialFieldsObject} 
+         */
+        this.fields;
+
+        // Game statistics
+        /** @type {Map<string, number>} */
+        this.MAX_STRUCTURE_COUNT = new Map();
+
+        /** @type {Map<string, number>} */
+        this.MAX_DROID_COUNT = new Map();
+
         ////////////////////////// PLAYER STATISTICS / CUSTOM METADATA //////////////////////////
         /** 
          * The numeric array index is the same as the player ID, so `state.playerInfo[me].numTrucks` is a possible & accepted access pattern.
@@ -326,8 +326,7 @@ class worldState {
          */
         this.playerInfo;
 
-        // Game statistics
-        this.REPAIR_FACILITY_HARD_CAP = 3; // getStructureLimit(STRUCTURES["Repair Facility"].id);      // TODO: Fix this when this function is fixed.
+        ////////////////////////// FISHBOT METADATA (CONSIDER MOVING THIS TO HQ_COMMAND) //////////////////////////
 
         // Combat targeting
         /** @type {BrigadeInfo} */
@@ -351,34 +350,29 @@ class worldState {
         // Mission management system
         /** @type {fbGroup} */
         this.g;
+
         this.activeMissions = [];
+
         /** @type {ProductionJob[]} */
         this.activeProductionJobs = [];
-
-        // Bot attributes
-        this.botIsActive = true;
-        this.oilDominance = false;
-
+        
         // Load balancing parameters
+        this.botIsActive = true;
         this.currWorkerID = -1;
         this.TIME_BLOCK_MS = 200;
-        this.INTERVALS_PER_MIN = Math.floor(60000 / this.TIME_BLOCK_MS);
+        this.BLOCKS_PER_MIN = Math.floor(60000 / this.TIME_BLOCK_MS);
 		this.WORKER_IDS = {};
     }
 
     /**
      * Returns an array containing the playerIDs of alive players.
+     * @returns {number[]}
      */
-    enumLivingPlayers() {   
-        let livingPlayerIDs = [];
-
-        this.playerInfo.forEach(p => {
-            if (p["numTotalUnits"] !== 0 || p["numFactories"] !== 0) {
-                livingPlayerIDs.push(p.playerID);
-            }
-        });
-
-        return livingPlayerIDs;
+    enumLivingPlayers() {
+        /** @param {PlayerStatsObject} p */
+        const isLiving = (p) => p.numTotalUnits !== 0 || p.numFactories !== 0;
+        
+        return this.playerInfo.filter(isLiving).map(p => p.playerID);
     }
 
     /**
@@ -406,22 +400,44 @@ class worldState {
         }
     }
 
+    /**
+     * Returns the maximum structure count.
+     * @param {string} structureName 
+     * @returns {number}
+     */
+    getMaxStructureCount(structureName) {
+        const maxStructureCount = this.MAX_STRUCTURE_COUNT.get(structureName);
+        if (maxStructureCount == null) {
+            warn(`undefined "${structureName}" passed to state.getMaxStructureCount(). Returning 1.`);
+            return 1;
+        }
+        return maxStructureCount;
+    }
+
+    getMaxUnitCount(droidCategory) {
+        const maxDroidCount = this.MAX_DROID_COUNT.get(droidCategory);
+        if (maxDroidCount == null) {
+            warn(`undefined "${droidCategory}" passed to state.getMaxUnitCount(). Returning 10.`);
+            return 10;
+        }
+        return maxDroidCount;
+    }
+
 }
 
 
 class worldStateBuilder {
 
     /**
-     * Returns a new `fbGroup` with FishBot base group IDs initialised. 
+     * Returns a new `fbGroup` with default FishBot group IDs initialised. 
      * @returns {fbGroup} 
      */
     #initialiseFbGroupingSystem() {
-        let g = new fbGroup();
+        const g = new fbGroup();
 
         for (const d in DIVISION) {
             g.createGroup(DIVISION[d]);
         }
-        
         for (const e in ENGINEERING) {
             g.createGroup(ENGINEERING[e]);
         }
@@ -534,7 +550,7 @@ class worldStateBuilder {
         const b = [];
 
         if (startPositions.length !== maxPlayers) {
-            debug(`WARNING: ${startPositions.length} !== ${maxPlayers}! Weird behaviour may result: e.g. playerInfo might be unsynced with base locations.`);
+            warn(`${startPositions.length} !== ${maxPlayers}! Weird behaviour may result: e.g. playerInfo might be unsynced with base locations.`);
         }
 
         for (let i=0; i<startPositions.length; i++) {
@@ -567,23 +583,199 @@ class worldStateBuilder {
     }
 
     /**
-     * TODO: Add jsdocs & add consolidate all other useful map-data related definitions here
+     * This function initialises all map-related data. 
+     * As `getWalkableTiles()` is computationally intense, it should only be called once on game start.
+     * @returns {MapData}
      */
     #initialiseMapTiles() {
+        /** @type {MapData} */
+        const mapData = {};
 
-        const yMap = generateRange(mapHeight);
-        const xMap = generateRange(mapWidth);
+        //////////////////////// VARIABLE DEFINITIONS ////////////////////////
+        const HALF_MAP_WIDTH = Math.floor(mapWidth / 2);
+        const HALF_MAP_HEIGHT = Math.floor(mapHeight / 2);
 
-        yMap.forEach(y => {
-            const mapRow = [];
+        // Define "walkable" & "reachable" tiles. Accounts for initial terrain features (both destroyable + non-destroyable are treated equally).
+        //  - "Walkable" => can I place another object on that tile (be it a droid, structure or feature)? Useful for building.
+        //  - "Reachable" => can I path to an adjacent tile? Useful for determining if a oil resource / location is reachable by a truck.
 
-            xMap.forEach(x => {
-                // mapRow.push(MapTiles[y][x].height);      // uncomment for height
-                mapRow.push(MapTiles[y][x].terrainType);    // uncomment for different terrain type; see: https://github.com/Warzone2100/warzone2100/blob/00ca862eb87e8d22462ee97b4d2b8ab9ee30a451/lib/wzmaplib/include/wzmaplib/terrain_type.h#L26 for terrainType enum
+        /** @type {(boolean[])[]} */
+        const isBaseNonWalkableTile = create2DGrid(mapWidth, mapHeight, () => {return false;});
+
+        // Some features have a bounding box which is larger than 1. These are defined below in an ad-hoc fashion.
+        // For example, for the *Snowy Tree2* feature, `features.json` gives a 'breadth' = 'width' = 1 (ref: https://github.com/Warzone2100/warzone2100/blob/d9863cf7d5ccea3125d3e95e3ed094f52d05b27c/data/base/stats/features.json#L663) 
+        //   but in the actual game, *Snowy Tree2* seems to have a 2x2 collision box!
+        // Note: "*Snowy Tree2*" (e.g. 2c-Roughness) that is centered at [85, 48] would have other tiles at [84, 48], [84, 47], [85, 47]. 
+        //   This is consistent with how other 2x2 base structures are treated e.g. Power Generator / Research Facility.
+        const FEATURE_NAMES_2X2 = [
+            "*Wrecked Building 9*",
+            "*Wrecked Building 17*",
+            "*Snowy Tree2*", 
+            "*LargeCoolingTower*", 
+            "*NuclearPowerStation*", 
+            "*OldFactory*", 
+            "Powerlab", 
+            "Laseropticslab", 
+            "Rotaryweaponslab", 
+            "Heavyweaponslab", 
+            "Advancedmaterialslab", 
+            "Aerodynamicslab",
+            "Nanolab", 
+            "Indirectweaponslab", 
+        ]; 
+        const FEATURE_NAMES_3X3 = [
+            "*Building 1*", 
+            "*Building 2*", 
+            "*Building 3*", 
+            "*Building 7*", 
+            "*Building 8*", 
+            "*Building 11*", 
+            "*Wrecked Building 16*",
+        ];
+        const FEATURE_NAMES_2X1 = [     // horizontal 
+            "*Building 10*",
+            "*Building 12*",
+            "Warehouse",
+            "*Warehouse2*",
+        ];
+        const FEATURE_NAMES_1X2 = [     // vertical 
+            "Wrecked Tanker",
+            "*Warehouse3*",
+        ];
+
+        const OFFSET_2X2 = [[0, 0], [0, -1], [-1, 0], [-1, -1]];
+        const OFFSET_3X3 = [[0, 0], [-1, -1], [-1, 0], [-1, 1], [0, 1], [1, 1], [1, 0], [1, -1], [0, -1]];
+        const OFFSET_2X1 = [[0, 0], [-1, 0]];       // horizontal
+        const OFFSET_1X2 = [[0, 0], [0, -1]];       // vertical
+
+        // Note: `enumFeature` includes oil derrick positions too so `isDerrickPosition` is not required yet.
+        const allFeatures = enumFeature(ALL_PLAYERS);   
+        
+        const SHOW_FEATURES = false;        // enable this to see all features highlighted with red highlight
+
+        const setBaseNonWalkableTiles = (x, y, offsets) => {
+            offsets.forEach(o => {
+                const ox = x + o[0];
+                const oy = y + o[1];
+                isBaseNonWalkableTile[ox][oy] = true;
+                if (SHOW_FEATURES)  hackMarkTiles(ox, oy);              
             });
+        }
 
-            debug(`"${mapRow}",`);      // python script processes list of comma-delimited strings
+        allFeatures.forEach(feature => {
+            const x = feature.x, y = feature.y;
+            const featureName = feature.name;
+
+            if (SHOW_FEATURES)  debug(`${featureName} (id: ${feature.id}) (${x}, ${y})`);
+            if (FEATURE_NAMES_2X2.includes(featureName)) {
+                setBaseNonWalkableTiles(x, y, OFFSET_2X2);
+            } else if (FEATURE_NAMES_3X3.includes(featureName)) {
+                setBaseNonWalkableTiles(x, y, OFFSET_3X3);
+            } else if (FEATURE_NAMES_2X1.includes(featureName)) {
+                setBaseNonWalkableTiles(x, y, OFFSET_2X1);
+            } else if (FEATURE_NAMES_1X2.includes(featureName)) {
+                setBaseNonWalkableTiles(x, y, OFFSET_1X2);
+            } else if (featureName === "Oil Resource") {
+                // Explicitly showing that Oil Resources are treated as a 1x1 non-walkable feature.
+                isBaseNonWalkableTile[feature.x][feature.y] = true;     
+            } else {
+                isBaseNonWalkableTile[feature.x][feature.y] = true;
+                if (SHOW_FEATURES)  hackMarkTiles(feature.x, feature.y);     
+            }
         });
+
+        // Remove the very edges of the map since these are likely to be invalid tiles
+        const xEdge = generateRange(mapWidth);
+        const yEdge = generateRange(mapHeight);
+        xEdge.forEach(x => {
+            isBaseNonWalkableTile[x][0] = true;
+            isBaseNonWalkableTile[x][mapHeight - 1] = true;
+        });
+        yEdge.forEach(y => {
+            isBaseNonWalkableTile[0][y] = true;
+            isBaseNonWalkableTile[mapWidth - 1][y] = true;
+        });
+
+        // Remove all water + cliffs
+        for (let x=0; x<mapWidth; x++) {
+            for (let y=0; y<mapHeight; y++) {
+                const terrainType = MapTiles[y][x].terrainType;     
+                // For the `terrainType` enum, see: https://github.com/Warzone2100/warzone2100/blob/00ca862eb87e8d22462ee97b4d2b8ab9ee30a451/lib/wzmaplib/include/wzmaplib/terrain_type.h#L26 
+                if (terrainType === TER_CLIFFFACE || terrainType === TER_WATER) {
+                    isBaseNonWalkableTile[x][y] = true;
+                }
+            }
+        }
+
+        const walkableTiles = getWalkableTiles(isBaseNonWalkableTile);
+
+        /** @type {(boolean[])[]} */
+        const isWalkable = create2DGrid(mapWidth, mapHeight, () => {return false;});
+
+        /** @type {(boolean[])[]} */
+        const isReachable = create2DGrid(mapWidth, mapHeight, () => {return false;});
+
+        walkableTiles.forEach(b => {
+            const x = b[0];
+            const y = b[1];
+            isWalkable[x][y] = true;
+            isReachable[x][y] = true;
+            // hackMarkTiles(x, y);        // Uncomment this to see all the walkable tiles on the map that the algorithm found
+        });
+
+        /** @type {(boolean[])[]} */
+        const isDerrickPosition = create2DGrid(mapWidth, mapHeight, () => {return false;});
+                
+		const ADJACENT_TILE_OFFSETS = [[0, 1], [0, -1], [-1, 0], [1, 0]];
+
+        derrickPositions.forEach(d => {
+            isDerrickPosition[d.x][d.y] = true;
+            
+            // If one of the adjacent tiles are walkable, then the derrick should be classed as reachable (but not walkable, since a unit / structure cannot occupy an Oil Resource tile)
+            if (ADJACENT_TILE_OFFSETS.some(o => isWalkable[d.x + o[0]][d.y + o[1]])) {      
+                // markTile(d.x, d.y);    // Uncomment this to see the reachable oil derricks on the map
+                isReachable[d.x][d.y] = true;
+            }
+        });
+
+        /** @type {Coordinate[]} */
+        const QUADRANT_SEARCH_PATTERN = [
+            // Searches in a positive-x & positive-y direction 
+            [0, 0], 
+            [1, 0], [0, 1], 
+            [1, 1], [2, 0], [0, 2],
+            [1, 2], [2, 1], [3, 0], [0, 3],
+            [2, 2], [1, 3], [3, 1], [4, 0], [0, 4],
+            [3, 2], [2, 3], [1, 4], [4, 1], [5, 0], [0, 5]
+        ];
+
+        const heightMap = create2DGrid(mapWidth, mapHeight, (x, y) => MapTiles[y][x].height);       // The inbuilt `MapTiles` is referenced with [y][x]. This has been changed inside FishBot to use the conventional (x, y) referencing. 
+      
+        // Enable this block to print out a heightmap of your map in the console
+        if (false) {
+            for (let y=0; y<mapHeight; y++) {       
+                let text = ``;
+                for (let x=0; x<mapWidth; x++) {
+                    text += `${heightMap[x][y]},`.padStart(5, " ");
+                }
+                debug(text);
+            }
+        }
+
+        //////////////////////// WRITING VARIABLES ////////////////////////
+        mapData['HALF_MAP_WIDTH'] = HALF_MAP_WIDTH;
+        mapData['HALF_MAP_HEIGHT'] = HALF_MAP_HEIGHT;
+
+        mapData['walkableTiles'] = walkableTiles;
+        mapData['isWalkable'] = isWalkable;
+        mapData['isReachable'] = isReachable;
+
+        mapData['isDerrickPosition'] = isDerrickPosition;
+
+        mapData['QUADRANT_SEARCH_PATTERN'] = QUADRANT_SEARCH_PATTERN;
+        mapData['heightMap'] = heightMap;
+
+        return mapData;
 
     }
 
@@ -664,16 +856,66 @@ class worldStateBuilder {
     }
 
     /**
-     *  Initialises `state` with:
-     *  - FishBot grouping system `state.g`, 
-     *  - default POIs (bases & derricks) `state.poi.derricks` & `state.poi.bases`,
-     *  - default player information,
-     *  - 
+     * Queries the game engine for the maximum allowable count of all base structures.
+     *   Returns a Map from the *human-readable* structure name (which is the same way you would access `BASE_STRUCTURES`) to a number (the maximum allowable count for that structure).
+     * Note: As of Warzone 2100 v4.7.0, `getStructureLimit` will only return the *default* structure limit if it is called too early. 
+     *   To return the correct limits, `getStructureLimit` should be called during `eventStartLevel()`, or afterward. 
+     * @returns {Map<string, number>} 
+     */
+    #initialiseMaxStructureCounts() {
+        const MODULE_NAMES = ["Factory Module", "Power Module", "Research Module"];
+        const MODULES_PER_FACTORY = 2;
+
+        const maxStructureCounts = new Map();
+        
+        const NEGATIVE_ONE = 0xFFFFFFFF;        // `getStructureLimit` returns this for some structures. They have been omitted below, so there is no need to handle it (yet).
+
+        for (const [name, structureData] of Object.entries(BASE_STRUCTURES)) {      
+            if (MODULE_NAMES.includes(name)) {
+                continue;   
+            }
+            if (["Oil Derrick"].includes(name)) {
+                maxStructureCounts.set(name, 256);      // some large value
+                continue;
+            }
+            const limit = getStructureLimit(structureData.id, me);
+
+            maxStructureCounts.set(name, limit);      
+        }
+
+        const MAX_FACTORY_MODULES = (maxStructureCounts.get("Factory") + maxStructureCounts.get("VTOL Factory")) * MODULES_PER_FACTORY;
+        maxStructureCounts.set("Factory Module", MAX_FACTORY_MODULES);
+        maxStructureCounts.set("Power Module", maxStructureCounts.get("Power Generator"));
+        maxStructureCounts.set("Research Module", maxStructureCounts.get("Research Facility"));
+
+        // for (const [name, limit] of maxStructureCounts)     debug(`\t${name}: ${limit}`);
+
+        return maxStructureCounts;
+    }
+
+    /**
+     * Queries the game engine for the maximum unit counts of each `droidType`.
+     * @returns {Map<string, number>}
+     */
+    #initialiseMaxDroidCounts() {
+        const droidLimits = new Map();
+        droidLimits.set("DROID_CONSTRUCT", getDroidLimit(me, DROID_CONSTRUCT));
+        droidLimits.set("DROID_WEAPON", getDroidLimit(me, DROID_WEAPON));
+        droidLimits.set("DROID_REPAIR", getDroidLimit(me, DROID_REPAIR));
+        droidLimits.set("DROID_SENSOR", getDroidLimit(me, DROID_SENSOR));
+        droidLimits.set("DROID_CYBORG", getDroidLimit(me, DROID_CYBORG));
+        droidLimits.set("DROID_COMMAND", getDroidLimit(me, DROID_COMMAND));
+
+        return droidLimits;
+    }   
+
+    /**
+     * Initialises `state` with default parameters.
      * @param {worldState} state 
      * @returns {void}
      */
     initialise(state) {
-        // this.#initialiseMapTiles();
+        state.mapData = this.#initialiseMapTiles();
 
         state.g = this.#initialiseFbGroupingSystem();
 
@@ -696,5 +938,7 @@ class worldStateBuilder {
 
         state.brigades = this.#initialiseBrigades(state);
 
+        state.MAX_STRUCTURE_COUNT = this.#initialiseMaxStructureCounts(); 
+        state.MAX_DROID_COUNT = this.#initialiseMaxDroidCounts();
     }
 }

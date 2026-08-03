@@ -24,20 +24,28 @@ function runGameEndedWatchdog() {
 	const gameIsFinished = state.gameHasEnded();
 
 	if (gameIsFinished && state.botIsActive) {
-		debug(`${gameTime}\t FishBot ${me}: gameHasEnded, stopping all function`);
+		deb(`gameHasEnded, stopping all function`);
 		state.botIsActive = false;
 		if (DEBUG_MODE_ON) hackMarkTiles();		// clear all residual debug tiles
 	}
 
 	if (!gameIsFinished && !state.botIsActive) {
-		debug(`${gameTime}\t FishBot ${me}: is alive, resuming function`);
+		deb(`is alive, resuming function`);
 		state.botIsActive = true;
+	}
+}
+
+function runStrategy() {
+	if (state.botIsActive) {
+		if (state.WORKER_IDS['runStrategy'][state.currWorkerID]) {
+			hq.updateStrategicParameters(state);
+		}
 	}
 }
 
 function runIntelligence() {
 
-	const subtasks = hq.INTELLIGENCE_SUBTASK_NAMES;
+	const subtasks = ['intel_getNearbyGroundTargets', 'intel_getAviationTargets', 'intel_getMapIntelligence'];
 
 	if (state.botIsActive) {
 		for (let i=0; i<subtasks.length; i++) {
@@ -92,7 +100,7 @@ function runMissionManager() {
 
 function scheduleCoreFunctions() {
 	if (state.botIsActive) {
-		state.currWorkerID = Math.floor(gameTime / state.TIME_BLOCK_MS) % state.INTERVALS_PER_MIN;
+		state.currWorkerID = Math.floor(gameTime / state.TIME_BLOCK_MS) % state.BLOCKS_PER_MIN;
 	}
 }
 
@@ -104,13 +112,14 @@ function setupFishBot() {
 	setTimer("runConstructionLogistics", state.TIME_BLOCK_MS);
 	setTimer("runStructureLogistics", state.TIME_BLOCK_MS);
 	setTimer("runResupplyLogistics", state.TIME_BLOCK_MS);
+	setTimer("runStrategy", state.TIME_BLOCK_MS);
 	setTimer("runMissionManager", state.TIME_BLOCK_MS);
 
 	setTimer("runGameEndedWatchdog", 60000);
 }
 
 /**
- * This function is intended to be used during development & automated testing.
+ * This function is used during development & automated testing.
  * @returns {void}
  */
 function setupDebugMode() {
@@ -151,46 +160,66 @@ function setupDebugMode() {
 
 	PLAYER_COLOURS.forEach((colour, player_id) => changePlayerColour(player_id, colour));
 
+	debug(`\nFISHBOT DEBUG MODE\n\nMap: ${mapName} (${maxPlayers} players)`);
+
 	// Print bot info
 	const DIFFICULTY_LEVEL = ["Campaign", "Easy", "Medium", "Hard", "Insane"];
 	const get_difficulty_text = (difficulty) => DIFFICULTY_LEVEL[difficulty];
 
-	debug(`\nBot Info\n`);
+	debug(`\nPlayer Info`);
 
 	playerData.forEach(p => {
 		if (p.isHuman) {
 			// remove default human player (force-added in challenge mode)
-			debug(`Forcing ${p.position} to spec`);
-			transformPlayerToSpectator(p.position);		// this function appears to just force player 0 to spec
+			debug(`  - Player ${p.position}: forcing to spec`);
+			transformPlayerToSpectator(p.position);		// Note: might not be successful if p.position !== 0. Maybe a sync issue?
 			return;
 		}
 
 		const difficulty = get_difficulty_text(p.difficulty);
-		const playerInfo = `Player ${p.position}: ${p.name} (${difficulty})`;
+		const playerInfo = `  - Player ${p.position}: ${p.name} (${difficulty})`;
 		chat(ALL_PLAYERS, playerInfo);
 		debug(playerInfo);
 	});
 
-	debug(`\nMap: ${mapName}\n`);
-
 	centreView(baseLocation.x, baseLocation.y);		// Moves the camera to FishBot's start position
 
 	hideInterface();
+
+	deb(`Initialisation completed.\n`);
 }
 
+/**
+ * This is the start hook for FishBot. Include all initialisation code here to be run once at the start of the game.
+ * @returns {void}
+ */
 function eventStartLevel() {
-	queue("setupFishBot", me * 100);	
-	
+
 	if (DEBUG_MODE_ON) {
 		setupDebugMode();		// Debug mode is enabled for development & automated testing 
 	}
 
-	// One time use: start initial construction tasks immediately
+	// `initialise` functions are called here because functions like: `getStructureLimit()` only return the correct value 
+	// 		at the point where `eventStartLevel()` is called.
+	const stateBuilder = new worldStateBuilder();			
+	stateBuilder.initialise(state);
+
+	hq.initialise(state);
+
+	// Assign trucks to relevant groups & start construction tasks immediately
 	const initialTrucks = enumDroid(me, DROID_CONSTRUCT);
-	initialTrucks.forEach(droid => {
-		orderDroidLoc(droid, DORDER_MOVE, droid.x + 1, droid.y + 1);		// From NullBot: apparently trucks can sometimes get stuck when a building is placed on top of them
-		state.g.addDroidToGroup({groupID: ENGINEERING.BASE_BUILDER, droidID: droid.id});
+	const MAX_BASE_BUILDERS = 3;
+	initialTrucks.forEach((droid, idx) => {
+		// From NullBot: apparently trucks can sometimes get stuck when a building is placed on top of them, so the next line is here to prevent that.
+		orderDroidLoc(droid, DORDER_MOVE, droid.x + 1, droid.y + 1);		
+		if (idx < MAX_BASE_BUILDERS) {
+			state.g.addDroidToGroup({groupID: ENGINEERING.BASE_BUILDER, droidID: droid.id});
+		} else {
+			state.g.addDroidToGroup({groupID: ENGINEERING.ENGINEERING_RESERVE, droidID: droid.id});
+		}
 	});
 	queue("runConstructionLogistics");				
 	queue("runMissionManager");
+
+	queue("setupFishBot", me * 100);	
 }

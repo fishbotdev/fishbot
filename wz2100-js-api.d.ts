@@ -49,7 +49,7 @@ declare const TER_CLIFFFACE: TerrainTypeType;
 
 
 /**
-```MapTiles``` A two-dimensional array of static information about the map tiles in a game. Each item in MapTiles[y][x] is an object containing the following variables:
+```MapTiles``` A two-dimensional array of static information about the map tiles in a game. Each item in `MapTiles[y][x]` is an object containing the following variables:
 - ```terrainType``` tile type of a given map tile, such as ```TER_WATER``` for water tiles or ```TER_CLIFFFACE``` for cliffs. Tile types regulate which units may pass through this tile. (3.2+ only)
 - ```height``` the height at the top left of the tile
 - ```hoverContinent``` (For hover type propulsions)
@@ -392,7 +392,7 @@ interface DroidObject extends BaseObject {
   propulsion: string;
 
   /** The weapon components of the droid, as an array. Contains 'name', 'id', 'armed' percentage and 'lastFired' properties. (3.2+ only) */
-  weapons: object;    
+  weapons: DroidObject[];    
 
   /** Defined for transporters only: Total cargo capacity (number of items that will fit may depend on their size). (3.2+ only) */
   cargoCapacity: number;
@@ -551,6 +551,19 @@ Count the number of droids that a given player has. Droid type must be either
 The playerFilter parameter can be a specific player, ```ALL_PLAYERS```, ```ALLIES``` or ```ENEMIES```. 
  */
 declare function countDroid(droidType: DroidTypeType, playerFilter?: PlayerFilterType): number;
+
+
+/**
+ * ## enumFeature(playerFilter[, featureName])
+ * Returns an array of all features seen by player of given name, as defined in "features.json".
+ * If player is ```ALL_PLAYERS```, it will return all features irrespective of visibility to any player. If name is empty, it will return any feature.
+ * 
+ * FishBot note: usage looks like: `enumFeature(ALL_PLAYERS)`. 
+ * 
+ * The 'name' parameter is the same as the name parameter in this file: `warzone2100/data/base/stats/features.json`: https://github.com/Warzone2100/warzone2100/blob/d9863cf7d5ccea3125d3e95e3ed094f52d05b27c/data/base/stats/features.json#L663
+ */
+declare function enumFeature(playerFilter: PlayerFilterType, featureName?: string): FeatureObject[];
+
 
 /**
 ## tileIsBurning(x, y)
@@ -721,6 +734,8 @@ declare function getDroidLimit(player?: number, droidType?: droidTypeType): numb
  * ## getStructureLimit(structureName[, player])
  * 
  * Returns build limits for a structure.
+ * FishBot note: `getStructureLimit` will only return the *default* structure limits unless it is called *AFTER* `eventStartLevel()` is called. 
+ * For some structures, getStructureLimit will also return -1 (interpreted as unsigned int by JS). You should handle this in code using something like: 'const NEGATIVE_ONE = 0xFFFFFFFF;'.
  */
 declare function getStructureLimit(structureName: string, player?: number): number;
 
@@ -751,6 +766,9 @@ declare function pursueResearch(labStructure: StructureObject, research: string)
 ## enumResearch()
 
 Returns an array of all research objects that are currently and immediately available for research.
+
+FishBot note: This does not return important parameters such as: `r.name`, `r.researchPoints`, `r.researchPower`, `r.resultComponents` & `r.requiredResearch`.
+Instead, it returns parameters similar to the `Stats.Research` global.
  */
 declare function enumResearch(): BaseObject[];
 
@@ -788,7 +806,13 @@ declare function queuedPower(player: number): number;
 
 Mark the given tile(s) on the map. Either give a ```POSITION``` or ```AREA``` label,
 or a tile x, y position, or four positions for a square area. If no parameter
-is given, all marked tiles are cleared. (3.2+ only)
+is given, all marked tiles are cleared. (3.2+ only).
+
+FishBot note: when using this function in 'four position mode', it marks the tiles from `[x, y]` to `[x2-1, y2-1]` (inclusive). 
+Structures are placed on the bottom right (positive x and positive y) corner of the tile.
+
+Therefore `hackMarkTiles(x, y, x+1, y+1)` is the same as `hackMarkTiles(x, y)`. 
+FishBot implements a wrapper `markTile(x, y)` that highlights a 2x2 area centered on a specified tile coordinate.
  */
 declare function hackMarkTiles(x?: int, y?: int, x2?: int, y2?: int): void;
 

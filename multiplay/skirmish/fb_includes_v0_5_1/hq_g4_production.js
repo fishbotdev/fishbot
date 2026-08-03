@@ -23,12 +23,13 @@ class armySupply {
 
 	/**
 	 * Prioritises the next land vehicle to produce (does not include infantry). 
-	 * Forecasts production to return a list of production candidates.
+	 * Then, forecasts production to return a list of production candidates.
 	 * @param {BrigadeComposition} brigadeComposition 
-	 * @param {*} maxBrigadeComposition
+	 * @param {ProductionParameters} parameters
 	 */
-	prioritiseLandVehicleCategory(brigadeComposition, maxBrigadeComposition) {
+	prioritiseLandVehicleCategory(brigadeComposition, parameters) {
 		
+		const maxBrigadeComposition = parameters.BRIGADE_COMPOSITION;
 		const getMaxUnits = (category) => {
 			switch(category) {
 				case DIVISION.HEAVY_CAV_RESERVE:
@@ -44,7 +45,7 @@ class armySupply {
 				case DIVISION.MAINTENANCE_RESERVE:
 					return maxBrigadeComposition['MAX_REPAIR'];
 				default:
-					debug(`${gameTime}: prioritiseLandVehicleCategory2() / getMaxUnits(): failed to recognise "${category}". Returning "1".`)
+					warn(`prioritiseLandVehicleCategory / getMaxUnits(): failed to recognise "${category}". Returning 1.`)
 					return 1;
 			}
 		}
@@ -52,7 +53,7 @@ class armySupply {
 		const getDeficit = (category) => {
 			const battalionComposition = brigadeComposition.get(category);
 			if (battalionComposition == null) {
-				debug(`${gameTime}: WARNING - Attempted to get non-existent 'deficit' for category "${category}". Returning 0.`);
+				warn(`prioritiseLandVehicleCategory / getDeficit(): Attempted to get non-existent 'deficit' for category "${category}". Returning 0.`);
 				return 0;
 			}
 			return battalionComposition["deficit"];
@@ -60,8 +61,13 @@ class armySupply {
 
 		const getNormDeficit = (category) => getDeficit(category) / getMaxUnits(category);
 
-		const makeCategory = (category, weight) => {
+		const makeCategory = (category) => {
 			const normDeficit = getNormDeficit(category);
+			let weight = parameters.UNIT_WEIGHTS.get(category);
+			if (weight == null) {
+				warn(`prioritiseLandVehicleCategory / makeCategory(): weight for "${category}" returned null (missing). Defaulting to 0.5.`);
+				weight = 0.5;
+			}
 			return {
 				"type": category,
 				"normDeficit": normDeficit,
@@ -71,21 +77,19 @@ class armySupply {
 		};
 
 		const CATEGORIES = [
-			// Production weights (which influences production order) are tuned using `python_helper_scripts / production_scheduling.py`.
-			// Must be rebalanced each time the brigade composition is changed.	
-			makeCategory(DIVISION.HEAVY_CAV_RESERVE, 0.95), 
-			makeCategory(DIVISION.LIGHT_CAV_RESERVE, 1.0), 
-			makeCategory(DIVISION.SHORT_RANGE_FIRE_SUPPORT_RESERVE, 0.7), 
-			makeCategory(DIVISION.AIR_DEFENCE_RESERVE, 0.65),
-			makeCategory(DIVISION.SENSOR_RESERVE, 0.25),
-			makeCategory(DIVISION.MAINTENANCE_RESERVE, 0.5),
+			makeCategory(DIVISION.HEAVY_CAV_RESERVE), 
+			makeCategory(DIVISION.LIGHT_CAV_RESERVE), 
+			makeCategory(DIVISION.SHORT_RANGE_FIRE_SUPPORT_RESERVE), 
+			makeCategory(DIVISION.AIR_DEFENCE_RESERVE),
+			makeCategory(DIVISION.SENSOR_RESERVE),
+			makeCategory(DIVISION.MAINTENANCE_RESERVE),
 		];
 
 		const FORECAST_STEPS = 15;
 
 		const productionRequests = [];
 		for (let i=0; i<FORECAST_STEPS; i++) {
-			// Terminate when the biggest normDeficit is 0 => all following deficits are negative.
+			// Terminate when the biggest normDeficit is 0, which implies all following deficits are negative.
 			CATEGORIES.sort((a,b) => b["score"] - a["score"]);
 			if (CATEGORIES[0].normDeficit < 1e-3) {		// must account for FP rounding error
 				break;		
