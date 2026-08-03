@@ -316,6 +316,9 @@ class worldState {
         /** @type {Map<string, number>} */
         this.MAX_STRUCTURE_COUNT = new Map();
 
+        /** @type {Map<string, number>} */
+        this.MAX_DROID_COUNT = new Map();
+
         ////////////////////////// PLAYER STATISTICS / CUSTOM METADATA //////////////////////////
         /** 
          * The numeric array index is the same as the player ID, so `state.playerInfo[me].numTrucks` is a possible & accepted access pattern.
@@ -357,7 +360,7 @@ class worldState {
         this.botIsActive = true;
         this.currWorkerID = -1;
         this.TIME_BLOCK_MS = 200;
-        this.INTERVALS_PER_MIN = Math.floor(60000 / this.TIME_BLOCK_MS);
+        this.BLOCKS_PER_MIN = Math.floor(60000 / this.TIME_BLOCK_MS);
 		this.WORKER_IDS = {};
     }
 
@@ -405,10 +408,19 @@ class worldState {
     getMaxStructureCount(structureName) {
         const maxStructureCount = this.MAX_STRUCTURE_COUNT.get(structureName);
         if (maxStructureCount == null) {
-            warn(`undefined "${structureName}" passed to state.MAX_STRUCTURE_COUNT. Returning 1.`);
+            warn(`undefined "${structureName}" passed to state.getMaxStructureCount(). Returning 1.`);
             return 1;
         }
         return maxStructureCount;
+    }
+
+    getMaxUnitCount(droidCategory) {
+        const maxDroidCount = this.MAX_DROID_COUNT.get(droidCategory);
+        if (maxDroidCount == null) {
+            warn(`undefined "${droidCategory}" passed to state.getMaxUnitCount(). Returning 10.`);
+            return 10;
+        }
+        return maxDroidCount;
     }
 
 }
@@ -882,6 +894,22 @@ class worldStateBuilder {
     }
 
     /**
+     * Queries the game engine for the maximum unit counts of each `droidType`.
+     * @returns {Map<string, number>}
+     */
+    #initialiseMaxDroidCounts() {
+        const droidLimits = new Map();
+        droidLimits.set("DROID_CONSTRUCT", getDroidLimit(me, DROID_CONSTRUCT));
+        droidLimits.set("DROID_WEAPON", getDroidLimit(me, DROID_WEAPON));
+        droidLimits.set("DROID_REPAIR", getDroidLimit(me, DROID_REPAIR));
+        droidLimits.set("DROID_SENSOR", getDroidLimit(me, DROID_SENSOR));
+        droidLimits.set("DROID_CYBORG", getDroidLimit(me, DROID_CYBORG));
+        droidLimits.set("DROID_COMMAND", getDroidLimit(me, DROID_COMMAND));
+
+        return droidLimits;
+    }   
+
+    /**
      * Initialises `state` with default parameters.
      * @param {worldState} state 
      * @returns {void}
@@ -911,5 +939,6 @@ class worldStateBuilder {
         state.brigades = this.#initialiseBrigades(state);
 
         state.MAX_STRUCTURE_COUNT = this.#initialiseMaxStructureCounts(); 
+        state.MAX_DROID_COUNT = this.#initialiseMaxDroidCounts();
     }
 }

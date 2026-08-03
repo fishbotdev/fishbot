@@ -15,14 +15,67 @@
 	If not, see <https://www.gnu.org/licenses/>.
 */
 
+/**
+ * This function writes to (mutates) the game state (`worldState`).
+ */
 class TacticalOperationsCenter {
-	// This is the central location where all missions are planned, controlled & monitored.
 	constructor() {
 
 	}
 	
 	/**
-	 * 
+	 * This function assigns time blocks to each of the requested periodic tasks in `taskSchedule`.
+	 * 	 It creates a long array of 'true' & 'false' in memory, which allows for simple lookup using the time index.
+	 * 	 This function uses multiplicative hashing to produce a 'random' phase offset for each task.
+	 * @param {worldState} state 
+	 * @param {Object} taskSchedule
+	 */
+	setSchedulerParameters(state, taskSchedule) {
+
+		const SHOW_SCHEDULER_PARAMS = false;
+		const BLOCKS_PER_MIN = state.BLOCKS_PER_MIN;
+
+		const r = generateRange(BLOCKS_PER_MIN);		
+
+		const usedTimeBlocks = [];
+		
+		let taskCount = 0;
+		for (const [taskName, requestsPerMin] of Object.entries(taskSchedule)) {
+			state.WORKER_IDS[taskName] = [];	
+			const u = [];		
+			
+			const requestInterval = Math.floor(BLOCKS_PER_MIN / requestsPerMin);
+
+			taskCount += 1;
+			const taskHash = taskCount * 2654435761;
+
+			for (let i=0; i<r.length; i++) {
+				const blockHash = r[i] * 1013904223;
+				const hash = taskHash + blockHash;
+
+				if (hash % requestInterval !== 0) {
+					state.WORKER_IDS[taskName].push(false);		
+					continue;			
+				} 
+
+				state.WORKER_IDS[taskName].push(true);
+				usedTimeBlocks.push(i);	
+				u.push(i);
+			}
+
+			if (SHOW_SCHEDULER_PARAMS) {
+				u.sort((a,b) => a - b);
+				deb(`"${taskName}" used timeslots: ${u}`);
+			}
+		}
+
+		if (SHOW_SCHEDULER_PARAMS) {
+			usedTimeBlocks.sort((a,b) => a - b);
+			deb(`used timeslots: ${usedTimeBlocks}`);
+		}
+	}
+
+	/**
 	 * @param {worldState} state 
 	 * @returns 
 	 */
@@ -33,7 +86,6 @@ class TacticalOperationsCenter {
 	}
 
 	/**
-	 * 
 	 * @param {worldState} state 
 	 * @returns 
 	 */
@@ -261,6 +313,21 @@ class TacticalOperationsCenter {
 		md.priority = priority;	
 		md.timeStarted = gameTime;
 		return md;			
+	}
+
+	/**
+	 * Sets the default behaviours of the bot for the specified `missionTypes`.
+	 * @param {worldState} state 
+	 */
+	setDefaultMissions(state) {
+
+		const md1 = this.createNewMission({missionType: MISSION_TYPE.VTOL_STAGING_MISSION, priority: MISSION_PRIORITY.LOW});		
+
+		const md2 = this.createNewMission({missionType: MISSION_TYPE.HELP_CONSTRUCT, priority: MISSION_PRIORITY.LOW});
+		
+		const md3 = this.createNewMission({missionType: MISSION_TYPE.RETURN_FOR_REPAIR, priority: MISSION_PRIORITY.LOW});		
+
+		state.activeMissions.push(md1, md2, md3);
 	}
 
 	#debugPrintSpatialField(heatmap, name) {
