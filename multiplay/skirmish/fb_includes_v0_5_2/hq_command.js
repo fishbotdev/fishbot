@@ -161,6 +161,7 @@ class CommandCenter {
 		// Update `_run.js` if any of the below task names change.
 		this.TASK_SCHEDULE = {
 			'combat_runC2': 60,
+			'combat_runAviationOperations': 60,
 			'global_missionManager': 60,
 			'logistics_runConstruction': 60,
 			'logistics_runResupplyLogistics': 30,
@@ -849,6 +850,15 @@ class CommandCenter {
 	}
 
 	/**
+	 * @param {worldState} state 
+	 */
+	runAviationOperations(state) {
+		const aviationTargets = this.#prioritiseAviationTargets(state, this.AVIATION_PARAMETERS);
+
+		this.toc.assignAviationMissions(state, aviationTargets);	
+	}
+
+	/**
 	 * Directs brigades to maneuver to and attack land targets, as well as directing aircraft to support land efforts.
 	 * @param {worldState} state 
 	 */
@@ -891,11 +901,7 @@ class CommandCenter {
 			const x = state.brigades[DIVISION.FIRST_BCT]['location'].x;
 			const y = state.brigades[DIVISION.FIRST_BCT]['location'].y;
 			moveReservesToShadow(reserveGroupIDs, x, y);
-		}
-
-		const aviationTargets = this.#prioritiseAviationTargets(state, this.AVIATION_PARAMETERS);
-
-		this.toc.assignAviationMissions(state, aviationTargets);					
+		}				
 	}
 
 	/////////////////////////////////////////////////// G4: LOGISTICS ///////////////////////////////////////////////////

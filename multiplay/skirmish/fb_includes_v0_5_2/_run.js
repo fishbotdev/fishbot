@@ -62,6 +62,14 @@ function runTargeting() {
 	}
 }
 
+function runAviation() {
+	if (state.botIsActive) {
+		if (state.WORKER_IDS['combat_runAviationOperations'][state.currWorkerID]) {
+			hq.runAviationOperations(state);
+		}
+	}
+}
+
 function runC2() {
 	if (state.botIsActive) {
 		if (state.WORKER_IDS['combat_runC2'][state.currWorkerID]) {
@@ -116,6 +124,7 @@ function setupFishBot() {
 	setTimer("runIntelligence", state.TIME_BLOCK_MS);
 	setTimer("runTargeting", state.TIME_BLOCK_MS);
 	setTimer("runC2", state.TIME_BLOCK_MS);
+	setTimer("runAviation", state.TIME_BLOCK_MS);
 	setTimer("runConstructionLogistics", state.TIME_BLOCK_MS);
 	setTimer("runStructureLogistics", state.TIME_BLOCK_MS);
 	setTimer("runResupplyLogistics", state.TIME_BLOCK_MS);
