@@ -880,7 +880,10 @@ class CommandCenter {
 
 				// const CLOSEST_ENEMY_BASE = intelligence.findClosestEnemyBase(state, brigadeLocation.x, brigadeLocation.y); 			
 
-				const groundTargets = this.#prioritiseBrigadeTargets(state, brigadeID, this.GROUND_FORCE_PARAMETERS);
+				const prioritiseBrigadeTargets2 = () => this.#prioritiseBrigadeTargets(state, brigadeID, this.GROUND_FORCE_PARAMETERS);
+				const groundTargets = fbProfile(prioritiseBrigadeTargets2);
+
+				// const groundTargets = this.#prioritiseBrigadeTargets(state, brigadeID, this.GROUND_FORCE_PARAMETERS);
 				this.toc.setBrigadeCASStrikeRequests(state, brigadeID, groundTargets['casTargets']);
 
 				if (this.#noTargetsAvailable(groundTargets)) {
@@ -893,7 +896,8 @@ class CommandCenter {
 					return;
 				}
 				
-				moveBrigadeToAttack(state, brigadeID, groundTargets);				
+				const moveBrigadeToAttack2 = () => moveBrigadeToAttack(state, brigadeID, groundTargets);				
+				fbProfile(moveBrigadeToAttack2);
 			});
 
 			// Manage reserves: temporary: Move reserves to pre-emptively reinforce BCT0
