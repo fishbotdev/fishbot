@@ -40,9 +40,12 @@ class TacticalOperationsCenter {
 		const usedTimeBlocks = [];
 		
 		let taskCount = 0;
-		for (const [taskName, requestsPerMin] of Object.entries(taskSchedule)) {
+		for (const [taskName, taskData] of Object.entries(taskSchedule)) {
 			state.WORKER_IDS[taskName] = [];	
 			const u = [];		
+
+			const stages = taskData.stages;
+			const requestsPerMin = taskData.requestsPerMin;
 			
 			const requestInterval = Math.floor(BLOCKS_PER_MIN / requestsPerMin);
 
@@ -53,12 +56,16 @@ class TacticalOperationsCenter {
 				const blockHash = r[i] * 1013904223;
 				const hash = taskHash + blockHash;
 
+				const taskSchedule = state.WORKER_IDS[taskName];
+
 				if (hash % requestInterval !== 0) {
-					state.WORKER_IDS[taskName].push(false);		
+					taskSchedule.push(-1);		
 					continue;			
 				} 
 
-				state.WORKER_IDS[taskName].push(true);
+				const stage = Math.floor(hash / requestInterval) % stages;
+				taskSchedule.push(stage);
+
 				usedTimeBlocks.push(i);	
 				u.push(i);
 			}

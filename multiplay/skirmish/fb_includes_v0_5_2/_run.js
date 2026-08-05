@@ -37,7 +37,7 @@ function runGameEndedWatchdog() {
 
 function runStrategy() {
 	if (state.botIsActive) {
-		if (state.WORKER_IDS['runStrategy'][state.currWorkerID]) {
+		if (state.WORKER_IDS['runStrategy'][state.currWorkerID] !== -1) {
 			hq.updateStrategicParameters(state);
 		}
 	}
@@ -45,7 +45,7 @@ function runStrategy() {
 
 function runIntelligence() {
 	if (state.botIsActive) {
-		if (state.WORKER_IDS['intel_getMapIntelligence'][state.currWorkerID]) {
+		if (state.WORKER_IDS['intel_getMapIntelligence'][state.currWorkerID] !== -1) {
 			hq.runIntelligence(state);
 		}
 	}
@@ -55,7 +55,7 @@ function runTargeting() {
 	const subtasks = ['intel_getNearbyGroundTargets', 'intel_getAviationTargets'];
 	if (state.botIsActive) {
 		for (let i=0; i<subtasks.length; i++) {
-			if (state.WORKER_IDS[subtasks[i]][state.currWorkerID]) {
+			if (state.WORKER_IDS[subtasks[i]][state.currWorkerID] !== -1) {
 				hq.runTargeting(state, subtasks[i]);
 			}
 		}
@@ -64,7 +64,7 @@ function runTargeting() {
 
 function runAviation() {
 	if (state.botIsActive) {
-		if (state.WORKER_IDS['combat_runAviationOperations'][state.currWorkerID]) {
+		if (state.WORKER_IDS['combat_runAviationOperations'][state.currWorkerID] !== -1) {
 			hq.runAviationOperations(state);
 		}
 	}
@@ -72,7 +72,7 @@ function runAviation() {
 
 function runC2() {
 	if (state.botIsActive) {
-		if (state.WORKER_IDS['combat_runC2'][state.currWorkerID]) {
+		if (state.WORKER_IDS['combat_runC2'][state.currWorkerID] !== -1) {
 			hq.runCombatOperations(state);
 		}
 	}
@@ -80,7 +80,7 @@ function runC2() {
 
 function runConstructionLogistics() {
 	if (state.botIsActive) {
-		if (state.WORKER_IDS['logistics_runConstruction'][state.currWorkerID]) {
+		if (state.WORKER_IDS['logistics_runConstruction'][state.currWorkerID] !== -1) {
 			hq.runConstructionLogistics(state);
 		}
 	}
@@ -88,7 +88,7 @@ function runConstructionLogistics() {
 
 function runResupplyLogistics() {
 	if (state.botIsActive) {
-		if (state.WORKER_IDS['logistics_runResupplyLogistics'][state.currWorkerID]) {
+		if (state.WORKER_IDS['logistics_runResupplyLogistics'][state.currWorkerID] !== -1) {
 			hq.runResupplyLogistics(state);				// assigns reserve units to brigades
 		}
 	}
@@ -96,7 +96,7 @@ function runResupplyLogistics() {
 
 function runStructureLogistics() {
 	if (state.botIsActive) {
-		if (state.WORKER_IDS['logistics_runStructureLogistics'][state.currWorkerID]) {
+		if (state.WORKER_IDS['logistics_runStructureLogistics'][state.currWorkerID] !== -1) {
 			hq.runProductionLogistics(state);			// schedules production to replenish reserves
 
 			hq.runResearchLogistics(state);
@@ -106,7 +106,7 @@ function runStructureLogistics() {
 
 function runMissionManager() {
 	if (state.botIsActive) {
-		if (state.WORKER_IDS['global_missionManager'][state.currWorkerID]) {
+		if (state.WORKER_IDS['global_missionManager'][state.currWorkerID] !== -1) {
 			hq.runMissionManager(state);
 		}
 	}

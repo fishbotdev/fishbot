@@ -160,18 +160,17 @@ class CommandCenter {
 		// Add regular, high priority, high computational load tasks to the start of the list.
 		// Update `_run.js` if any of the below task names change.
 		this.TASK_SCHEDULE = {
-			'combat_runC2': 60,
-			'combat_runAviationOperations': 60,
-			'global_missionManager': 60,
-			'logistics_runConstruction': 60,
-			'logistics_runResupplyLogistics': 30,
-			'intel_getNearbyGroundTargets': 20,
-			'logistics_runStructureLogistics': 15,
-			'intel_getMapIntelligence': 12,
-			'intel_getAviationTargets': 10,
-			'runStrategy': 6,
+			'combat_runC2': {"requestsPerMin": 60, "stages": 1},
+			'combat_runAviationOperations': {"requestsPerMin": 60, "stages": 1},
+			'global_missionManager': {"requestsPerMin": 60, "stages": 1},
+			'logistics_runConstruction': {"requestsPerMin": 60, "stages": 1},
+			'logistics_runResupplyLogistics': {"requestsPerMin": 30, "stages": 1},
+			'intel_getNearbyGroundTargets': {"requestsPerMin": 20, "stages": 1},
+			'logistics_runStructureLogistics': {"requestsPerMin": 15, "stages": 1},
+			'intel_getMapIntelligence': {"requestsPerMin": 12, "stages": 1},
+			'intel_getAviationTargets': {"requestsPerMin": 10, "stages": 1},
+			'runStrategy': {"requestsPerMin": 6, "stages": 1},
 		};
-		
 	}
 
 	/**
