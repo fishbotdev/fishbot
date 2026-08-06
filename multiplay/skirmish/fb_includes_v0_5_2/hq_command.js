@@ -903,7 +903,7 @@ class CommandCenter {
 		// const CLOSEST_ENEMY_BASE = intelligence.findClosestEnemyBase(state, brigadeLocation.x, brigadeLocation.y); 			
 
 		const prioritiseBrigadeTargets2 = () => this.#prioritiseBrigadeTargets(state, brigadeID, this.GROUND_FORCE_PARAMETERS);
-		const groundTargets = fbProfile(prioritiseBrigadeTargets2);
+		const groundTargets = fprof(prioritiseBrigadeTargets2);
 
 		// const groundTargets = this.#prioritiseBrigadeTargets(state, brigadeID, this.GROUND_FORCE_PARAMETERS);
 		this.toc.setBrigadeCASStrikeRequests(state, brigadeID, groundTargets['casTargets']);
@@ -919,7 +919,7 @@ class CommandCenter {
 		}
 		
 		const moveBrigadeToAttack2 = () => moveBrigadeToAttack(state, brigadeID, groundTargets);				
-		fbProfile(moveBrigadeToAttack2, `_${brigadeID}`);
+		fprof(moveBrigadeToAttack2, `_${brigadeID}`);
 	}
 
 	/////////////////////////////////////////////////// G4: LOGISTICS ///////////////////////////////////////////////////

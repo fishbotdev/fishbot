@@ -42,50 +42,59 @@ function scheduleCoreFunctions() {
 	}
 
 	const currWorkerID = Math.floor(gameTime / state.TIME_BLOCK_MS) % state.BLOCKS_PER_MIN;
-	state.currWorkerID = currWorkerID;		// temporary, so other functions will work
 
 	if (state.WORKER_IDS['global_missionManager'][currWorkerID] !== -1) {
-		const runMissionManager2 = () => hq.runMissionManager(state);
-		fbProfile(runMissionManager2);
+		const global_missionManager = () => hq.runMissionManager(state);
+		fprof(global_missionManager);
 	}
 
 	if (state.WORKER_IDS['logistics_runResupplyLogistics'][currWorkerID] !== -1) {
-		hq.runResupplyLogistics(state);				// assigns reserve units to brigades
+		const logistics_runResupplyLogistics = () => hq.runResupplyLogistics(state);				// assigns reserve units to brigades
+		fprof(logistics_runResupplyLogistics);
 	}
 
-	if (state.WORKER_IDS['logistics_runStructureLogistics'][state.currWorkerID] !== -1) {
-		hq.runProductionLogistics(state);			// schedules production to replenish reserves
-		hq.runResearchLogistics(state);
+	if (state.WORKER_IDS['logistics_runStructureLogistics'][currWorkerID] !== -1) {
+		const logistics_runStructureLogistics = () => {
+			hq.runProductionLogistics(state);			// schedules production to replenish reserves
+			hq.runResearchLogistics(state);
+		}
+		fprof(logistics_runStructureLogistics);
 	}
 
-	if (state.WORKER_IDS['logistics_runConstruction'][state.currWorkerID] !== -1) {
-		hq.runConstructionLogistics(state);
+	if (state.WORKER_IDS['logistics_runConstruction'][currWorkerID] !== -1) {
+		const logistics_runConstruction = () => hq.runConstructionLogistics(state);
+		fprof(logistics_runConstruction);
 	}
 
-	const stage = state.WORKER_IDS['combat_runC2'][state.currWorkerID];
+	const stage = state.WORKER_IDS['combat_runC2'][currWorkerID];
 	if (stage !== -1) {
-		hq.runCombatOperations(state, stage);
+		const combat_runC2 = () => hq.runCombatOperations(state, stage);
+		fprof(combat_runC2);
 	}
 
 	const subtasks = ['intel_getNearbyGroundTargets', 'intel_getAviationTargets'];
 	for (let i=0; i<subtasks.length; i++) {
-		if (state.WORKER_IDS[subtasks[i]][state.currWorkerID] !== -1) {
-			hq.runTargeting(state, subtasks[i]);
+		const name = subtasks[i];
+		if (state.WORKER_IDS[name][currWorkerID] !== -1) {
+			const rt = () => hq.runTargeting(state, name);
+			fprof(rt, `_${name}`);
 		}
 	}
 
-	if (state.WORKER_IDS['intel_getMapIntelligence'][state.currWorkerID] !== -1) {
-		hq.runIntelligence(state);
+	if (state.WORKER_IDS['intel_getMapIntelligence'][currWorkerID] !== -1) {
+		const intel_getMapIntelligence = () => hq.runIntelligence(state);
+		fprof(intel_getMapIntelligence);
 	}
 
-	if (state.WORKER_IDS['runStrategy'][state.currWorkerID] !== -1) {
-		hq.updateStrategicParameters(state);
+	if (state.WORKER_IDS['runStrategy'][currWorkerID] !== -1) {
+		const runStrategy = () => hq.updateStrategicParameters(state);
+		fprof(runStrategy);
 	}
 }
 
 
 /**
- * This function starts the timers for all FishBot functions. It is queued with a player-specific delay.   
+ * This function starts the timers for all FishBot functions. 
  * @returns {void}
  */
 function setupFishBot() {       
@@ -193,8 +202,6 @@ function eventStartLevel() {
 			state.g.addDroidToGroup({groupID: ENGINEERING.ENGINEERING_RESERVE, droidID: droid.id});
 		}
 	});
-	queue("runConstructionLogistics");				
-	queue("runMissionManager");
 
-	queue("setupFishBot", me * 100);	
+	queue("setupFishBot", me * 100);		// player-specific delay offsets bot initialisation by its position * 100ms, which reduces the chance of a lag spike at the very start of the game.	
 }
