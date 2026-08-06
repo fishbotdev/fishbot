@@ -57,6 +57,7 @@ function markTile(x, y) {
 /**
  * More convenient version of the inbuilt `profile` function.
  * @param {Function} callback 
+ * @param {string} customSuffix
  * @example
  * ```
  * const functionUnderTest = () => myFunc(param1, param2, ...);
@@ -65,9 +66,9 @@ function markTile(x, y) {
  * Will show up in log under `__profile__functionUnderTest`. (Rename `functionUnderTest` to whatever you want)
  * When you want to remove the profiler, no need to rewrite the function definition; just write `result = myFunc(param1, param2, ...)`.
  */
-function fbProfile(callback) {
+function fbProfile(callback, customSuffix="") {
 
-	const logFileFuncName = `__profile__${callback.name}`;		// this should have a unique name to avoid overwriting existing functions
+	const logFileFuncName = `__profile__${callback.name}${customSuffix}`;		// this should have a unique name to avoid overwriting existing functions
 
 	globalThis[logFileFuncName] = callback;		// overwrite callback reference since this might change with changing arguments
 

@@ -72,8 +72,9 @@ function runAviation() {
 
 function runC2() {
 	if (state.botIsActive) {
-		if (state.WORKER_IDS['combat_runC2'][state.currWorkerID] !== -1) {
-			hq.runCombatOperations(state);
+		const stage = state.WORKER_IDS['combat_runC2'][state.currWorkerID];
+		if (stage !== -1) {
+			hq.runCombatOperations(state, stage);
 		}
 	}
 }
