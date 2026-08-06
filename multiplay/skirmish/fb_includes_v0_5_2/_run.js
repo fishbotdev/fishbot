@@ -35,103 +35,61 @@ function runGameEndedWatchdog() {
 	}
 }
 
-function runStrategy() {
-	if (state.botIsActive) {
-		if (state.WORKER_IDS['runStrategy'][state.currWorkerID] !== -1) {
-			hq.updateStrategicParameters(state);
-		}
-	}
-}
-
-function runIntelligence() {
-	if (state.botIsActive) {
-		if (state.WORKER_IDS['intel_getMapIntelligence'][state.currWorkerID] !== -1) {
-			hq.runIntelligence(state);
-		}
-	}
-}
-
-function runTargeting() {
-	const subtasks = ['intel_getNearbyGroundTargets', 'intel_getAviationTargets'];
-	if (state.botIsActive) {
-		for (let i=0; i<subtasks.length; i++) {
-			if (state.WORKER_IDS[subtasks[i]][state.currWorkerID] !== -1) {
-				hq.runTargeting(state, subtasks[i]);
-			}
-		}
-	}
-}
-
-function runAviation() {
-	if (state.botIsActive) {
-		if (state.WORKER_IDS['combat_runAviationOperations'][state.currWorkerID] !== -1) {
-			hq.runAviationOperations(state);
-		}
-	}
-}
-
-function runC2() {
-	if (state.botIsActive) {
-		const stage = state.WORKER_IDS['combat_runC2'][state.currWorkerID];
-		if (stage !== -1) {
-			hq.runCombatOperations(state, stage);
-		}
-	}
-}
-
-function runConstructionLogistics() {
-	if (state.botIsActive) {
-		if (state.WORKER_IDS['logistics_runConstruction'][state.currWorkerID] !== -1) {
-			hq.runConstructionLogistics(state);
-		}
-	}
-}
-
-function runResupplyLogistics() {
-	if (state.botIsActive) {
-		if (state.WORKER_IDS['logistics_runResupplyLogistics'][state.currWorkerID] !== -1) {
-			hq.runResupplyLogistics(state);				// assigns reserve units to brigades
-		}
-	}
-}
-
-function runStructureLogistics() {
-	if (state.botIsActive) {
-		if (state.WORKER_IDS['logistics_runStructureLogistics'][state.currWorkerID] !== -1) {
-			hq.runProductionLogistics(state);			// schedules production to replenish reserves
-
-			hq.runResearchLogistics(state);
-		}
-	}
-}
-
-function runMissionManager() {
-	if (state.botIsActive) {
-		if (state.WORKER_IDS['global_missionManager'][state.currWorkerID] !== -1) {
-			hq.runMissionManager(state);
-		}
-	}
-}
 
 function scheduleCoreFunctions() {
-	if (state.botIsActive) {
-		state.currWorkerID = Math.floor(gameTime / state.TIME_BLOCK_MS) % state.BLOCKS_PER_MIN;
+	if (!state.botIsActive) {
+		return;
+	}
+
+	const currWorkerID = Math.floor(gameTime / state.TIME_BLOCK_MS) % state.BLOCKS_PER_MIN;
+	state.currWorkerID = currWorkerID;		// temporary, so other functions will work
+
+	if (state.WORKER_IDS['global_missionManager'][currWorkerID] !== -1) {
+		const runMissionManager2 = () => hq.runMissionManager(state);
+		fbProfile(runMissionManager2);
+	}
+
+	if (state.WORKER_IDS['logistics_runResupplyLogistics'][currWorkerID] !== -1) {
+		hq.runResupplyLogistics(state);				// assigns reserve units to brigades
+	}
+
+	if (state.WORKER_IDS['logistics_runStructureLogistics'][state.currWorkerID] !== -1) {
+		hq.runProductionLogistics(state);			// schedules production to replenish reserves
+		hq.runResearchLogistics(state);
+	}
+
+	if (state.WORKER_IDS['logistics_runConstruction'][state.currWorkerID] !== -1) {
+		hq.runConstructionLogistics(state);
+	}
+
+	const stage = state.WORKER_IDS['combat_runC2'][state.currWorkerID];
+	if (stage !== -1) {
+		hq.runCombatOperations(state, stage);
+	}
+
+	const subtasks = ['intel_getNearbyGroundTargets', 'intel_getAviationTargets'];
+	for (let i=0; i<subtasks.length; i++) {
+		if (state.WORKER_IDS[subtasks[i]][state.currWorkerID] !== -1) {
+			hq.runTargeting(state, subtasks[i]);
+		}
+	}
+
+	if (state.WORKER_IDS['intel_getMapIntelligence'][state.currWorkerID] !== -1) {
+		hq.runIntelligence(state);
+	}
+
+	if (state.WORKER_IDS['runStrategy'][state.currWorkerID] !== -1) {
+		hq.updateStrategicParameters(state);
 	}
 }
 
-function setupFishBot() {
-	// This function queued with a player-specific delay          
-	setTimer("scheduleCoreFunctions", state.TIME_BLOCK_MS);
-	setTimer("runIntelligence", state.TIME_BLOCK_MS);
-	setTimer("runTargeting", state.TIME_BLOCK_MS);
-	setTimer("runC2", state.TIME_BLOCK_MS);
-	setTimer("runAviation", state.TIME_BLOCK_MS);
-	setTimer("runConstructionLogistics", state.TIME_BLOCK_MS);
-	setTimer("runStructureLogistics", state.TIME_BLOCK_MS);
-	setTimer("runResupplyLogistics", state.TIME_BLOCK_MS);
-	setTimer("runStrategy", state.TIME_BLOCK_MS);
-	setTimer("runMissionManager", state.TIME_BLOCK_MS);
 
+/**
+ * This function starts the timers for all FishBot functions. It is queued with a player-specific delay.   
+ * @returns {void}
+ */
+function setupFishBot() {       
+	setTimer("scheduleCoreFunctions", state.TIME_BLOCK_MS);
 	setTimer("runGameEndedWatchdog", 60000);
 }
 
