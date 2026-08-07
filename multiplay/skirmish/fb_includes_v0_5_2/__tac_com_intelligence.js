@@ -38,11 +38,14 @@ function getDroidsAndStructsByPlayer(playerIdList=undefined) {
     if (playerIdList) {
         PLAYER_ID_LIST = playerIdList;
     }
+    const getObjectsByPlayer = () => {
+        PLAYER_ID_LIST.forEach(id => {
+            const p = createPlayerBucket(id, enumDroid(id), enumStruct(id));
+            objectsByPlayer.push(p);
+        });
+    };
 
-    PLAYER_ID_LIST.forEach(id => {
-        const p = createPlayerBucket(id, enumDroid(id), enumStruct(id));
-        objectsByPlayer.push(p);
-    });
+    fprof(getObjectsByPlayer);
 
     return objectsByPlayer;
 }

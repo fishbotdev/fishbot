@@ -70,6 +70,8 @@ function scheduleCoreFunctions() {
 	if (stage !== -1) {
 		const combat_runC2 = () => hq.runCombatOperations(state, stage);
 		fprof(combat_runC2);
+		const combat_runAviation = () => hq.runAviationOperations(state);
+		fprof(combat_runAviation);
 	}
 
 	const subtasks = ['intel_getNearbyGroundTargets', 'intel_getAviationTargets'];

@@ -61,9 +61,10 @@ function markTile(x, y) {
  * @example
  * ```
  * const functionUnderTest = () => myFunc(param1, param2, ...);
- * const result = fbProfile(functionUnderTest);
+ * const result = fprof(functionUnderTest);
  * ```
- * Will show up in log under `__profile__functionUnderTest`. (Rename `functionUnderTest` to whatever you want)
+ * Will show up in log under `__functionUnderTest`. Rename `functionUnderTest` to whatever you want.
+ * 
  * When you want to remove the profiler, no need to rewrite the function definition; just write `result = myFunc(param1, param2, ...)`.
  */
 function fprof(callback, suffix="") {
