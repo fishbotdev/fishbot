@@ -45,8 +45,8 @@ class armyAviation {
 	
 	/**
 	 * Creates a request for an air raid mission from a provided `targetObject`.
-	 * @param {DroidObject | StructureObject | FeatureObject} targetObject 
-	 * @returns {AirStrikeMissionRequest}
+	 * @param {FbObject} targetObject 
+	 * @returns {AirStrikeMissionRequestLazy}
 	 */
 	translateIntoRaidRequest(targetObject, priority) {
 		return this.#createAirStrikeRequest({
@@ -59,8 +59,8 @@ class armyAviation {
 
 	/**
 	 * Creates a request for an air raid mission from a provided `targetObject`.
-	 * @param {DroidObject | StructureObject | FeatureObject} targetObject 
-	 * @returns {AirStrikeMissionRequest}
+	 * @param {FbObject} targetObject 
+	 * @returns {AirStrikeMissionRequestLazy}
 	 */
 	translateIntoDASRequest(targetObject, priority) {
 		return this.#createAirStrikeRequest({

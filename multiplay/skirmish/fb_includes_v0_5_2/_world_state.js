@@ -314,17 +314,17 @@ class worldState {
         this.brigades = {};
 
         this.aviationTargets = {
-            /** @type {AirStrikeMissionRequest[]} */
+            /** @type {AirStrikeMissionRequestLazy[]} */
             'raidTargets': [],
 
             // 4 types of targets around enemy bases
-            /** @type {AirStrikeMissionRequest[]} */
+            /** @type {AirStrikeMissionRequestLazy[]} */
             'productionTargets': [],
-            /** @type {AirStrikeMissionRequest[]} */
+            /** @type {AirStrikeMissionRequestLazy[]} */
             'adaTargets': [],
-            /** @type {AirStrikeMissionRequest[]} */
+            /** @type {AirStrikeMissionRequestLazy[]} */
             'indirectFireTargets': [],
-            /** @type {AirStrikeMissionRequest[]} */
+            /** @type {AirStrikeMissionRequestLazy[]} */
             'defensiveStructureTargets': []
         }; 
 

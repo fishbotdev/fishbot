@@ -700,7 +700,7 @@ class TacticalOperationsCenter {
 				const gx = Math.floor(x / cellSize);
 				const gy = Math.floor(y / cellSize);
 
-				const fbObject = createFbObject(obj, flags, x, y, gx, gy);
+				const fbObject = createFbObject(obj, flags, x, y);
 
 				// Update player information
 				p['numTotalUnits']++;
@@ -774,7 +774,7 @@ class TacticalOperationsCenter {
 				const gx = Math.floor(x / cellSize);
 				const gy = Math.floor(y / cellSize);
 
-				const fbObject = createFbObject(obj, flags, x, y, gx, gy);
+				const fbObject = createFbObject(obj, flags, x, y);
 				
 				// Update player information
 				p['numStructs'] += 1;
@@ -972,11 +972,11 @@ class TacticalOperationsCenter {
 	/**
 	 * This function writes `aviationTargets` to `state`.
 	 * @param {worldState} state 
-	 * @param {AirStrikeMissionRequest[]} raidTargets 
-	 * @param {AirStrikeMissionRequest[]} productionTargets 
-	 * @param {AirStrikeMissionRequest[]} adaTargets 
-	 * @param {AirStrikeMissionRequest[]} indirectFireTargets 
-	 * @param {AirStrikeMissionRequest[]} defensiveStructureTargets 
+	 * @param {AirStrikeMissionRequestLazy[]} raidTargets 
+	 * @param {AirStrikeMissionRequestLazy[]} productionTargets 
+	 * @param {AirStrikeMissionRequestLazy[]} adaTargets 
+	 * @param {AirStrikeMissionRequestLazy[]} indirectFireTargets 
+	 * @param {AirStrikeMissionRequestLazy[]} defensiveStructureTargets 
 	 * @returns {void}
 	 */
 	setAviationTargets(state, raidTargets, productionTargets, adaTargets, indirectFireTargets, defensiveStructureTargets) {

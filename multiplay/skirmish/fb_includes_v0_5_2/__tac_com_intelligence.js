@@ -177,25 +177,18 @@ function classifyGameObject(obj) {
  * @param {number} flags 
  * @param {number} x 
  * @param {number} y 
- * @param {number} gx 
- * @param {number} gy 
  * @returns {FbObject}
  */
-function createFbObject(object, flags, x, y, gx, gy) {
-    /** @type {FbObject} */
+function createFbObject(object, flags, x, y) {
     return {
-        'name': object.name,
-
         // These 3 parameters allow 'getObject' to be used at a later point to retrieve up-to-date object information
         'type': object.type,
         'player': object.player,
         'id': object.id,
 
-        'flags': flags,
-        'x': x,
-        'y': y,
-        'gx': gx,
-        'gy': gy,
+        'flags': flags,     // used for object classification (don't need the object anymore)
+        'x': x,             // used for lazy grid evaluation
+        'y': y,             // used for lazy grid evaluation
     };
 }
 

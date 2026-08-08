@@ -247,8 +247,6 @@ class armyEngineering {
 			
 			let friendlyDefencesNearby = 0, friendlyBuildSitesNearby = 0, friendlyDerricksNearby = 0;
 			nearby['friendlyStructures'].forEach(obj => {	
-				if (gameObjectNoLongerExists(obj)) return;
-
 				const flags = obj.flags;
 
 				if (flags & OBJ_FLAGS.RESOURCE_EXTRACTOR) {
@@ -277,8 +275,6 @@ class armyEngineering {
 
 			let enemyDefencesNearby = 0, enemyDerricksNearby = 0;
 			nearby['targetStructures'].forEach(obj => {	
-				if (gameObjectNoLongerExists(obj)) return;
-
 				const flags = obj.flags;
 
 				if (flags & OBJ_FLAGS.RESOURCE_EXTRACTOR) {
@@ -370,7 +366,10 @@ class armyEngineering {
 
 		// PART 1: FIND DEMOLITION LOCATIONS
 		myRepairFacilities.forEach(f => {
-			if (enemyUnitThreat[f.gx][f.gy] !== 0) {
+			const gx = Math.floor(f.x / cellSize);
+			const gy = Math.floor(f.y / cellSize);
+
+			if (enemyUnitThreat[gx][gy] !== 0) {
 				return;
 			}
 
@@ -433,9 +432,6 @@ class armyEngineering {
 			const nearby = state.grid.enumRangeLazy(x, y, REPAIR_CENTER_SEARCH_RADIUS, false, true);
 			nearby['friendlyStructures'].forEach(s => {
 				if (!(s.flags & OBJ_FLAGS.REPAIR)) {
-					return;
-				}
-				if (gameObjectNoLongerExists(s)) {
 					return;
 				}
 				friendlyRepairCenterCount++;
