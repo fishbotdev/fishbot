@@ -874,12 +874,50 @@ class CommandCenter {
 		}
 
 		const brigadeLocations = [];
+		const cellSize = state.grid.cellSize;
+		const numXCells = state.grid.numXCells;
+		const numYCells = state.grid.numYCells;
 
-		// if (DEBUG_MODE_ON) hackMarkTiles();		
+		if (DEBUG_MODE_ON) hackMarkTiles();		
 		this.BRIGADE_DESIGNATIONS.forEach(brigadeID => {
 
 			const brigadeLocation = state.brigades[brigadeID]['location'];
 			brigadeLocations.push(brigadeLocation);
+
+			const gx = Math.floor(brigadeLocation.x / cellSize);
+			const gy = Math.floor(brigadeLocation.y / cellSize);
+
+			if (!this.isOilDominant) {
+				// detach 1 unit to guard the derrick(s)
+				const brigadeUnits = state.g.enumGroup(brigadeID);		//wasteful, repeated in the combat driver
+				const candidateGuards = [];
+				for (let i=0; i<brigadeUnits.length; i++) {
+					const u = brigadeUnits[i];
+					const category = getDroidFbGroupClassification(u);
+					if (category === DIVISION.LIGHT_CAV_RESERVE || category === DIVISION.INFANTRY_RESERVE) {
+						candidateGuards.push(u);		
+						break;
+					}
+				}
+				if (candidateGuards.length != 0) {
+					for (let i=-1; i<=1; i++) {
+						for (let j=-1; j<=1; j++) {
+							if (gx+i < 0 || gx+i >= numXCells) continue;
+							if (gy+j < 0 || gy+j >= numYCells) continue;
+
+							const derricks = state.grid.grid[gx+i][gy+j].derricks;
+							for (let k=0; k<derricks.length; k++) {
+								const derrick = derricks[k];
+								if (derrick.isClaimed)  continue;
+								// check if already being guarded
+								// detach a unit to guard
+								deb(`detaching ${candidateGuards[0].name} to guard @ ${derrick.x} ${derrick.y}`);
+								markTile(derrick.x, derrick.y);
+							}
+						}
+					}		
+				}
+			}
 
 			// const CLOSEST_ENEMY_BASE = intelligence.findClosestEnemyBase(state, brigadeLocation.x, brigadeLocation.y); 			
 
