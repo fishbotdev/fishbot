@@ -878,12 +878,11 @@ class CommandCenter {
 
 		const brigadeLocations = [];
 
-		// Move combat brigades
 		// if (DEBUG_MODE_ON) hackMarkTiles();		
 
 		const brigadeID = stageMap.get(stage);
 		if (brigadeID == null) {
-			warn(`bad stage "${stage}"`);
+			warn(`runCombatOperations(): bad stage "${stage}"`);
 			return;
 		}
 
@@ -901,10 +900,8 @@ class CommandCenter {
 
 		// const CLOSEST_ENEMY_BASE = intelligence.findClosestEnemyBase(state, brigadeLocation.x, brigadeLocation.y); 			
 
-		const prioritiseBrigadeTargets2 = () => this.#prioritiseBrigadeTargets(state, brigadeID, this.GROUND_FORCE_PARAMETERS);
-		const groundTargets = fprof(prioritiseBrigadeTargets2);
+		const groundTargets = this.#prioritiseBrigadeTargets(state, brigadeID, this.GROUND_FORCE_PARAMETERS);
 
-		// const groundTargets = this.#prioritiseBrigadeTargets(state, brigadeID, this.GROUND_FORCE_PARAMETERS);
 		this.toc.setBrigadeCASStrikeRequests(state, brigadeID, groundTargets['casTargets']);
 
 		if (this.#noTargetsAvailable(groundTargets)) {
@@ -917,8 +914,7 @@ class CommandCenter {
 			return;
 		}
 		
-		const moveBrigadeToAttack2 = () => moveBrigadeToAttack(state, brigadeID, groundTargets);				
-		fprof(moveBrigadeToAttack2, `_${brigadeID}`);
+		moveBrigadeToAttack(state, brigadeID, groundTargets);	
 	}
 
 	/////////////////////////////////////////////////// G4: LOGISTICS ///////////////////////////////////////////////////
