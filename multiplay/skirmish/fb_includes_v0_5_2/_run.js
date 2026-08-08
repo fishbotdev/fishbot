@@ -65,10 +65,9 @@ function scheduleCoreFunctions() {
 		const logistics_runConstruction = () => hq.runConstructionLogistics(state);
 		fprof(logistics_runConstruction);
 	}
-
-	const stage = state.WORKER_IDS['combat_runC2'][currWorkerID];
-	if (stage !== -1) {
-		const combat_runC2 = () => hq.runCombatOperations(state, stage);
+	
+	if (state.WORKER_IDS['combat_runC2'][currWorkerID] !== -1) {
+		const combat_runC2 = () => hq.runCombatOperations(state);
 		fprof(combat_runC2);
 		const combat_runAviation = () => hq.runAviationOperations(state);
 		fprof(combat_runAviation);
