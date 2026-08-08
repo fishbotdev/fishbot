@@ -700,7 +700,7 @@ class TacticalOperationsCenter {
 				const gx = Math.floor(x / cellSize);
 				const gy = Math.floor(y / cellSize);
 
-				const fbObject = createFbObject(obj, flags, x, y, gx, gy);
+				const fbObject = createFbObject(obj, flags, x, y);
 
 				// Update player information
 				p['numTotalUnits']++;
@@ -774,7 +774,7 @@ class TacticalOperationsCenter {
 				const gx = Math.floor(x / cellSize);
 				const gy = Math.floor(y / cellSize);
 
-				const fbObject = createFbObject(obj, flags, x, y, gx, gy);
+				const fbObject = createFbObject(obj, flags, x, y);
 				
 				// Update player information
 				p['numStructs'] += 1;

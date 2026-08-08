@@ -60,15 +60,12 @@
 /**
  * @typedef {Object} FbObject
  * `FbObject` is FishBot's lightweight implementation of a generic game object.
- * @property {string} name
  * @property {number} type
  * @property {number} player
  * @property {number} id
  * @property {number} flags
  * @property {number} x (stale) x coordinate
  * @property {number} y (stale) y coordinate
- * @property {number} gx (stale) grid x coordinate
- * @property {number} gy (stale) grid y coordinate
  * 
  * 
  * @typedef {Object} PlayerInfoBucketObject

@@ -370,7 +370,10 @@ class armyEngineering {
 
 		// PART 1: FIND DEMOLITION LOCATIONS
 		myRepairFacilities.forEach(f => {
-			if (enemyUnitThreat[f.gx][f.gy] !== 0) {
+			const gx = Math.floor(f.x / cellSize);
+			const gy = Math.floor(f.y / cellSize);
+
+			if (enemyUnitThreat[gx][gy] !== 0) {
 				return;
 			}
 
