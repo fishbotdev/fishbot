@@ -54,6 +54,27 @@ function markTile(x, y) {
 	hackMarkTiles(x, y, x+2, y+2);
 }
 
+/**
+ * More convenient version of the inbuilt `profile` function.
+ * @param {Function} callback 
+ * @param {string} suffix
+ * @example
+ * ```
+ * const functionUnderTest = () => myFunc(param1, param2, ...);
+ * const result = fprof(functionUnderTest);
+ * ```
+ * Will show up in log under `__functionUnderTest`. Rename `functionUnderTest` to whatever you want.
+ * 
+ * When you want to remove the profiler, no need to rewrite the function definition; just write `result = myFunc(param1, param2, ...)`.
+ */
+function fprof(callback, suffix="") {
+
+	const logFileFuncName = `__${callback.name}${suffix}`;		// this should have a unique name to avoid overwriting existing functions
+
+	globalThis[logFileFuncName] = callback;		// overwrite callback reference since this might change with changing arguments
+
+	return profile(logFileFuncName);
+}
 
 /////////////////////////////////    Math functions    /////////////////////////////////
 

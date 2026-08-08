@@ -160,17 +160,17 @@ class CommandCenter {
 		// Add regular, high priority, high computational load tasks to the start of the list.
 		// Update `_run.js` if any of the below task names change.
 		this.TASK_SCHEDULE = {
-			'combat_runC2': 60,
-			'global_missionManager': 60,
-			'logistics_runConstruction': 60,
-			'logistics_runResupplyLogistics': 30,
-			'intel_getNearbyGroundTargets': 20,
-			'logistics_runStructureLogistics': 15,
-			'intel_getMapIntelligence': 12,
-			'intel_getAviationTargets': 10,
-			'runStrategy': 6,
+			'combat_runC2': {"requestsPerMin": 60, "stages": 5},
+			'combat_runAviationOperations': {"requestsPerMin": 60, "stages": 1},
+			'global_missionManager': {"requestsPerMin": 60, "stages": 1},
+			'logistics_runConstruction': {"requestsPerMin": 60, "stages": 1},
+			'logistics_runResupplyLogistics': {"requestsPerMin": 30, "stages": 1},
+			'intel_getNearbyGroundTargets': {"requestsPerMin": 20, "stages": 1},
+			'logistics_runStructureLogistics': {"requestsPerMin": 15, "stages": 1},
+			'intel_getMapIntelligence': {"requestsPerMin": 12, "stages": 1},		
+			'intel_getAviationTargets': {"requestsPerMin": 10, "stages": 1},
+			'runStrategy': {"requestsPerMin": 6, "stages": 1},
 		};
-		
 	}
 
 	/**
@@ -419,18 +419,14 @@ class CommandCenter {
 	/////////////////////////////////////////////////// G2: INTELLIGENCE ///////////////////////////////////////////////////
 
 	/**
-	 * Gathers game information directly from the game engine and stores it in the shared `state`.
-	 * 	Also performs targeting.
+	 * Performs targeting & writes the result to `state`.
 	 * @param {worldState} state
-	 * @param {string} taskID
+	 * @param {string} taskName
 	 * @returns {void}
 	 */
-	runIntelligence(state, taskID) {
-		
-		// Note: For performance reasons, anything which can be executed immediately should not use the mission management system.
-		// i.e. tactical functions may be called directly where appropriate
+	runTargeting(state, taskName) {
 
-		switch(taskID) {
+		switch(taskName) {
 
 			case 'intel_getNearbyGroundTargets':
 				// Update location(s) & target(s) of active combat force(s)
@@ -456,16 +452,19 @@ class CommandCenter {
 				);
 				break;
 
-			case 'intel_getMapIntelligence':
-				const rawObjectData = getDroidsAndStructsByPlayer();
-				this.toc.updateCoreIntel(state, rawObjectData);
-				break;
-				
 			default:
-				warn(`runIntelligence(): could not understand "${taskID}". Ignoring.`);
+				warn(`runTargeting(): could not understand "${taskName}". Ignoring.`);
 				return;
 		}
-	
+	}
+
+	/**
+	 * Gathers game information directly from the game engine and stores it in the shared `state`.
+	 * @param {worldState} state
+	 * @returns {void}
+	 */
+	runIntelligence(state) {	
+		this.toc.updateCoreIntel(state);	
 	}
 
 	/////////////////////////////////////////////////// G3: COMBAT OPERATIONS ///////////////////////////////////////////////////
@@ -849,53 +848,73 @@ class CommandCenter {
 	}
 
 	/**
-	 * Directs brigades to maneuver to and attack land targets, as well as directing aircraft to support land efforts.
 	 * @param {worldState} state 
 	 */
-	runCombatOperations(state) {
+	runAviationOperations(state) {
+		const aviationTargets = this.#prioritiseAviationTargets(state, this.AVIATION_PARAMETERS);
+
+		this.toc.assignAviationMissions(state, aviationTargets);	
+	}
+
+	/**
+	 * Directs brigades to maneuver to and attack land targets, as well as directing aircraft to support land efforts.
+	 * @param {worldState} state 
+	 * @param {number} stage
+	 */
+	runCombatOperations(state, stage) {
 
 		const READY_TO_ATTACK = groundForces.isReadyToAttack(state);
+		if (!READY_TO_ATTACK) {
+			return;
+		}
 
-		if (READY_TO_ATTACK) {
+		const stageMap = new Map([
+			[0, DIVISION.FIRST_BCT],
+			[1, DIVISION.SECOND_BCT],
+			[2, DIVISION.THIRD_BCT],
+			[3, DIVISION.FOURTH_BCT],
+			[4, DIVISION.BCT_RESERVE],
+		]);
 
-			const brigadeLocations = [];
+		const brigadeLocations = [];
 
-			// Move combat brigades
-			// if (DEBUG_MODE_ON) hackMarkTiles();		
+		// if (DEBUG_MODE_ON) hackMarkTiles();		
 
-			this.BRIGADE_DESIGNATIONS.forEach((brigadeID) => {
+		const brigadeID = stageMap.get(stage);
+		if (brigadeID == null) {
+			warn(`runCombatOperations(): bad stage "${stage}"`);
+			return;
+		}
 
-				const brigadeLocation = state.brigades[brigadeID]['location'];
-				brigadeLocations.push(brigadeLocation);
-
-				// const CLOSEST_ENEMY_BASE = intelligence.findClosestEnemyBase(state, brigadeLocation.x, brigadeLocation.y); 			
-
-				const groundTargets = this.#prioritiseBrigadeTargets(state, brigadeID, this.GROUND_FORCE_PARAMETERS);
-				this.toc.setBrigadeCASStrikeRequests(state, brigadeID, groundTargets['casTargets']);
-
-				if (this.#noTargetsAvailable(groundTargets)) {
-					const CLOSEST_TARGET = intelligence.findClosestTarget(state, brigadeLocation.x, brigadeLocation.y); 
-					if (CLOSEST_TARGET == undefined) {
-						moveBrigadeToLocation(state, brigadeID, brigadeLocation.x, brigadeLocation.y);
-						return;
-					} 
-					moveBrigadeToLocation(state, brigadeID, CLOSEST_TARGET.x, CLOSEST_TARGET.y);
-					return;
-				}
-				
-				moveBrigadeToAttack(state, brigadeID, groundTargets);				
-			});
-
+		if (brigadeID === DIVISION.BCT_RESERVE) {
 			// Manage reserves: temporary: Move reserves to pre-emptively reinforce BCT0
 			const reserveGroupIDs = [DIVISION.HEAVY_CAV_RESERVE, DIVISION.LIGHT_CAV_RESERVE, DIVISION.INFANTRY_RESERVE, DIVISION.SHORT_RANGE_FIRE_SUPPORT_RESERVE, DIVISION.SENSOR_RESERVE, DIVISION.AIR_DEFENCE_RESERVE, DIVISION.MAINTENANCE_RESERVE];
 			const x = state.brigades[DIVISION.FIRST_BCT]['location'].x;
 			const y = state.brigades[DIVISION.FIRST_BCT]['location'].y;
 			moveReservesToShadow(reserveGroupIDs, x, y);
+			return;
 		}
 
-		const aviationTargets = this.#prioritiseAviationTargets(state, this.AVIATION_PARAMETERS);
+		const brigadeLocation = state.brigades[brigadeID]['location'];
+		brigadeLocations.push(brigadeLocation);
 
-		this.toc.assignAviationMissions(state, aviationTargets);					
+		// const CLOSEST_ENEMY_BASE = intelligence.findClosestEnemyBase(state, brigadeLocation.x, brigadeLocation.y); 			
+
+		const groundTargets = this.#prioritiseBrigadeTargets(state, brigadeID, this.GROUND_FORCE_PARAMETERS);
+
+		this.toc.setBrigadeCASStrikeRequests(state, brigadeID, groundTargets['casTargets']);
+
+		if (this.#noTargetsAvailable(groundTargets)) {
+			const CLOSEST_TARGET = intelligence.findClosestTarget(state, brigadeLocation.x, brigadeLocation.y); 
+			if (CLOSEST_TARGET == undefined) {
+				moveBrigadeToLocation(state, brigadeID, brigadeLocation.x, brigadeLocation.y);
+				return;
+			} 
+			moveBrigadeToLocation(state, brigadeID, CLOSEST_TARGET.x, CLOSEST_TARGET.y);
+			return;
+		}
+		
+		moveBrigadeToAttack(state, brigadeID, groundTargets);	
 	}
 
 	/////////////////////////////////////////////////// G4: LOGISTICS ///////////////////////////////////////////////////
