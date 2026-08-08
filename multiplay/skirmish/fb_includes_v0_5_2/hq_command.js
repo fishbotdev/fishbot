@@ -463,9 +463,8 @@ class CommandCenter {
 	 * @param {worldState} state
 	 * @returns {void}
 	 */
-	runIntelligence(state) {
-		const rawObjectData = getDroidsAndStructsByPlayer();
-		this.toc.updateCoreIntel(state, rawObjectData);	
+	runIntelligence(state) {	
+		this.toc.updateCoreIntel(state);	
 	}
 
 	/////////////////////////////////////////////////// G3: COMBAT OPERATIONS ///////////////////////////////////////////////////

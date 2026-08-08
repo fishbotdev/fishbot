@@ -628,15 +628,15 @@ class TacticalOperationsCenter {
 	}
 
 	/**
-	 * 	This function performs multiple functions:
+	 * 	This function:
 	 * 	1. Gets all droids & structures on the map (like taking a satellite image of the whole map).
 	 * 	2. Classifies all droids & structures, writing a new `state.playerInfo` as well as `state.grid.grid`. 
 	 * 	3. Updates spatial fields (calls `this.updateSpatialFields`).
+	 *  IIFEs are used to allow the generated droid / structures arrays to go out of scope to be GCed. This is required for performance reasons.
 	 * @param {worldState} state 
-	 * @param {PlayerInfoBucketObject[]} rawObjectData 
 	 * @returns {void}
 	 */
-	updateCoreIntel(state, rawObjectData) {
+	updateCoreIntel(state) {
 
 		const grid = state.grid.grid;
 		const numXCells = state.grid.numXCells;		
@@ -675,18 +675,24 @@ class TacticalOperationsCenter {
 		resetAllGridCells();
 
 		// Write new grid cells
-		for (let i=0; i<rawObjectData.length; i++) {
-			const currPlayerEntry = rawObjectData[i];
+		const PLAYER_ID_LIST = generateRange(maxPlayers);       // will create 0-indexed playerIDs from 0, 1, 2, ..., maxPlayers - 1
 
-			const PLAYER_ID = currPlayerEntry['playerID'];
-			const p = createPlayerInfoEntry(PLAYER_ID);
+		for (let playerID=0; playerID<PLAYER_ID_LIST.length; playerID++) {
+
+			const p = createPlayerInfoEntry(playerID);
 
 			const PLAYER_IS_ENEMY = !p['isFriendly'];
-			const PLAYER_IS_ME = (PLAYER_ID === me);
+			const PLAYER_IS_ME = (playerID === me);
+
+			((playerID) => {
 
 
-			for (let j=0; j<currPlayerEntry['droids'].length; j++) {
-				const obj = currPlayerEntry['droids'][j];
+			// const enumDroid2 = () => enumDroid(playerID);		// moved here for perf reasons, want these arrays to go out of frame (to be GCed asap)
+   			// const droids = fprof(enumDroid2, `_${playerID}`);
+
+			const droids = enumDroid(playerID);
+			for (let j=0; j<droids.length; j++) {
+				const obj = droids[j];
 
 				const flags = classifyGameObject(obj);
 				const x = obj.x;
@@ -751,11 +757,16 @@ class TacticalOperationsCenter {
 					// Update grid
 					grid[gx][gy]['friendlyUnits'].push(fbObject);
 				}
-			}	
+			}
+			})(playerID);		
 
+			((playerID) => {
+    		// const enumStruct2 = () => enumStruct(playerID);
+    		// const structs = fprof(enumStruct2, `_${playerID}`);
 
-			for (let j=0; j<currPlayerEntry['structs'].length; j++) {
-				const obj = currPlayerEntry['structs'][j];
+			const structs = enumStruct(playerID);
+			for (let j=0; j<structs.length; j++) {
+				const obj = structs[j];
 				
 				const flags = classifyGameObject(obj);
 				const x = obj.x;
@@ -826,9 +837,10 @@ class TacticalOperationsCenter {
 					grid[gx][gy]['friendlyStructures'].push(fbObject);
 				}
 			}
+			})(playerID);	
 
 			// this.#debugPrintPlayerInfo(p);
-			state.playerInfo[PLAYER_ID] = p;		
+			state.playerInfo[playerID] = p;		
 		}
 	
 		this.updateSpatialFields(state, TEMP_GRID);
