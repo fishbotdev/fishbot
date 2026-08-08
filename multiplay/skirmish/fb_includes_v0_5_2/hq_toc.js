@@ -972,11 +972,11 @@ class TacticalOperationsCenter {
 	/**
 	 * This function writes `aviationTargets` to `state`.
 	 * @param {worldState} state 
-	 * @param {AirStrikeMissionRequest[]} raidTargets 
-	 * @param {AirStrikeMissionRequest[]} productionTargets 
-	 * @param {AirStrikeMissionRequest[]} adaTargets 
-	 * @param {AirStrikeMissionRequest[]} indirectFireTargets 
-	 * @param {AirStrikeMissionRequest[]} defensiveStructureTargets 
+	 * @param {AirStrikeMissionRequestLazy[]} raidTargets 
+	 * @param {AirStrikeMissionRequestLazy[]} productionTargets 
+	 * @param {AirStrikeMissionRequestLazy[]} adaTargets 
+	 * @param {AirStrikeMissionRequestLazy[]} indirectFireTargets 
+	 * @param {AirStrikeMissionRequestLazy[]} defensiveStructureTargets 
 	 * @returns {void}
 	 */
 	setAviationTargets(state, raidTargets, productionTargets, adaTargets, indirectFireTargets, defensiveStructureTargets) {

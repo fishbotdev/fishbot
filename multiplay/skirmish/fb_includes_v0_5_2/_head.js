@@ -231,6 +231,14 @@
  */
 
 /**
+ * @typedef {Object} AirStrikeMissionRequestLazy
+ * @property {number} missionType
+ * @property {FbObject} target
+ * @property {number} priority
+ * @property {number} numAircraft
+ */
+
+/**
  * Type definitions for `worldState.brigades`.
  * @typedef {Object} BattalionComposition
  * @property {number} category

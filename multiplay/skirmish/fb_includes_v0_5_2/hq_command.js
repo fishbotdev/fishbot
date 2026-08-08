@@ -440,8 +440,8 @@ class CommandCenter {
 				break;
 
 			case 'intel_getAviationTargets':
-				const raidTargets = intelligence.getTargetsNearDerricks(state);
-				const baseTargets = intelligence.getBaseTargets(state);
+				const raidTargets = intelligence.getTargetsNearDerricksLazy(state);
+				const baseTargets = intelligence.getBaseTargetsLazy(state);
 				this.toc.setAviationTargets(
 					state, 
 					raidTargets, 
@@ -758,7 +758,7 @@ class CommandCenter {
 	 * This function returns a list of prioritised Droid / Structure Objects (fresh data) which can be directly used in the `__tac` functions.
 	 * @param {worldState} state 
 	 * @param {AviationParameters} parameters
-	 * @returns {(AirStrikeMissionRequest)[]}	
+	 * @returns {AirStrikeMissionRequest[]}	
 	 */
 	#prioritiseAviationTargets(state, parameters) {
 
@@ -823,7 +823,13 @@ class CommandCenter {
 				threatThreshold  = parameters.SATURATION_THREAT_THRESHOLD;
 			}
 
-			const obj = missionRequest.target;
+			const t = missionRequest.target;
+
+			const obj = getObject(t.type, t.player, t.id);
+			if (obj == null) {
+				return;
+			};
+			
 			const gx = Math.floor(obj.x / cellSize); 
 			const gy = Math.floor(obj.y / cellSize);
 			if (adaThreat[gx][gy] > threatThreshold) {
