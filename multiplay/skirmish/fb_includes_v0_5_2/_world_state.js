@@ -16,36 +16,17 @@
 */
 
 /*
- *  This is the central database which stores the game state. 
+ * This is the central database which stores the game state. 
  *
- *  This software uses the "Domain Services Model"
- *      - There is one shared game world / game state
- *      - There are multiple parts of the AI which either need to: 
- *          (1) look at the game state & make decisions     (but don't modify the game state)
- *          (2) change the game state
- *      - We want to avoid chaos (obscure modifications of the state, impossible debugging, duplication of logic)
- * 
- *  In the Domain Services architecture, we need a 
- *      1. Central database which stores the current game state ("state")    -- fulfilled by: this file _world_state.js
- *      2. State observer/reporter ("system")                                -- fulfilled by: operational level functions hq_gX
- *      3. State mutator ("service")                                         -- fulfilled by: hq_toc (delegated by hq_command) 
- *      4. Decision maker ("coordinator")                                    -- fulfilled by: hq_command
- * 
- *  Systems which access the state should 'extract' all of the relevant information from state 
- *  at the start of the function where possible e.g.
+ * In this software, there is one shared game 'state'. There are multiple parts of the bot which either need to: 
+ * (1) look at the game state & make decisions     (but don't modify the game state), OR
+ * (2) change the game state
  *  
- *  function getGridCoordsExample() {
- *      const cellSize = state.grid.cellSize;
- *      ...
- *      const gx = Math.floor(obj.x / cellSize);
- *      ...
- *  }
- * 
- *  Services which mutate (modify) the state should be centralised in one location. 
- *  In the current implementation (0.4.0+), state mutation is handled by `hq_toc.js` (delegated by `hq_command.js`).
- *  If the core state management happens in one place, this makes it much easier to reason about, modify, and debug.
+ * We want to avoid chaos (obscure modifications of the state, impossible debugging, duplication of logic). To this end:
+ * (1) All modifications to the state happen in `stateBuilder` (initialisation) and `hq_toc` (state update).
+ * (2) The functions in `hq_command.ks` (almost exclusively) makes strategic decisions based on the game state. 
+ * (3) All other functions can read the state but cannot modify it.
  */
-
 
 /**
 	fbGroup: FISHBOT v3 CUSTOM GROUPING SYSTEM
