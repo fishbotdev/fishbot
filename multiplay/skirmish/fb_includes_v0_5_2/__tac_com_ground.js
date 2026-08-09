@@ -108,12 +108,39 @@ function findClosestDroidToTarget(unitGroup, currGroundTarget) {
  * @param {string | number} taskForceID 
  */
 function guardLocation(location, taskForceID) {
-	// todo: add termination condition
-
-	const taskForceUnits = state.g.enumGroup(taskForceID);
 	const x = location.x; 
 	const y = location.y;
-	taskForceUnits.forEach(droid => orderDroidLoc(droid, DORDER_HOLD, x, y));
+
+	const taskForceUnits = state.g.enumGroup(taskForceID);
+	if (taskForceUnits.length === 0) {
+		deb(`Guard failed ${x}, ${y}, units dead`);
+		return {status: MISSION_STATUS.FAILED};
+	}
+
+	// Intent: construction guard -> will return to brigade once nearby defences detected
+	const nearby = state.grid.enumRangeLazy(x, y, 6);
+
+	if (nearby['targetUnits'].length > 0) {
+		return {status: MISSION_STATUS.IN_PROGRESS};
+	}
+
+	const BUILT_DEFENCES = (OBJ_FLAGS.DEFENSIVE_STRUCTURE | OBJ_FLAGS.IS_BUILT);
+
+	for (let i=0; i<nearby['friendlyStructures'].length; i++) {
+		const s = nearby['friendlyStructures'][i];
+		if ((s.flags & BUILT_DEFENCES) === BUILT_DEFENCES) {
+			deb(`Guard successful; ${x}, ${y}`);
+			return {status: MISSION_STATUS.SUCCEEDED};
+		}
+	}
+
+	taskForceUnits.forEach(droid => {
+		if (droid.health > 50) {
+			orderDroidLoc(droid, DORDER_SCOUT, x, y);
+		} else {
+			orderDroid(droid, DORDER_RTR);	
+		}
+	});
 
 	return {status: MISSION_STATUS.IN_PROGRESS};
 }

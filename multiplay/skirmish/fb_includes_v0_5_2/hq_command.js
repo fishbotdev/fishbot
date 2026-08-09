@@ -878,15 +878,13 @@ class CommandCenter {
 		const numXCells = state.grid.numXCells;
 		const numYCells = state.grid.numYCells;
 
-		// if (DEBUG_MODE_ON) hackMarkTiles();		
+		if (DEBUG_MODE_ON) hackMarkTiles();		
 
-		const activeGuardMissions = state.activeMissions.filter(md => (md.missionType === MISSION_TYPE.GUARD_LOCATION));
-		if (activeGuardMissions.length > 0) {
-			deb(`guard missions`)
-			activeGuardMissions.forEach(md => deb(`\t${md.target}`));
-		}
+		let count = 0;
 
 		this.BRIGADE_DESIGNATIONS.forEach(brigadeID => {
+
+			const activeGuardMissions = state.activeMissions.filter(md => (md.missionType === MISSION_TYPE.GUARD_LOCATION));		// this is here since previous brigades might add new ones
 
 			const brigadeLocation = state.brigades[brigadeID]['location'];
 			brigadeLocations.push(brigadeLocation);
@@ -901,13 +899,11 @@ class CommandCenter {
 				for (let i=0; i<brigadeUnits.length; i++) {
 					const u = brigadeUnits[i];
 					const category = getDroidFbGroupClassification(u);
-					if (category === DIVISION.LIGHT_CAV_RESERVE || category === DIVISION.INFANTRY_RESERVE) {
+					if (category === DIVISION.INFANTRY_RESERVE) {
 						candidateGuards.push(u);		
-						break;
 					}
 				}
 
-				let count = 0;
 				if (candidateGuards.length != 0) {
 					for (let i=-1; i<=1; i++) {
 						for (let j=-1; j<=1; j++) {
@@ -917,16 +913,42 @@ class CommandCenter {
 							if (gy+j < 0 || gy+j >= numYCells) continue;
 
 							const derricks = state.grid.grid[gx+i][gy+j].derricks;
+							const seenDerricks = [];
+
 							for (let k=0; k<derricks.length; k++) {
 								const derrick = derricks[k];
+								const dx = derrick.x;
+								const dy = derrick.y;
+
 								if (derrick.isClaimed)  continue;
 
+								if (!state.mapData.isReachable[dx][dy]) 	continue;
+
+								if (seenDerricks.some(c => {
+									if (distSq(c[0], dx, c[1], dy) < 6 ** 2) {		// already seen nearby radius
+										return true;
+									} else {
+										return false;
+									}
+								})) continue;
+
+								const nearby = state.grid.enumRangeLazy(dx, dy, 6);
+								
+								const BUILT_DEFENCES = (OBJ_FLAGS.DEFENSIVE_STRUCTURE | OBJ_FLAGS.IS_BUILT);
+
+								const NO_NEARBY_ENEMIES = nearby['targetUnits'].length === 0;
+								const NEARBY_FRIENDLY_STRUCTURE = nearby['friendlyStructures'].some(s => (s.flags & BUILT_DEFENCES) === BUILT_DEFENCES);
+								// const NO_NEARBY_ENEMY_STRUCTURES = !nearby['targetStructures'].some(s => (s.flags & BUILT_DEFENCES) === BUILT_DEFENCES);
+
+								if (NO_NEARBY_ENEMIES && NEARBY_FRIENDLY_STRUCTURE) 	continue;
+								
 								// check if already being guarded
 								if (activeGuardMissions.some(md => {
 									const gxm = Math.floor(md.target.x / cellSize);
 									const gym = Math.floor(md.target.y / cellSize);
 									if (gxm === gx+i && gym == gy+j) {
-										deb(`${md.target.x} ${md.target.y} already being guarded`)
+										// deb(`${md.target.x} ${md.target.y} already being guarded`)
+										if (DEBUG_MODE_ON) markTile(dx, dy);
 										return true;
 									} else {
 										return false;
@@ -935,17 +957,19 @@ class CommandCenter {
 
 								// detach a unit to guard
 								if (candidateGuards.length > 0) {
+
+									candidateGuards.sort((a,b) => distSq(a.x, dx, a.y, dy) - distSq(b.x, dx, b.y, dy));
 									
-									deb(`detaching ${candidateGuards[0].name} to guard @ ${derrick.x} ${derrick.y}`);
-									const missionDetails = {'target': derrick, 'unit': candidateGuards.splice(0, 1), 'currentBrigade': brigadeID};
+									deb(`detaching ${candidateGuards[0].name} (${candidateGuards[0].x}, ${candidateGuards[0].y}) to guard @ (${dx}, ${dy})`);
+									const missionDetails = {'target': derrick, 'unitList': candidateGuards.splice(0, 1), 'currentBrigade': brigadeID};
 									// hack: bypasses toc mission management assignment
 									const md = this.toc.createNewMission({missionType: MISSION_TYPE.GUARD_LOCATION, priority: MISSION_PRIORITY.HIGH}, missionDetails, count);
 									if (md !== undefined) {
 										state.activeMissions.push(md);		// hack: bypasses toc state assignment
 										count += 1;
-										markTile(derrick.x, derrick.y);
+										if (DEBUG_MODE_ON) markTile(dx, dy);
+										seenDerricks.push([dx, dy]);
 									}
-									
 								}								
 							}
 						}

@@ -90,12 +90,12 @@ class armyGroundOperations {
 	createGuardLocationMission({missionType, missionDetails, tickUID}) {
 		/** @type {DerrickObject} */
 		const target = missionDetails.target;
-		/** @type {DroidObject} */
-		const unit = missionDetails.unit;
+		/** @type {DroidObject[]} */
+		const unitList = missionDetails.unitList;
 		/** @type {number} */
 		const currBrigade = missionDetails.currentBrigade;
 
-		const taskForceUnits = [unit];
+		const taskForceUnits = unitList;
 
 		// Create mission details
 		const id = gameTime + "_GUARD_LOCATION_" + tickUID;
