@@ -332,6 +332,7 @@ class worldState {
         /** @type {fbGroup} */
         this.g;
 
+        /** @type {(CombatMissionData | ConstructionMissionData)[]} */
         this.activeMissions = [];
 
         /** @type {ProductionJob[]} */
