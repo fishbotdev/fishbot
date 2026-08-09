@@ -44,6 +44,24 @@ class armyGroundOperations {
 			'target': target,
 		};
 	}
+
+	/**
+	 * Mission cleanup function (releases units back to the reserves).
+	 * @param {CombatMissionData} md 
+	 * @param {number | string} reserveID 
+	 * @returns {void} Writes `timeCompleted` to missionData.
+	 */
+	#finaliseCombatMission(md, reserveID) {
+		const taskForceUnits = state.g.enumGroup(md.taskForceID);
+		taskForceUnits.forEach((droid) => {
+			state.g.addDroidToGroup({groupID: reserveID, droidID: droid.id});
+		});	
+		// if (taskForceUnits.length === 0)	debug(`Terminated mission: taskForceID ${md.taskForceID} are all dead.`);
+		
+		state.g.deleteGroup(md.taskForceID);
+		md.timeCompleted = gameTime;
+	}
+
 	/**
 	 * This is the default behaviour of all RETURN_FOR_REPAIR vehicles.
 	 * Units are moved out of the 'repair' group by resupplyLogisitics. This will move the droid into its appropriate reserve group.
@@ -57,6 +75,39 @@ class armyGroundOperations {
 
 		md.orders = () => returnForRepair(md.taskForceID);	
 		md.ceaseOrders = () => {};
+		return md;
+	}
+
+	/**
+	 * This is the default behaviour of all RETURN_FOR_REPAIR vehicles.
+	 * Units are moved out of the 'repair' group by resupplyLogisitics. This will move the droid into its appropriate reserve group.
+	 * @param {Object} missionConfig
+	 * @param {number} missionConfig.missionType
+	 * @param {Object} missionConfig.missionDetails
+	 * @param {number} missionConfig.tickUID
+	 * @returns {CombatMissionData}
+	 */
+	createGuardLocationMission({missionType, missionDetails, tickUID}) {
+		/** @type {DerrickObject} */
+		const target = missionDetails.target;
+		/** @type {DroidObject} */
+		const unit = missionDetails.unit;
+		/** @type {number} */
+		const currBrigade = missionDetails.currentBrigade;
+
+		const taskForceUnits = [unit];
+
+		// Create mission details
+		const id = gameTime + "_GUARD_LOCATION_" + tickUID;
+		
+		const md =  this.#createMissionOrders(missionType, id, id, missionDetails.target);
+		taskForceUnits.forEach((droid) => {
+			state.g.addDroidToGroup({groupID: md.taskForceID, droidID: droid.id});
+			state.g.removeDroidFromGroup({groupID: currBrigade, droidID: droid.id});
+		});		
+		md.orders = () => guardLocation(target, md.taskForceID);		
+		md.ceaseOrders = () => this.#finaliseCombatMission(md, DIVISION.RETURNING_FOR_REPAIR);
+
 		return md;
 	}
 

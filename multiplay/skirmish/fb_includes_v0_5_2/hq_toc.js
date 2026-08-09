@@ -276,6 +276,9 @@ class TacticalOperationsCenter {
 			case MISSION_TYPE.RETURN_FOR_REPAIR:
 				md = groundForces.createReturnForRepairMission({missionType: missionType});
 				break;
+			case MISSION_TYPE.GUARD_LOCATION:
+				md = groundForces.createGuardLocationMission({missionType: missionType, missionDetails: args[0], tickUID: args[1]});
+				break;
 
 			/*
 				CONSTRUCTION MISSIONS

@@ -878,7 +878,14 @@ class CommandCenter {
 		const numXCells = state.grid.numXCells;
 		const numYCells = state.grid.numYCells;
 
-		if (DEBUG_MODE_ON) hackMarkTiles();		
+		// if (DEBUG_MODE_ON) hackMarkTiles();		
+
+		const activeGuardMissions = state.activeMissions.filter(md => (md.missionType === MISSION_TYPE.GUARD_LOCATION));
+		if (activeGuardMissions.length > 0) {
+			deb(`guard missions`)
+			activeGuardMissions.forEach(md => deb(`\t${md.target}`));
+		}
+
 		this.BRIGADE_DESIGNATIONS.forEach(brigadeID => {
 
 			const brigadeLocation = state.brigades[brigadeID]['location'];
@@ -899,9 +906,13 @@ class CommandCenter {
 						break;
 					}
 				}
+
+				let count = 0;
 				if (candidateGuards.length != 0) {
 					for (let i=-1; i<=1; i++) {
 						for (let j=-1; j<=1; j++) {
+							if (candidateGuards.length === 0) 	break;
+
 							if (gx+i < 0 || gx+i >= numXCells) continue;
 							if (gy+j < 0 || gy+j >= numYCells) continue;
 
@@ -909,10 +920,33 @@ class CommandCenter {
 							for (let k=0; k<derricks.length; k++) {
 								const derrick = derricks[k];
 								if (derrick.isClaimed)  continue;
+
 								// check if already being guarded
+								if (activeGuardMissions.some(md => {
+									const gxm = Math.floor(md.target.x / cellSize);
+									const gym = Math.floor(md.target.y / cellSize);
+									if (gxm === gx+i && gym == gy+j) {
+										deb(`${md.target.x} ${md.target.y} already being guarded`)
+										return true;
+									} else {
+										return false;
+									}
+								})) break;
+
 								// detach a unit to guard
-								deb(`detaching ${candidateGuards[0].name} to guard @ ${derrick.x} ${derrick.y}`);
-								markTile(derrick.x, derrick.y);
+								if (candidateGuards.length > 0) {
+									
+									deb(`detaching ${candidateGuards[0].name} to guard @ ${derrick.x} ${derrick.y}`);
+									const missionDetails = {'target': derrick, 'unit': candidateGuards.splice(0, 1), 'currentBrigade': brigadeID};
+									// hack: bypasses toc mission management assignment
+									const md = this.toc.createNewMission({missionType: MISSION_TYPE.GUARD_LOCATION, priority: MISSION_PRIORITY.HIGH}, missionDetails, count);
+									if (md !== undefined) {
+										state.activeMissions.push(md);		// hack: bypasses toc state assignment
+										count += 1;
+										markTile(derrick.x, derrick.y);
+									}
+									
+								}								
 							}
 						}
 					}		

@@ -104,6 +104,21 @@ function findClosestDroidToTarget(unitGroup, currGroundTarget) {
 }
 
 /**
+ * @param {DerrickObject} location
+ * @param {string | number} taskForceID 
+ */
+function guardLocation(location, taskForceID) {
+	// todo: add termination condition
+
+	const taskForceUnits = state.g.enumGroup(taskForceID);
+	const x = location.x; 
+	const y = location.y;
+	taskForceUnits.forEach(droid => orderDroidLoc(droid, DORDER_HOLD, x, y));
+
+	return {status: MISSION_STATUS.IN_PROGRESS};
+}
+
+/**
  * Orders a unit (droid) to return to base.
  * @param {DroidObject} droid 
  */
