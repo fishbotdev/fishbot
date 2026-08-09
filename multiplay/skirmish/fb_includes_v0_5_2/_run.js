@@ -196,7 +196,7 @@ function eventStartLevel() {
 	const MAX_BASE_BUILDERS = 3;
 	initialTrucks.forEach((droid, idx) => {
 		// From NullBot: apparently trucks can sometimes get stuck when a building is placed on top of them, so the next line is here to prevent that.
-		orderDroidLoc(droid, DORDER_MOVE, droid.x + 1, droid.y + 1);		
+		orderDroidLoc(droid, DORDER_MOVE, droid.x - 1, droid.y - 1);		
 		if (idx < MAX_BASE_BUILDERS) {
 			state.g.addDroidToGroup({groupID: ENGINEERING.BASE_BUILDER, droidID: droid.id});
 		} else {
