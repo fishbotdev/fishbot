@@ -1,5 +1,6 @@
 import matplotlib.pyplot as plt
 import numpy as np
+from math import sin, cos, atan2, pi
 
 import random
 
@@ -16,8 +17,8 @@ fig, ax = plt.subplots(figsize=(8, 6))
 XMAP_SIZE = 50
 YMAP_SIZE = 50
 
-PARTICLE_SIZE = 20
-TARGET_SIZE = 50
+PARTICLE_SIZE = 30
+TARGET_SIZE = 100
 
 n_particles = 18
 x = np.random.rand(n_particles) * XMAP_SIZE
@@ -44,42 +45,56 @@ offsets_wedge = np.array([
     [-1, 1], [0, 1], [-1, 0], [0, 0],                 # indirect fires
     [-2, 1], [1, 1],                                          # ADA
 ])
-ref = np.array([[cx, cy]]) + offsets_wedge
+# 90 degrees clockwise rotation: New X = Old Y, New Y = -Old X
+pointed_right = np.column_stack((offsets_wedge[:, 1], -offsets_wedge[:, 0]))
+
+ref = np.array([[cx, cy]]) + pointed_right
+refx = ref[:, 0]
+refy = ref[:, 1]
+
 
 # Color by dynamic value (e.g., initial speed metric)
 speeds = np.sqrt(vx ** 2 + vy ** 2)
-sc = ax.scatter(x, y, s=PARTICLE_SIZE, edgecolor='k',) #c=speeds, cmap='plasma',)
+sc = ax.scatter(x, y, s=PARTICLE_SIZE, edgecolor='k', marker='s', c="blue") #c=speeds, cmap='plasma',)
 centroid_sc = ax.scatter(cx, cy, s=TARGET_SIZE, edgecolor='k', c="blue", alpha=0.8)
 formation_sc = ax.scatter(ref[:, 0], ref[:, 1], s=PARTICLE_SIZE, edgecolor='k', c="blue", alpha=0.3)
-target_sc = ax.scatter(tx, ty, s=TARGET_SIZE, edgecolor='k', c="red")
+target_sc = ax.scatter(tx, ty, s=TARGET_SIZE, edgecolor='k', c="red", marker='d')       # red diamond
 # plt.colorbar(sc, label='Speed')
 
 ax.grid(True, alpha=0.5)
 ax.set_xlim(0, XMAP_SIZE)
 ax.set_ylim(0, YMAP_SIZE)
-ax.set_title("Unit Movement Simulation")
+ax.set_title("Formation Movement Simulation")
 
-kp_position = 1
-kp_velocity = 0.2
+# centroid parameter
+kp_centroid = 0.05
 
-UNIT_VMAX = 0.2
-FORMATION_VMAX = 0.140      # empirically ~sqrt(2) seems to be about the ratio at which the units will always track the formation correctly
+# formation keeper parameters
+kp_position = 0.8
+kp_velocity = 0.3
+
+UNIT_VMAX = 0.35
+FORMATION_VMAX = UNIT_VMAX / 2      # empirically ~sqrt(2) seems to be about the ratio at which the units will always track the formation correctly
+RANDOM_PERTURBATION = 0.1
+
+# Place these outside your main simulation loop
+target_time = 0
+current_shape = "square"  # Options: 'square', 'circle', 'diagonal'
+
+# Path parameters
+CENTER_X = XMAP_SIZE / 2
+CENTER_Y = YMAP_SIZE / 2
+PATH_SIZE = 15      # Radius for circle, half-width for square
+SPEED_MODIFIER = 0.008 # Lower is slower/smoother
 
 # Simulation loop
-for step in range(20000):
+for step in range(5000):
 
     #### KINEMATICS
 
-    # Cap vx, vy
-    vx = np.clip(vx, -UNIT_VMAX, UNIT_VMAX)
-    vy = np.clip(vy, -UNIT_VMAX, UNIT_VMAX)
-
-    vcx = clamp(vcx, -FORMATION_VMAX, FORMATION_VMAX)
-    vcy = clamp(vcy, -FORMATION_VMAX, FORMATION_VMAX)
-
     # Math updates
-    x += vx + np.random.rand(n_particles) * 0.1
-    y += vy + np.random.rand(n_particles) * 0.1
+    x += vx + np.random.rand(n_particles) * RANDOM_PERTURBATION
+    y += vy + np.random.rand(n_particles) * RANDOM_PERTURBATION
     cx += vcx
     cy += vcy
     tx += vtx
@@ -91,17 +106,60 @@ for step in range(20000):
     vcx = np.where((cx < 0) | (cx > XMAP_SIZE), -vcx, vcx)
     vcy = np.where((cy < 0) | (cy > YMAP_SIZE), -vcy, vcy)
 
+    #### TARGET SYSTEMATIC PATH GENERATOR
+    target_time += SPEED_MODIFIER
+
+    if current_shape == "square":
+        # Divide time into 4 distinct phases for each edge of the square
+        phase = (target_time) % 4
+        if phase < 1:  # Top edge: moving Right
+            tx = CENTER_X - PATH_SIZE + (phase * 2 * PATH_SIZE)
+            ty = CENTER_Y - PATH_SIZE
+        elif phase < 2:  # Right edge: moving Down
+            tx = CENTER_X + PATH_SIZE
+            ty = CENTER_Y - PATH_SIZE + ((phase - 1) * 2 * PATH_SIZE)
+        elif phase < 3:  # Bottom edge: moving Left
+            tx = CENTER_X + PATH_SIZE - ((phase - 2) * 2 * PATH_SIZE)
+            ty = CENTER_Y + PATH_SIZE
+        else:  # Left edge: moving Up
+            tx = CENTER_X - PATH_SIZE
+            ty = CENTER_Y + PATH_SIZE - ((phase - 3) * 2 * PATH_SIZE)
+
+        # Switch to circle after NPHASES full loops
+        NPHASES = 1
+        if target_time > 4 * NPHASES:        # = number of phases
+            current_shape = "circle"
+            target_time = 0  # Reset time for smooth entry
+
+    elif current_shape == "circle":
+        # Pure parametric trigonometric circle logic
+        tx = CENTER_X + PATH_SIZE * np.cos(target_time)
+        ty = CENTER_Y + PATH_SIZE * np.sin(target_time)
+
+        # Switch to diagonal lines after 3 full loops
+        NPHASES = 1.5
+        if target_time > NPHASES * 2 * 3:     # (3 * 2*pi approx 18.8)
+            current_shape = "diagonal"
+            target_time = 0
+
+    elif current_shape == "diagonal":
+        # Oscillates smoothly from bottom-left to top-right using a triangle wave
+        ping_pong = np.abs((target_time % 2) - 1)  # Scales cleanly between 0 and 1
+
+        tx = CENTER_X - PATH_SIZE + (ping_pong * 2 * PATH_SIZE)
+        ty = CENTER_Y - PATH_SIZE + (ping_pong * 2 * PATH_SIZE)
+
+        # Loop back to square after running for a bit
+        if target_time > 15:
+            current_shape = "square"
+            target_time = 0
+
     if tx < 0 or tx > XMAP_SIZE:
         vtx = -vtx
-        vty = rand() * UNIT_VMAX
+        vty = rand()
     if ty < 0 or ty > YMAP_SIZE:
-        vtx = rand() * UNIT_VMAX
+        vtx = rand()
         vty = -vty
-
-    # Create formation from centroid
-    ref = np.array([[cx, cy]]) + offsets_wedge
-    refx = ref[:, 0]
-    refy = ref[:, 1]
 
     #### CONTROLLER
 
@@ -124,16 +182,49 @@ for step in range(20000):
     #### CENTROID MODIFICATION (BASED ON TARGET LOCATION)
     etx = tx - cx
     ety = ty - cy
-    ux_target_pos = kp_position * etx
-    uy_target_pos = kp_position * ety
 
-    # Modify existing vx with correction term
-    vcx += ux_target_pos
-    vcy += uy_target_pos
+    ux_target_pos = kp_centroid * etx
+    uy_target_pos = kp_centroid * ety
 
+    # Modify existing vx with correction term; add *deadzone*
+    if abs(etx) > 0.2:
+        vcx += ux_target_pos
+    else:
+        vcx = 0.0
 
+    if abs(ety) > 0.2:
+        vcy += uy_target_pos
+    else:
+        vcy = 0.0
+
+    if abs(etx) < 5.0 and abs(ety) < 5.0:
+        vcx = vcx / 3
+        vcy = vcy / 3
+
+    # Create formation from centroid
+    # Get angle of target to rotate the formation appropriately
+    theta = atan2(ety, etx)     # atan2 implements this in both python (also exists in JS so lets not reinvent the wheel)
+
+    rotation_matrix = np.array([
+        [cos(theta), -sin(theta)],
+        [sin(theta), cos(theta)]
+    ])
+
+    rotated_formation = pointed_right @ rotation_matrix.T
+
+    ref = np.array([[cx, cy]]) + rotated_formation      # updates based on new cx, cy
+
+    refx = ref[:, 0]
+    refy = ref[:, 1]
 
     ## RENDER
+
+    # Cap vx, vy
+    vx = np.clip(vx, -UNIT_VMAX, UNIT_VMAX)
+    vy = np.clip(vy, -UNIT_VMAX, UNIT_VMAX)
+
+    vcx = clamp(vcx, -FORMATION_VMAX, FORMATION_VMAX)
+    vcy = clamp(vcy, -FORMATION_VMAX, FORMATION_VMAX)
 
     # Update visual markers and colors dynamically
     current_speeds = vx ** 2 + vy ** 2                      # removed sqrt for speed
