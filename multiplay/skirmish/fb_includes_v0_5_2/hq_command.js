@@ -875,7 +875,7 @@ class CommandCenter {
 
 		const brigadeLocations = [];
 
-		// if (DEBUG_MODE_ON) hackMarkTiles();		
+		if (DEBUG_MODE_ON) hackMarkTiles();		
 		this.BRIGADE_DESIGNATIONS.forEach(brigadeID => {
 
 			const brigadeLocation = state.brigades[brigadeID]['location'];

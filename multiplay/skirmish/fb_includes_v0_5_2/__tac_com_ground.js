@@ -153,28 +153,90 @@ function moveReservesToShadow(reserveGroupIDs, x, y) {
  */
 function moveBrigadeToLocation(state, brigadeID, targetX, targetY) {
 
-	const brigadeUnits = state.g.enumGroup(brigadeID);
-	const brigadeLocation = state.brigades[brigadeID]['location'];
+	const isWalkable = state.mapData.isWalkable;
 
-	const DISTSQ_CENTER_TO_TARGET = distSq(brigadeLocation.x, targetX, brigadeLocation.y, targetY);
+	const COLUMN_FORMATION_OFFSETS = new Map([
+		// Note: this is matched to the v0.5.2 brigade composition
+		[DIVISION.INFANTRY_RESERVE, [[4, 1], [4, -1], [5, 1], [6, 0], [5, -1], [6, 1], [6, -1], [-1, 0]]],
+		[DIVISION.HEAVY_CAV_RESERVE, [[3, 1], [3, 0], [3, -1]]],
+		[DIVISION.LIGHT_CAV_RESERVE, [[2, 1], [2, -1], [5, 0]]],
+		[DIVISION.AIR_DEFENCE_RESERVE, [[1, 0], [2, 0]]],
+		[DIVISION.SHORT_RANGE_FIRE_SUPPORT_RESERVE, [[0, 1], [0, -1], [1, 1], [1, -1]]],
+		[DIVISION.MAINTENANCE_RESERVE, [[4, 0]]],
+		[DIVISION.SENSOR_RESERVE, [[0, 0]]],
+	]);
+
+	const currentIdx = new Map([
+		[DIVISION.INFANTRY_RESERVE, 0],
+		[DIVISION.HEAVY_CAV_RESERVE, 0],
+		[DIVISION.LIGHT_CAV_RESERVE, 0],
+		[DIVISION.AIR_DEFENCE_RESERVE, 0],
+		[DIVISION.SHORT_RANGE_FIRE_SUPPORT_RESERVE, 0],
+		[DIVISION.MAINTENANCE_RESERVE, 0],
+		[DIVISION.SENSOR_RESERVE, 0],
+	]);
+
+	const brigadeUnits = state.g.enumGroup(brigadeID);
+	const x = state.brigades[brigadeID]['location'].x;
+	const y = state.brigades[brigadeID]['location'].y;
+	markTile(x, y);
+
+	const etx = targetX - x;
+	const ety = targetY - y;
+	const theta = Math.atan2(ety, etx);
+	const applyXRotation = (bx, by) => {return bx * Math.cos(theta) + by * -1 * Math.sin(theta)};
+	const applyYRotation = (bx, by) => {return bx * Math.sin(theta) + by * Math.cos(theta)};
 
 	brigadeUnits.forEach(droid => {
-		const DISTSQ_TO_CENTER = distSq(brigadeLocation.x, droid.x, brigadeLocation.y, droid.y); 
-		const DISTSQ_TO_TARGET = distSq(targetX, droid.x, targetY, droid.y);
-		
-		const TOO_FAR_AWAY_FROM_CENTER = DISTSQ_TO_CENTER > 8 ** 2;
-		const FAR_AWAY_FROM_CENTER = DISTSQ_TO_CENTER > 5 ** 2;
-		const AHEAD_OF_GROUP = DISTSQ_TO_TARGET < DISTSQ_CENTER_TO_TARGET;
-
-		if (AHEAD_OF_GROUP && TOO_FAR_AWAY_FROM_CENTER) {
-			orderDroidLoc(droid, DORDER_MOVE, brigadeLocation.x, brigadeLocation.y);	
-		} else if (AHEAD_OF_GROUP && FAR_AWAY_FROM_CENTER) {
-			orderDroid(droid, DORDER_HOLD);
-		} else if (!FAR_AWAY_FROM_CENTER) {
-			orderDroidLoc(droid, DORDER_MOVE, targetX, targetY);			
-		} else {
-			orderDroidLoc(droid, DORDER_MOVE, brigadeLocation.x, brigadeLocation.y);	
+		const category = getDroidFbGroupClassification(droid);
+		let currIdx = currentIdx.get(category);
+		if (currIdx == undefined) {
+			deb(`"${category}" is invalid`)
+			return
 		}
+
+		const offsets = COLUMN_FORMATION_OFFSETS.get(category);
+		if (offsets == null) {
+			deb(`"${category}" is invalid`)
+			return
+		}
+
+		const bx = offsets[currIdx][0];
+		const by = offsets[currIdx][1];
+		if (bx == null || by == null) {
+			deb(`"${category}, entry number (${currIdx})" is invalid`)
+			return
+		}
+
+		const ox = x + applyXRotation(bx, by);
+		const oy = y + applyYRotation(bx, by);
+
+		hackMarkTiles(ox, oy);
+		currIdx += 1;
+
+		// deb(`${ox}, ${oy}`)
+		if (isWalkable[Math.floor(ox)][Math.floor(oy)]) {
+
+			// Formation keeping
+			const DISTSQ_TO_ASSIGNED_LOC = distSq(ox, droid.x, oy, droid.y); 
+
+			if ([DIVISION.SHORT_RANGE_FIRE_SUPPORT_RESERVE, DIVISION.SENSOR_RESERVE, DIVISION.MAINTENANCE_RESERVE, DIVISION.AIR_DEFENCE_RESERVE].includes(category)) {
+				if (DISTSQ_TO_ASSIGNED_LOC > 2 ** 2) {
+					orderDroidLoc(droid, DORDER_MOVE, ox, oy);
+				} else {
+					orderDroid(droid, DORDER_HOLD);
+				}
+			} else {
+				if (DISTSQ_TO_ASSIGNED_LOC > 5 ** 2) {
+					orderDroidLoc(droid, DORDER_MOVE, ox, oy);
+				} else {
+					orderDroidLoc(droid, DORDER_MOVE, targetX, targetY);			
+				}
+			}
+		} else {
+			orderDroidLoc(droid, DORDER_SCOUT, targetX, targetY);			
+		}
+
 	});
 }
 
