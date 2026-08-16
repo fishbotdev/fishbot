@@ -184,7 +184,7 @@ function moveBrigadeToLocation(state, brigadeID, targetX, targetY) {
 				if (DISTSQ_TO_ASSIGNED_LOC > 5 ** 2) {
 					orderDroidLoc(droid, DORDER_MOVE, ox, oy);
 				} else {
-					orderDroidLoc(droid, DORDER_MOVE, targetX, targetY);			
+					orderDroidLoc(droid, DORDER_SCOUT, targetX, targetY);			
 				}
 			}
 		} else {
