@@ -173,15 +173,12 @@ function moveBrigadeToLocation(state, brigadeID, targetX, targetY) {
 		hackMarkTiles(ox, oy);
 		currentIdx.set(category, currIdx + 1);
 
-		// deb(`${ox}, ${oy}`)
-		if (isWalkable[Math.floor(ox)][Math.floor(oy)]) {
-
 			// Formation keeping
 			const DISTSQ_TO_ASSIGNED_LOC = distSq(ox, droid.x, oy, droid.y); 
 		const WALKABLE = isWalkable[Math.floor(ox)][Math.floor(oy)];
 
 		if ([DIVISION.HEAVY_CAV_RESERVE, DIVISION.LIGHT_CAV_RESERVE].includes(category)) {
-			if (DISTSQ_TO_ASSIGNED_LOC >= 2 ** 2 && WALKABLE) {
+			if (DISTSQ_TO_ASSIGNED_LOC >= 4 ** 2 && WALKABLE) {
 					orderDroidLoc(droid, DORDER_MOVE, ox, oy);
 				} else {
 				orderDroidLoc(droid, DORDER_SCOUT, targetX, targetY);			
@@ -209,7 +206,7 @@ function moveBrigadeToAttack(state, brigadeID, groundTargets) {
 
 	const WEDGE_FORMATION_OFFSETS = new Map([
 		// Note: this is matched to the v0.5.2 brigade composition
-		[DIVISION.INFANTRY_RESERVE, [[4, 0], [4, 1], [4, -1], [4, 2], [3, 3], [3, -1]]],
+		[DIVISION.INFANTRY_RESERVE, [[4, 0], [4, 1], [4, -1], [4, 2], [3, 3], [3, -1], [3, -2], [3, 4]]],
 		[DIVISION.HEAVY_CAV_RESERVE, [[3, 1], [3, -1], [3, 2]]],
 		[DIVISION.LIGHT_CAV_RESERVE, [[3, 0], [2, -2], [2, 3]]],
 		[DIVISION.AIR_DEFENCE_RESERVE, [[2, 0], [1, 1]]],
