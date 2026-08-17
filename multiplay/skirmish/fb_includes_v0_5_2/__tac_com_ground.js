@@ -178,24 +178,21 @@ function moveBrigadeToLocation(state, brigadeID, targetX, targetY) {
 
 			// Formation keeping
 			const DISTSQ_TO_ASSIGNED_LOC = distSq(ox, droid.x, oy, droid.y); 
+		const WALKABLE = isWalkable[Math.floor(ox)][Math.floor(oy)];
 
-			if ([DIVISION.SHORT_RANGE_FIRE_SUPPORT_RESERVE, DIVISION.SENSOR_RESERVE, DIVISION.MAINTENANCE_RESERVE, DIVISION.AIR_DEFENCE_RESERVE].includes(category)) {
-				if (DISTSQ_TO_ASSIGNED_LOC > 2 ** 2) {
+		if ([DIVISION.HEAVY_CAV_RESERVE, DIVISION.LIGHT_CAV_RESERVE].includes(category)) {
+			if (DISTSQ_TO_ASSIGNED_LOC >= 2 ** 2 && WALKABLE) {
 					orderDroidLoc(droid, DORDER_MOVE, ox, oy);
 				} else {
-					orderDroid(droid, DORDER_HOLD);
+				orderDroidLoc(droid, DORDER_SCOUT, targetX, targetY);			
 				}
 			} else {
-				if (DISTSQ_TO_ASSIGNED_LOC > 5 ** 2) {
+			if (DISTSQ_TO_ASSIGNED_LOC >= 2 ** 2 && WALKABLE) {
 					orderDroidLoc(droid, DORDER_MOVE, ox, oy);
 				} else {
-					orderDroidLoc(droid, DORDER_SCOUT, targetX, targetY);			
-				}
+				orderDroidLoc(droid, DORDER_PATROL, droid.x, droid.y);					
 			}
-		} else {
-			orderDroidLoc(droid, DORDER_SCOUT, targetX, targetY);			
 		}
-
 	});
 }
 
@@ -383,10 +380,10 @@ function moveBrigadeToAttack(state, brigadeID, groundTargets) {
 			}
 		} else {
 			
-			if (![DIVISION.SENSOR_RESERVE, DIVISION.MAINTENANCE_RESERVE, DIVISION.AIR_DEFENCE_RESERVE].includes(category)) {
+			if ([DIVISION.HEAVY_CAV_RESERVE, DIVISION.LIGHT_CAV_RESERVE].includes(category)) {
 				orderDroidLoc(droid, DORDER_SCOUT, targetX, targetY);			
 			} else {
-				orderDroid(droid, DORDER_HOLD);
+				orderDroidLoc(droid, DORDER_PATROL, droid.x, droid.y);
 			}
 		}
 
