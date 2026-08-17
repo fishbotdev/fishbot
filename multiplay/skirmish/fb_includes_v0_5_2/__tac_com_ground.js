@@ -143,7 +143,7 @@ function moveBrigadeToLocation(state, brigadeID, targetX, targetY) {
 
 	brigadeUnits.forEach(droid => {
 		const category = getDroidFbGroupClassification(droid);
-		let currIdx = currentIdx.get(category);
+		const currIdx = currentIdx.get(category);
 		if (currIdx == undefined) {
 			deb(`"${category}" is invalid`)
 			return
@@ -153,6 +153,11 @@ function moveBrigadeToLocation(state, brigadeID, targetX, targetY) {
 		if (offsets == null) {
 			deb(`"${category}" is invalid`)
 			return
+		}
+
+		if (offsets[currIdx] == null) {
+			warn(`${currIdx} for ${category} is not defined. Skipping this one.`)
+			return;
 		}
 
 		const bx = offsets[currIdx][0];
@@ -166,7 +171,7 @@ function moveBrigadeToLocation(state, brigadeID, targetX, targetY) {
 		const oy = y + applyYRotation(bx, by);
 
 		hackMarkTiles(ox, oy);
-		currIdx += 1;
+		currentIdx.set(category, currIdx + 1);
 
 		// deb(`${ox}, ${oy}`)
 		if (isWalkable[Math.floor(ox)][Math.floor(oy)]) {
@@ -327,9 +332,14 @@ function moveBrigadeToAttack(state, brigadeID, groundTargets) {
 			return;
 		}
 
-		let currIdx = currentIdx.get(category);
+		const currIdx = currentIdx.get(category);
 		if (currIdx == null) {
 			warn(`tac_com_ground: currentIdx lookup failed for "${category}" - ${droid.name} (${droid.id})`);
+			return;
+		}
+
+		if (offsets[currIdx] == null) {
+			warn(`${currIdx} for ${category} is not defined. Skipping this one.`)
 			return;
 		}
 
@@ -338,7 +348,7 @@ function moveBrigadeToAttack(state, brigadeID, groundTargets) {
 		const ox = x + applyXRotation(bx, by);
 		const oy = y + applyYRotation(bx, by);
 
-		currIdx += 1;		// add 1 for the next query
+		currentIdx.set(category, currIdx + 1);		
 
 		hackMarkTiles(ox, oy);	
 
