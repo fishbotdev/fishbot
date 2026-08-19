@@ -167,27 +167,30 @@ function moveBrigadeToLocation(state, brigadeID, targetX, targetY) {
 			return
 		}
 
-		const ox = x + applyXRotation(bx, by);
-		const oy = y + applyYRotation(bx, by);
+		const ox = x + Math.floor(applyXRotation(bx, by));			// todo boundary checking on edge of map
+		const oy = y + Math.floor(applyYRotation(bx, by));
 
-		hackMarkTiles(ox, oy);
 		currentIdx.set(category, currIdx + 1);
 
-			// Formation keeping
-			const DISTSQ_TO_ASSIGNED_LOC = distSq(ox, droid.x, oy, droid.y); 
-		const WALKABLE = isWalkable[Math.floor(ox)][Math.floor(oy)];
+		// Formation keeping
+		const DISTSQ_TO_ASSIGNED_LOC = distSq(ox, droid.x, oy, droid.y); 
+		const WALKABLE = isWalkable[ox][oy];
+
+		if (WALKABLE) {
+			hackMarkTiles(ox, oy);
+		}
 
 		if ([DIVISION.HEAVY_CAV_RESERVE, DIVISION.LIGHT_CAV_RESERVE].includes(category)) {
 			if (DISTSQ_TO_ASSIGNED_LOC >= 4 ** 2 && WALKABLE) {
-					orderDroidLoc(droid, DORDER_MOVE, ox, oy);
-				} else {
-				orderDroidLoc(droid, DORDER_SCOUT, targetX, targetY);			
-				}
+				orderDroidLoc(droid, DORDER_MOVE, ox, oy);
 			} else {
+				orderDroidLoc(droid, DORDER_SCOUT, targetX, targetY);			
+			}
+		} else {
 			if (DISTSQ_TO_ASSIGNED_LOC >= 2 ** 2 && WALKABLE) {
-					orderDroidLoc(droid, DORDER_MOVE, ox, oy);
-				} else {
-				orderDroidLoc(droid, DORDER_PATROL, droid.x, droid.y);					
+				orderDroidLoc(droid, DORDER_MOVE, ox, oy);
+			} else {
+				orderDroidLoc(droid, DORDER_SCOUT, targetX, targetY);					
 			}
 		}
 	});
@@ -339,50 +342,44 @@ function moveBrigadeToAttack(state, brigadeID, groundTargets) {
 
 		const bx = offsets[currIdx][0];
 		const by = offsets[currIdx][1];
-		const ox = x + applyXRotation(bx, by);
-		const oy = y + applyYRotation(bx, by);
+		const ox = x + Math.floor(applyXRotation(bx, by));
+		const oy = y + Math.floor(applyYRotation(bx, by));
 
 		currentIdx.set(category, currIdx + 1);		
 
-		hackMarkTiles(ox, oy);	
-
 		// deb(`${ox}, ${oy}`)
-		if (isWalkable[Math.floor(ox)][Math.floor(oy)]) {
+		const WALKABLE = isWalkable[ox][oy];
+		if (WALKABLE) {
+			hackMarkTiles(ox, oy);	
+		}
 
-			// Formation keeping
-			const DISTSQ_TO_ASSIGNED_LOC = distSq(ox, droid.x, oy, droid.y); 
+		// Formation keeping
+		const DISTSQ_TO_ASSIGNED_LOC = distSq(ox, droid.x, oy, droid.y); 
 
-			if ([DIVISION.SENSOR_RESERVE, DIVISION.MAINTENANCE_RESERVE, DIVISION.AIR_DEFENCE_RESERVE].includes(category)) {
-				if (DISTSQ_TO_ASSIGNED_LOC > 2 ** 2) {
-					orderDroidLoc(droid, DORDER_MOVE, ox, oy);
-				} else {
-					const attackOrder = UNIT_ATTACK_ORDERS.get(category);
-					if (attackOrder == null) {
-						warn(`tac_com_ground: orders could not be resolved for "${category}"`);
-						return;
-					}
-					attackOrder(droid);
-				}
+		if ([DIVISION.SENSOR_RESERVE, DIVISION.MAINTENANCE_RESERVE, DIVISION.AIR_DEFENCE_RESERVE].includes(category)) {
+			if (DISTSQ_TO_ASSIGNED_LOC > 2 ** 2 && WALKABLE) {
+				orderDroidLoc(droid, DORDER_MOVE, ox, oy);
 			} else {
-				if (DISTSQ_TO_ASSIGNED_LOC > 5 ** 2) {
-					orderDroidLoc(droid, DORDER_MOVE, ox, oy);
-				} else {
-					const attackOrder = UNIT_ATTACK_ORDERS.get(category);
-					if (attackOrder == null) {
-						warn(`tac_com_ground: orders could not be resolved for "${category}"`);
-						return;
-					}
-					attackOrder(droid);			
+				const attackOrder = UNIT_ATTACK_ORDERS.get(category);
+				if (attackOrder == null) {
+					warn(`tac_com_ground: orders could not be resolved for "${category}"`);
+					return;
 				}
+				attackOrder(droid);
 			}
 		} else {
-			
-			if ([DIVISION.HEAVY_CAV_RESERVE, DIVISION.LIGHT_CAV_RESERVE].includes(category)) {
-				orderDroidLoc(droid, DORDER_SCOUT, targetX, targetY);			
+			if (DISTSQ_TO_ASSIGNED_LOC > 5 ** 2 && WALKABLE) {
+				orderDroidLoc(droid, DORDER_MOVE, ox, oy);
 			} else {
-				orderDroidLoc(droid, DORDER_PATROL, droid.x, droid.y);
+				const attackOrder = UNIT_ATTACK_ORDERS.get(category);
+				if (attackOrder == null) {
+					warn(`tac_com_ground: orders could not be resolved for "${category}"`);
+					return;
+				}
+				attackOrder(droid);			
 			}
 		}
+
 
 	});
 
