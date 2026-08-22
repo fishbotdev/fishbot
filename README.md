@@ -38,57 +38,57 @@ FishBot is not compatible with scavengers; it currently ignores them.
 ### 2 player (T2-NoScav)
 * `Sk-Startup` (100% duel)
 * `Sk-UrbanChasm` (95% duel)
-* `Sk-HighGround` (95% duel)
+* `Sk-HighGround` (80% duel)
 * `Roughness` (100% duel)
-* `Vision` (85% duel)
+* `Vision` (75% duel)
 * `DustyMaze (2P)` (*tested manually*)
 
 ### 3 player (T2-NoScav)
-* `Monocot` (95% duel, 100% FFA)
+* `Monocot` (98% duel, 93% FFA)
 * `Gamma` (100% duel, 87% FFA)
 
 ### 4 player (T2-NoScav)
-* `Sk-Rush` (100% duel, 80% FFA)
-* `Sk-Rush2` (96% duel, 72% FFA)
-* `Sk-UrbanDuel` (95% duel, 78% FFA)
-* `Sk-Mountain` (96% duel, 48% FFA)
-* `Sk-Valley` (91% duel, 65% FFA)
-* `Sk-FishNets` (71% duel, **18% FFA**) - does not handle being attacked over water obstacles well
-* `Sk-GreatRift` (95% duel, 27% FFA)
-* `Sk-RollingHills` (82% duel, 55% FFA) 
-* `Sk-Basingstoke` (75% duel, 23% FFA)
-* `Sk-LittleEgypt` (69% duel, 9% FFA) 
-* `Sk-Cockpit` - (100% duel, 39% FFA)
-* `Sk-Urban-Chaos` (93% duel, 82% FFA)
-* `Sk-Pyramidal` (100% duel, 72% FFA)
+* `Sk-Rush` (99% duel, 72% FFA) -- f3 4 / 10
+* `Sk-Rush2` (98% duel, 78% FFA) -- f2 4 / 10
+* `Sk-UrbanDuel` (97% duel, 78% FFA) -- f2 4 / 10
+* `Sk-Mountain` (98% duel, 55% FFA) -- f1 2 / 10
+* `Sk-Valley` (92% duel, 70% FFA) -- f1c4  4/ 10, f1 4 / 10
+* `Sk-FishNets` (84% duel, **18% FFA**) - does not handle being attacked over water obstacles well -- f4 0/10
+* `Sk-GreatRift` (99% duel, 38% FFA)  -- f4 1 / 10
+* `Sk-RollingHills` (83% duel, 65% FFA) -- f2c4 3 / 10 duel
+* `Sk-Basingstoke` (91% duel, 46% FFA) -- f1 1 / 5
+* `Sk-LittleEgypt` (75% duel, 27% FFA) -- f3 1 / 10
+* `Sk-Cockpit` - (100% duel, 35% FFA) -- f2 2 / 9
+* `Sk-Urban-Chaos` (95% duel, 90% FFA)
+* `Sk-Pyramidal` (100% duel, 57% FFA)
 * `DustyMaze-2v2` (*tested manually*)
 * `DustyMaze-FFA` (*tested manually*)
 
 ### 5 player (T2-NoScav)
-* `Bloat` (35% FFA)
+* `Bloat` (56% FFA)
 
 ### 6 player (T2-NoScav)
-* `Melting` (52% FFA)
+* `Melting` (62% FFA)
 * `Entropy` (*tested manually*)
 
 ### 7 player (T2-NoScav)
 * `Thales` (*tested manually*)
 
 ### 8 player (T2-NoScav)
-* `Sk-Bananas` (51% FFA)
-* `Sk-BeggarsKanyon` (70% FFA)
-* `Sk-Clover` (49% FFA)
-* `Sk-Cockate` (15% FFA)
-* `Sk-Concrete` (16% FFA)
-* `Sk-Gridlock` (55% FFA)
-* `Sk-HideNSneak` (0% FFA)     
-* `Sk-MizaMaze` (% FFA)
+* `Sk-Bananas` (35% FFA) -- f4 1/10
+* `Sk-BeggarsKanyon` (69% FFA) -- f4 4 / 10
+* `Sk-Clover` (40% FFA) -- f8 1/ 10
+* `Sk-Cockate` (29% FFA) -- f3 0 /10
+* `Sk-Concrete` (15% FFA) -- f2 0 /10
+* `Sk-Gridlock` (36% FFA) -- f1 0 / 10
+* `Sk-HideNSneak` (15% FFA) -- f3 0 /8
+* `Sk-MizaMaze` (14% FFA) -- f3 0 / 10
 * ~~`Sk-Manhattan`~~ - **not compatible**: central river blocks land units
-* `Sk-SandCastles` (% FFA)
-* `Sk-ThePit` (% FFA)
-* `Sk-Wheel` (% FFA)
-* `Sk-YinYang` (% FFA)
-* `Sk-Ziggurat` (% FFA)
+* `Sk-SandCastles` (40% FFA) -- f5 1/10
+* `Sk-ThePit` (55% FFA) -- f2 2/10
+* `Sk-Wheel` (42% FFA) -- f4 0 /10
+* `Sk-YinYang` (18% FFA) -- f2 1 / 10
+* `Sk-Ziggurat` (11% FFA)  -- f3 0 /10
 
 ### 9 player (T2-NoScav)
 * `Sk-WindFury` (*tested manually*)
@@ -140,7 +140,11 @@ Please see [`CHANGELOG.md`](CHANGELOG.md) for a detailed list of all past change
 
 ## Upcoming features
 The current areas for improvement are:
-* Strategic improvements (FishBot's current strategic level is: 'this is the closest target, go there').
+* Strategic improvements (FishBot's current strategic level is: 'this is the closest target, go there'). Some examples include:
+    * Ability to sync combat + construction
+    * Ability to defend its base, including with units and with static defences
+    * Prebombardment of a target area
+    * Prioritise closest bases / oil fields
 * Tactical-level targeting improvements (i.e. preventing target oscillation).
 * Support for T1 & T3.
 
