@@ -133,15 +133,52 @@ function moveBrigadeToLocation(state, brigadeID, targetX, targetY) {
 	const brigadeUnits = state.g.enumGroup(brigadeID);
 	const x = state.brigades[brigadeID]['location'].x;
 	const y = state.brigades[brigadeID]['location'].y;
-	markTile(x, y);
+	// markTile(x, y);
 
 	const etx = targetX - x;
 	const ety = targetY - y;
 	const theta = Math.atan2(ety, etx);
-	const applyXRotation = (bx, by) => {return bx * Math.cos(theta) + by * -1 * Math.sin(theta)};
-	const applyYRotation = (bx, by) => {return bx * Math.sin(theta) + by * Math.cos(theta)};
+	const applyXRotation = (bx, by, theta) => {return bx * Math.cos(theta) + by * -1 * Math.sin(theta)};
+	const applyYRotation = (bx, by, theta) => {return bx * Math.sin(theta) + by * Math.cos(theta)};
+
+	const pathfindingThetas = [];
 
 	brigadeUnits.forEach(droid => {
+		const path = getDroidPath(droid);
+
+		let droidTheta = theta;
+		const MAX_FORECAST = 4;
+		for (let i=0; i<Math.min(path.length, MAX_FORECAST); i++) {
+			// hackMarkTiles(path[i].x, path[i].y);
+			if (i === Math.min(path.length, MAX_FORECAST) - 1) {
+				const etx = path[i].x - x;
+				const ety = path[i].y - y;
+				droidTheta = Math.atan2(ety, etx);
+				pathfindingThetas.push(droidTheta);
+			}
+		}
+	});
+
+	const degreesDeviation = [];
+	let outOfTolCount = 0;
+	pathfindingThetas.forEach(t => {
+		const dev = (t - theta) * 180 / Math.PI;
+		// deb(`\t${dev}`);
+		degreesDeviation.push(dev);
+		if (Math.abs(dev) > 15) {
+			outOfTolCount++;
+		}
+	});
+	const pc = outOfTolCount / pathfindingThetas.length * 100;
+	// deb(`${brigadeID}: out of tol ${outOfTolCount} / ${pathfindingThetas.length}`);
+
+	const STUCK_ON_TERRAIN = (pc > 35) ? true : false;
+	if (STUCK_ON_TERRAIN) {
+		// warn(`${brigadeID}: stuck on terrain`);
+	}
+
+	brigadeUnits.forEach(droid => {
+
 		const category = getDroidFbGroupClassification(droid);
 		const currIdx = currentIdx.get(category);
 		if (currIdx == undefined) {
@@ -167,8 +204,8 @@ function moveBrigadeToLocation(state, brigadeID, targetX, targetY) {
 			return
 		}
 
-		const ox = x + Math.floor(applyXRotation(bx, by));			// todo boundary checking on edge of map
-		const oy = y + Math.floor(applyYRotation(bx, by));
+		const ox = x + Math.floor(applyXRotation(bx, by, theta));			// todo boundary checking on edge of map
+		const oy = y + Math.floor(applyYRotation(bx, by, theta));
 
 		currentIdx.set(category, currIdx + 1);
 
@@ -176,18 +213,18 @@ function moveBrigadeToLocation(state, brigadeID, targetX, targetY) {
 		const DISTSQ_TO_ASSIGNED_LOC = distSq(ox, droid.x, oy, droid.y); 
 		const WALKABLE = isWalkable[ox][oy];
 
-		if (WALKABLE) {
-			hackMarkTiles(ox, oy);
+		if (WALKABLE && !STUCK_ON_TERRAIN) {
+			hackMarkTiles(ox, oy);	
 		}
 
 		if ([DIVISION.HEAVY_CAV_RESERVE, DIVISION.LIGHT_CAV_RESERVE].includes(category)) {
-			if (DISTSQ_TO_ASSIGNED_LOC >= 4 ** 2 && WALKABLE) {
+			if (DISTSQ_TO_ASSIGNED_LOC >= 4 ** 2 && WALKABLE && !STUCK_ON_TERRAIN) {
 				orderDroidLoc(droid, DORDER_MOVE, ox, oy);
 			} else {
 				orderDroidLoc(droid, DORDER_SCOUT, targetX, targetY);			
 			}
 		} else {
-			if (DISTSQ_TO_ASSIGNED_LOC >= 2 ** 2 && WALKABLE) {
+			if (DISTSQ_TO_ASSIGNED_LOC >= 2 ** 2 && WALKABLE && !STUCK_ON_TERRAIN) {
 				orderDroidLoc(droid, DORDER_MOVE, ox, oy);
 			} else {
 				orderDroidLoc(droid, DORDER_SCOUT, targetX, targetY);					
@@ -247,7 +284,7 @@ function moveBrigadeToAttack(state, brigadeID, groundTargets) {
 
 	const x = state.brigades[brigadeID]['location'].x;
 	const y = state.brigades[brigadeID]['location'].y;
-	markTile(x, y);
+	// markTile(x, y);
 
 	const targetX = DIRECT_FIRE_TARGET.x;
 	const targetY = DIRECT_FIRE_TARGET.y;
@@ -312,6 +349,40 @@ function moveBrigadeToAttack(state, brigadeID, groundTargets) {
 	]);
 
 	const brigadeUnits = state.g.enumGroup(brigadeID);
+
+	const pathfindingThetas = [];
+
+	brigadeUnits.forEach(droid => {
+		const path = getDroidPath(droid);
+
+		let droidTheta = theta;
+		const MAX_FORECAST = 4;
+		for (let i=0; i<Math.min(path.length, MAX_FORECAST); i++) {
+			// hackMarkTiles(path[i].x, path[i].y);
+			if (i === Math.min(path.length, MAX_FORECAST) - 1) {
+				const etx = path[i].x - x;
+				const ety = path[i].y - y;
+				droidTheta = Math.atan2(ety, etx);
+				pathfindingThetas.push(droidTheta);
+			}
+		}
+	});
+
+	const degreesDeviation = [];
+	let outOfTolCount = 0;
+	pathfindingThetas.forEach(t => {
+		const dev = (t - theta) * 180 / Math.PI;
+		// deb(`\t${dev}`);
+		degreesDeviation.push(dev);
+		if (Math.abs(dev) > 15) {
+			outOfTolCount++;
+		}
+	});
+	const pc = outOfTolCount / pathfindingThetas.length * 100;
+	// deb(`${brigadeID}: out of tol ${outOfTolCount} / ${pathfindingThetas.length}`);
+
+	const STUCK_ON_TERRAIN = (pc > 35) ? true : false;
+
 	brigadeUnits.forEach(droid => {
 		const category = getDroidFbGroupClassification(droid);
 
@@ -349,7 +420,7 @@ function moveBrigadeToAttack(state, brigadeID, groundTargets) {
 
 		// deb(`${ox}, ${oy}`)
 		const WALKABLE = isWalkable[ox][oy];
-		if (WALKABLE) {
+		if (WALKABLE && !STUCK_ON_TERRAIN) {
 			hackMarkTiles(ox, oy);	
 		}
 
@@ -357,7 +428,7 @@ function moveBrigadeToAttack(state, brigadeID, groundTargets) {
 		const DISTSQ_TO_ASSIGNED_LOC = distSq(ox, droid.x, oy, droid.y); 
 
 		if ([DIVISION.SENSOR_RESERVE, DIVISION.MAINTENANCE_RESERVE, DIVISION.AIR_DEFENCE_RESERVE].includes(category)) {
-			if (DISTSQ_TO_ASSIGNED_LOC > 2 ** 2 && WALKABLE) {
+			if (DISTSQ_TO_ASSIGNED_LOC > 2 ** 2 && WALKABLE && !STUCK_ON_TERRAIN) {
 				orderDroidLoc(droid, DORDER_MOVE, ox, oy);
 			} else {
 				const attackOrder = UNIT_ATTACK_ORDERS.get(category);
@@ -368,7 +439,7 @@ function moveBrigadeToAttack(state, brigadeID, groundTargets) {
 				attackOrder(droid);
 			}
 		} else {
-			if (DISTSQ_TO_ASSIGNED_LOC > 5 ** 2 && WALKABLE) {
+			if (DISTSQ_TO_ASSIGNED_LOC > 5 ** 2 && WALKABLE && !STUCK_ON_TERRAIN) {
 				orderDroidLoc(droid, DORDER_MOVE, ox, oy);
 			} else {
 				const attackOrder = UNIT_ATTACK_ORDERS.get(category);
