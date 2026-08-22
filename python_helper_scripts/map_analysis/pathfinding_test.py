@@ -603,7 +603,7 @@ def find_path_astar(map, start: tuple, goal: tuple) -> list[tuple]:
                 continue
 
             # Check walkable
-            valid_tile = passability_map[nny][nnx]  # NOTE: array indexing map needs to be in this order because it looks up 'rows' = 'y', and then 'cols' = 'x'
+            valid_tile = map[nny][nnx]  # NOTE: array indexing map needs to be in this order because it looks up 'rows' = 'y', and then 'cols' = 'x'
             if not valid_tile:
                 continue
 
@@ -835,10 +835,10 @@ def profile_reference(passability_map, start: tuple, goal: tuple):
 if __name__ == '__main__':
 
     ################### USER CONFIG START ###################
-    FILE_NAME = "bloat_terrainType"  # this is the data obtained from the `MapTiles.terrainType` global
+    FILE_NAME = "gamma_terrainType"  # this is the data obtained from the `MapTiles.terrainType` global
 
-    START = (90, 65)
-    GOAL = (83, 75)
+    START = (10, 15)
+    GOAL = (110, 20)
 
     PLOT_RESULTS = False
     RUN_PROFILING = True

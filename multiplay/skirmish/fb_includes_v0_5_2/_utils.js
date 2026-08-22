@@ -380,3 +380,305 @@ function getWalkableTiles(isBaseNonReachableTile) {
 
 	return visited;
 }
+
+/**
+ * This min-heap implementation is ported from `fishbot\python_helper_scripts\map_analysis\pathfinding_test.py`.
+ */
+class AStarMinHeap {
+	constructor() {
+		this.heap = [];
+	}
+
+	length() {
+		return this.heap.length;
+	}
+
+    push(value) {
+		this.heap.push(value)     // this adds it to the end of the complete binary tree
+
+        // Bubble up the tree to make the heap-invariant true
+        // Algorithm:
+        //   1. Compare with parent.
+        //   2. If smaller, swap, else, do nothing.
+        //   3. Recursively perform until curr_idx is at the root (index 0) or the parent is smaller
+
+        let curr_idx = this.heap.length - 1;
+
+        while (curr_idx > 0) {
+            const parent_idx = Math.floor((curr_idx - 1) / 2);
+
+            const currNode = this.heap[curr_idx];
+            const parentNode = this.heap[parent_idx];
+
+			const parent_fcost = parentNode.g + parentNode.h;
+			const curr_fcost = currNode.g + currNode.h;
+
+            if (parent_fcost < curr_fcost) {
+				// normal minheap invariant for f
+                break;
+			}  else if (parent_fcost == curr_fcost && parentNode.h <= currNode.h) {
+				// A-star prioritisation of nodes closer to the target
+                break;
+			};  
+
+            this.heap[parent_idx] = currNode;
+            this.heap[curr_idx] = parentNode;
+            curr_idx = parent_idx;
+		}
+	}
+
+	pop() {
+        if (this.heap.length === 0) {
+            return undefined;
+		}
+
+        const last_entry = this.heap.pop();
+        if (this.heap.length == 0) {
+            return last_entry;
+		}
+
+        const first_entry = this.heap[0];
+        this.heap[0] = last_entry;
+
+        // Bubble down to preserve the heap invariant
+        // Algorithm:
+        //   1. Find the min of the two children nodes
+        //   2. Compare the parent to the minimum of the two children nodes
+        //   3. If child is smaller, swap, else, break.
+        let curr_idx = 0;
+        const LAST_VALID_IDX = this.heap.length - 1;
+
+        while (curr_idx <= LAST_VALID_IDX) {
+            const currNode = this.heap[curr_idx];
+
+            const child1_idx = 2 * curr_idx + 1
+            const child2_idx = 2 * curr_idx + 2
+
+            let child1 = null;
+            let child2 = null;
+
+			let child1Node = null; 
+			let child2Node = null;
+
+            if (child1_idx <= LAST_VALID_IDX) {
+                child1Node = this.heap[child1_idx];
+                child1 = [child1_idx, child1Node];
+			}
+
+            if (child2_idx <= LAST_VALID_IDX) {
+                child2Node = this.heap[child2_idx];
+                child2 = [child2_idx, child2Node];
+			}
+			
+			let child_idx, childNode;		// final value
+			if (child1 != null && child2 != null) {
+				const child1_fcost = child1Node.g + child1Node.h;
+				const child2_fcost = child2Node.g + child2Node.h;
+
+				// normal minheap invariant for f
+				if (child1_fcost < child2_fcost) {
+					child_idx = child1[0];
+					childNode = child1[1];
+				} else if (child1_fcost == child2_fcost && child1Node.h <= child2Node.h) {
+					// A-star prioritisation of nodes closer to the target
+					child_idx = child1[0];
+					childNode = child1[1];
+				} else {
+					child_idx = child2[0];
+					childNode = child2[1];
+				}
+			} else if (child1 != null && child2 == null) {
+                child_idx = child1[0];
+				childNode = child1[1];
+			} else if (child1 == null && child2 != null){
+                child_idx = child2[0];
+				childNode = child2[1];
+			} else {
+				break;
+			}
+
+			const currNode_fcost = currNode.g + currNode.h;
+			const child_fcost = childNode.g + childNode.h;
+
+            if (currNode_fcost < child_fcost) {
+				// normal minheap invariant for f
+				break;
+			} else if (currNode_fcost === child_fcost && currNode.h <= childNode.h) {
+				// A-star prioritisation of nodes closer to the target
+				break;
+			}
+
+            // Else swap & continue the loop
+            this.heap[curr_idx] = childNode;
+            this.heap[child_idx] = currNode;
+            curr_idx = child_idx;
+		}
+
+        return first_entry;
+	}
+}
+
+/**
+ * @typedef {Object} AstarNode
+ * @param {Coordinate} pos
+ * @param {*} parent		another AstarNode
+ * @param {number} g		gcost
+ * @param {number} h 		hcost (fcost = gcost + hcost)
+ * @param {boolean} stale	used to differentiate 
+ */
+
+/**
+ * This A* implementation is ported from `fishbot\python_helper_scripts\map_analysis\pathfinding_test.py`.
+ * This function has been optimised for performance so many of the readable helpers in that function have been inlined.
+ * @param {Coordinate} start 
+ * @param {Coordinate} goal 
+ * @returns {Coordinate[]} 
+ */
+function findPathAstar(start, goal) {
+
+	const isWalkable = state.mapData.isWalkable;
+	const startX = start[0], startY = start[1];
+	const goalX = goal[0], goalY = goal[1];
+
+	if (!isWalkable[startX][startY] || !isWalkable[goalX][goalY]) {
+		warn(`Terminating pathfinding from "${start}" to "${goal}" - start or goal is an invalid position`);
+		return [];
+	}
+
+	const ymax = mapHeight;
+	const xmax = mapWidth;
+    
+	// Initialise heap & lookup tables
+    const h = new AStarMinHeap();
+    const seen_nodes = new Array(ymax * xmax).fill(null);
+    const to_be_processed_lookup = new Array(ymax * xmax).fill(null);
+
+	/** @type {AstarNode} */
+	const startNode = {
+		/** @type {Coordinate} */		
+		'pos': [startX, startY], 
+		'g': 0, 
+		'h': Math.abs(startX - goalX) + Math.abs(startY - goalY),		// Manhattan distance
+		'parentNode': null,
+		'stale': false
+	};
+	h.push(startNode);
+
+	const neighbour_offsets_and_gcosts = [
+        // The data format chosen below is chosen for performance reasons (this does make the code harder to read though):
+        //   (xoffset, yoffset, gcost_delta), where gcost_delta = additional g cost compared to the parent
+
+        // Manhattan heuristic remains admissible because diagonal cost == 2, equivalent to two orthogonal moves.
+        // If diagonal cost changes (e.g. sqrt(2)), the heuristic must change.
+        [-1, 0, 1], [1, 0, 1], [0, -1, 1], [0, 1, 1], [-1, -1, 2], [-1, 1, 2], [1, 1, 2], [1, -1, 2]
+    ]
+
+    let iters = 0;
+    const max_iterations = 5000;      // to prevent the algorithm from running forever if I make a mistake
+    while (h.length() > 0 && iters < max_iterations) {
+
+        const node = h.pop();
+        if (node.stale) {
+            continue;		// stale entries remain in the heap but are ignored on retrieval.
+		}
+
+        const nx = node.pos[0], ny = node.pos[1];
+
+        const nidx = ny * xmax + nx;
+        to_be_processed_lookup[nidx] = null;
+        seen_nodes[nidx] = node;
+
+        if (nx == goalX && ny == goalY) {
+            // deb(`goal found - terminated early (${iters} iterations)`)
+            break;
+		}
+
+        for (let i=0; i<neighbour_offsets_and_gcosts.length; i++) {
+			const nn = neighbour_offsets_and_gcosts[i];
+			const ox = nn[0];
+			const oy = nn[1];
+			const gdelta = nn[2];
+
+            const nnx = nx + ox;
+            const nny = ny + oy;
+
+            // Check map bounds
+            if (nnx < 0 || nnx >= xmax || nny < 0 || nny >= ymax) {
+                continue;
+			}
+
+            if (!isWalkable[nnx][nny]) {
+				continue;
+			}  
+
+            // Attempt to retrieve the node from the `seen_nodes` list 
+            const nb_idx = nny * xmax + nnx;
+			const PREVIOUSLY_PROCESSED = (seen_nodes[nb_idx] != null);
+            if (PREVIOUSLY_PROCESSED) {
+				continue;
+			}
+
+            // Search in the `to_be_processed` list for the node
+            const existing_node = to_be_processed_lookup[nb_idx];      	
+
+			// Check the special case of a node which already in the 'open' list, but has a higher than optimal g-cost 
+            if (existing_node != null) {
+				// Find the new g cost if the current node is taken as parent
+				const potential_new_g_cost = node.g + gdelta;      		
+				
+				// Check if new g cost is lower than the the gcost already logged for that node, if so, mark the existing one as stale & enter a replacement node.
+				if (potential_new_g_cost < existing_node.g) {
+					existing_node.stale = true;       // implemented this way for compatibility with min heap
+	
+					const replacementNode = {
+						/** @type {Coordinate} */		
+						'pos': [nnx, nny], 
+						'g': potential_new_g_cost, 
+						'h': Math.abs(nnx - goalX) + Math.abs(nny - goalY),		// Manhattan distance
+						'parentNode': node,
+						'stale': false
+					};
+					
+					h.push(replacementNode)
+					to_be_processed_lookup[nb_idx] = replacementNode;
+				}
+				continue;
+			}
+
+			const newNode = {
+				/** @type {Coordinate} */		
+				'pos': [nnx, nny], 
+				'g': node.g + gdelta, 
+				'h': Math.abs(nnx - goalX) + Math.abs(nny - goalY),		// Manhattan distance
+				'parentNode': node,
+				'stale': false
+			};
+            h.push(newNode);
+            to_be_processed_lookup[nb_idx] = newNode;
+		}
+
+        iters += 1;
+	}
+
+    // deb(`A* completed in ${iters} iterations.`);
+
+    // back out the path, starting from the end node
+    const result = [];
+    const gidx = goalY * xmax + goalX;       // index the goal node
+    let n = seen_nodes[gidx];                // retrieve the goal node
+
+    if (n == null) {
+		warn(`did not find goal node "${goal}" after pathfinding from "${start}"`);
+        return [];
+	}
+
+    iters = 0;
+    while (n.parentNode != null && iters < max_iterations) {
+        result.push(n.pos);
+        n = n.parentNode;
+        iters += 1;
+	}
+	result.reverse();		// re-orients the goal to be at the end 
+
+    return result;
+}

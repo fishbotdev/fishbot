@@ -898,6 +898,10 @@ class CommandCenter {
 			}
 			
 			moveBrigadeToAttack(state, brigadeID, groundTargets);	
+
+			const pathfind = () => findPathAstar([10, 15], [110, 20]);
+			const path = fprof(pathfind);
+			path.forEach(coord => hackMarkTiles(coord[0], coord[1]));
 		});
 
 		// Manage reserves: temporary: Move reserves to pre-emptively reinforce BCT0
