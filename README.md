@@ -144,6 +144,11 @@ The current areas for improvement are:
 * Tactical-level targeting improvements (i.e. preventing target oscillation).
 * Support for T1 & T3.
 
+## Use of AI
+Prior to **v0.5.2**, ChatGPT was used sparsely to implement some of the math functions, but the majority of the logic and architecture was human-written.
+
+From **v0.5.2**, Claude Code has been used to make active incremental improvements to the bot. These improvements are still human-reviewed though. 
+
 ## Background and Goals
 FishBot was initially forked from NullBot v3. I acknowledge and appreciate the work of the NullBot team in creating the foundation for this body of work. As of v0.4.0, not much of the original code remains, but I am grateful for the structural and spiritual influence of the original work.
 

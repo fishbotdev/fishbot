@@ -556,7 +556,7 @@ class CommandCenter {
 		// Direct Fire Targeting
 		// Intent: only attack what is readily attackable & in front of the brigade
 		const heightMap = state.mapData.heightMap;
-		const HEIGHT_WEIGHT = 0.05;
+		const HEIGHT_WEIGHT = 0.15;
 		const directFireHeuristic = (a,b) => {
 			const aDist = distSq(x, a.x, y, a.y);
 			const bDist = distSq(x, b.x, y, b.y);
