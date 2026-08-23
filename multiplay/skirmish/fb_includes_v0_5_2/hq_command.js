@@ -329,29 +329,6 @@ class CommandCenter {
 		const SHOULD_PRODUCE_TRUCKS = !HIT_TRUCK_LIMIT;
 		const MAX_TRUCKS_THIS_TICK = 1;
 
-		// Brigade production priorities
-		/** @type {Map<number, number>} */
-		const brigadeWeights = new Map([
-			[DIVISION.FIRST_BCT, 16], 
-			[DIVISION.SECOND_BCT, 8], 
-			[DIVISION.THIRD_BCT, 4], 
-			[DIVISION.FOURTH_BCT, 2], 
-			[DIVISION.FIFTH_BCT, 0],
-			[DIVISION.BCT_RESERVE, 1],
-		]);
-		
-		/** @type {Map<number, number>} */
-		const unitWeights = new Map([
-			// Production weights (which influences production order) are tuned using `python_helper_scripts / production_scheduling.py`.
-			// Must be rebalanced each time the brigade composition is changed.	
-			[DIVISION.HEAVY_CAV_RESERVE, 0.95],
-			[DIVISION.LIGHT_CAV_RESERVE, 1.0],
-			[DIVISION.SHORT_RANGE_FIRE_SUPPORT_RESERVE, 0.7],
-			[DIVISION.AIR_DEFENCE_RESERVE, 0.65],
-			[DIVISION.SENSOR_RESERVE, 0.25],
-			[DIVISION.MAINTENANCE_RESERVE, 0.5],
-		]);
-
 		const DEFAULT_LAND_UNIT_CATEGORY = DIVISION.LIGHT_CAV_RESERVE;
 
 		this.PRODUCTION_RESUPPLY_PARAMETERS.CAN_DESIGN_UNITS = CAN_DESIGN_UNITS;
@@ -363,8 +340,6 @@ class CommandCenter {
 		this.PRODUCTION_RESUPPLY_PARAMETERS.SHOULD_PRODUCE_INFANTRY = SHOULD_PRODUCE_INFANTRY;
 		this.PRODUCTION_RESUPPLY_PARAMETERS.SHOULD_PRODUCE_VTOLS = SHOULD_PRODUCE_VTOLS;
 		this.PRODUCTION_RESUPPLY_PARAMETERS.SHOULD_PRODUCE_LAND_VEHICLES = SHOULD_PRODUCE_LAND_VEHICLES;
-		this.PRODUCTION_RESUPPLY_PARAMETERS.BRIGADE_WEIGHTS = brigadeWeights;
-		this.PRODUCTION_RESUPPLY_PARAMETERS.UNIT_WEIGHTS = unitWeights;
 		this.PRODUCTION_RESUPPLY_PARAMETERS.DEFAULT_LAND_UNIT_CATEGORY = DEFAULT_LAND_UNIT_CATEGORY;
 
 		/*
@@ -557,37 +532,22 @@ class CommandCenter {
 		// Intent: only attack what is readily attackable & in front of the brigade
 		const heightMap = state.mapData.heightMap;
 		const HEIGHT_WEIGHT = 0.15;
-		const directFireHeuristic = (a,b) => {
-			const aDist = distSq(x, a.x, y, a.y);
-			const bDist = distSq(x, b.x, y, b.y);
+		const directFireScore = (obj) => {
+			const dist = distSq(x, obj.x, y, obj.y);
+			const height = HEIGHT_WEIGHT * (heightMap[obj.x][obj.y] - POSITION.z) ** 2;
 
-			const aHeight = HEIGHT_WEIGHT * (heightMap[a.x][a.y] - POSITION.z) ** 2;
-			const bHeight = HEIGHT_WEIGHT * (heightMap[b.x][b.y] - POSITION.z) ** 2;
-
-			const al = drawLine(x, y, a.x, a.y);
-			const bl = drawLine(x, y, b.x, b.y);
-
-			let aDetour = 1, bDetour = 1;
-
-			for (let i=0; i<al.length; i++) {
-				const point = al[i];
+			const line = drawLine(x, y, obj.x, obj.y);
+			let detour = 1;
+			for (let i=0; i<line.length; i++) {
+				const point = line[i];
 				const terrainType = MapTiles[point[1]][point[0]].terrainType;
-				if (terrainType	=== TER_CLIFFFACE || terrainType === TER_WATER) {
-					aDetour++;
+				if (terrainType === TER_CLIFFFACE || terrainType === TER_WATER) {
+					detour++;
 					break;
 				}
-			};
-			
-			for (let i=0; i<bl.length; i++) {
-				const point = bl[i];
-				const terrainType = MapTiles[point[1]][point[0]].terrainType;
-				if (terrainType	=== TER_CLIFFFACE || terrainType === TER_WATER) {
-					bDetour++;
-					break;
-				}
-			};
+			}
 
-			return (aDetour * aDist + aHeight) - (bDetour * bDist + bHeight);
+			return detour * dist + height;
 		}
 
 		const primaryDroidTargets = [...enemyArmor, ...enemyInfantry, ...enemyDefenses];
@@ -612,7 +572,8 @@ class CommandCenter {
 		addDirectFireTargetByProximity(secondaryDirectFireTargets);
 		addDirectFireTargetByProximity(tertiaryDirectFireTargets);
 
-		directFireTargetsInRange.sort((a,b) => directFireHeuristic(a,b));		// Note: this ignores the primary/secondary/tertiary ordering above (temporary)
+		directFireTargetsInRange.forEach(t => {t.score = directFireScore(t);});
+		directFireTargetsInRange.sort((a,b) => a.score - b.score);		// Note: this ignores the primary/secondary/tertiary ordering above (temporary)
 
 		brigadeTargets['directFireTargets'].push(...directFireTargetsInRange);
 
@@ -874,13 +835,10 @@ class CommandCenter {
 			return;
 		}
 
-		const brigadeLocations = [];
-
-		// if (DEBUG_MODE_ON) hackMarkTiles();		
+		// if (DEBUG_MODE_ON) hackMarkTiles();
 		this.BRIGADE_DESIGNATIONS.forEach(brigadeID => {
 
 			const brigadeLocation = state.brigades[brigadeID]['location'];
-			brigadeLocations.push(brigadeLocation);
 
 			// const CLOSEST_ENEMY_BASE = intelligence.findClosestEnemyBase(state, brigadeLocation.x, brigadeLocation.y); 			
 
