@@ -329,6 +329,29 @@ class CommandCenter {
 		const SHOULD_PRODUCE_TRUCKS = !HIT_TRUCK_LIMIT;
 		const MAX_TRUCKS_THIS_TICK = 1;
 
+		// Brigade production priorities
+		/** @type {Map<number, number>} */
+		const brigadeWeights = new Map([
+			[DIVISION.FIRST_BCT, 16], 
+			[DIVISION.SECOND_BCT, 8], 
+			[DIVISION.THIRD_BCT, 4], 
+			[DIVISION.FOURTH_BCT, 2], 
+			[DIVISION.FIFTH_BCT, 0],
+			[DIVISION.BCT_RESERVE, 1],
+		]);
+		
+		/** @type {Map<number, number>} */
+		const unitWeights = new Map([
+			// Production weights (which influences production order) are tuned using `python_helper_scripts / production_scheduling.py`.
+			// Must be rebalanced each time the brigade composition is changed.	
+			[DIVISION.HEAVY_CAV_RESERVE, 0.95],
+			[DIVISION.LIGHT_CAV_RESERVE, 1.0],
+			[DIVISION.SHORT_RANGE_FIRE_SUPPORT_RESERVE, 0.7],
+			[DIVISION.AIR_DEFENCE_RESERVE, 0.65],
+			[DIVISION.SENSOR_RESERVE, 0.25],
+			[DIVISION.MAINTENANCE_RESERVE, 0.5],
+		]);
+
 		const DEFAULT_LAND_UNIT_CATEGORY = DIVISION.LIGHT_CAV_RESERVE;
 
 		this.PRODUCTION_RESUPPLY_PARAMETERS.CAN_DESIGN_UNITS = CAN_DESIGN_UNITS;
@@ -340,6 +363,8 @@ class CommandCenter {
 		this.PRODUCTION_RESUPPLY_PARAMETERS.SHOULD_PRODUCE_INFANTRY = SHOULD_PRODUCE_INFANTRY;
 		this.PRODUCTION_RESUPPLY_PARAMETERS.SHOULD_PRODUCE_VTOLS = SHOULD_PRODUCE_VTOLS;
 		this.PRODUCTION_RESUPPLY_PARAMETERS.SHOULD_PRODUCE_LAND_VEHICLES = SHOULD_PRODUCE_LAND_VEHICLES;
+		this.PRODUCTION_RESUPPLY_PARAMETERS.BRIGADE_WEIGHTS = brigadeWeights;
+		this.PRODUCTION_RESUPPLY_PARAMETERS.UNIT_WEIGHTS = unitWeights;
 		this.PRODUCTION_RESUPPLY_PARAMETERS.DEFAULT_LAND_UNIT_CATEGORY = DEFAULT_LAND_UNIT_CATEGORY;
 
 		/*
