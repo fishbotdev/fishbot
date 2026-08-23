@@ -1371,8 +1371,8 @@ class CommandCenter {
 				if (DEBUG_PRODUCTION) debug(`	${gameTime}: produced Land Vehicle Template`);
 				const productionStarted = produceLandUnitCategory(landUnitQueue[0], factory);
 				if (productionStarted) {
-					this.toc.addToActiveProductionJobs(state, {'factory': factory, 'type': landUnitQueue[0]});
-					landUnitQueue.shift();
+					const landUnitCategory = landUnitQueue.shift();
+					this.toc.addToActiveProductionJobs(state, {'factory': factory, 'type': landUnitCategory});
 				}
 				continue;
 			} else {
