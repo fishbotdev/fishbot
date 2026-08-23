@@ -781,9 +781,9 @@ class worldStateBuilder {
 
                 chokepointWidth[x][y] = width;
                 isChokepoint[x][y] = width <= CHOKEPOINT_WIDTH_THRESHOLD;
-                if (DEBUG_MODE_ON && isChokepoint[x][y]) {
-                    hackMarkTiles(x, y);
-                }
+                // if (DEBUG_MODE_ON && isChokepoint[x][y]) {
+                //     hackMarkTiles(x, y);
+                // }
             }
         }
 
