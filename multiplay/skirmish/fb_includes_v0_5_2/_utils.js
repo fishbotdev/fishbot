@@ -501,7 +501,8 @@ class AStarMinHeap {
 
 /**
  * @typedef {Object} AstarNode
- * @param {Coordinate} pos
+ * @param {number} x
+ * @param {number} y
  * @param {*} parent		another AstarNode
  * @param {number} g		gcost
  * @param {number} h 		hcost (fcost = gcost + hcost)
@@ -544,9 +545,9 @@ function findPathAstar(start, goal) {
     const to_be_processed_lookup = new Array(ymax * xmax).fill(null);
 
 	/** @type {AstarNode} */
-	const startNode = {
-		/** @type {Coordinate} */		
-		'pos': [startX, startY], 
+	const startNode = {	
+		'x': startX, 
+		'y': startY,
 		'g': 0, 
 		'h': Math.abs(startX - goalX) + Math.abs(startY - goalY),		// Manhattan distance
 		'parentNode': null,
@@ -571,13 +572,11 @@ function findPathAstar(start, goal) {
             continue;		// stale entries remain in the heap but are ignored on retrieval.
 		}
 
-        const nx = node.pos[0], ny = node.pos[1];
-
-        const nidx = ny * xmax + nx;
+        const nidx = node.y * xmax + node.x;
         to_be_processed_lookup[nidx] = null;
         seen_nodes[nidx] = node;
 
-        if (nx == goalX && ny == goalY) {
+        if (node.x == goalX && node.y == goalY) {
             // deb(`goal found - terminated early (${iters} iterations)`)
             break;
 		}
@@ -588,8 +587,8 @@ function findPathAstar(start, goal) {
 			const oy = nn[1];
 			const gdelta = nn[2];
 
-            const nnx = nx + ox;
-            const nny = ny + oy;
+            const nnx = node.x + ox;
+            const nny = node.y + oy;
 
             // Check map bounds
             if (nnx < 0 || nnx >= xmax || nny < 0 || nny >= ymax) {
@@ -619,9 +618,10 @@ function findPathAstar(start, goal) {
 				if (potential_new_g_cost < existing_node.g) {
 					existing_node.stale = true;       // implemented this way for compatibility with min heap
 	
+					/** @type {AstarNode} */
 					const replacementNode = {
-						/** @type {Coordinate} */		
-						'pos': [nnx, nny], 
+						'x': nnx, 
+						'y': nny,
 						'g': potential_new_g_cost, 
 						'h': Math.abs(nnx - goalX) + Math.abs(nny - goalY),		// Manhattan distance
 						'parentNode': node,
@@ -634,9 +634,10 @@ function findPathAstar(start, goal) {
 				continue;
 			}
 
+			/** @type {AstarNode} */
 			const newNode = {
-				/** @type {Coordinate} */		
-				'pos': [nnx, nny], 
+				'x': nnx, 
+				'y': nny,
 				'g': node.g + gdelta, 
 				'h': Math.abs(nnx - goalX) + Math.abs(nny - goalY),		// Manhattan distance
 				'parentNode': node,
@@ -652,6 +653,7 @@ function findPathAstar(start, goal) {
     // deb(`A* completed in ${iters} iterations.`);
 
     // back out the path, starting from the end node
+	/** @type {Coordinate[]} */
     const result = [];
     const gidx = goalY * xmax + goalX;       // index the goal node
     let n = seen_nodes[gidx];                // retrieve the goal node
@@ -663,7 +665,7 @@ function findPathAstar(start, goal) {
 
     iters = 0;
     while (n.parentNode != null && iters < MAX_ITERS) {
-        result.push(n.pos);
+		result.push([n.x, n.y]);
         n = n.parentNode;
         iters += 1;
 	}
