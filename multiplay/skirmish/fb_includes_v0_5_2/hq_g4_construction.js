@@ -205,6 +205,8 @@ class armyEngineering {
 		let highPrioOil = [], normalPrioOil = [];		
 		let seenDerricks = [];
 
+		const BUILT_DEFENCES = OBJ_FLAGS.DEFENSIVE_STRUCTURE | OBJ_FLAGS.IS_BUILT;
+
 		for (let i=0; i<derricks.length; i++) {
 			const d = derricks[i];
 
@@ -245,7 +247,7 @@ class armyEngineering {
 			// Intent: enumRange is used as this offers better granularity compared to directly accessing the grid
 			const nearby = state.grid.enumRangeLazy(d.x, d.y, PROXIMITY_RADIUS, true, true);
 			
-			let friendlyDefencesNearby = 0, friendlyBuildSitesNearby = 0, friendlyDerricksNearby = 0;
+			let friendlyDefencesNearby = 0, friendlyDerricksNearby = 0;
 			nearby['friendlyStructures'].forEach(obj => {	
 				const flags = obj.flags;
 
@@ -258,20 +260,14 @@ class armyEngineering {
 					}
 				}
 
-				if (flags & OBJ_FLAGS.DEFENSIVE_STRUCTURE && !(flags & OBJ_FLAGS.ADA)) {
-					if (flags && OBJ_FLAGS.IS_BUILT) {
-						friendlyDefencesNearby++;
-					} else {
-						friendlyBuildSitesNearby++;
-					}
+				if ((flags & BUILT_DEFENCES) === BUILT_DEFENCES && !(flags & OBJ_FLAGS.ADA)) {
+					friendlyDefencesNearby++;
 				}
 			});
 
 			if (previouslySeen)  {
 				continue;
 			}
-
-			const BUILT_DEFENCES = OBJ_FLAGS.DEFENSIVE_STRUCTURE | OBJ_FLAGS.IS_BUILT;
 
 			let enemyDefencesNearby = 0, enemyDerricksNearby = 0;
 			nearby['targetStructures'].forEach(obj => {	
