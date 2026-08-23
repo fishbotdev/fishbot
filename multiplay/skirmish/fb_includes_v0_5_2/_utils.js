@@ -536,12 +536,21 @@ class AStarMinHeap {
  */
 function findPathAstar(start, goal) {
 
-	const isWalkable = state.mapData.isWalkable;
+	const MAX_ITERS = 1000;
+
+	const isWalkable = state.mapData.isReachable;
 	const startX = start[0], startY = start[1];
 	const goalX = goal[0], goalY = goal[1];
 
-	if (!isWalkable[startX][startY] || !isWalkable[goalX][goalY]) {
-		warn(`Terminating pathfinding from "${start}" to "${goal}" - start or goal is an invalid position`);
+	if (!isWalkable[startX][startY]) {
+		warn(`Terminating pathfinding from "${start}" to "${goal}" - start is an invalid position`);
+		markTile(startX, startY);
+		return [];
+	}
+
+	if (!isWalkable[goalX][goalY]) {
+		markTile(goalX, goalY);
+		warn(`Terminating pathfinding from "${start}" to "${goal}" - goal is an invalid position`);
 		return [];
 	}
 
@@ -574,8 +583,7 @@ function findPathAstar(start, goal) {
     ]
 
     let iters = 0;
-    const max_iterations = 5000;      // to prevent the algorithm from running forever if I make a mistake
-    while (h.length() > 0 && iters < max_iterations) {
+    while (h.length() > 0 && iters < MAX_ITERS) {
 
         const node = h.pop();
         if (node.stale) {
@@ -673,7 +681,7 @@ function findPathAstar(start, goal) {
 	}
 
     iters = 0;
-    while (n.parentNode != null && iters < max_iterations) {
+    while (n.parentNode != null && iters < MAX_ITERS) {
         result.push(n.pos);
         n = n.parentNode;
         iters += 1;

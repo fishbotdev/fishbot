@@ -555,41 +555,6 @@ class CommandCenter {
 
 		// Direct Fire Targeting
 		// Intent: only attack what is readily attackable & in front of the brigade
-		const directFireHeuristic = (a,b) => {
-			const aDist = distSq(x, a.x, y, a.y);
-			const bDist = distSq(x, b.x, y, b.y);
-
-			const MIN_DIRECT_FIRE_RANGE_SQ = 16 ** 2;
-			if (aDist > MIN_DIRECT_FIRE_RANGE_SQ || bDist > MIN_DIRECT_FIRE_RANGE_SQ) {
-				return aDist - bDist;
-			}
-
-			const al = drawLine(x, y, a.x, a.y);
-			const bl = drawLine(x, y, b.x, b.y);
-
-			let aDetour = 1, bDetour = 1;
-
-			for (let i=0; i<al.length; i++) {
-				const point = al[i];
-				const terrainType = MapTiles[point[1]][point[0]].terrainType;
-				if (terrainType	=== TER_CLIFFFACE || terrainType === TER_WATER) {
-					aDetour++;
-					break;
-				}
-			};
-			
-			for (let i=0; i<bl.length; i++) {
-				const point = bl[i];
-				const terrainType = MapTiles[point[1]][point[0]].terrainType;
-				if (terrainType	=== TER_CLIFFFACE || terrainType === TER_WATER) {
-					bDetour++;
-					break;
-				}
-			};
-
-			return aDetour * aDist - bDetour * bDist;
-		}
-
 		const primaryDroidTargets = [...enemyArmor, ...enemyInfantry, ...enemyDefenses];
 		const secondaryDirectFireTargets = [...enemyIndirectFire, ...enemyADA, ...enemyIndustrial];
 		const tertiaryDirectFireTargets = [...enemyConstructor, ...enemyUtility];
@@ -611,7 +576,14 @@ class CommandCenter {
 		addDirectFireTargetByProximity(secondaryDirectFireTargets);
 		addDirectFireTargetByProximity(tertiaryDirectFireTargets);
 
-		directFireTargetsInRange.sort((a,b) => directFireHeuristic(a,b));		// Note: this ignores the primary/secondary/tertiary ordering above (temporary)
+		const directFireHeuristic = (a, b, x, y) => distSq(a.x, x, a.y, y) - distSq(b.x, x, b.y, y); 	// naive as-the-crow-flies
+		const directFireHeuristicTerrainAware = (a, b, x, y) => {
+			const p1 = findPathAstar([x, y], [a.x, a.y]);
+			const p2 = findPathAstar([x, y], [b.x, b.y]);
+			return p1.length - p2.length;
+		}
+
+		directFireTargetsInRange.sort((a,b) => directFireHeuristicTerrainAware(a, b, x, y));		
 
 		brigadeTargets['directFireTargets'].push(...directFireTargetsInRange);
 
@@ -898,10 +870,6 @@ class CommandCenter {
 			}
 			
 			moveBrigadeToAttack(state, brigadeID, groundTargets);	
-
-			const pathfind = () => findPathAstar([10, 15], [110, 20]);
-			const path = fprof(pathfind);
-			path.forEach(coord => hackMarkTiles(coord[0], coord[1]));
 		});
 
 		// Manage reserves: temporary: Move reserves to pre-emptively reinforce BCT0
