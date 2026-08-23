@@ -578,12 +578,16 @@ class CommandCenter {
 
 		const directFireHeuristic = (a, b, x, y) => distSq(a.x, x, a.y, y) - distSq(b.x, x, b.y, y); 	// naive as-the-crow-flies
 		const directFireHeuristicTerrainAware = (a, b, x, y) => {
-			const p1 = findPathAstar([x, y], [a.x, a.y]);
-			const p2 = findPathAstar([x, y], [b.x, b.y]);
-			return p1.length - p2.length;
-		}
+			const p1 = findPathAstarLength([x, y], [a.x, a.y]);
+			const p2 = findPathAstarLength([x, y], [b.x, b.y]);
+			return p1 - p2;
+		}		// recomputes for every pair -> very large cost as each astar is expensive
 
-		directFireTargetsInRange.sort((a,b) => directFireHeuristicTerrainAware(a, b, x, y));		
+		directFireTargetsInRange.forEach(target => {
+			target.pathLength = findPathAstarLength([x, y], [target.x, target.y]);		// bit hacky to add a parameter, but this only computes once per target coordinate
+		});
+
+		directFireTargetsInRange.sort((a,b) => a.pathLength - b.pathLength);		
 
 		brigadeTargets['directFireTargets'].push(...directFireTargetsInRange);
 

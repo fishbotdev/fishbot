@@ -514,26 +514,27 @@ class AStarMinHeap {
  * This function has been optimised for performance so many of the readable helpers in that function have been inlined.
  * @param {Coordinate} start 
  * @param {Coordinate} goal 
- * @returns {Coordinate[]} 
+ * @returns {number} 
  */
-function findPathAstar(start, goal) {
+function findPathAstarLength(start, goal) {
 
-	const MAX_ITERS = 1000;
+	const MAX_ITERS = 9;
+	const GOAL_WEIGHT = 1; // set this to 1 for standard A*
 
 	const isWalkable = state.mapData.isReachable;
 	const startX = start[0], startY = start[1];
 	const goalX = goal[0], goalY = goal[1];
 
 	if (!isWalkable[startX][startY]) {
-		warn(`Terminating pathfinding from "${start}" to "${goal}" - start is an invalid position`);
+		// warn(`Terminating pathfinding from "${start}" to "${goal}" - start is an invalid position`);
 		markTile(startX, startY);
-		return [];
+		return 8888;
 	}
 
 	if (!isWalkable[goalX][goalY]) {
 		markTile(goalX, goalY);
-		warn(`Terminating pathfinding from "${start}" to "${goal}" - goal is an invalid position`);
-		return [];
+		// warn(`Terminating pathfinding from "${start}" to "${goal}" - goal is an invalid position`);
+		return 8888;
 	}
 
 	const ymax = mapHeight;
@@ -549,7 +550,7 @@ function findPathAstar(start, goal) {
 		'x': startX, 
 		'y': startY,
 		'g': 0, 
-		'h': Math.abs(startX - goalX) + Math.abs(startY - goalY),		// Manhattan distance
+		'h': GOAL_WEIGHT * (Math.abs(startX - goalX) + Math.abs(startY - goalY)),		// Manhattan distance
 		'parentNode': null,
 		'stale': false
 	};
@@ -623,7 +624,7 @@ function findPathAstar(start, goal) {
 						'x': nnx, 
 						'y': nny,
 						'g': potential_new_g_cost, 
-						'h': Math.abs(nnx - goalX) + Math.abs(nny - goalY),		// Manhattan distance
+						'h': GOAL_WEIGHT * (Math.abs(nnx - goalX) + Math.abs(nny - goalY)),		// Manhattan distance
 						'parentNode': node,
 						'stale': false
 					};
@@ -639,7 +640,7 @@ function findPathAstar(start, goal) {
 				'x': nnx, 
 				'y': nny,
 				'g': node.g + gdelta, 
-				'h': Math.abs(nnx - goalX) + Math.abs(nny - goalY),		// Manhattan distance
+				'h': GOAL_WEIGHT * (Math.abs(nnx - goalX) + Math.abs(nny - goalY)),		// Manhattan distance
 				'parentNode': node,
 				'stale': false
 			};
@@ -648,6 +649,10 @@ function findPathAstar(start, goal) {
 		}
 
         iters += 1;
+	}
+	if (iters === MAX_ITERS) {
+		// warn(`ran out of time before finding goal node "${goal}" after pathfinding from "${start}"`);
+		return 8888;
 	}
 
     // deb(`A* completed in ${iters} iterations.`);
@@ -660,7 +665,7 @@ function findPathAstar(start, goal) {
 
     if (n == null) {
 		warn(`did not find goal node "${goal}" after pathfinding from "${start}"`);
-        return [];
+        return 8888;
 	}
 
     iters = 0;
@@ -671,5 +676,5 @@ function findPathAstar(start, goal) {
 	}
 	result.reverse();		// re-orients the goal to be at the end 
 
-    return result;
+    return result.length;
 }
