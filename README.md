@@ -105,16 +105,11 @@ The method is as follows:
     * 75%+ win rate in duels (against Cobra @ Medium difficulty) across all pairs of positions (i.e. 1v1 with all other player slots being empty).
 * For 5 player maps and higher, FishBot is able to win a FFA game in 3 tries or less, and does not run into a breaking issue.
 
-Some current FishBot limitations are:
-* FishBot's group-movement algorithm sometimes causes large groups of units to get stuck in a tight ball.
-* FishBot does not use hover units (yet) so it struggles with maps with a lot of water.
-* FishBot sometimes attempts to build forward-defences around derricks which are actually too dangerous to go and capture.
-
 ## Recent updates
-* **v0.5.2** - *released **23 Aug 2026***
-    * Fixed several sources of combat target oscillation (out-of-range targets being treated as in-range, and lack of elevation-awareness on ramps).
-    * Fixed brigades getting stuck reversing through narrow chokepoints while regrouping.
-    * Various bug fixes & performance improvements across targeting, construction, and production.
+* **v0.5.2** - *released **x Aug 2026***
+    * Improved group-movement handling of chokepoints, which increases the number of supported maps.
+    * Widespread performance improvements, resulting in a smoother player experience.
+    * Squashed some minor bugs related to targeting & combat.
 
 * **v0.5.1** - *released **04 Aug 2026***
     * Now supports custom structure limits in skirmish settings.
@@ -149,7 +144,7 @@ The current areas for improvement are:
 * Tactical-level targeting improvements (i.e. preventing target oscillation).
 * Support for T1 & T3.
 
-## Use of AI
+## Disclaimer: Use of AI
 Prior to **v0.5.2**, ChatGPT was used sparsely to implement some of the math functions, but the majority of the logic and architecture was human-written.
 
 From **v0.5.2**, Claude Code has been used to make active incremental improvements to the bot. These improvements are still human-reviewed though. 
