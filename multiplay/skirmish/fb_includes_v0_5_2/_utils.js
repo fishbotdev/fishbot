@@ -454,48 +454,29 @@ class AStarMinHeap {
             const child1_idx = 2 * curr_idx + 1
             const child2_idx = 2 * curr_idx + 2
 
-            let child1 = null;
-            let child2 = null;
+			let child_idx;
 
-			let child1Node = null; 
-			let child2Node = null;
+			if (child1_idx <= LAST_VALID_IDX) {
+				if (child2_idx <= LAST_VALID_IDX) {
+					const child1Node = this.heap[child1_idx];
+					const child2Node = this.heap[child2_idx];
 
-            if (child1_idx <= LAST_VALID_IDX) {
-                child1Node = this.heap[child1_idx];
-                child1 = [child1_idx, child1Node];
-			}
+					const child1_fcost = child1Node.g + child1Node.h;
+					const child2_fcost = child2Node.g + child2Node.h;
 
-            if (child2_idx <= LAST_VALID_IDX) {
-                child2Node = this.heap[child2_idx];
-                child2 = [child2_idx, child2Node];
-			}
-			
-			let child_idx, childNode;		// final value
-			if (child1 != null && child2 != null) {
-				const child1_fcost = child1Node.g + child1Node.h;
-				const child2_fcost = child2Node.g + child2Node.h;
-
-				// normal minheap invariant for f
-				if (child1_fcost < child2_fcost) {
-					child_idx = child1[0];
-					childNode = child1[1];
-				} else if (child1_fcost == child2_fcost && child1Node.h <= child2Node.h) {
-					// A-star prioritisation of nodes closer to the target
-					child_idx = child1[0];
-					childNode = child1[1];
+					if (child1_fcost < child2_fcost || (child1_fcost === child2_fcost && child1Node.h <= child2Node.h)) {
+						child_idx = child1_idx;
+					} else {
+						child_idx = child2_idx;
+					}
 				} else {
-					child_idx = child2[0];
-					childNode = child2[1];
+					child_idx = child1_idx;
 				}
-			} else if (child1 != null && child2 == null) {
-                child_idx = child1[0];
-				childNode = child1[1];
-			} else if (child1 == null && child2 != null){
-                child_idx = child2[0];
-				childNode = child2[1];
 			} else {
 				break;
 			}
+
+			const childNode = this.heap[child_idx];
 
 			const currNode_fcost = currNode.g + currNode.h;
 			const child_fcost = childNode.g + childNode.h;
