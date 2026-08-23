@@ -54,8 +54,8 @@ class CommandCenter {
 
 		/** @type {GroundForceParameters} */
 		this.GROUND_FORCE_PARAMETERS = {
-			IMMEDIATE_DIRECT_FIRE_RADIUS: 8,
-			EFFECTIVE_FIRE_SUPPORT_RADIUS: 9,		// todo: this should be adaptive - when the brigade has a sensor, this is better, without, it is restricted by sight range of the front units
+			IMMEDIATE_DIRECT_FIRE_RADIUS: 10,
+			EFFECTIVE_FIRE_SUPPORT_RADIUS: 10,		// todo: this should be adaptive - when the brigade has a sensor, this is better, without, it is restricted by sight range of the front units
 			EFFECTIVE_ADA_RADIUS: 12,
 		};
 
