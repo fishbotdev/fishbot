@@ -265,12 +265,10 @@ function moveBrigadeToAttack(state, brigadeID, groundTargets) {
 	const moveToClosestDroid = (droid) => orderDroidLoc(droid, DORDER_MOVE, closestDroidToTarget.x, closestDroidToTarget.y);
 	
 	const maintainPosition = (droid) => {
-		if (isTooFarFromBrigade(droid)) {
-			orderDroidLoc(droid, DORDER_MOVE, LOCATION_X, LOCATION_Y);
-		} else if (!isNearFrontLine(droid)) {
+		if (!isNearFrontLine(droid)) {
 			moveToClosestDroid(droid);
 		} else {
-			orderDroid(droid, DORDER_HOLD);
+			returnUnitToBase(droid);
 		}
 	};
 
