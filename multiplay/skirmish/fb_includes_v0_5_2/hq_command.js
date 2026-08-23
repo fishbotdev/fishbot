@@ -555,24 +555,19 @@ class CommandCenter {
 
 		// Direct Fire Targeting
 		// Intent: only attack what is readily attackable & in front of the brigade
-		const heightMap = state.mapData.heightMap;
-		const HEIGHT_WEIGHT = 0.15;
 		const directFireScore = (obj) => {
 			const dist = distSq(x, obj.x, y, obj.y);
-			const height = HEIGHT_WEIGHT * (heightMap[obj.x][obj.y] - POSITION.z) ** 2;
-
 			const line = drawLine(x, y, obj.x, obj.y);
-			let detour = 1;
+			let detourPenalty = 1;
 			for (let i=0; i<line.length; i++) {
 				const point = line[i];
 				const terrainType = MapTiles[point[1]][point[0]].terrainType;
 				if (terrainType === TER_CLIFFFACE || terrainType === TER_WATER) {
-					detour++;
+					detourPenalty++;
 					break;
 				}
 			}
-
-			return detour * dist + height;
+			return detourPenalty * dist;
 		}
 
 		const primaryDroidTargets = [...enemyArmor, ...enemyInfantry, ...enemyDefenses];
