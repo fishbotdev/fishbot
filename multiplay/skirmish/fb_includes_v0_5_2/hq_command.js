@@ -555,14 +555,14 @@ class CommandCenter {
 
 		// Direct Fire Targeting
 		// Intent: only attack what is readily attackable & in front of the brigade
+		const heightMap = state.mapData.heightMap;
+		const HEIGHT_WEIGHT = 0.05;
 		const directFireHeuristic = (a,b) => {
 			const aDist = distSq(x, a.x, y, a.y);
 			const bDist = distSq(x, b.x, y, b.y);
 
-			const MIN_DIRECT_FIRE_RANGE_SQ = 16 ** 2;
-			if (aDist > MIN_DIRECT_FIRE_RANGE_SQ || bDist > MIN_DIRECT_FIRE_RANGE_SQ) {
-				return aDist - bDist;
-			}
+			const aHeight = HEIGHT_WEIGHT * (heightMap[a.x][a.y] - POSITION.z) ** 2;
+			const bHeight = HEIGHT_WEIGHT * (heightMap[b.x][b.y] - POSITION.z) ** 2;
 
 			const al = drawLine(x, y, a.x, a.y);
 			const bl = drawLine(x, y, b.x, b.y);
@@ -587,7 +587,7 @@ class CommandCenter {
 				}
 			};
 
-			return aDetour * aDist - bDetour * bDist;
+			return (aDetour * aDist + aHeight) - (bDetour * bDist + bHeight);
 		}
 
 		const primaryDroidTargets = [...enemyArmor, ...enemyInfantry, ...enemyDefenses];
