@@ -555,39 +555,19 @@ class CommandCenter {
 
 		// Direct Fire Targeting
 		// Intent: only attack what is readily attackable & in front of the brigade
-		const heightMap = state.mapData.heightMap;
-		const HEIGHT_WEIGHT = 0.15;
-		const directFireHeuristic = (a,b) => {
-			const aDist = distSq(x, a.x, y, a.y);
-			const bDist = distSq(x, b.x, y, b.y);
-
-			const aHeight = HEIGHT_WEIGHT * (heightMap[a.x][a.y] - POSITION.z) ** 2;
-			const bHeight = HEIGHT_WEIGHT * (heightMap[b.x][b.y] - POSITION.z) ** 2;
-
-			const al = drawLine(x, y, a.x, a.y);
-			const bl = drawLine(x, y, b.x, b.y);
-
-			let aDetour = 1, bDetour = 1;
-
-			for (let i=0; i<al.length; i++) {
-				const point = al[i];
+		const directFireScore = (obj) => {
+			const dist = distSq(x, obj.x, y, obj.y);
+			const line = drawLine(x, y, obj.x, obj.y);
+			let detourPenalty = 1;
+			for (let i=0; i<line.length; i++) {
+				const point = line[i];
 				const terrainType = MapTiles[point[1]][point[0]].terrainType;
-				if (terrainType	=== TER_CLIFFFACE || terrainType === TER_WATER) {
-					aDetour++;
+				if (terrainType === TER_CLIFFFACE || terrainType === TER_WATER) {
+					detourPenalty++;
 					break;
 				}
-			};
-			
-			for (let i=0; i<bl.length; i++) {
-				const point = bl[i];
-				const terrainType = MapTiles[point[1]][point[0]].terrainType;
-				if (terrainType	=== TER_CLIFFFACE || terrainType === TER_WATER) {
-					bDetour++;
-					break;
-				}
-			};
-
-			return (aDetour * aDist + aHeight) - (bDetour * bDist + bHeight);
+			}
+			return detourPenalty * dist;
 		}
 
 		const primaryDroidTargets = [...enemyArmor, ...enemyInfantry, ...enemyDefenses];
@@ -612,7 +592,8 @@ class CommandCenter {
 		addDirectFireTargetByProximity(secondaryDirectFireTargets);
 		addDirectFireTargetByProximity(tertiaryDirectFireTargets);
 
-		directFireTargetsInRange.sort((a,b) => directFireHeuristic(a,b));		// Note: this ignores the primary/secondary/tertiary ordering above (temporary)
+		directFireTargetsInRange.forEach(t => {t.score = directFireScore(t);});
+		directFireTargetsInRange.sort((a,b) => a.score - b.score);		// Note: this ignores the primary/secondary/tertiary ordering above (temporary)
 
 		brigadeTargets['directFireTargets'].push(...directFireTargetsInRange);
 
@@ -874,13 +855,10 @@ class CommandCenter {
 			return;
 		}
 
-		const brigadeLocations = [];
-
-		// if (DEBUG_MODE_ON) hackMarkTiles();		
+		// if (DEBUG_MODE_ON) hackMarkTiles();
 		this.BRIGADE_DESIGNATIONS.forEach(brigadeID => {
 
 			const brigadeLocation = state.brigades[brigadeID]['location'];
-			brigadeLocations.push(brigadeLocation);
 
 			// const CLOSEST_ENEMY_BASE = intelligence.findClosestEnemyBase(state, brigadeLocation.x, brigadeLocation.y); 			
 
