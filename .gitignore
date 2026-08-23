@@ -22,3 +22,4 @@ tests/custom_test_map_packager/v4.7.0_base_maps_upto6p_long/
 *.pyc
 *.lprof
 *.exe
+.claude/
