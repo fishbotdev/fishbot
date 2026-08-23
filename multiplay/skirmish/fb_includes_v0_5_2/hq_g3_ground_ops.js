@@ -77,54 +77,46 @@ class armyGroundOperations {
 	}
 
 	/**
-	 * Approximates where the group currently is by averaging all direct-fire units' positions,
-	 * then returning the position of whichever real droid is closest to that average.
-	 * Snapping to an actual droid (rather than the synthetic average point) guarantees the result
-	 * is always on walkable ground, since every droid is necessarily standing somewhere walkable.
-	 *
-	 * Returns `baseLocation` if no units are found.
-	 * @param {number} brigadeID
-	 * @returns {PositionInfo} the closest droid's location (if units exist); else `baseLocation`.
+	 * Finds the 'median' droid's (x,y) coordinates
+	 * 1. Get x,y of all owned droids
+	 * 2. Iterate through (x,y) coordinate list, get the median, return as 'x' and 'y'. 
+	 * 
+	 * Returns 'baseLocation' if no units are found.
+	 * @param {number} brigadeID 
+	 * @returns {PositionInfo} `medianLocation` (if units exist); else `baseLocation`.
 	 */
-	getForceCenterLoc(brigadeID) {
+	getForceMedianLocation(brigadeID) {
 		const heightMap = state.mapData.heightMap;
 
-		const brigadeUnits = state.g.enumGroup(brigadeID);
+		const getUnitsIn = (brigadeID) => state.g.enumGroup(brigadeID);
+		
+		const brigadeUnits = getUnitsIn(brigadeID);
 
 		const baseX = baseLocation.x;
 		const baseY = baseLocation.y;
 		const baseZ = heightMap[baseX][baseY];
 		const basePosition = {'x': baseX, 'y': baseY, 'z': baseZ};
-
-		// Experimental: mortar units are excluded because their long attack range means they can sit
-		// far from the rest of the group, which would skew the estimate of where the group actually is.
-		const directFireUnits = brigadeUnits.filter((droid) => !droid.hasIndirect);
-		if (directFireUnits.length === 0) {
+		if (brigadeUnits.length === 0) {
 			return basePosition;
 		}
 
-		let sumX = 0;
-		let sumY = 0;
-		directFireUnits.forEach((droid) => {
-			sumX += droid.x;
-			sumY += droid.y;
-		});
-		const averageX = sumX / directFireUnits.length;
-		const averageY = sumY / directFireUnits.length;
-
-		// Find the real droid closest to the average position - this becomes the returned location.
-		let closestDroid = directFireUnits[0];
-		let closestDroidDistSq = distSq(closestDroid.x, averageX, closestDroid.y, averageY);
-		for (let i=1; i<directFireUnits.length; i++) {
-			const droid = directFireUnits[i];
-			const droidDistSq = distSq(droid.x, averageX, droid.y, averageY);
-			if (droidDistSq < closestDroidDistSq) {
-				closestDroid = droid;
-				closestDroidDistSq = droidDistSq;
-			}
+		const droidX = [], droidY = [];
+		brigadeUnits.forEach((droid) => {
+			if (droid.hasIndirect) return;	// Experimental: removing mortar units, does that make this estimate more accurate?
+			droidX.push(droid.x);
+			droidY.push(droid.y);
+		});	
+		if (droidX.length === 0 || droidY.length === 0) {
+			// This is required because the `droid.hasIndirect` filtering may mean that droidX/droidY may be empty, in which case `arrayMedian` is invalid		
+			return basePosition;
 		}
-
-		return {"x": closestDroid.x, "y": closestDroid.y, "z": heightMap[closestDroid.x][closestDroid.y]};
+		
+		// Find median
+		const medianX = Math.floor(arrayMedian(droidX));
+		const medianY = Math.floor(arrayMedian(droidY));
+		const medianZ = heightMap[medianX][medianY];
+		
+		return {"x": medianX, "y": medianY, "z": medianZ};
 	}
 
 }
