@@ -187,9 +187,7 @@ function moveBrigadeToLocation(state, brigadeID, targetX, targetY) {
 		const FAR_AWAY_FROM_CENTER = DISTSQ_TO_CENTER > 5 ** 2;
 		const AHEAD_OF_GROUP = DISTSQ_TO_TARGET < DISTSQ_CENTER_TO_TARGET;
 
-		if (AHEAD_OF_GROUP && (TOO_FAR_AWAY_FROM_CENTER || FAR_AWAY_FROM_CENTER) && pathCrossesChokepoint(state, droid, brigadeLocation.x, brigadeLocation.y)) {
-			orderDroidLoc(droid, DORDER_MOVE, targetX, targetY);
-		} else if (AHEAD_OF_GROUP && TOO_FAR_AWAY_FROM_CENTER) {
+		if (AHEAD_OF_GROUP && TOO_FAR_AWAY_FROM_CENTER) {
 			orderDroidLoc(droid, DORDER_MOVE, brigadeLocation.x, brigadeLocation.y);
 		} else if (AHEAD_OF_GROUP && FAR_AWAY_FROM_CENTER) {
 			orderDroid(droid, DORDER_HOLD);
@@ -318,7 +316,7 @@ function moveBrigadeToAttack(state, brigadeID, groundTargets) {
 
 	// MAIN ASSAULT UNITS
 	ARMOUR_UNITS.forEach(droid => {
-		if (isTooFarFromBrigade(droid) && !pathCrossesChokepoint(state, droid, LOCATION_X, LOCATION_Y)) {
+		if (isTooFarFromBrigade(droid)) {
 			orderDroidLoc(droid, DORDER_MOVE, LOCATION_X, LOCATION_Y);
 			return;
 		}
@@ -359,7 +357,7 @@ function moveBrigadeToAttack(state, brigadeID, groundTargets) {
 	}
 
 	SHORT_RANGE_FIRE_SUPPORT.forEach(droid => {
-		if (isTooFarFromBrigade(droid) && !pathCrossesChokepoint(state, droid, LOCATION_X, LOCATION_Y)) {
+		if (isTooFarFromBrigade(droid)) {
 			orderDroidLoc(droid, DORDER_MOVE, LOCATION_X, LOCATION_Y);
 			return;
 		}
