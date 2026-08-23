@@ -602,8 +602,9 @@ class CommandCenter {
 			targetList.forEach(obj => {
 				if (outsideOfRadius(obj, parameters.IMMEDIATE_DIRECT_FIRE_RADIUS)) {
 					targetsOutOfRange.push(obj);
+				} else {
+					directFireTargetsInRange.push(obj);
 				}
-				directFireTargetsInRange.push(obj);
 			});
 		};
 
