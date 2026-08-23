@@ -145,11 +145,32 @@ function moveReservesToShadow(reserveGroupIDs, x, y) {
 }
 
 /**
+ * Returns `true` if the straight-line path between `droid` and (`toX`, `toY`) crosses a chokepoint tile.
+ * @param {worldState} state
+ * @param {DroidObject} droid
+ * @param {number} toX
+ * @param {number} toY
+ * @returns {boolean}
+ */
+function pathCrossesChokepoint(state, droid, toX, toY) {
+	const isChokepoint = state.mapData.isChokepoint;
+
+	const points = drawLine(droid.x, droid.y, toX, toY);
+	for (let i=0; i<points.length; i++) {
+		const p = points[i];
+		if (isChokepoint[p[0]][p[1]]) {
+			return true;
+		}
+	}
+	return false;
+}
+
+/**
  * TAC SOP: MOVE A BRIGADE COMBAT TEAM (BCT) TO A LOCATION
- * @param {worldState} state 
- * @param {number} brigadeID 
- * @param {number} targetX 
- * @param {number} targetY 
+ * @param {worldState} state
+ * @param {number} brigadeID
+ * @param {number} targetX
+ * @param {number} targetY
  */
 function moveBrigadeToLocation(state, brigadeID, targetX, targetY) {
 
@@ -159,21 +180,23 @@ function moveBrigadeToLocation(state, brigadeID, targetX, targetY) {
 	const DISTSQ_CENTER_TO_TARGET = distSq(brigadeLocation.x, targetX, brigadeLocation.y, targetY);
 
 	brigadeUnits.forEach(droid => {
-		const DISTSQ_TO_CENTER = distSq(brigadeLocation.x, droid.x, brigadeLocation.y, droid.y); 
+		const DISTSQ_TO_CENTER = distSq(brigadeLocation.x, droid.x, brigadeLocation.y, droid.y);
 		const DISTSQ_TO_TARGET = distSq(targetX, droid.x, targetY, droid.y);
-		
+
 		const TOO_FAR_AWAY_FROM_CENTER = DISTSQ_TO_CENTER > 8 ** 2;
 		const FAR_AWAY_FROM_CENTER = DISTSQ_TO_CENTER > 5 ** 2;
 		const AHEAD_OF_GROUP = DISTSQ_TO_TARGET < DISTSQ_CENTER_TO_TARGET;
 
-		if (AHEAD_OF_GROUP && TOO_FAR_AWAY_FROM_CENTER) {
-			orderDroidLoc(droid, DORDER_MOVE, brigadeLocation.x, brigadeLocation.y);	
+		if (AHEAD_OF_GROUP && (TOO_FAR_AWAY_FROM_CENTER || FAR_AWAY_FROM_CENTER) && pathCrossesChokepoint(state, droid, brigadeLocation.x, brigadeLocation.y)) {
+			orderDroidLoc(droid, DORDER_MOVE, targetX, targetY);
+		} else if (AHEAD_OF_GROUP && TOO_FAR_AWAY_FROM_CENTER) {
+			orderDroidLoc(droid, DORDER_MOVE, brigadeLocation.x, brigadeLocation.y);
 		} else if (AHEAD_OF_GROUP && FAR_AWAY_FROM_CENTER) {
 			orderDroid(droid, DORDER_HOLD);
 		} else if (!FAR_AWAY_FROM_CENTER) {
-			orderDroidLoc(droid, DORDER_MOVE, targetX, targetY);			
+			orderDroidLoc(droid, DORDER_MOVE, targetX, targetY);
 		} else {
-			orderDroidLoc(droid, DORDER_MOVE, brigadeLocation.x, brigadeLocation.y);	
+			orderDroidLoc(droid, DORDER_MOVE, brigadeLocation.x, brigadeLocation.y);
 		}
 	});
 }
@@ -295,7 +318,7 @@ function moveBrigadeToAttack(state, brigadeID, groundTargets) {
 
 	// MAIN ASSAULT UNITS
 	ARMOUR_UNITS.forEach(droid => {
-		if (isTooFarFromBrigade(droid)) {
+		if (isTooFarFromBrigade(droid) && !pathCrossesChokepoint(state, droid, LOCATION_X, LOCATION_Y)) {
 			orderDroidLoc(droid, DORDER_MOVE, LOCATION_X, LOCATION_Y);
 			return;
 		}
@@ -336,7 +359,7 @@ function moveBrigadeToAttack(state, brigadeID, groundTargets) {
 	}
 
 	SHORT_RANGE_FIRE_SUPPORT.forEach(droid => {
-		if (isTooFarFromBrigade(droid)) {
+		if (isTooFarFromBrigade(droid) && !pathCrossesChokepoint(state, droid, LOCATION_X, LOCATION_Y)) {
 			orderDroidLoc(droid, DORDER_MOVE, LOCATION_X, LOCATION_Y);
 			return;
 		}

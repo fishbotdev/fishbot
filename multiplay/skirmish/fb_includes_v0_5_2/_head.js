@@ -87,6 +87,8 @@
  * @property {(boolean[])[]} isDerrickPosition Lookup table used for construction
  * @property {Coordinate[]} QUADRANT_SEARCH_PATTERN Lookup table used for construction
  * @property {(number[])[]} heightMap Height map keyed by (x, y). Usage example: `state.mapData.heightMap[x][y]`.
+ * @property {(number[])[]} chokepointWidth Corridor width in tiles at (x, y); 0 for non-walkable tiles.
+ * @property {(boolean[])[]} isChokepoint Lookup table; true if (x, y) is a narrow chokepoint.
  */
 
 /**
