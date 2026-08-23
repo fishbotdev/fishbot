@@ -267,6 +267,8 @@ class worldState {
         ////////////////////////// SPATIAL AWARENESS //////////////////////////
         /**
          * This stores all map-related data which is parsed once on game start.
+         * Convention: every grid in this codebase is [x][y]-indexed unless explicitly noted otherwise.
+         * The one exception is the engine's own `MapTiles`, which is [y][x].
          * @type {MapData}
          */
         this.mapData;
@@ -703,6 +705,88 @@ class worldStateBuilder {
             // hackMarkTiles(x, y);        // Uncomment this to see all the walkable tiles on the map that the algorithm found
         });
 
+        // Find chokepoint locations, assuming static terrain.
+
+        /**
+         * Computes, for each walkable tile, the number of consecutive walkable tiles counting
+         * backward from (x,y) along direction (dx,dy) (inclusive of (x,y) itself).
+         * @param {(boolean[])[]} isWalkable
+         * @param {number} dx one of -1, 0, 1
+         * @param {number} dy one of -1, 0, 1
+         * @returns {(number[])[]}
+         */
+        const computeDirectionalClearance = (isWalkable, dx, dy) => {
+            const clearance = create2DGrid(mapWidth, mapHeight, () => 0);
+
+            let xStart = 0;
+            let xStep = 1;
+            if (dx < 0) {
+                xStart = mapWidth - 1;
+                xStep = -1;
+            }
+
+            let yStart = 0;
+            let yStep = 1;
+            if (dy < 0) {
+                yStart = mapHeight - 1;
+                yStep = -1;
+            }
+
+            for (let i=0; i<mapWidth; i++) {
+                for (let j=0; j<mapHeight; j++) {
+                    const x = xStart + i * xStep;
+                    const y = yStart + j * yStep;
+
+                    if (!isWalkable[x][y]) {
+                        continue;   // clearance stays 0
+                    }
+
+                    const px = x - dx;
+                    const py = y - dy;
+
+                    if (px < 0 || px >= mapWidth || py < 0 || py >= mapHeight) {
+                        clearance[x][y] = 1;
+                        continue;
+                    }
+
+                    clearance[x][y] = clearance[px][py] + 1;
+                }
+            }
+
+            return clearance;
+        };
+
+        const clearanceNorth = computeDirectionalClearance(isWalkable, 0, 1);
+        const clearanceSouth = computeDirectionalClearance(isWalkable, 0, -1);
+        const clearanceEast = computeDirectionalClearance(isWalkable, 1, 0);
+        const clearanceWest = computeDirectionalClearance(isWalkable, -1, 0);
+
+        const CHOKEPOINT_WIDTH_THRESHOLD = 3;
+
+        /** @type {(number[])[]} */
+        const chokepointWidth = create2DGrid(mapWidth, mapHeight, () => 0);
+
+        /** @type {(boolean[])[]} */
+        const isChokepoint = create2DGrid(mapWidth, mapHeight, () => false);
+
+        for (let x=0; x<mapWidth; x++) {
+            for (let y=0; y<mapHeight; y++) {
+                if (!isWalkable[x][y]) {
+                    continue;
+                }
+
+                const widthNS = clearanceNorth[x][y] + clearanceSouth[x][y] - 1;
+                const widthEW = clearanceEast[x][y] + clearanceWest[x][y] - 1;
+                const width = Math.min(widthNS, widthEW);
+
+                chokepointWidth[x][y] = width;
+                isChokepoint[x][y] = width <= CHOKEPOINT_WIDTH_THRESHOLD;
+                if (DEBUG_MODE_ON && isChokepoint[x][y]) {
+                    hackMarkTiles(x, y);
+                }
+            }
+        }
+
         /** @type {(boolean[])[]} */
         const isDerrickPosition = create2DGrid(mapWidth, mapHeight, () => {return false;});
                 
@@ -754,6 +838,9 @@ class worldStateBuilder {
 
         mapData['QUADRANT_SEARCH_PATTERN'] = QUADRANT_SEARCH_PATTERN;
         mapData['heightMap'] = heightMap;
+
+        mapData['chokepointWidth'] = chokepointWidth;
+        mapData['isChokepoint'] = isChokepoint;
 
         return mapData;
 
