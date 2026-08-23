@@ -619,7 +619,7 @@ class CommandCenter {
 		const MAX_DIRECT_FIRE_TARGETS = 8;
 		const targetDeficit = MAX_DIRECT_FIRE_TARGETS - brigadeTargets['directFireTargets'].length;
 		if (targetDeficit > 0) {
-			brigadeTargets['directFireTargets'].push(...targetsOutOfRange.slice(targetDeficit));
+			brigadeTargets['directFireTargets'].push(...targetsOutOfRange.slice(0, targetDeficit));
 		}
 
 		if (false) {
