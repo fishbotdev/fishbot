@@ -104,7 +104,7 @@ function classifyGameObject(obj) {
             if (CANNON_WEAPONS.some(w => w.id === weapon.id)) {
                 flags |= OBJ_FLAGS.CANNON_WEAPON;
             } else if (AT_ROCKET_WEAPONS.some(w => w.id === weapon.id)) {
-                flags | OBJ_FLAGS.AT_ROCKET_WEAPON;
+                flags |= OBJ_FLAGS.AT_ROCKET_WEAPON;
             } else if (MACHINEGUN_WEAPONS.some(w => w.id === weapon.id)) {
                 flags |= OBJ_FLAGS.MACHINEGUN_WEAPON;
             } else if (SHORT_RANGE_ARTILLERY_WEAPONS.some(w => w.id === weapon.id)) {
