@@ -31,7 +31,7 @@ However, at the moment I feel like Cobra already fills the gap in the other tech
 In particular, I think Cobra performs excellently on T1 in Warzone 2100 v4.6.3+. 
 
 ## Supported maps (Warzone2100 4.7.0)
-As of **v0.5.1**, FishBot works on most "low-oil" maps shipped with the game. There might be a few lag issues with high-player count games; these are being actively worked on.
+As of **v0.5.2**, FishBot works on most "low-oil" maps shipped with the game. There might be a few lag issues with high-player count games; these are being actively worked on.
 
 FishBot is not compatible with scavengers; it currently ignores them.
 
@@ -111,6 +111,11 @@ Some current FishBot limitations are:
 * FishBot sometimes attempts to build forward-defences around derricks which are actually too dangerous to go and capture.
 
 ## Recent updates
+* **v0.5.2** - *released **23 Aug 2026***
+    * Fixed several sources of combat target oscillation (out-of-range targets being treated as in-range, and lack of elevation-awareness on ramps).
+    * Fixed brigades getting stuck reversing through narrow chokepoints while regrouping.
+    * Various bug fixes & performance improvements across targeting, construction, and production.
+
 * **v0.5.1** - *released **04 Aug 2026***
     * Now supports custom structure limits in skirmish settings.
     * Fixed other construction issues e.g. trying to build behind destroyable features, and trucks ignoring (some) dangerous situations.

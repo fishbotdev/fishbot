@@ -1,6 +1,27 @@
 # Changelog
 This file is used to record the changes to FishBot between each version.
 
+## Fishbot v0.5.2
+*Released **23 Aug 2026***
+### Changes in v0.5.2
+- Combat improvements:
+    - Fixed direct-fire targets sometimes being treated as "in range" when they weren't, which could cause brigades to oscillate between different targets instead of settling on the closest one.
+    - Direct-fire targeting is now elevation-aware, reducing target oscillation when a brigade is on a ramp or other uneven terrain.
+    - Fixed AT rocket-armed enemy units not being correctly classified as a threat (a bitwise logic bug meant these units were invisible to FishBot's classification system).
+    - Combat units no longer pause excessively during engagements.
+    - Improved intelligence & targeting performance.
+- Movement improvements:
+    - Fixed brigades reversing back through narrow chokepoints (between cliffs/water) while regrouping, instead of continuing to advance once through.
+    - Fixed the brigade's "center" reference position sometimes landing on a location no unit was actually near (and potentially unwalkable) - it is now always based on an actual unit's position.
+- Construction fixes:
+    - Fixed the initial truck's starting move sometimes blocking the first building placement.
+    - Fixed a bitwise logic bug in oil derrick defence planning.
+- Production improvements:
+    - Idle factories can now all be assigned production orders in the same tick, rather than only the first idle factory receiving one.
+- Technical changes:
+    - Reduced FbObject memory footprint and made aviation targeting lazier.
+    - Removed redundant per-tick recomputation in direct-fire targeting and strategic parameter updates.
+
 ## Fishbot v0.5.1
 *Released **04 Aug 2026***
 ### Changes in v0.5.1
