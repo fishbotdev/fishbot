@@ -431,7 +431,7 @@ class CommandCenter {
 			case 'intel_getNearbyGroundTargets':
 				// Update location(s) & target(s) of active combat force(s)
 				this.BRIGADE_DESIGNATIONS.forEach(brigadeID => {
-					const brigadeLocation = groundForces.getForceCenterLoc(brigadeID);
+					const brigadeLocation = groundForces.getForceMedianLocation(brigadeID);
 					this.toc.setBrigadeLocation(state, brigadeID, brigadeLocation);
 
 					const nearbyTargets = intelligence.getTargetClassesInRadius(state, brigadeLocation, this.TARGET_SEARCH_RADIUS);
