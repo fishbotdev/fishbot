@@ -379,18 +379,18 @@ function moveBrigadeToAttack(state, brigadeID, groundTargets) {
 		if (AHEAD_OF_GROUP || TOO_FAR_AWAY_FROM_CENTER) {
 			orderDroidLoc(droid, DORDER_MOVE, LOCATION_X, LOCATION_Y);
 		} else {
-			const DROID_RANGE = droid.range * WZ2100_TILERANGE_SCALING_FACTOR;
+			const DROID_RANGE_SQ = (droid.range * WZ2100_TILERANGE_SCALING_FACTOR) ** 2;
 
 			if (FIRE_SUPPORT_TARGET_AVAILABLE) {
 				for (let i=0; i<FIRE_SUPPORT_TARGETS_TO_SEARCH; i++) {
-					if (distSq(droid.x, fireSupportTargets[i].x, droid.y, fireSupportTargets[i].y) < DROID_RANGE) {
+					if (distSq(droid.x, fireSupportTargets[i].x, droid.y, fireSupportTargets[i].y) < DROID_RANGE_SQ) {
 						attackTarget(droid, fireSupportTargets[i]);
 						return;
 					}
 				}
 			}
 			for (let i=0; i<DIRECT_FIRE_TARGETS_TO_SEARCH; i++) {
-				if (distSq(droid.x, directFireTargets[i].x, droid.y, directFireTargets[i].y) < DROID_RANGE) {
+				if (distSq(droid.x, directFireTargets[i].x, droid.y, directFireTargets[i].y) < DROID_RANGE_SQ) {
 					attackTarget(droid, directFireTargets[i]);
 					return;
 				}
