@@ -77,46 +77,43 @@ class armyGroundOperations {
 	}
 
 	/**
-	 * Finds the 'median' droid's (x,y) coordinates
-	 * 1. Get x,y of all owned droids
-	 * 2. Iterate through (x,y) coordinate list, get the median, return as 'x' and 'y'. 
-	 * 
-	 * Returns 'baseLocation' if no units are found.
-	 * @param {number} brigadeID 
-	 * @returns {PositionInfo} `medianLocation` (if units exist); else `baseLocation`.
+	 * Approximates where the group currently is by averaging all direct-fire units' positions.
+	 * Mortar units are excluded because their long attack range means they can sit far from the
+	 * rest of the group, which would skew the estimate of where the group actually is.
+	 *
+	 * Unlike an average-then-snap-to-nearest-droid approach, this does not jump discontinuously
+	 * between two clusters of units split by an obstacle, which was found to cause the group to
+	 * oscillate back and forth as it repeatedly re-targeted the opposite cluster.
+	 *
+	 * Returns `baseLocation` if no units are found.
+	 * @param {number} brigadeID
+	 * @returns {PositionInfo} the group's average location (if units exist); else `baseLocation`.
 	 */
-	getForceMedianLocation(brigadeID) {
+	getForceCenterLoc(brigadeID) {
 		const heightMap = state.mapData.heightMap;
 
-		const getUnitsIn = (brigadeID) => state.g.enumGroup(brigadeID);
-		
-		const brigadeUnits = getUnitsIn(brigadeID);
+		const brigadeUnits = state.g.enumGroup(brigadeID);
 
 		const baseX = baseLocation.x;
 		const baseY = baseLocation.y;
 		const baseZ = heightMap[baseX][baseY];
 		const basePosition = {'x': baseX, 'y': baseY, 'z': baseZ};
-		if (brigadeUnits.length === 0) {
+
+		const directFireUnits = brigadeUnits.filter((droid) => !droid.hasIndirect);
+		if (directFireUnits.length === 0) {
 			return basePosition;
 		}
 
-		const droidX = [], droidY = [];
-		brigadeUnits.forEach((droid) => {
-			if (droid.hasIndirect) return;	// Experimental: removing mortar units, does that make this estimate more accurate?
-			droidX.push(droid.x);
-			droidY.push(droid.y);
-		});	
-		if (droidX.length === 0 || droidY.length === 0) {
-			// This is required because the `droid.hasIndirect` filtering may mean that droidX/droidY may be empty, in which case `arrayMedian` is invalid		
-			return basePosition;
-		}
-		
-		// Find median
-		const medianX = Math.floor(arrayMedian(droidX));
-		const medianY = Math.floor(arrayMedian(droidY));
-		const medianZ = heightMap[medianX][medianY];
-		
-		return {"x": medianX, "y": medianY, "z": medianZ};
+		let sumX = 0;
+		let sumY = 0;
+		directFireUnits.forEach((droid) => {
+			sumX += droid.x;
+			sumY += droid.y;
+		});
+		const averageX = Math.floor(sumX / directFireUnits.length);
+		const averageY = Math.floor(sumY / directFireUnits.length);
+
+		return {"x": averageX, "y": averageY, "z": heightMap[averageX][averageY]};
 	}
 
 }
