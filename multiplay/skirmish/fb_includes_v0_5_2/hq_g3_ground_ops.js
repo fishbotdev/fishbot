@@ -77,17 +77,15 @@ class armyGroundOperations {
 	}
 
 	/**
-	 * Approximates where the group currently is by averaging all direct-fire units' positions.
+	 * Approximates where the group currently is by averaging all direct-fire units' positions,
+	 * then snapping to the direct-fire unit closest to that average so the returned location is
+	 * always a tile a unit actually occupies (and therefore reachable).
 	 * Mortar units are excluded because their long attack range means they can sit far from the
 	 * rest of the group, which would skew the estimate of where the group actually is.
 	 *
-	 * Unlike an average-then-snap-to-nearest-droid approach, this does not jump discontinuously
-	 * between two clusters of units split by an obstacle, which was found to cause the group to
-	 * oscillate back and forth as it repeatedly re-targeted the opposite cluster.
-	 *
 	 * Returns `baseLocation` if no units are found.
 	 * @param {number} brigadeID
-	 * @returns {PositionInfo} the group's average location (if units exist); else `baseLocation`.
+	 * @returns {PositionInfo} the location of the unit nearest the group's average (if units exist); else `baseLocation`.
 	 */
 	getForceCenterLoc(brigadeID) {
 		const heightMap = state.mapData.heightMap;
@@ -113,7 +111,20 @@ class armyGroundOperations {
 		const averageX = Math.floor(sumX / directFireUnits.length);
 		const averageY = Math.floor(sumY / directFireUnits.length);
 
-		return {"x": averageX, "y": averageY, "z": heightMap[averageX][averageY]};
+		// Snap the average to the nearest direct-fire unit
+		let nearestUnit = directFireUnits[0];
+		let nearestDistSq = Infinity;
+		directFireUnits.forEach((droid) => {
+			const dx = droid.x - averageX;
+			const dy = droid.y - averageY;
+			const distSq = (dx * dx) + (dy * dy);
+			if (distSq < nearestDistSq) {
+				nearestDistSq = distSq;
+				nearestUnit = droid;
+			}
+		});
+
+		return {"x": nearestUnit.x, "y": nearestUnit.y, "z": heightMap[nearestUnit.x][nearestUnit.y]};
 	}
 
 }
