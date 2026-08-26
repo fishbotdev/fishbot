@@ -855,7 +855,7 @@ class CommandCenter {
 			return;
 		}
 
-		// if (DEBUG_MODE_ON) hackMarkTiles();
+		if (DEBUG_MODE_ON) hackMarkTiles();
 		this.BRIGADE_DESIGNATIONS.forEach(brigadeID => {
 
 			const brigadeLocation = state.brigades[brigadeID]['location'];
@@ -877,6 +877,7 @@ class CommandCenter {
 			}
 			
 			moveBrigadeToAttack(state, brigadeID, groundTargets);	
+			markTile(brigadeLocation.x, brigadeLocation.y);
 		});
 
 		// Manage reserves: temporary: Move reserves to pre-emptively reinforce BCT0
