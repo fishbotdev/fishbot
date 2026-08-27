@@ -225,13 +225,13 @@ def launch_workers(
         process.wait()
 
 
-def run_batch_test(commit_sha: str) -> Path:
+def run_batch_test(commit_sha: str, runs_per_test: int = 10, worker_count: int = 4) -> Path:
 
-    WORKER_COUNT = 4    # match to number of CPU cores
+    WORKER_COUNT = worker_count    # match to number of CPU cores
 
     COMMIT_SHA = commit_sha
     SHORT_SHA = COMMIT_SHA[:7]
-    RUNS_PER_TEST = 10
+    RUNS_PER_TEST = runs_per_test
 
     BASE_MANIFEST_PATH = Path.cwd() / "base_manifest.json"
     TEST_RESULTS_PATH = Path.cwd() / "results" / SHORT_SHA

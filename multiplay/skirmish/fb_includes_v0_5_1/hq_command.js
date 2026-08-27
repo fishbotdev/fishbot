@@ -38,6 +38,9 @@ class CommandCenter {
 
 		this.toc = new TacticalOperationsCenter();
 
+		// Reports how well FishBot is playing. Emits nothing unless `TELEMETRY_ON`. See `hq_telemetry.js`.
+		this.tel = new Telemetry();
+
 		/*
 			This constructor is intended to contain *all* FishBot parameters which change how it behaves.
 		*/
@@ -239,6 +242,16 @@ class CommandCenter {
 			deb(`oil dominance changed to: ${oilDominance} (${derrickCount})`);
 			this.isOilDominant = oilDominance;
 		}
+
+		// Report the oil position which the decisions above were made against.
+		// This function runs at `TASK_SCHEDULE['runStrategy']` per minute, which sets the telemetry sample rate.
+		this.tel.oilSample({
+			totalDerricks: TOTAL_DERRICKS,
+			derricksPerPlayer: DERRICKS_PER_PLAYER,
+			livingPlayers: livingPlayers,
+			derricksByLivingPlayer: livingPlayers.map(playerID => playerInfo[playerID].numDerricks),
+			oilDominance: oilDominance,
+		});
 
 		/*
 			CONSTRUCTION PARAMETERS
@@ -1405,5 +1418,15 @@ class CommandCenter {
 	 */
 	runMissionManager(state) {
 		this.toc.manageMissions(state);
+	}
+
+	/**
+	 * Reports that the game has finished, so telemetry consumers know when the last sample stopped
+	 * being valid. Called once, on the game-ended edge detected in `_run.js`.
+	 * @param {worldState} state
+	 * @returns {void}
+	 */
+	runEndOfGameTelemetry(state) {
+		this.tel.endOfGame();
 	}
 }

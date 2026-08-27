@@ -264,15 +264,24 @@ def print_map_summary(grouped_results: dict[str, dict]) -> None:
         print()
 
 
-if __name__ == "__main__":
+def main(
+    commit_sha: str,
+    base_manifest_path: Path = None,
+    test_results_path: Path = None,
+) -> None:
+    """
+    Prints the win/loss report for a completed batch test.
 
-    BASE_MANIFEST_PATH = Path.cwd() / "base_manifest.json"
+    Exposed as a function (rather than living in `__main__`) so that `run_pipeline.py` can run the
+    whole generate -> run -> parse sequence without the commit SHA having to be edited in two files.
+    """
+
+    BASE_MANIFEST_PATH = base_manifest_path or (Path.cwd() / "base_manifest.json")
     base_manifest = read_json(BASE_MANIFEST_PATH)
 
-    COMMIT_SHA = "b155be21ee55cffe7240ab54bd39e5a2ced12ab2"
-    SHORT_SHA = COMMIT_SHA[:7]
+    SHORT_SHA = commit_sha[:7]
 
-    TEST_RESULTS_PATH = Path.cwd() / "results" / SHORT_SHA
+    TEST_RESULTS_PATH = test_results_path or (Path.cwd() / "results" / SHORT_SHA)
 
     parsed_tests = parse_all_results(
         base_manifest=base_manifest,
@@ -282,3 +291,10 @@ if __name__ == "__main__":
     grouped_results = group_tests_by_map(parsed_tests)
 
     print_map_summary(grouped_results)
+
+
+if __name__ == "__main__":
+
+    COMMIT_SHA = "b155be21ee55cffe7240ab54bd39e5a2ced12ab2"
+
+    main(commit_sha=COMMIT_SHA)

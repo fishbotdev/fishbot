@@ -63,17 +63,40 @@
 ## Running Automated Tests
 1. Pull the latest commits for FishBot into both the development (for the test runner) and production folders (for the source code under test).
 2. Open up `fishbot/tests` in your Python IDE.
-3. Run these Python scripts in this order:
-   1. [*Optional*] `run_test_generator.py` (~5 seconds)
-      * Please double check the output folder path before running the script.
-      * Re-run this script if the map or test information has changed (e.g. a new set of maps, or modified skirmish settings). Also re-run the script if the output folder location has changed.
-   2. `run_tests.py` (may take up to ~1 day to complete, depending on the number of tests requested).
-      * Don't forget to change `COMMIT_SHA` for a new test.
-      * Note: The implementation of the game-summary-table parser is platform-dependent (works on Windows only). Please implement your own terminal-scraper function for Linux / Mac.
-   3. `run_result_parser.py` (~5 seconds)
-      * Don't forget to change `COMMIT_SHA` for a new test.
+3. [*Optional*] To also measure **how well** FishBot played (not just whether it won), set `TELEMETRY_ON = true` in the **production** copy of `FishBot_vX_Y_Z.js`. See *Oil-capture telemetry* below.
+4. Run `run_pipeline.py`. This runs the whole pipeline in sequence (may take up to ~1 day to complete, depending on the number of tests requested):
+   1. `run_test_generator.py` (~5 seconds) — only when `REGENERATE_TESTS` is set. Re-run this if the map or test information has changed (e.g. a new set of maps, or modified skirmish settings), or if the output folder location has changed. Please double check the output folder path before enabling it.
+   2. `run_tests.py` — runs the autogames.
+   3. `run_result_parser.py` (~5 seconds) — reports win / loss.
+   4. `run_telemetry_parser.py` (~5 seconds) — reports oil capture.
+
+   All the settings which used to be edited across those scripts (commit SHA, games per test, worker count, whether to regenerate the tests, and the map paths) are gathered into the single `USER CONFIG` block at the bottom of `run_pipeline.py`. The commit SHA now defaults to `git rev-parse HEAD`, so it no longer has to be pasted in by hand.
+
+   The individual scripts still work standalone if you would rather run one stage at a time — in that case remember to set `COMMIT_SHA` in both `run_tests.py` and `run_result_parser.py`.
+
+   Note: The implementation of the game-summary-table parser is platform-dependent (works on Windows only). Please implement your own terminal-scraper function for Linux / Mac.
 
 For any test that warrants further investigation, you can use `spectate_map.exe` to select and run the test in spectator mode.
+
+### Oil-capture telemetry
+FishBot can emit machine-readable `TEL|...` lines describing how well it is playing. These are picked up by the same console scrape which already recovers the Game State summary table, and are reported by `run_telemetry_parser.py` as part of the pipeline above.
+
+To use it:
+1. Set `TELEMETRY_ON = true` in the **production** copy of `FishBot_vX_Y_Z.js` (i.e. the copy under test — the same copy whose behaviour the results describe). It is `false` by default, and the release checklist requires it to be set back to `false` before a release.
+2. Make sure the console is **wide enough that lines do not wrap**. This already matters for the Game State summary table; telemetry lines have the same requirement.
+3. Run `run_pipeline.py` as above.
+
+The report gives, per map and per test type:
+* **fair share** — FishBot's derricks divided by an even split between the living players. `1.00` means it held exactly its fair share; above `1.00` means it out-captured its opponents. This is measured over the *contested* part of the game only (i.e. while more than one player was alive), because once the opponent is knocked out the even-split denominator collapses to the whole map.
+* **oil share** — FishBot's derricks divided by all derricks on the map, as a plain `0.00`–`1.00` fraction.
+* **free oil** — the fraction of derricks nobody had claimed. A high value means there was oil available which FishBot did not go and take.
+* **peak**, **@5min** and **@10min** oil share, which show how quickly it expanded.
+
+All of these are time-weighted, so an uneven sampling cadence does not bias them.
+
+Raw telemetry is stored next to the results, as `results/<short sha>/<test_id>.tel.jsonl`. If the report says no telemetry was captured, `TELEMETRY_ON` was most likely left `false` in the production copy.
+
+Telemetry events are emitted from FishBot's decision sites, so they record what the bot actually believed and decided. To add a new event (e.g. map control, or unit group locations), add a method to `multiplay/skirmish/fb_includes_v0_5_1/hq_telemetry.js`, call it from the point in `hq_command.js` where the relevant values exist, then add a matching entry to `EVENT_EXTRACTORS` in `tests/run_telemetry_parser.py`. The wire format, the harvesting step and the storage format do not need to change.
 
 ### Build the Map-Selector GUI to observe FishBot in Spectator Mode
 To spectate FishBot in real time, there is a handy map-selector GUI `spectate_map.exe` to configure a game in single-player spectator mode. This allows you to:

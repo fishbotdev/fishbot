@@ -1,0 +1,491 @@
+"""
+	This file is part of FishBot, a Warzone 2100 AI.
+
+	FishBot is free software; you can redistribute it and/or modify
+	it under the terms of the GNU General Public License as published by
+	the Free Software Foundation; either version 2 of the License, or
+	(at your option) any later version.
+
+	FishBot is distributed in the hope that it will be useful,
+	but WITHOUT ANY WARRANTY; without even the implied warranty of
+	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+	GNU General Public License for more details.
+
+	You should have received a copy of the GNU General Public License along with this program.
+	If not, see <https://www.gnu.org/licenses/>.
+"""
+
+r"""
+The purpose of this file is to turn FishBot's telemetry into a score for *how well it played*, as
+opposed to `run_result_parser.py` which only reports whether it survived.
+
+This file deliberately mirrors the structure of `run_result_parser.py` (parse one test -> parse all
+tests -> group by map -> print), and reuses its bar-chart helper, so that the two reports read the
+same way.
+
+--- ADDING NEW TELEMETRY ---
+
+Metrics are computed from the event stream, dispatched on the event name via `EVENT_EXTRACTORS`.
+Adding e.g. map-control telemetry means:
+    1. adding an emit method in `hq_telemetry.js` and a call site in `hq_command.js`, then
+    2. adding one entry to `EVENT_EXTRACTORS` here.
+Nothing in the wire format, the harvesting step, or the storage format has to change.
+
+--- THE OIL METRICS ---
+
+FishBot's economy is derrick-count share (see `hq_command.js`, "Oil parameters"), so oil capture is
+measured directly from the derrick counts which the strategic layer used.
+
+Two headline numbers:
+
+  `mean_fair_share`
+        Time-weighted mean of (my derricks / derricks-per-player-at-an-even-split). This is
+        FishBot's own notion of oil share - 1.0 means it holds exactly its fair share, above 1.0
+        means it is out-capturing its opponents.
+
+  `mean_oil_share`
+        Time-weighted mean of (my derricks / total derricks on the map). A plain [0, 1] fraction,
+        independent of how many players are alive.
+
+Both are *time-weighted*: each sample counts for the time until the next sample, so an uneven
+sampling cadence (FishBot's scheduler picks time slots by hash, so samples are only statistically
+evenly spaced) does not bias the result.
+
+Note on `mean_fair_share` in duels: once the opponent is knocked out, the even-split denominator
+collapses to the whole map, so the ratio *drops* at the moment FishBot wins. `mean_fair_share_contested`
+is the same average restricted to the period where more than one player was alive, and is therefore
+the better measure of capture skill in a duel.
+"""
+
+import _telemetry
+from run_result_parser import make_bar, read_json
+
+import pandas as pd
+from pathlib import Path
+from collections import defaultdict
+
+
+# A sample is treated as "late" (i.e. earlier telemetry was lost) if the first one arrives well after
+# the game began. FishBot samples roughly every 10 s, so this is a generous multiple of that.
+EXPECTED_FIRST_SAMPLE_MS = 60_000
+
+MS_PER_SECOND = 1000
+
+# Fixed game-time checkpoints reported alongside the time-weighted means, to show capture *speed*.
+CHECKPOINTS_MS = [5 * 60_000, 10 * 60_000]
+
+
+def _sample_durations(sample_times_ms: list[int], end_time_ms: int) -> list[int]:
+    """
+    How long each sample stood for: the gap to the next sample, or to the end of the game for the last.
+
+    Durations are derived from the *full* sample timeline, so that a metric computed over a subset of
+    samples (e.g. only the contested part of a duel) still weights each of its samples by the time it
+    actually stood, rather than stretching its final sample to the end of the game.
+    """
+
+    durations = []
+
+    for index, time_ms in enumerate(sample_times_ms):
+        next_time_ms = sample_times_ms[index + 1] if (index + 1) < len(sample_times_ms) else end_time_ms
+        durations.append(max(next_time_ms - time_ms, 0))
+
+    return durations
+
+
+def _time_weighted_mean(samples: list[tuple[int, float]]) -> float:
+    """Averages a (duration_ms, value) series, weighting each value by how long it stood."""
+
+    if not samples:
+        return 0.0
+
+    total_weight = sum(duration for duration, _ in samples)
+
+    if total_weight == 0:
+        # Degenerate case: a single sample, or every sample at the same instant. Fall back to a plain mean.
+        return sum(value for _, value in samples) / len(samples)
+
+    return sum(value * duration for duration, value in samples) / total_weight
+
+
+def _value_at(samples: list[tuple[int, float]], time_ms: int, end_time_ms: int) -> float | None:
+    """
+    Value in effect at `time_ms`, or None if the game never reached that point.
+
+    Returning None (rather than the last known value) matters: a game which ended after 40 s has no
+    "share at 5 minutes", and reporting its final share there would overstate early capture speed.
+    """
+
+    if time_ms > end_time_ms:
+        return None
+
+    value_at_time = None
+
+    for sample_time_ms, value in samples:
+        if sample_time_ms > time_ms:
+            break
+        value_at_time = value
+
+    return value_at_time
+
+
+def extract_oil_metrics(events: list[dict]) -> dict | None:
+    """
+    Computes the oil-capture metrics for a single match from its `OIL` events.
+
+    Each `OIL` event carries the derrick counts which FishBot's strategic layer used:
+        t     game time (ms)
+        p     FishBot's player ID
+        tot   total derrick positions on the map
+        dpp   derricks per player at an even split between living players
+        alive living player IDs
+        der   derricks held, aligned to `alive`
+    """
+
+    oil_events = [e for e in events if e.get("event") == "OIL"]
+
+    if not oil_events:
+        return None
+
+    oil_events.sort(key=lambda e: e["t"])
+
+    # The game end time, so the last sample can be weighted. Falls back to the last sample itself if
+    # the END event is missing (e.g. the game was cut short).
+    end_events = [e for e in events if e.get("event") == "END"]
+    end_time_ms = max(e["t"] for e in end_events) if end_events else oil_events[-1]["t"]
+    end_time_ms = max(end_time_ms, oil_events[-1]["t"])
+
+    # How long each sample stood for. Derived once from the full timeline so that every metric below
+    # weights its samples by real elapsed time, even when it only uses some of them.
+    durations = _sample_durations([e["t"] for e in oil_events], end_time_ms)
+
+    fair_share_samples = []
+    contested_fair_share_samples = []
+    oil_share_samples = []
+    unclaimed_share_samples = []
+
+    # Kept as (game_time, value) for the fixed checkpoints, which need the time rather than a duration.
+    oil_share_series = []
+
+    for index, event in enumerate(oil_events):
+
+        duration = durations[index]
+        total_derricks = event["tot"]
+        derricks_per_player = event["dpp"]
+        living_players = event["alive"]
+        derricks = event["der"]
+        me = event["p"]
+
+        if total_derricks <= 0 or me not in living_players:
+            # FishBot is dead (or the map reports no oil); it holds no oil from here on.
+            my_derricks = 0
+        else:
+            my_derricks = derricks[living_players.index(me)]
+
+        time_ms = event["t"]
+
+        if derricks_per_player > 0:
+            fair_share = my_derricks / derricks_per_player
+            fair_share_samples.append((duration, fair_share))
+
+            # Once only one player is left the even-split denominator collapses to the whole map, so
+            # the ratio drops at the moment FishBot wins. Track the contested period separately.
+            if len(living_players) > 1:
+                contested_fair_share_samples.append((duration, fair_share))
+
+        if total_derricks > 0:
+            oil_share = my_derricks / total_derricks
+            oil_share_samples.append((duration, oil_share))
+            oil_share_series.append((time_ms, oil_share))
+            unclaimed_share_samples.append(
+                (duration, max(total_derricks - sum(derricks), 0) / total_derricks)
+            )
+
+    oil_share_values = [value for _, value in oil_share_samples]
+
+    metrics = {
+        "mean_fair_share": _time_weighted_mean(fair_share_samples),
+        "mean_fair_share_contested": _time_weighted_mean(contested_fair_share_samples),
+        "mean_oil_share": _time_weighted_mean(oil_share_samples),
+        "mean_unclaimed_share": _time_weighted_mean(unclaimed_share_samples),
+        "peak_oil_share": max(oil_share_values) if oil_share_values else 0.0,
+        "final_oil_share": oil_share_values[-1] if oil_share_values else 0.0,
+        "game_length_s": end_time_ms / MS_PER_SECOND,
+
+        # Set if the earliest sample arrived late, which means telemetry was lost (most likely the
+        # console scrollback overflowed). Reported rather than silently averaged over.
+        # Cast to a plain bool: pandas hands back numpy scalars, which are not `bool` instances.
+        "truncated": bool(oil_events[0]["t"] > EXPECTED_FIRST_SAMPLE_MS),
+    }
+
+    for checkpoint_ms in CHECKPOINTS_MS:
+        key = f"share@{checkpoint_ms // 60_000}min"
+        metrics[key] = _value_at(oil_share_series, checkpoint_ms, end_time_ms)
+
+    return metrics
+
+
+# Dispatch table: event name -> function computing that event's metrics for one match.
+# Add an entry here when a new telemetry event type is introduced (see the header).
+EVENT_EXTRACTORS = {
+    "OIL": extract_oil_metrics,
+}
+
+
+def parse_test_telemetry(telemetry_file_path: Path) -> dict | None:
+    """
+    Parses a single test's telemetry (.tel.jsonl), averaging the metrics across its matches.
+
+    Returns None if the file holds no usable telemetry.
+    """
+
+    df = pd.read_json(telemetry_file_path, lines=True)
+
+    if df.empty or "match_id" not in df.columns:
+        return None
+
+    per_match_metrics = []
+
+    for _, match_df in df.groupby("match_id"):
+
+        events = match_df.to_dict(orient="records")
+
+        match_metrics = {}
+
+        for extractor in EVENT_EXTRACTORS.values():
+            extracted = extractor(events)
+            if extracted:
+                match_metrics.update(extracted)
+
+        if match_metrics:
+            per_match_metrics.append(match_metrics)
+
+    if not per_match_metrics:
+        return None
+
+    return _average_metrics(per_match_metrics)
+
+
+def _average_metrics(per_match_metrics: list[dict]) -> dict:
+    """Averages each metric across matches. Booleans become "did this happen in any match?"."""
+
+    averaged = {"matches": len(per_match_metrics)}
+
+    for key in per_match_metrics[0].keys():
+
+        values = [m[key] for m in per_match_metrics if m.get(key) is not None]
+
+        if not values:
+            averaged[key] = None
+        elif isinstance(values[0], bool):
+            averaged[key] = any(values)
+        else:
+            averaged[key] = sum(values) / len(values)
+
+    return averaged
+
+
+def parse_all_telemetry(
+    *,
+    base_manifest: dict,
+    test_results_folder: Path,
+) -> list[dict]:
+    """
+    Parses telemetry for every test which produced any.
+
+    Mirrors `run_result_parser.parse_all_results`, but reads the `.tel.jsonl` sidecar files.
+    """
+
+    parsed_tests = []
+
+    for test_id, metadata in base_manifest["tests"].items():
+
+        telemetry_file = test_results_folder / f"{test_id}.tel.jsonl"
+
+        if not telemetry_file.exists() or telemetry_file.stat().st_size == 0:
+            continue
+
+        metrics = parse_test_telemetry(telemetry_file)
+
+        if metrics is None:
+            continue
+
+        parsed_tests.append({
+            "test_id": test_id,
+            **metadata,
+            **metrics,
+        })
+
+    return parsed_tests
+
+
+def group_tests_by_map(parsed_tests: list[dict]) -> dict:
+    """Groups parsed telemetry by map and test type."""
+
+    grouped = defaultdict(
+        lambda: {
+            "duel": [],
+            "ffa": [],
+        }
+    )
+
+    for test in parsed_tests:
+        grouped[test["map_name"]][test["test_type"]].append(test)
+
+    for map_results in grouped.values():
+
+        map_results["ffa"].sort(key=lambda t: t["fishbot_position"])
+
+        map_results["duel"].sort(
+            key=lambda t: (
+                t["fishbot_position"],
+                t["opponent_position"],
+            )
+        )
+
+    return dict(grouped)
+
+
+def _mean(tests: list[dict], key: str) -> float:
+    values = [t[key] for t in tests if t.get(key) is not None]
+    return sum(values) / len(values) if values else 0.0
+
+
+def print_mode_summary(mode_name: str, tests: list[dict]) -> None:
+
+    if not tests:
+        return
+
+    matches = sum(test["matches"] for test in tests)
+
+    fair_share = _mean(tests, "mean_fair_share_contested")
+    oil_share = _mean(tests, "mean_oil_share")
+    unclaimed = _mean(tests, "mean_unclaimed_share")
+
+    # `mean_fair_share_contested` is a ratio around 1.0, so the bar is scaled to a 0-2 range.
+    print(
+        f"{mode_name:<5}"
+        f"{matches:>4} games  "
+        f"fair share {fair_share:>4.2f}  "
+        f"[{make_bar(min(fair_share / 2.0, 1.0))}]"
+    )
+
+    print(
+        f"     "
+        f"           "
+        f"oil share  {oil_share:>4.2f}  "
+        f"[{make_bar(oil_share)}]"
+    )
+
+    print(
+        f"     "
+        f"           "
+        f"free oil   {unclaimed:>4.2f}   "
+        f"peak {_mean(tests, 'peak_oil_share'):.2f}"
+        f"   @5min {_mean(tests, 'share@5min'):.2f}"
+        f"   @10min {_mean(tests, 'share@10min'):.2f}"
+    )
+
+    worst = min(tests, key=lambda t: t["mean_fair_share_contested"] or 0.0)
+    worst_fair_share = worst["mean_fair_share_contested"] or 0.0
+
+    print(
+        f"  Worst "
+        f"fair share {worst_fair_share:>4.2f}  "
+        f"{worst['config_file']}"
+    )
+
+    if any(test.get("truncated") for test in tests):
+        print(f"  WARNING: telemetry was truncated in at least one game (console scrollback overflow?)")
+
+
+def print_map_summary(grouped_results: dict[str, dict]) -> None:
+
+    #
+    # Sort maps by their weakest individual test, so the worst oil capture is reported first.
+    #
+    ranked_maps = []
+
+    for map_name, modes in grouped_results.items():
+
+        all_tests = modes["duel"] + modes["ffa"]
+
+        if not all_tests:
+            continue
+
+        ranked_maps.append((
+            min((test["mean_fair_share_contested"] or 0.0) for test in all_tests),
+            map_name,
+        ))
+
+    ranked_maps.sort()
+
+    #
+    # Print report.
+    #
+    for _, map_name in ranked_maps:
+
+        duel_tests = grouped_results[map_name]["duel"]
+        ffa_tests = grouped_results[map_name]["ffa"]
+
+        print("-" * 78)
+        print(map_name)
+        print()
+
+        print_mode_summary("Duel", duel_tests)
+
+        if duel_tests and ffa_tests:
+            print()
+
+        print_mode_summary("FFA", ffa_tests)
+
+        print()
+
+
+def main(
+    commit_sha: str,
+    base_manifest_path: Path = None,
+    test_results_path: Path = None,
+) -> None:
+    """Prints the oil-capture report for a completed batch test."""
+
+    BASE_MANIFEST_PATH = base_manifest_path or (Path.cwd() / "base_manifest.json")
+    base_manifest = read_json(BASE_MANIFEST_PATH)
+
+    SHORT_SHA = commit_sha[:7]
+
+    TEST_RESULTS_PATH = test_results_path or (Path.cwd() / "results" / SHORT_SHA)
+
+    parsed_tests = parse_all_telemetry(
+        base_manifest=base_manifest,
+        test_results_folder=TEST_RESULTS_PATH,
+    )
+
+    print()
+    print("=" * 78)
+    print(f"OIL CAPTURE TELEMETRY  ({SHORT_SHA})")
+    print("=" * 78)
+    print()
+
+    if not parsed_tests:
+        print("No telemetry was captured.")
+        print(f"Is `TELEMETRY_ON` set to `true` in the FishBot copy under test?")
+        print(f"(Expected `<test_id>.tel.jsonl` files in: {TEST_RESULTS_PATH})")
+        print()
+        return
+
+    print("fair share: my derricks / even split between living players (1.00 = fair share)")
+    print("oil share:  my derricks / all derricks on the map")
+    print("free oil:   derricks nobody has claimed")
+    print()
+
+    grouped_results = group_tests_by_map(parsed_tests)
+
+    print_map_summary(grouped_results)
+
+
+if __name__ == "__main__":
+
+    COMMIT_SHA = "b155be21ee55cffe7240ab54bd39e5a2ced12ab2"
+
+    main(commit_sha=COMMIT_SHA)

@@ -58,6 +58,11 @@ const FB_INCLUDES = FISHBOT_PATH + "fb_includes_v0_5_1/";
 //	 - Transform Player 0 (forced human player slot) to spectator mode (used for automated bot testing)
 const DEBUG_MODE_ON = false;
 
+// Enable TELEMETRY_ON (global) to:
+//	 - Emit machine-readable `TEL|...` lines to the console, describing how well FishBot is playing
+//	   (used by the automated telemetry pipeline `tests/run_pipeline.py`; see `hq_telemetry.js`)
+const TELEMETRY_ON = false;
+
 
 /*
 -- RELEASE CHECKLIST --
@@ -65,7 +70,7 @@ const DEBUG_MODE_ON = false;
 2. Disable all beacons / hackMarkTiles() used for debugging.
 3. Run automated tests using `tests/run_tests.py`. Update `README.md` with the test results. Pass if no regression.
 4. Extract logs from autogames (`\logs` folder) & display using `python_helper_scripts/process_performance_data.py`. Pass if no regression.
-5. Set `DEBUG_MODE_ON` = `false`.
+5. Set `DEBUG_MODE_ON` = `false` and `TELEMETRY_ON` = `false`.
 6. Test all manually tested maps in `README.md` once, against Cobra @ Medium. Pass if it can win a single game in 3 tries or less.
 7. Update LOC above with `fishbot\python_helper_scripts\run_cloc.bat`. Ideally, without a major change in function, the LOC should remain roughly the same. Otherwise, it's just a fun metric.
 8. Update `README.md` with summary of changes.
@@ -131,7 +136,8 @@ const DEBUG_MODE_ON = false;
 		These files reason about, and then decide on next action that FishBot should take.
 	*/
 	include(FB_INCLUDES + "hq_toc.js");
-	include(FB_INCLUDES + "hq_command.js");		
+	include(FB_INCLUDES + "hq_telemetry.js");		// must precede `hq_command.js`, which owns the Telemetry instance
+	include(FB_INCLUDES + "hq_command.js");
 
 	// The following three files contain event handlers and the hook for starting the game. 
 	// The files must be included in this order.
