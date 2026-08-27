@@ -145,27 +145,6 @@ function moveReservesToShadow(reserveGroupIDs, x, y) {
 }
 
 /**
- * Returns `true` if the straight-line path between `droid` and (`toX`, `toY`) crosses a chokepoint tile.
- * @param {worldState} state
- * @param {DroidObject} droid
- * @param {number} toX
- * @param {number} toY
- * @returns {boolean}
- */
-function pathCrossesChokepoint(state, droid, toX, toY) {
-	const isChokepoint = state.mapData.isChokepoint;
-
-	const points = drawLine(droid.x, droid.y, toX, toY);
-	for (let i=0; i<points.length; i++) {
-		const p = points[i];
-		if (isChokepoint[p[0]][p[1]]) {
-			return true;
-		}
-	}
-	return false;
-}
-
-/**
  * TAC SOP: MOVE A BRIGADE COMBAT TEAM (BCT) TO A LOCATION
  * @param {worldState} state
  * @param {number} brigadeID
