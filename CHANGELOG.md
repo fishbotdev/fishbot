@@ -5,14 +5,12 @@ This file is used to record the changes to FishBot between each version.
 *Released **x Aug 2026***
 ### Changes in v0.5.2
 - Combat improvements:
+    - Completely reworked the group movement code, resulting in smoother group movement with less rubberbanding and better handling of chokepoints.
     - Squashed minor targeting bugs.
-    - Improved group-movement handling of chokepoints, reducing the chance that unit groups will get stuck in narrow passages.
-    - Fixed a bug where the group position estimation could return an unwalkable tile.
 - Construction & production fixes:
-    - Half-built defences are now finished.
-    - Slightly reduced the idle time of factories.
+    - Fixed minor issues with prioritisation and improved avoids building repair centers in chokepoints.
 - Technical changes:
-    - Performance improvements which reduce lag spikes, e.g. removing redundant per-tick computation.
+    - Performance improvements which further reduce lag spikes (this version should have resolved the vast majority of these).
 
 ## Fishbot v0.5.1
 *Released **04 Aug 2026***

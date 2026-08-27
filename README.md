@@ -14,7 +14,7 @@ It is designed for Tech Level 2 (No Scavenger) skirmish games on the supported m
 1. Open Warzone 2100. Click on "Options".
 2. Click "Open Configuration Directory" in the bottom left corner.
 3. Download 📦fishbot.zip from https://github.com/fishbotdev/fishbot/releases. 
-4. Move the .zip file to 📁`mods/4.7.0/autoload/`. **To avoid any version conflicts, please remove all previous versions of FishBot**.
+4. Move the .zip file to 📁`mods/4.7.0/autoload/`. **To avoid any version conflicts, please remove all previous versions of FishBot before v0.5.1**.
 5. Restart Warzone 2100.
 
 To check if the path is correct, you should be able to find `FishBot.js` in this location:
@@ -31,9 +31,9 @@ However, at the moment I feel like Cobra already fills the gap in the other tech
 In particular, I think Cobra performs excellently on T1 in Warzone 2100 v4.6.3+. 
 
 ## Supported maps (Warzone2100 4.7.0)
-As of **v0.5.2**, FishBot works on most "low-oil" maps shipped with the game. There might be a few lag issues with high-player count games; these are being actively worked on.
+As of **v0.5.2**, FishBot works on most "low-oil" maps shipped with the game.
 
-FishBot is not compatible with scavengers; it currently ignores them.
+FishBot is currently not compatible with scavengers; it currently ignores them.
 
 ### 2 player (T2-NoScav)
 * `Sk-Startup` (100% duel)
@@ -107,9 +107,11 @@ The method is as follows:
 
 ## Recent updates
 * **v0.5.2** - *released **x Aug 2026***
-    * Improved group-movement handling of chokepoints, which increases the number of supported maps.
-    * Widespread performance improvements, resulting in a smoother player experience.
-    * Squashed some minor bugs related to targeting & combat.
+    * Improved group movement, meaning that:
+        1. Group movement will now feel more smooth and less janky.
+        2. Unit groups now handle chokepoints better (and are much less likely to get stuck).
+        3. More compatible maps!
+    * Wide-ranging performance improvements, resulting in a smoother player experience.
 
 * **v0.5.1** - *released **04 Aug 2026***
     * Now supports custom structure limits in skirmish settings.
@@ -122,19 +124,6 @@ The method is as follows:
     * Major overhaul of the production, resupply & repair systems to support the above.
     * Improved base construction efficiency & added build order adaptation for very low-oil maps.
 
-* **v0.4.2** - *released **10 Jul 2026***
-    * Combat improvements:
-        * Improved direct-fire targeting and the effectiveness of AA units.
-        * Added support for Heavy Repair Turret units.
-    * Slightly improved research order and construction reliability.
-
-* **v0.4.1** - *released **27 Jun 2026***
-    * Increased combat group cohesion.
-    * Construction fixes:
-        * Repair facilities are more likely to be forward-constructed. 
-        * Base structure positions now account for terrain obstacles.
-    * Improved TL2 to TL3 research transition (now focuses on Gauss Cannon tree).
-    * FishBot now follows the same rules as human players on game start (will no longer produce Hover Trucks before the Command Center is built).
 
 Please see [`CHANGELOG.md`](CHANGELOG.md) for a detailed list of all past changes.
 
@@ -145,9 +134,9 @@ The current areas for improvement are:
 * Support for T1 & T3.
 
 ## Disclaimer: Use of AI
-Prior to **v0.5.2**, ChatGPT was used sparsely to implement some of the math functions, but the majority of the logic and architecture was human-written.
+Prior to **v0.5.2**, ChatGPT was used sparsely to implement some of the math functions, but the majority of the logic and architecture was human-authored.
 
-From **v0.5.2**, Claude Code has been used to make active incremental improvements to the bot. These improvements are still human-reviewed though. 
+From **v0.5.2** onwards, Claude Code has been actively used to make improvements to the bot, primarily using the Opus & Sonnet models. The work is still human-directed and reviewed though. 
 
 ## Background and Goals
 FishBot was initially forked from NullBot v3. I acknowledge and appreciate the work of the NullBot team in creating the foundation for this body of work. As of v0.4.0, not much of the original code remains, but I am grateful for the structural and spiritual influence of the original work.
