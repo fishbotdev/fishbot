@@ -1019,7 +1019,7 @@ class armyEngineering {
 			state.g.addDroidToGroup({groupID: md.taskForceID, droidID: droid.id});
 			state.g.removeDroidFromGroup({groupID: ENGINEERING.ENGINEERING_RESERVE, droidID: droid.id});
 		});		
-		md.orders = () => buildNearbyDefences(md.taskForceID, buildTask.structureID, preferredLoc.x, preferredLoc.y);		
+		md.orders = () => buildSingleStructure(md.taskForceID, buildTask.structureID, preferredLoc.x, preferredLoc.y);		
 		md.ceaseOrders = () => this.#finaliseConstruction(md, ENGINEERING.ENGINEERING_RESERVE);
 
 		return md;
@@ -1062,7 +1062,7 @@ class armyEngineering {
 			state.g.addDroidToGroup({groupID: md.taskForceID, droidID: droid.id});
 			state.g.removeDroidFromGroup({groupID: ENGINEERING.ENGINEERING_RESERVE, droidID: droid.id});
 		});		
-		md.orders = () => buildNearbyDefences(md.taskForceID, buildTask.structureID, loc.x, loc.y);		
+		md.orders = () => buildSingleStructure(md.taskForceID, buildTask.structureID, loc.x, loc.y);		
 		md.ceaseOrders = () => this.#finaliseConstruction(md, ENGINEERING.ENGINEERING_RESERVE);
 
 		return md;
