@@ -761,7 +761,7 @@ class worldStateBuilder {
         const clearanceEast = computeDirectionalClearance(isWalkable, 1, 0);
         const clearanceWest = computeDirectionalClearance(isWalkable, -1, 0);
 
-        const CHOKEPOINT_WIDTH_THRESHOLD = 4;
+        const CHOKEPOINT_WIDTH_THRESHOLD = 5;
 
         /** @type {(number[])[]} */
         const chokepointWidth = create2DGrid(mapWidth, mapHeight, () => 0);

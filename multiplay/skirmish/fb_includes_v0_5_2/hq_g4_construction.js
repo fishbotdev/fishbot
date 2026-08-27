@@ -349,6 +349,7 @@ class armyEngineering {
 
 		const enemyUnitThreat = state.fields.enemyUnitThreat;
 		const cellSize = state.grid.cellSize;
+		const isChokepoint = state.mapData.isChokepoint;
 
 		const potentialRepairCenterLocations = [];
 		const potentialDemolitionLocations = [];
@@ -399,7 +400,7 @@ class armyEngineering {
 			potentialDemolitionLocations.push(buildRequest);
 		});
 
-		// Sort closest to furthest from base (simplistic assumption). TODO: find loc with largest combined distance from active BCTs
+		// Sort closest to furthest from base (simplistic assumption). Intent: want to find the least useful repair facility
 		potentialDemolitionLocations.sort((a,b) => 
 			distSq(a.payload.x, baseLocation.x, a.payload.y, baseLocation.y) - distSq(b.payload.x, baseLocation.x, b.payload.y, baseLocation.y));
 
@@ -414,8 +415,13 @@ class armyEngineering {
 			if (potentialLocation == undefined) {
 				return;
 			}
+
 			const x = potentialLocation.x;
 			const y = potentialLocation.y;
+
+			if (isChokepoint[x][y]) {
+				return;
+			}
 
 			const gx = Math.floor(x / cellSize);
 			const gy = Math.floor(y / cellSize);
