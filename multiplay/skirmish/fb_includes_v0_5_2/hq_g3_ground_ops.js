@@ -142,10 +142,9 @@ class armyGroundOperations {
 			return basePosition;
 		}
 
-		const brigadeStrength = state.brigades[brigadeID]['strength'];
-		const estimator = (brigadeStrength >= parameters.MEDIAN_CENTER_STRENGTH_THRESHOLD) ? CENTER_ESTIMATOR.MEDIAN : CENTER_ESTIMATOR.AVERAGE;
-
-		const centerEstimate = (estimator === CENTER_ESTIMATOR.MEDIAN) ? this.#getMedianLoc(directFireUnits) : this.#getAverageLoc(directFireUnits);
+		const brigadeStrength = state.brigades[brigadeID].strength;
+		const BRIGADE_CAN_TAKE_RISKS = brigadeStrength >= parameters.MEDIAN_CENTER_STRENGTH_THRESHOLD;
+		const centerEstimate = BRIGADE_CAN_TAKE_RISKS ? this.#getMedianLoc(directFireUnits) : this.#getAverageLoc(directFireUnits);
 
 		// Snap the estimate to the nearest direct-fire unit
 		let nearestUnit = directFireUnits[0];

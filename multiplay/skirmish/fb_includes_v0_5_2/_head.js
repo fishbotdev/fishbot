@@ -453,17 +453,6 @@ Object.freeze(DIVISION);
 
 const BRIGADE_IDS = [DIVISION.FIRST_BCT, DIVISION.SECOND_BCT, DIVISION.THIRD_BCT, DIVISION.FOURTH_BCT, DIVISION.FIFTH_BCT];
 
-/**
- * Selects which estimator `getForceCenterLoc()` uses to approximate where a brigade is.
- * 	`AVERAGE` is outlier-sensitive, so stragglers drag the brigade center backwards (which plays it safe).
- * 	`MEDIAN` is outlier-resistant, so an established brigade keeps pressing the attack.
- */
-const CENTER_ESTIMATOR = {
-	AVERAGE: 0,
-	MEDIAN: 1,
-};
-Object.freeze(CENTER_ESTIMATOR);
-
 /*
     LOGISTICS CONSTANTS
 */
