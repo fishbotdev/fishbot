@@ -254,8 +254,8 @@
  * @typedef {Object} BrigadeMetadata
  * @property {number} id This is the brigade ID (duplicate of the key).
  * @property {PositionInfo} location  
- * @property {number} strength
- * @property {NearbyTargets} nearbyTargets 
+ * @property {number} strength Smoothed count of direct-fire units in the brigade (mortars excluded).
+ * @property {NearbyTargets} nearbyTargets
  * @property {AirStrikeMissionRequest[]} casStrikeRequests
  * @property {BrigadeComposition} composition
  *  
@@ -295,6 +295,7 @@
  * @property {number} IMMEDIATE_DIRECT_FIRE_RADIUS
  * @property {number} EFFECTIVE_FIRE_SUPPORT_RADIUS
  * @property {number} EFFECTIVE_ADA_RADIUS
+ * @property {number} MEDIAN_CENTER_STRENGTH_THRESHOLD
  */
 
 /**
@@ -342,6 +343,7 @@
  * 
  * @property {number} VEHICLE_REPAIR_THRESHOLD
  * @property {number} CYBORG_REPAIR_THRESHOLD
+ * @property {number} STRENGTH_DECAY_RATE
  */
 
 /*
@@ -450,6 +452,17 @@ const DIVISION = {
 Object.freeze(DIVISION);
 
 const BRIGADE_IDS = [DIVISION.FIRST_BCT, DIVISION.SECOND_BCT, DIVISION.THIRD_BCT, DIVISION.FOURTH_BCT, DIVISION.FIFTH_BCT];
+
+/**
+ * Selects which estimator `getForceCenterLoc()` uses to approximate where a brigade is.
+ * 	`AVERAGE` is outlier-sensitive, so stragglers drag the brigade center backwards (which plays it safe).
+ * 	`MEDIAN` is outlier-resistant, so an established brigade keeps pressing the attack.
+ */
+const CENTER_ESTIMATOR = {
+	AVERAGE: 0,
+	MEDIAN: 1,
+};
+Object.freeze(CENTER_ESTIMATOR);
 
 /*
     LOGISTICS CONSTANTS

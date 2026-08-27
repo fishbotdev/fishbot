@@ -77,17 +77,60 @@ class armyGroundOperations {
 	}
 
 	/**
-	 * Approximates where the group currently is by averaging all direct-fire units' positions,
-	 * then snapping to the direct-fire unit closest to that average so the returned location is
-	 * always a tile a unit actually occupies (and therefore reachable).
+	 * Averages the units' positions. Outlier-sensitive: a straggler drags the result backwards, which
+	 * pulls the brigade back with it.
+	 * @param {DroidObject[]} units must not be empty
+	 * @returns {{x: number, y: number}}
+	 */
+	#getAverageLoc(units) {
+		let sumX = 0;
+		let sumY = 0;
+		units.forEach((droid) => {
+			sumX += droid.x;
+			sumY += droid.y;
+		});
+		return {'x': Math.floor(sumX / units.length), 'y': Math.floor(sumY / units.length)};
+	}
+
+	/**
+	 * Takes the median of the units' positions in each axis. Outlier-resistant: stragglers no longer drag
+	 * the result backwards, so a large brigade keeps pressing the attack.
+	 * @param {DroidObject[]} units must not be empty
+	 * @returns {{x: number, y: number}}
+	 */
+	#getMedianLoc(units) {
+		const unitX = [];
+		const unitY = [];
+		units.forEach((droid) => {
+			unitX.push(droid.x);
+			unitY.push(droid.y);
+		});
+		// `units` is non-empty, so `arrayMedian` always returns a number here.
+		const medianX = /** @type {number} */ (arrayMedian(unitX));
+		const medianY = /** @type {number} */ (arrayMedian(unitY));
+		return {'x': Math.floor(medianX), 'y': Math.floor(medianY)};
+	}
+
+	/**
+	 * Approximates where the group currently is, using whichever estimator suits the brigade's strength:
+	 * a weak brigade is centred by average (which plays it safe), an established one by median (which
+	 * presses the attack). `strength` is smoothed by `updateBrigadeSupplyStatus()`, so the brigade does
+	 * not switch estimator every time a single unit dies and is replaced.
+	 *
 	 * Mortar units are excluded because their long attack range means they can sit far from the
 	 * rest of the group, which would skew the estimate of where the group actually is.
 	 *
+	 * The result is snapped to the direct-fire unit nearest the estimate. This is required: a per-axis
+	 * median is not a true 2D median, so it can land on a tile that no unit occupies and which may not
+	 * even be walkable.
+	 *
 	 * Returns `baseLocation` if no units are found.
+	 * @param {worldState} state
 	 * @param {number} brigadeID
-	 * @returns {PositionInfo} the location of the unit nearest the group's average (if units exist); else `baseLocation`.
+	 * @param {GroundForceParameters} parameters
+	 * @returns {PositionInfo} the location of the unit nearest the group's center (if units exist); else `baseLocation`.
 	 */
-	getForceCenterLoc(brigadeID) {
+	getForceCenterLoc(state, brigadeID, parameters) {
 		const heightMap = state.mapData.heightMap;
 
 		const brigadeUnits = state.g.enumGroup(brigadeID);
@@ -102,24 +145,18 @@ class armyGroundOperations {
 			return basePosition;
 		}
 
-		let sumX = 0;
-		let sumY = 0;
-		directFireUnits.forEach((droid) => {
-			sumX += droid.x;
-			sumY += droid.y;
-		});
-		const averageX = Math.floor(sumX / directFireUnits.length);
-		const averageY = Math.floor(sumY / directFireUnits.length);
+		const brigadeStrength = state.brigades[brigadeID]['strength'];
+		const estimator = (brigadeStrength >= parameters.MEDIAN_CENTER_STRENGTH_THRESHOLD) ? CENTER_ESTIMATOR.MEDIAN : CENTER_ESTIMATOR.AVERAGE;
 
-		// Snap the average to the nearest direct-fire unit
+		const centerEstimate = (estimator === CENTER_ESTIMATOR.MEDIAN) ? this.#getMedianLoc(directFireUnits) : this.#getAverageLoc(directFireUnits);
+
+		// Snap the estimate to the nearest direct-fire unit
 		let nearestUnit = directFireUnits[0];
 		let nearestDistSq = Infinity;
 		directFireUnits.forEach((droid) => {
-			const dx = droid.x - averageX;
-			const dy = droid.y - averageY;
-			const distSq = (dx * dx) + (dy * dy);
-			if (distSq < nearestDistSq) {
-				nearestDistSq = distSq;
+			const currDistSq = distSq(droid.x, centerEstimate.x, droid.y, centerEstimate.y);
+			if (currDistSq < nearestDistSq) {
+				nearestDistSq = currDistSq;
 				nearestUnit = droid;
 			}
 		});

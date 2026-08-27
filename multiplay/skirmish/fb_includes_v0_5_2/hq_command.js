@@ -52,11 +52,28 @@ class CommandCenter {
 		this.NUMBER_OF_BRIGADES = 4;
 		this.BRIGADE_DESIGNATIONS = BRIGADE_IDS.slice(0, this.NUMBER_OF_BRIGADES);
 
+		const DEFAULT_FISHBOT_BRIGADE_COMPOSITION = {
+			'MAX_HEAVY_CAVALRY': 3,
+			'MAX_LIGHT_CAVALRY': 3,
+			'MAX_MORTAR': 4,
+			'MAX_ADA': 2,
+			'MAX_SENSOR': 1,
+			'MAX_INFANTRY': 6,
+			'MAX_REPAIR': 1,
+		};
+
+		const TOTAL_UNITS_PER_BRIGADE = Object.values(DEFAULT_FISHBOT_BRIGADE_COMPOSITION).reduce((a, b) => a + b, 0);
+
+		// Every unit in a brigade except its mortar battalion is direct-fire, so the establishment that
+		// brigade strength is measured against is the full brigade less `MAX_MORTAR`.
+		const DIRECT_FIRE_ESTABLISHMENT = TOTAL_UNITS_PER_BRIGADE - DEFAULT_FISHBOT_BRIGADE_COMPOSITION['MAX_MORTAR'];
+
 		/** @type {GroundForceParameters} */
 		this.GROUND_FORCE_PARAMETERS = {
 			IMMEDIATE_DIRECT_FIRE_RADIUS: 10,
 			EFFECTIVE_FIRE_SUPPORT_RADIUS: 10,		// todo: this should be adaptive - when the brigade has a sensor, this is better, without, it is restricted by sight range of the front units
 			EFFECTIVE_ADA_RADIUS: 12,
+			MEDIAN_CENTER_STRENGTH_THRESHOLD: Math.ceil(0.50 * DIRECT_FIRE_ESTABLISHMENT),		// at/above this brigade strength, the brigade center switches from average to median
 		};
 
 		// Aviation parameters
@@ -101,18 +118,6 @@ class CommandCenter {
 			[DIVISION.BCT_RESERVE, 1],
 		]);
 		
-		const DEFAULT_FISHBOT_BRIGADE_COMPOSITION = {
-			'MAX_HEAVY_CAVALRY': 3,
-			'MAX_LIGHT_CAVALRY': 3,
-			'MAX_MORTAR': 4,
-			'MAX_ADA': 2,
-			'MAX_SENSOR': 1,
-			'MAX_INFANTRY': 6,
-			'MAX_REPAIR': 1,
-		};
-
-		const TOTAL_UNITS_PER_BRIGADE = Object.values(DEFAULT_FISHBOT_BRIGADE_COMPOSITION).reduce((a, b) => a + b, 0);
-
 		/** @type {Map<number, number>} */
 		const DEFAULT_UNIT_WEIGHTS = new Map([
 			// Production weights (which influences production order) are tuned using `python_helper_scripts / production_scheduling.py`.
@@ -145,7 +150,9 @@ class CommandCenter {
 			SHOULD_PRODUCE_LAND_VEHICLES: false,
 
 			VEHICLE_REPAIR_THRESHOLD: 30,
-			CYBORG_REPAIR_THRESHOLD: 45
+			CYBORG_REPAIR_THRESHOLD: 45,
+
+			STRENGTH_DECAY_RATE: 1		// max direct-fire units that a brigade's estimated strength may drop by per update
 		};
 		
 		// Research parameters
@@ -431,7 +438,7 @@ class CommandCenter {
 			case 'intel_getNearbyGroundTargets':
 				// Update location(s) & target(s) of active combat force(s)
 				this.BRIGADE_DESIGNATIONS.forEach(brigadeID => {
-					const brigadeLocation = groundForces.getForceCenterLoc(brigadeID);
+					const brigadeLocation = groundForces.getForceCenterLoc(state, brigadeID, this.GROUND_FORCE_PARAMETERS);
 					this.toc.setBrigadeLocation(state, brigadeID, brigadeLocation);
 
 					const nearbyTargets = intelligence.getTargetClassesInRadius(state, brigadeLocation, this.TARGET_SEARCH_RADIUS);

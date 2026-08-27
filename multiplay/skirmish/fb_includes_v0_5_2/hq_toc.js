@@ -873,9 +873,9 @@ class TacticalOperationsCenter {
 	}
 
 	/**
-	 * Updates unit lists for each battalion in a brigade.
-	 * @param {worldState} state 
-	 * @param {number} brigadeID 
+	 * Updates unit lists for each battalion in a brigade, and the brigade's overall strength.
+	 * @param {worldState} state
+	 * @param {number} brigadeID
      * @param {ProductionParameters} parameters
 	 * @returns {void}
 	 */
@@ -946,6 +946,13 @@ class TacticalOperationsCenter {
             battalionComposition["count"] = healthyUnitCount;
             battalionComposition["deficit"] = maxUnitCount - healthyUnitCount;
         };
+
+        // Update brigade strength. This counts the same units that `getForceCenterLoc()` averages over
+        // (all direct-fire units, healthy or damaged). Strength rises immediately with reinforcement but
+        // decays gradually, so it does not jitter when single units die and are replaced.
+        const directFireUnitCount = brigadeUnits.filter(unit => !unit.hasIndirect).length;
+        const currBrigade = state.brigades[brigadeID];
+        currBrigade["strength"] = Math.max(directFireUnitCount, currBrigade["strength"] - parameters.STRENGTH_DECAY_RATE);
 
         if (false) {
             debug(`${gameTime}: Brigade ${brigadeID} Composition`)
