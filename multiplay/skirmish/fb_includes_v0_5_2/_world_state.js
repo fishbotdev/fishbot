@@ -16,36 +16,17 @@
 */
 
 /*
- *  This is the central database which stores the game state. 
+ * This is the central database which stores the game state. 
  *
- *  This software uses the "Domain Services Model"
- *      - There is one shared game world / game state
- *      - There are multiple parts of the AI which either need to: 
- *          (1) look at the game state & make decisions     (but don't modify the game state)
- *          (2) change the game state
- *      - We want to avoid chaos (obscure modifications of the state, impossible debugging, duplication of logic)
- * 
- *  In the Domain Services architecture, we need a 
- *      1. Central database which stores the current game state ("state")    -- fulfilled by: this file _world_state.js
- *      2. State observer/reporter ("system")                                -- fulfilled by: operational level functions hq_gX
- *      3. State mutator ("service")                                         -- fulfilled by: hq_toc (delegated by hq_command) 
- *      4. Decision maker ("coordinator")                                    -- fulfilled by: hq_command
- * 
- *  Systems which access the state should 'extract' all of the relevant information from state 
- *  at the start of the function where possible e.g.
+ * In this software, there is one shared game 'state'. There are multiple parts of the bot which either need to: 
+ * (1) look at the game state & make decisions     (but don't modify the game state), OR
+ * (2) change the game state
  *  
- *  function getGridCoordsExample() {
- *      const cellSize = state.grid.cellSize;
- *      ...
- *      const gx = Math.floor(obj.x / cellSize);
- *      ...
- *  }
- * 
- *  Services which mutate (modify) the state should be centralised in one location. 
- *  In the current implementation (0.4.0+), state mutation is handled by `hq_toc.js` (delegated by `hq_command.js`).
- *  If the core state management happens in one place, this makes it much easier to reason about, modify, and debug.
+ * We want to avoid chaos (obscure modifications of the state, impossible debugging, duplication of logic). To this end:
+ * (1) All modifications to the state happen in `stateBuilder` (initialisation) and `hq_toc` (state update).
+ * (2) The functions in `hq_command.ks` (almost exclusively) makes strategic decisions based on the game state. 
+ * (3) All other functions can read the state but cannot modify it.
  */
-
 
 /**
 	fbGroup: FISHBOT v3 CUSTOM GROUPING SYSTEM
@@ -286,6 +267,8 @@ class worldState {
         ////////////////////////// SPATIAL AWARENESS //////////////////////////
         /**
          * This stores all map-related data which is parsed once on game start.
+         * Convention: every grid in this codebase is [x][y]-indexed unless explicitly noted otherwise.
+         * The one exception is the engine's own `MapTiles`, which is [y][x].
          * @type {MapData}
          */
         this.mapData;
@@ -333,17 +316,17 @@ class worldState {
         this.brigades = {};
 
         this.aviationTargets = {
-            /** @type {AirStrikeMissionRequest[]} */
+            /** @type {AirStrikeMissionRequestLazy[]} */
             'raidTargets': [],
 
             // 4 types of targets around enemy bases
-            /** @type {AirStrikeMissionRequest[]} */
+            /** @type {AirStrikeMissionRequestLazy[]} */
             'productionTargets': [],
-            /** @type {AirStrikeMissionRequest[]} */
+            /** @type {AirStrikeMissionRequestLazy[]} */
             'adaTargets': [],
-            /** @type {AirStrikeMissionRequest[]} */
+            /** @type {AirStrikeMissionRequestLazy[]} */
             'indirectFireTargets': [],
-            /** @type {AirStrikeMissionRequest[]} */
+            /** @type {AirStrikeMissionRequestLazy[]} */
             'defensiveStructureTargets': []
         }; 
 
@@ -358,7 +341,6 @@ class worldState {
         
         // Load balancing parameters
         this.botIsActive = true;
-        this.currWorkerID = -1;
         this.TIME_BLOCK_MS = 200;
         this.BLOCKS_PER_MIN = Math.floor(60000 / this.TIME_BLOCK_MS);
 		this.WORKER_IDS = {};
@@ -723,6 +705,88 @@ class worldStateBuilder {
             // hackMarkTiles(x, y);        // Uncomment this to see all the walkable tiles on the map that the algorithm found
         });
 
+        // Find chokepoint locations, assuming static terrain.
+
+        /**
+         * Computes, for each walkable tile, the number of consecutive walkable tiles counting
+         * backward from (x,y) along direction (dx,dy) (inclusive of (x,y) itself).
+         * @param {(boolean[])[]} isWalkable
+         * @param {number} dx one of -1, 0, 1
+         * @param {number} dy one of -1, 0, 1
+         * @returns {(number[])[]}
+         */
+        const computeDirectionalClearance = (isWalkable, dx, dy) => {
+            const clearance = create2DGrid(mapWidth, mapHeight, () => 0);
+
+            let xStart = 0;
+            let xStep = 1;
+            if (dx < 0) {
+                xStart = mapWidth - 1;
+                xStep = -1;
+            }
+
+            let yStart = 0;
+            let yStep = 1;
+            if (dy < 0) {
+                yStart = mapHeight - 1;
+                yStep = -1;
+            }
+
+            for (let i=0; i<mapWidth; i++) {
+                for (let j=0; j<mapHeight; j++) {
+                    const x = xStart + i * xStep;
+                    const y = yStart + j * yStep;
+
+                    if (!isWalkable[x][y]) {
+                        continue;   // clearance stays 0
+                    }
+
+                    const px = x - dx;
+                    const py = y - dy;
+
+                    if (px < 0 || px >= mapWidth || py < 0 || py >= mapHeight) {
+                        clearance[x][y] = 1;
+                        continue;
+                    }
+
+                    clearance[x][y] = clearance[px][py] + 1;
+                }
+            }
+
+            return clearance;
+        };
+
+        const clearanceNorth = computeDirectionalClearance(isWalkable, 0, 1);
+        const clearanceSouth = computeDirectionalClearance(isWalkable, 0, -1);
+        const clearanceEast = computeDirectionalClearance(isWalkable, 1, 0);
+        const clearanceWest = computeDirectionalClearance(isWalkable, -1, 0);
+
+        const CHOKEPOINT_WIDTH_THRESHOLD = 5;
+
+        /** @type {(number[])[]} */
+        const chokepointWidth = create2DGrid(mapWidth, mapHeight, () => 0);
+
+        /** @type {(boolean[])[]} */
+        const isChokepoint = create2DGrid(mapWidth, mapHeight, () => false);
+
+        for (let x=0; x<mapWidth; x++) {
+            for (let y=0; y<mapHeight; y++) {
+                if (!isWalkable[x][y]) {
+                    continue;
+                }
+
+                const widthNS = clearanceNorth[x][y] + clearanceSouth[x][y] - 1;
+                const widthEW = clearanceEast[x][y] + clearanceWest[x][y] - 1;
+                const width = Math.min(widthNS, widthEW);
+
+                chokepointWidth[x][y] = width;
+                isChokepoint[x][y] = width <= CHOKEPOINT_WIDTH_THRESHOLD;
+                // if (DEBUG_MODE_ON && isChokepoint[x][y]) {
+                //     hackMarkTiles(x, y);
+                // }
+            }
+        }
+
         /** @type {(boolean[])[]} */
         const isDerrickPosition = create2DGrid(mapWidth, mapHeight, () => {return false;});
                 
@@ -774,6 +838,9 @@ class worldStateBuilder {
 
         mapData['QUADRANT_SEARCH_PATTERN'] = QUADRANT_SEARCH_PATTERN;
         mapData['heightMap'] = heightMap;
+
+        mapData['chokepointWidth'] = chokepointWidth;
+        mapData['isChokepoint'] = isChokepoint;
 
         return mapData;
 

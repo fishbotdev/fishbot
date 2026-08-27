@@ -15,38 +15,6 @@
 	If not, see <https://www.gnu.org/licenses/>.
 */
 
-
-/**
- * Uses `enumStruct` and `enumDroid` to gather intelligence directly from the game engine (common behaviour across all bots).
- * Bot to be reworked in future to use imperfect intelligence.
- * @param {number[] | undefined} playerIdList numeric array of player IDs `enumDroid` and `enumStruct` will be called on.
- * @returns {PlayerInfoBucketObject[]}
- */
-function getDroidsAndStructsByPlayer(playerIdList=undefined) {
-    /**
-     * Creates player bucket
-     * @param {number} id 
-     * @param {DroidObject[]} droids 
-     * @param {StructureObject[]} structs 
-     * @returns {PlayerInfoBucketObject}
-     */
-    const createPlayerBucket = (id, droids, structs) => {return {'playerID': id, 'droids': droids, 'structs': structs}};  
-
-    const objectsByPlayer = [];
-
-    let PLAYER_ID_LIST = generateRange(maxPlayers);       // will create 0-indexed playerIDs from 0, 1, 2, ..., maxPlayers - 1
-    if (playerIdList) {
-        PLAYER_ID_LIST = playerIdList;
-    }
-
-    PLAYER_ID_LIST.forEach(id => {
-        const p = createPlayerBucket(id, enumDroid(id), enumStruct(id));
-        objectsByPlayer.push(p);
-    });
-
-    return objectsByPlayer;
-}
-
 /**
  * Applies reusable bitflags to game objects, enabling fast comparisons & intelligent object filtering.
  * @param {DroidObject | StructureObject} obj
@@ -136,7 +104,7 @@ function classifyGameObject(obj) {
             if (CANNON_WEAPONS.some(w => w.id === weapon.id)) {
                 flags |= OBJ_FLAGS.CANNON_WEAPON;
             } else if (AT_ROCKET_WEAPONS.some(w => w.id === weapon.id)) {
-                flags | OBJ_FLAGS.AT_ROCKET_WEAPON;
+                flags |= OBJ_FLAGS.AT_ROCKET_WEAPON;
             } else if (MACHINEGUN_WEAPONS.some(w => w.id === weapon.id)) {
                 flags |= OBJ_FLAGS.MACHINEGUN_WEAPON;
             } else if (SHORT_RANGE_ARTILLERY_WEAPONS.some(w => w.id === weapon.id)) {
@@ -209,25 +177,18 @@ function classifyGameObject(obj) {
  * @param {number} flags 
  * @param {number} x 
  * @param {number} y 
- * @param {number} gx 
- * @param {number} gy 
  * @returns {FbObject}
  */
-function createFbObject(object, flags, x, y, gx, gy) {
-    /** @type {FbObject} */
+function createFbObject(object, flags, x, y) {
     return {
-        'name': object.name,
-
         // These 3 parameters allow 'getObject' to be used at a later point to retrieve up-to-date object information
         'type': object.type,
         'player': object.player,
         'id': object.id,
 
-        'flags': flags,
-        'x': x,
-        'y': y,
-        'gx': gx,
-        'gy': gy,
+        'flags': flags,     // used for object classification (don't need the object anymore)
+        'x': x,             // used for lazy grid evaluation
+        'y': y,             // used for lazy grid evaluation
     };
 }
 

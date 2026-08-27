@@ -36,86 +36,71 @@ function runGameEndedWatchdog() {
 	}
 }
 
-function runStrategy() {
-	if (state.botIsActive) {
-		if (state.WORKER_IDS['runStrategy'][state.currWorkerID]) {
-			hq.updateStrategicParameters(state);
-		}
-	}
-}
-
-function runIntelligence() {
-
-	const subtasks = ['intel_getNearbyGroundTargets', 'intel_getAviationTargets', 'intel_getMapIntelligence'];
-
-	if (state.botIsActive) {
-		for (let i=0; i<subtasks.length; i++) {
-			if (state.WORKER_IDS[subtasks[i]][state.currWorkerID]) {
-				hq.runIntelligence(state, subtasks[i]);
-			}
-		}
-	}
-}
-
-function runC2() {
-	if (state.botIsActive) {
-		if (state.WORKER_IDS['combat_runC2'][state.currWorkerID]) {
-			hq.runCombatOperations(state);
-		}
-	}
-}
-
-function runConstructionLogistics() {
-	if (state.botIsActive) {
-		if (state.WORKER_IDS['logistics_runConstruction'][state.currWorkerID]) {
-			hq.runConstructionLogistics(state);
-		}
-	}
-}
-
-function runResupplyLogistics() {
-	if (state.botIsActive) {
-		if (state.WORKER_IDS['logistics_runResupplyLogistics'][state.currWorkerID]) {
-			hq.runResupplyLogistics(state);				// assigns reserve units to brigades
-		}
-	}
-}
-
-function runStructureLogistics() {
-	if (state.botIsActive) {
-		if (state.WORKER_IDS['logistics_runStructureLogistics'][state.currWorkerID]) {
-			hq.runProductionLogistics(state);			// schedules production to replenish reserves
-
-			hq.runResearchLogistics(state);
-		}
-	}
-}
-
-function runMissionManager() {
-	if (state.botIsActive) {
-		if (state.WORKER_IDS['global_missionManager'][state.currWorkerID]) {
-			hq.runMissionManager(state);
-		}
-	}
-}
 
 function scheduleCoreFunctions() {
-	if (state.botIsActive) {
-		state.currWorkerID = Math.floor(gameTime / state.TIME_BLOCK_MS) % state.BLOCKS_PER_MIN;
+	if (!state.botIsActive) {
+		return;
+	}
+
+	const currWorkerID = Math.floor(gameTime / state.TIME_BLOCK_MS) % state.BLOCKS_PER_MIN;
+
+	if (state.WORKER_IDS['global_missionManager'][currWorkerID] !== -1) {
+		const global_missionManager = () => hq.runMissionManager(state);
+		fprof(global_missionManager);
+	}
+
+	if (state.WORKER_IDS['logistics_runResupplyLogistics'][currWorkerID] !== -1) {
+		const logistics_runResupplyLogistics = () => hq.runResupplyLogistics(state);				// assigns reserve units to brigades
+		fprof(logistics_runResupplyLogistics);
+	}
+
+	if (state.WORKER_IDS['logistics_runStructureLogistics'][currWorkerID] !== -1) {
+		const logistics_runStructureLogistics = () => {
+			hq.runProductionLogistics(state);			// schedules production to replenish reserves
+			hq.runResearchLogistics(state);
+		}
+		fprof(logistics_runStructureLogistics);
+	}
+
+	if (state.WORKER_IDS['logistics_runConstruction'][currWorkerID] !== -1) {
+		const logistics_runConstruction = () => hq.runConstructionLogistics(state);
+		fprof(logistics_runConstruction);
+	}
+	
+	if (state.WORKER_IDS['combat_runC2'][currWorkerID] !== -1) {
+		const combat_runC2 = () => hq.runCombatOperations(state);
+		fprof(combat_runC2);
+		const combat_runAviation = () => hq.runAviationOperations(state);
+		fprof(combat_runAviation);
+	}
+
+	const subtasks = ['intel_getNearbyGroundTargets', 'intel_getAviationTargets'];
+	for (let i=0; i<subtasks.length; i++) {
+		const name = subtasks[i];
+		if (state.WORKER_IDS[name][currWorkerID] !== -1) {
+			const rt = () => hq.runTargeting(state, name);
+			fprof(rt, `_${name}`);
+		}
+	}
+
+	if (state.WORKER_IDS['intel_getMapIntelligence'][currWorkerID] !== -1) {
+		const intel_getMapIntelligence = () => hq.runIntelligence(state);
+		fprof(intel_getMapIntelligence);
+	}
+
+	if (state.WORKER_IDS['runStrategy'][currWorkerID] !== -1) {
+		const runStrategy = () => hq.updateStrategicParameters(state);
+		fprof(runStrategy);
 	}
 }
 
-function setupFishBot() {
-	// This function queued with a player-specific delay          
-	setTimer("scheduleCoreFunctions", state.TIME_BLOCK_MS);
-	setTimer("runIntelligence", state.TIME_BLOCK_MS);
-	setTimer("runC2", state.TIME_BLOCK_MS);
-	setTimer("runConstructionLogistics", state.TIME_BLOCK_MS);
-	setTimer("runStructureLogistics", state.TIME_BLOCK_MS);
-	setTimer("runResupplyLogistics", state.TIME_BLOCK_MS);
-	setTimer("runStrategy", state.TIME_BLOCK_MS);
-	setTimer("runMissionManager", state.TIME_BLOCK_MS);
 
+/**
+ * This function starts the timers for all FishBot functions. 
+ * @returns {void}
+ */
+function setupFishBot() {       
+	setTimer("scheduleCoreFunctions", state.TIME_BLOCK_MS);
 	setTimer("runGameEndedWatchdog", 60000);
 }
 
@@ -212,15 +197,13 @@ function eventStartLevel() {
 	const MAX_BASE_BUILDERS = 3;
 	initialTrucks.forEach((droid, idx) => {
 		// From NullBot: apparently trucks can sometimes get stuck when a building is placed on top of them, so the next line is here to prevent that.
-		orderDroidLoc(droid, DORDER_MOVE, droid.x + 1, droid.y + 1);		
+		orderDroidLoc(droid, DORDER_MOVE, droid.x - 1, droid.y - 1);		
 		if (idx < MAX_BASE_BUILDERS) {
 			state.g.addDroidToGroup({groupID: ENGINEERING.BASE_BUILDER, droidID: droid.id});
 		} else {
 			state.g.addDroidToGroup({groupID: ENGINEERING.ENGINEERING_RESERVE, droidID: droid.id});
 		}
 	});
-	queue("runConstructionLogistics");				
-	queue("runMissionManager");
 
-	queue("setupFishBot", me * 100);	
+	queue("setupFishBot", me * 100);		// player-specific delay offsets bot initialisation by its position * 100ms, which reduces the chance of a lag spike at the very start of the game.	
 }

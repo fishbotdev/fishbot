@@ -60,15 +60,12 @@
 /**
  * @typedef {Object} FbObject
  * `FbObject` is FishBot's lightweight implementation of a generic game object.
- * @property {string} name
  * @property {number} type
  * @property {number} player
  * @property {number} id
  * @property {number} flags
  * @property {number} x (stale) x coordinate
  * @property {number} y (stale) y coordinate
- * @property {number} gx (stale) grid x coordinate
- * @property {number} gy (stale) grid y coordinate
  * 
  * 
  * @typedef {Object} PlayerInfoBucketObject
@@ -90,6 +87,8 @@
  * @property {(boolean[])[]} isDerrickPosition Lookup table used for construction
  * @property {Coordinate[]} QUADRANT_SEARCH_PATTERN Lookup table used for construction
  * @property {(number[])[]} heightMap Height map keyed by (x, y). Usage example: `state.mapData.heightMap[x][y]`.
+ * @property {(number[])[]} chokepointWidth Corridor width in tiles at (x, y); 0 for non-walkable tiles.
+ * @property {(boolean[])[]} isChokepoint Lookup table; true if (x, y) is a narrow chokepoint.
  */
 
 /**
@@ -234,6 +233,14 @@
  */
 
 /**
+ * @typedef {Object} AirStrikeMissionRequestLazy
+ * @property {number} missionType
+ * @property {FbObject} target
+ * @property {number} priority
+ * @property {number} numAircraft
+ */
+
+/**
  * Type definitions for `worldState.brigades`.
  * @typedef {Object} BattalionComposition
  * @property {number} category
@@ -247,8 +254,8 @@
  * @typedef {Object} BrigadeMetadata
  * @property {number} id This is the brigade ID (duplicate of the key).
  * @property {PositionInfo} location  
- * @property {number} strength
- * @property {NearbyTargets} nearbyTargets 
+ * @property {number} strength Smoothed count of direct-fire units in the brigade (mortars excluded).
+ * @property {NearbyTargets} nearbyTargets
  * @property {AirStrikeMissionRequest[]} casStrikeRequests
  * @property {BrigadeComposition} composition
  *  
@@ -288,6 +295,7 @@
  * @property {number} IMMEDIATE_DIRECT_FIRE_RADIUS
  * @property {number} EFFECTIVE_FIRE_SUPPORT_RADIUS
  * @property {number} EFFECTIVE_ADA_RADIUS
+ * @property {number} MEDIAN_CENTER_STRENGTH_THRESHOLD
  */
 
 /**
@@ -335,6 +343,7 @@
  * 
  * @property {number} VEHICLE_REPAIR_THRESHOLD
  * @property {number} CYBORG_REPAIR_THRESHOLD
+ * @property {number} STRENGTH_DECAY_RATE
  */
 
 /*

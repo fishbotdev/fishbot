@@ -96,7 +96,7 @@ All of these are time-weighted, so an uneven sampling cadence does not bias them
 
 Raw telemetry is stored next to the results, as `results/<short sha>/<test_id>.tel.jsonl`. If the report says no telemetry was captured, `TELEMETRY_ON` was most likely left `false` in the production copy.
 
-Telemetry events are emitted from FishBot's decision sites, so they record what the bot actually believed and decided. To add a new event (e.g. map control, or unit group locations), add a method to `multiplay/skirmish/fb_includes_v0_5_1/hq_telemetry.js`, call it from the point in `hq_command.js` where the relevant values exist, then add a matching entry to `EVENT_EXTRACTORS` in `tests/run_telemetry_parser.py`. The wire format, the harvesting step and the storage format do not need to change.
+Telemetry events are emitted from FishBot's decision sites, so they record what the bot actually believed and decided. To add a new event (e.g. map control, or unit group locations), add a method to `multiplay/skirmish/fb_includes_vX_Y_Z/hq_telemetry.js`, call it from the point in `hq_command.js` where the relevant values exist, then add a matching entry to `EVENT_EXTRACTORS` in `tests/run_telemetry_parser.py`. The wire format, the harvesting step and the storage format do not need to change.
 
 ### Build the Map-Selector GUI to observe FishBot in Spectator Mode
 To spectate FishBot in real time, there is a handy map-selector GUI `spectate_map.exe` to configure a game in single-player spectator mode. This allows you to:

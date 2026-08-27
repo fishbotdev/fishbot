@@ -14,7 +14,7 @@ It is designed for Tech Level 2 (No Scavenger) skirmish games on the supported m
 1. Open Warzone 2100. Click on "Options".
 2. Click "Open Configuration Directory" in the bottom left corner.
 3. Download 📦fishbot.zip from https://github.com/fishbotdev/fishbot/releases. 
-4. Move the .zip file to 📁`mods/4.7.0/autoload/`. **To avoid any version conflicts, please remove all previous versions of FishBot**.
+4. Move the .zip file to 📁`mods/4.7.0/autoload/`. **To avoid any version conflicts, please remove all previous versions of FishBot before v0.5.1**.
 5. Restart Warzone 2100.
 
 To check if the path is correct, you should be able to find `FishBot.js` in this location:
@@ -31,64 +31,64 @@ However, at the moment I feel like Cobra already fills the gap in the other tech
 In particular, I think Cobra performs excellently on T1 in Warzone 2100 v4.6.3+. 
 
 ## Supported maps (Warzone2100 4.7.0)
-As of **v0.5.1**, FishBot works on most "low-oil" maps shipped with the game. There might be a few lag issues with high-player count games; these are being actively worked on.
+As of **v0.5.2**, FishBot works on most "low-oil" maps shipped with the game.
 
-FishBot is not compatible with scavengers; it currently ignores them.
+FishBot is currently not compatible with scavengers; it currently ignores them.
 
 ### 2 player (T2-NoScav)
 * `Sk-Startup` (100% duel)
-* `Sk-UrbanChasm` (80% duel)
-* `Sk-HighGround` (80% duel)
+* `Sk-UrbanChasm` (85% duel)
+* `Sk-HighGround` (95% duel)
 * `Roughness` (100% duel)
-* `Vision` (90% duel)
+* `Vision` (80% duel)
 * `DustyMaze (2P)` (*tested manually*)
 
 ### 3 player (T2-NoScav)
-* `Monocot` (100% duel, 100% FFA)
-* `Gamma` (100% duel, 93% FFA)
+* `Monocot` (100% duel, 93% FFA)
+* `Gamma` (100% duel, 83% FFA)
 
 ### 4 player (T2-NoScav)
-* `Sk-Rush` (100% duel, 68% FFA)
-* `Sk-Rush2` (95% duel, 85% FFA)
+* `Sk-Rush` (98% duel, 70% FFA)
+* `Sk-Rush2` (99% duel, 80% FFA)
 * `Sk-UrbanDuel` (97% duel, 90% FFA)
-* `Sk-Mountain` (99% duel, 82% FFA)
-* `Sk-Valley` (97% duel, 72% FFA)
-* ~~`Sk-FishNets` (93% duel, **35% FFA**)~~ - **not compatible**: does not handle being attacked over water obstacles well
-* `Sk-GreatRift` (99% duel, 68% FFA)
-* `Sk-RollingHills` (90% duel, 80% FFA) 
-* ~~`Sk-Basingstoke`~~ - **not compatible**: large unit groups get stuck during pathfinding
-* `Sk-LittleEgypt` (88% duel, 48% FFA) 
-* ~~`Sk-Cockpit`~~ - **not compatible**: unit groups get stuck in the narrow base entrances
-* `Sk-Urban-Chaos` (98% duel, 85% FFA)
-* `Sk-Pyramidal` (100% duel, 92% FFA)
+* `Sk-Mountain` (96% duel, 50% FFA)
+* `Sk-Valley` (96% duel, 75% FFA)
+* `Sk-FishNets` (82% duel, **20% FFA**)- does not handle being attacked over water obstacles well
+* `Sk-GreatRift` (99% duel, 62% FFA)
+* `Sk-RollingHills` (93% duel, 65% FFA) 
+* `Sk-Basingstoke` (98% duel, 71% FFA)
+* `Sk-LittleEgypt` (96% duel, 52% FFA) 
+* `Sk-Cockpit` - (100% duel, 62% FFA)
+* `Sk-Urban-Chaos` (88% duel, 77% FFA)
+* `Sk-Pyramidal` (100% duel, 72% FFA)
 * `DustyMaze-2v2` (*tested manually*)
 * `DustyMaze-FFA` (*tested manually*)
 
 ### 5 player (T2-NoScav)
-* `Bloat` (60% FFA)
+* `Bloat` (46% FFA)
 
 ### 6 player (T2-NoScav)
-* `Melting` (57% FFA)
+* `Melting` (43% FFA)
 * `Entropy` (*tested manually*)
 
 ### 7 player (T2-NoScav)
 * `Thales` (*tested manually*)
 
 ### 8 player (T2-NoScav)
-* `Sk-Clover` (*tested manually*)
-* `Sk-MizaMaze` (*tested manually*)
+* `Sk-Clover` (41% FFA)
+* `Sk-MizaMaze` (40% FFA)
 * ~~`Sk-Manhattan`~~ - **not compatible**: central river blocks land units
-* `Sk-Bananas` (*tested manually*)
+* `Sk-Bananas` (45% FFA)
 * `Sk-Wheel` (*tested manually*)
 * `Sk-Ziggurat` (*tested manually*)
-* `Sk-Concrete` (*tested manually*)
+* `Sk-Concrete` (18% FFA)
 * `Sk-ThePit` (*tested manually*)
-* ~~`Sk-HideNSneak`~~ - **not compatible**: terrain confuses the unit grouping algorithm
+* `Sk-HideNSneak` (29% FFA)
 * `Sk-YinYang` (*tested manually*)
-* `Sk-SandCastles` (*tested manually*)
-* `Sk-BeggarsKanyon` (*tested manually*)
-* `Sk-Gridlock` (*tested manually*)
-* ~~`Sk-Cockate`~~ - **not compatible**: unit groups get stuck in the narrow base entrances
+* `Sk-SandCastles` (50% FFA)
+* `Sk-BeggarsKanyon` (78% FFA)
+* `Sk-Gridlock` (51% FFA)
+* `Sk-Cockate` (26% FFA)
 
 ### 9 player (T2-NoScav)
 * `Sk-WindFury` (*tested manually*)
@@ -105,12 +105,14 @@ The method is as follows:
     * 75%+ win rate in duels (against Cobra @ Medium difficulty) across all pairs of positions (i.e. 1v1 with all other player slots being empty).
 * For 5 player maps and higher, FishBot is able to win a FFA game in 3 tries or less, and does not run into a breaking issue.
 
-Some current FishBot limitations are:
-* FishBot's group-movement algorithm sometimes causes large groups of units to get stuck in a tight ball.
-* FishBot does not use hover units (yet) so it struggles with maps with a lot of water.
-* FishBot sometimes attempts to build forward-defences around derricks which are actually too dangerous to go and capture.
-
 ## Recent updates
+* **v0.5.2** - *released **x Aug 2026***
+    * Improved group movement, meaning that:
+        1. Group movement will now feel more smooth and less janky.
+        2. Unit groups now handle chokepoints better (and are much less likely to get stuck).
+        3. More compatible maps!
+    * Wide-ranging performance improvements, resulting in a smoother player experience.
+
 * **v0.5.1** - *released **04 Aug 2026***
     * Now supports custom structure limits in skirmish settings.
     * Fixed other construction issues e.g. trying to build behind destroyable features, and trucks ignoring (some) dangerous situations.
@@ -122,19 +124,6 @@ Some current FishBot limitations are:
     * Major overhaul of the production, resupply & repair systems to support the above.
     * Improved base construction efficiency & added build order adaptation for very low-oil maps.
 
-* **v0.4.2** - *released **10 Jul 2026***
-    * Combat improvements:
-        * Improved direct-fire targeting and the effectiveness of AA units.
-        * Added support for Heavy Repair Turret units.
-    * Slightly improved research order and construction reliability.
-
-* **v0.4.1** - *released **27 Jun 2026***
-    * Increased combat group cohesion.
-    * Construction fixes:
-        * Repair facilities are more likely to be forward-constructed. 
-        * Base structure positions now account for terrain obstacles.
-    * Improved TL2 to TL3 research transition (now focuses on Gauss Cannon tree).
-    * FishBot now follows the same rules as human players on game start (will no longer produce Hover Trucks before the Command Center is built).
 
 Please see [`CHANGELOG.md`](CHANGELOG.md) for a detailed list of all past changes.
 
@@ -143,6 +132,11 @@ The current areas for improvement are:
 * Strategic improvements (FishBot's current strategic level is: 'this is the closest target, go there').
 * Tactical-level targeting improvements (i.e. preventing target oscillation).
 * Support for T1 & T3.
+
+## Disclaimer: Use of AI
+Prior to **v0.5.2**, ChatGPT was used sparsely to implement some of the math functions, but the majority of the logic and architecture was human-authored.
+
+From **v0.5.2** onwards, Claude Code has been actively used to make improvements to the bot, primarily using the Opus & Sonnet models. The work is still human-directed and reviewed though. 
 
 ## Background and Goals
 FishBot was initially forked from NullBot v3. I acknowledge and appreciate the work of the NullBot team in creating the foundation for this body of work. As of v0.4.0, not much of the original code remains, but I am grateful for the structural and spiritual influence of the original work.

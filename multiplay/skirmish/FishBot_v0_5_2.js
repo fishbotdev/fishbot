@@ -45,18 +45,18 @@
 */
 
 
-const FISHBOT_VERSION = "0.5.1";
+const FISHBOT_VERSION = "0.5.2";
 
 //	This file connects all remaining pieces of AI code together. It shouldn't contain any code itself.
 //	NOTE: order matters!
 const FISHBOT_PATH = "/multiplay/skirmish/";
-const FB_INCLUDES = FISHBOT_PATH + "fb_includes_v0_5_1/";
+const FB_INCLUDES = FISHBOT_PATH + "fb_includes_v0_5_2/";
 
 // Enable DEBUG_MODE_ON (global) to:
 //	 - Show some useful debug information in the console
 //	 - Automatically colour players 0, 1, 2
 //	 - Transform Player 0 (forced human player slot) to spectator mode (used for automated bot testing)
-const DEBUG_MODE_ON = false;
+const DEBUG_MODE_ON = true;
 
 // Enable TELEMETRY_ON (global) to:
 //	 - Emit machine-readable `TEL|...` lines to the console, describing how well FishBot is playing

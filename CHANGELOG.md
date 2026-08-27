@@ -1,6 +1,17 @@
 # Changelog
 This file is used to record the changes to FishBot between each version.
 
+## Fishbot v0.5.2
+*Released **x Aug 2026***
+### Changes in v0.5.2
+- Combat improvements:
+    - Completely reworked the group movement code, resulting in smoother group movement with less rubberbanding and better handling of chokepoints.
+    - Squashed minor targeting bugs.
+- Construction & production fixes:
+    - Fixed minor issues with prioritisation and improved avoids building repair centers in chokepoints.
+- Technical changes:
+    - Performance improvements which further reduce lag spikes (this version should have resolved the vast majority of these).
+
 ## Fishbot v0.5.1
 *Released **04 Aug 2026***
 ### Changes in v0.5.1

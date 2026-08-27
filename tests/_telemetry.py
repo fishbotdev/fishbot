@@ -18,7 +18,7 @@
 r"""
 The purpose of this file is to recover FishBot's telemetry (`TEL`) events from a scraped game console.
 
-The producing side is `multiplay/skirmish/fb_includes_v0_5_1/hq_telemetry.js` - that file is the
+The producing side is `multiplay/skirmish/fb_includes_vX_Y_Z/hq_telemetry.js` - that file is the
 authority on the wire format, and this file is its only consumer. Keep the two in step.
 
 Wire format (one event per console line):

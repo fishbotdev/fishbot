@@ -32,7 +32,7 @@ FFA = "ffa"
 
 DEFAULT_FISHBOT_TEAM = 0
 
-FISHBOT_VERSION_NUMBER = "0_5_1"       # This changes with every release (this tag is used from v0.5.0)
+FISHBOT_VERSION_NUMBER = "0_5_2"       # This changes with every release (this tag is used from v0.5.0)
 
 FISHBOT_AI = f"multiplay/skirmish/FishBot_v{FISHBOT_VERSION_NUMBER}.js"
 COBRA_AI = "Cobra.js"

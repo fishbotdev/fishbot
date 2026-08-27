@@ -26,32 +26,19 @@ class armyIntelligence {
 
 	/**
 	 * Gets targets around all derricks (including friendly derricks).
+	 * Results may be stale, so downstream functions should handle this.
 	 * @param {worldState} state 
-	 * @returns {AirStrikeMissionRequest[]}
+	 * @returns {AirStrikeMissionRequestLazy[]}
 	 */
-	getTargetsNearDerricks(state) {
+	getTargetsNearDerricksLazy(state) {
 
 		const allDerricks = state.poi.derricks;
 		const cellSize = state.grid.cellSize;
-
 		const SEARCH_RADIUS = cellSize;
 
+		/** @type {AirStrikeMissionRequestLazy[]} */
 		const targetsNearDerricks = [];
 		const seenGridCoord = [];
-
-		// Temporary buffers to store targeting data
-		/** @type {AirStrikeMissionRequest[]} */
-		const defences = [];
-		/** @type {AirStrikeMissionRequest[]} */
-		const trucks = [];
-		/** @type {AirStrikeMissionRequest[]} */
-		const derricks = [];
-
-		const resetTargetBuffersInPlace = () => {
-			defences.length = 0;
-			trucks.length = 0;
-			derricks.length = 0;
-		}
 
 		const createRaidRequest = (obj, priority) => aviation.translateIntoRaidRequest(obj, priority);
 
@@ -69,42 +56,45 @@ class armyIntelligence {
 				continue;
 			}
 
-			const nearby = state.grid.enumRangeLazy(d.x, d.y, SEARCH_RADIUS, true, false);
-			resetTargetBuffersInPlace();
+			((x, y, searchRadius, targetsNearDerricks) => {
 
-			nearby['targetStructures'].forEach(t => {
-				const flags = t.flags;
-				const obj = getObject(t.type, t.player, t.id);
-				if (obj == null) {
-					return;
-				}
+				// Temporary buffers to store targeting data
+				/** @type {AirStrikeMissionRequestLazy[]} */
+				const defences = [];
+				/** @type {AirStrikeMissionRequestLazy[]} */
+				const trucks = [];
+				/** @type {AirStrikeMissionRequestLazy[]} */
+				const derricks = [];
 
-				if (flags & OBJ_FLAGS.DEFENSIVE_STRUCTURE) {
-					if (flags & OBJ_FLAGS.INDIRECT_FIRE) {
-						defences.unshift(createRaidRequest(obj, MISSION_PRIORITY.HIGH));
-					} else {
-						defences.push(createRaidRequest(obj, MISSION_PRIORITY.HIGH));
+				const nearby = state.grid.enumRangeLazy(x, y, searchRadius, true, false);
+
+				nearby['targetStructures'].forEach(t => {
+					const flags = t.flags;
+
+					if (flags & OBJ_FLAGS.DEFENSIVE_STRUCTURE) {
+						if (flags & OBJ_FLAGS.INDIRECT_FIRE) {
+							defences.unshift(createRaidRequest(t, MISSION_PRIORITY.HIGH));
+						} else {
+							defences.push(createRaidRequest(t, MISSION_PRIORITY.HIGH));
+						}
+						return;
 					}
-					return;
-				}
-				if (flags & OBJ_FLAGS.RESOURCE_EXTRACTOR) {
-					derricks.push(createRaidRequest(obj, MISSION_PRIORITY.MEDIUM));
-				}
-			});
+					if (flags & OBJ_FLAGS.RESOURCE_EXTRACTOR) {
+						derricks.push(createRaidRequest(t, MISSION_PRIORITY.MEDIUM));
+					}
+				});
 
-			nearby['targetUnits'].forEach(t => {			
-				const flags = t.flags;
-				const obj = getObject(t.type, t.player, t.id);
-				if (obj == null) {
-					return;
-				}
+				nearby['targetUnits'].forEach(t => {			
+					const flags = t.flags;
 
-				if (flags & OBJ_FLAGS.CONSTRUCTOR && !(flags & OBJ_FLAGS.CYBORG_PROPULSION)) {
-					trucks.push(createRaidRequest(obj, MISSION_PRIORITY.LOW));
-				}
-			});
+					if (flags & OBJ_FLAGS.CONSTRUCTOR && !(flags & OBJ_FLAGS.CYBORG_PROPULSION)) {
+						trucks.push(createRaidRequest(t, MISSION_PRIORITY.LOW));
+					}
+				});
 
-			targetsNearDerricks.push(...trucks, ...defences, ...derricks);
+				targetsNearDerricks.push(...trucks, ...defences, ...derricks);
+
+			})(d.x, d.y, SEARCH_RADIUS, targetsNearDerricks);
 
 			seenGridCoord.push({'gx': d.gx, 'gy': d.gy});
 		}
@@ -114,20 +104,21 @@ class armyIntelligence {
 
 	/**
 	 * Gets targets around all enemy bases. Currently used for VTOL targeting only (FishBot v0.4.0).
+	 * Results may be stale, so downstream functions should handle this.
 	 * @param {worldState} state 
 	 */
-	getBaseTargets(state) {
+	getBaseTargetsLazy(state) {
 		const bases = state.poi.bases;
 		const enemyPlayerIDs = state.enumLivingPlayers().filter(isEnemy); 
 
 		const result = {
-			/** @type {AirStrikeMissionRequest[]} */
+			/** @type {AirStrikeMissionRequestLazy[]} */
 			'productionTargets': [],
-			/** @type {AirStrikeMissionRequest[]} */
+			/** @type {AirStrikeMissionRequestLazy[]} */
 			'adaTargets': [],
-			/** @type {AirStrikeMissionRequest[]} */
+			/** @type {AirStrikeMissionRequestLazy[]} */
 			'indirectFireTargets': [],
-			/** @type {AirStrikeMissionRequest[]} */
+			/** @type {AirStrikeMissionRequestLazy[]} */
 			'defensiveStructureTargets': [],
 		};
 
@@ -143,56 +134,53 @@ class armyIntelligence {
 				continue;
 			}
 
-			const nearby = state.grid.enumRangeLazy(bases[i].x, bases[i].y, SEARCH_RADIUS, true, false);		
+			const baseX = bases[i].x, baseY = bases[i].y;
+
+			((baseX, baseY, result) => {
+
+			const nearby = state.grid.enumRangeLazy(baseX, baseY, SEARCH_RADIUS, true, false);		
 
 			nearby['targetStructures'].forEach(t => {
 				const flags = t.flags;
-				const obj = getObject(t.type, t.player, t.id);
-				if (obj == null) {
-					return;
-				}
 
 				if (flags & OBJ_FLAGS.ADA) {
-					result.adaTargets.push(createDASRequest(obj, MISSION_PRIORITY.VERY_HIGH));
+					result.adaTargets.push(createDASRequest(t, MISSION_PRIORITY.VERY_HIGH));
 					return;
 				}
 				if (flags & OBJ_FLAGS.PRODUCTION) {
-					result.productionTargets.push(createDASRequest(obj, MISSION_PRIORITY.VERY_HIGH));
+					result.productionTargets.push(createDASRequest(t, MISSION_PRIORITY.VERY_HIGH));
 					return;
 				}
 				if (flags & OBJ_FLAGS.INDIRECT_FIRE) {
-					result.indirectFireTargets.push(createDASRequest(obj, MISSION_PRIORITY.HIGH));
+					result.indirectFireTargets.push(createDASRequest(t, MISSION_PRIORITY.HIGH));
 					return;
 				}
 				if (flags & OBJ_FLAGS.DEFENSIVE_STRUCTURE) {
-					result.defensiveStructureTargets.push(createDASRequest(obj, MISSION_PRIORITY.HIGH));
+					result.defensiveStructureTargets.push(createDASRequest(t, MISSION_PRIORITY.HIGH));
 					return;
 				}
 			});
 
 			nearby['targetUnits'].forEach(t => {
 				const flags = t.flags;
-				const obj = getObject(t.type, t.player, t.id);
-				if (obj == null) {
-					return;
-				}
 
 				if (flags & OBJ_FLAGS.ADA) {
-					result.adaTargets.push(createDASRequest(obj, MISSION_PRIORITY.VERY_HIGH));
+					result.adaTargets.push(createDASRequest(t, MISSION_PRIORITY.VERY_HIGH));
 					return;
 				}
 				if (flags & OBJ_FLAGS.CONSTRUCTOR && !(flags & OBJ_FLAGS.CYBORG_PROPULSION)) {
 					// Cyborg propulsion is omitted because FishBot 0.4.0 does not use anti-cyborg VTOL weapons
-					result.productionTargets.push(createDASRequest(obj, MISSION_PRIORITY.LOW));
+					result.productionTargets.push(createDASRequest(t, MISSION_PRIORITY.LOW));
 					return;
 				}
 				if (flags & OBJ_FLAGS.INDIRECT_FIRE && !(flags & OBJ_FLAGS.CYBORG_PROPULSION)) {
 					// Cyborg propulsion is omitted because FishBot 0.4.0 does not use anti-cyborg VTOL weapons (e.g. will falsely attack grenadiers)
-					result.indirectFireTargets.push(createDASRequest(obj, MISSION_PRIORITY.HIGH));
+					result.indirectFireTargets.push(createDASRequest(t, MISSION_PRIORITY.HIGH));
 					return;
 				}
 			});
-		}	
+			})(baseX, baseY, result);	
+		}
 
 		return result;
 	}
