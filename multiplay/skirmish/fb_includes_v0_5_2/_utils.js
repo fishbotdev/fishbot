@@ -81,6 +81,20 @@ function fprof(callback, suffix="") {
 //  These functions should only use the standard inbuilt JS libraries.
 
 /**
+ * Median of a numeric array. Returns `NaN` (and warns) if `arr` is empty.
+ * @param {number[]} arr
+ * @returns {number}
+ */
+function arrayMedian(arr) {
+	if (arr.length === 0) {
+		warn(`arrayMedian() received an empty array. Will return "NaN".`);
+	}
+	const sorted = [...arr].sort((a, b) => a - b);		// copied because `sort()` mutates in place; the comparator is required because the default sort is lexicographic
+	const mid = Math.floor(sorted.length / 2);
+	return (sorted.length % 2 === 1) ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
+}
+
+/**
  * Generates an array of integers of length `stopNum`, starting with `0` and ending at integer `stopNum - 1`.
  * e.g. `generateRange(5)` produces `[0, 1, 2, 3, 4]`. 
  * @param {number} stopNum length of the array

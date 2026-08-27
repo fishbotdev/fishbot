@@ -254,8 +254,8 @@
  * @typedef {Object} BrigadeMetadata
  * @property {number} id This is the brigade ID (duplicate of the key).
  * @property {PositionInfo} location  
- * @property {number} strength
- * @property {NearbyTargets} nearbyTargets 
+ * @property {number} strength Smoothed count of direct-fire units in the brigade (mortars excluded).
+ * @property {NearbyTargets} nearbyTargets
  * @property {AirStrikeMissionRequest[]} casStrikeRequests
  * @property {BrigadeComposition} composition
  *  
@@ -295,6 +295,7 @@
  * @property {number} IMMEDIATE_DIRECT_FIRE_RADIUS
  * @property {number} EFFECTIVE_FIRE_SUPPORT_RADIUS
  * @property {number} EFFECTIVE_ADA_RADIUS
+ * @property {number} MEDIAN_CENTER_STRENGTH_THRESHOLD
  */
 
 /**
@@ -342,6 +343,7 @@
  * 
  * @property {number} VEHICLE_REPAIR_THRESHOLD
  * @property {number} CYBORG_REPAIR_THRESHOLD
+ * @property {number} STRENGTH_DECAY_RATE
  */
 
 /*
