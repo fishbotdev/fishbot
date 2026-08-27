@@ -105,10 +105,7 @@ class armyGroundOperations {
 			unitX.push(droid.x);
 			unitY.push(droid.y);
 		});
-		// `units` is non-empty, so `arrayMedian` always returns a number here.
-		const medianX = /** @type {number} */ (arrayMedian(unitX));
-		const medianY = /** @type {number} */ (arrayMedian(unitY));
-		return {'x': Math.floor(medianX), 'y': Math.floor(medianY)};
+		return {'x': Math.floor(arrayMedian(unitX)), 'y': Math.floor(arrayMedian(unitY))};
 	}
 
 	/**
