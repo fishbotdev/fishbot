@@ -64,16 +64,14 @@ class CommandCenter {
 
 		const TOTAL_UNITS_PER_BRIGADE = Object.values(DEFAULT_FISHBOT_BRIGADE_COMPOSITION).reduce((a, b) => a + b, 0);
 
-		// Every unit in a brigade except its mortar battalion is direct-fire, so the establishment that
-		// brigade strength is measured against is the full brigade less `MAX_MORTAR`.
-		const DIRECT_FIRE_ESTABLISHMENT = TOTAL_UNITS_PER_BRIGADE - DEFAULT_FISHBOT_BRIGADE_COMPOSITION['MAX_MORTAR'];
+		const MAX_DIRECT_FIRE_UNITS = DEFAULT_FISHBOT_BRIGADE_COMPOSITION.MAX_HEAVY_CAVALRY + DEFAULT_FISHBOT_BRIGADE_COMPOSITION.MAX_LIGHT_CAVALRY;
 
 		/** @type {GroundForceParameters} */
 		this.GROUND_FORCE_PARAMETERS = {
 			IMMEDIATE_DIRECT_FIRE_RADIUS: 10,
 			EFFECTIVE_FIRE_SUPPORT_RADIUS: 10,		// todo: this should be adaptive - when the brigade has a sensor, this is better, without, it is restricted by sight range of the front units
 			EFFECTIVE_ADA_RADIUS: 12,
-			MEDIAN_CENTER_STRENGTH_THRESHOLD: Math.ceil(0.50 * DIRECT_FIRE_ESTABLISHMENT),		// at/above this brigade strength, the brigade center switches from average to median
+			MEDIAN_CENTER_STRENGTH_THRESHOLD: Math.ceil(0.50 * MAX_DIRECT_FIRE_UNITS),		// at/above this brigade strength, the brigade center switches from average to median
 		};
 
 		// Aviation parameters
