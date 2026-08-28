@@ -1006,31 +1006,30 @@ class CommandCenter {
 			approvedConstructionTasks.push(...sectorDefenceTasks.slice(0, fortificationDeficit));
 		}
 
-		// LOCAL REPAIR CENTERS	
+		// LOCAL REPAIR CENTERS
 		const repairCenterEmptyTaskSlots = this.CONSTRUCTION_PARAMETERS.MAX_PARALLEL_REPAIR_CENTER_BUILD_TASKS - activeRepairCenterBuildTaskIDs.length;
 		if (repairCenterEmptyTaskSlots > 0) {
 
 			const myRepairFacilities = state.playerInfo[me]["repairFacilityFbObjects"];
+			const DEMOLITION_REQUIRED = myRepairFacilities.length >= state.getMaxStructureCount("Repair Facility");
 
 			const GROUP_POSITIONS = [];
 			this.BRIGADE_DESIGNATIONS.forEach(brigadeID => {
 				GROUP_POSITIONS.push(state.brigades[brigadeID]['location']);
 			});
 
-			const options = engineering.generateRemoteServiceCenterConstructionOptions(state, myRepairFacilities, GROUP_POSITIONS);
+			const options = engineering.generateRemoteServiceCenterConstructionOptions(state, myRepairFacilities, GROUP_POSITIONS, DEMOLITION_REQUIRED);
 			const newFacilityLocations = options["newFacilityLocations"];
 			const demolitionLocations = options["demolitionLocations"];
-
-			const BELOW_REPAIR_FACILITY_HARD_CAP = myRepairFacilities.length < state.getMaxStructureCount("Repair Facility");
 
 			const NEW_FACILITY_REQUESTED = newFacilityLocations.length !== 0;
 
 			if (NEW_FACILITY_REQUESTED) {
-				if (BELOW_REPAIR_FACILITY_HARD_CAP) {
+				if (!DEMOLITION_REQUIRED) {
 					const approvedRepairCenterConstructionTasks = newFacilityLocations.slice(0, repairCenterEmptyTaskSlots);
 					approvedConstructionTasks.push(...approvedRepairCenterConstructionTasks);
 				} else {
-					const approvedDemolitionTasks = demolitionLocations.slice(0, 1);		// Note: this only takes 1 task (1 demolition at a time)
+					const approvedDemolitionTasks = demolitionLocations.slice(0, 1);
 					// debug(`Demolition approved @ ${approvedDemolitionTasks[0].payload.x} ${approvedDemolitionTasks[0].payload.y}`);
 					approvedConstructionTasks.push(...approvedDemolitionTasks);
 				}

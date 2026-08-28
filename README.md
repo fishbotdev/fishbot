@@ -4,7 +4,7 @@
 
 FishBot is a Warzone 2100 AI bot compatible with Warzone 2100 **v4.6.1+**.
 
-It is designed for Tech Level 2 (No Scavenger) skirmish games on the supported maps below. Tech Level 1 is currently not supported.
+It is designed for Tech Level 2 (No Scavenger) skirmish games on the supported maps below. Starts at other tech levels are currently not supported.
 
 ![FishBot using two unit groups to attack two bases simultaneously.](docs/images/fishbot-v0.5.1.png)
 *Figure 1: FishBot **v0.5.1** using two unit groups to attack two bases simultaneously.*
@@ -14,7 +14,7 @@ It is designed for Tech Level 2 (No Scavenger) skirmish games on the supported m
 1. Open Warzone 2100. Click on "Options".
 2. Click "Open Configuration Directory" in the bottom left corner.
 3. Download 📦fishbot.zip from https://github.com/fishbotdev/fishbot/releases. 
-4. Move the .zip file to 📁`mods/4.7.0/autoload/`. **To avoid any version conflicts, please remove all previous versions of FishBot**.
+4. Move the .zip file to 📁`mods/4.7.0/autoload/`. **To avoid any version conflicts, please remove all previous versions of FishBot before v0.5.1**.
 5. Restart Warzone 2100.
 
 To check if the path is correct, you should be able to find `FishBot.js` in this location:
@@ -26,59 +26,55 @@ If you can find `Fishbot.js` here, FishBot should automatically load on the next
 ## Supported technology levels
 Currently, only T2 (**Technology Level 2**) starts are supported. Further support for other technology levels might be added in a future version. 
 
-However, at the moment I feel like Cobra already fills the gap in the other technology levels very well.
-
-In particular, I think Cobra performs excellently on T1 in Warzone 2100 v4.6.3+. 
-
 ## Supported maps (Warzone2100 4.7.0)
-As of **v0.5.2**, FishBot works on most "low-oil" maps shipped with the game. There might be a few lag issues with high-player count games; these are being actively worked on.
+As of **v0.5.2**, FishBot works on most "low-oil" maps shipped with the game.
 
-FishBot is not compatible with scavengers; it currently ignores them.
+FishBot is currently not compatible with scavengers; it currently ignores them.
 
 ### 2 player (T2-NoScav)
-* `Sk-Startup` (100% duel)
-* `Sk-UrbanChasm` (85% duel)
-* `Sk-HighGround` (95% duel)
-* `Roughness` (100% duel)
-* `Vision` (80% duel)
+* `Sk-Startup` (100% duel) 
+* `Sk-UrbanChasm` (95% duel)
+* `Sk-HighGround` (90% duel)
+* `Roughness` (100% duel) 
+* `Vision` (95% duel)
 * `DustyMaze (2P)` (*tested manually*)
 
 ### 3 player (T2-NoScav)
-* `Monocot` (100% duel, 93% FFA)
-* `Gamma` (100% duel, 83% FFA)
+* `Monocot` (100% duel, 97% FFA)
+* `Gamma` (100% duel, 77% FFA)
 
 ### 4 player (T2-NoScav)
-* `Sk-Rush` (98% duel, 70% FFA)
-* `Sk-Rush2` (99% duel, 80% FFA)
-* `Sk-UrbanDuel` (97% duel, 90% FFA)
-* `Sk-Mountain` (96% duel, 50% FFA)
-* `Sk-Valley` (96% duel, 75% FFA)
-* `Sk-FishNets` (82% duel, **20% FFA**)- does not handle being attacked over water obstacles well
-* `Sk-GreatRift` (99% duel, 62% FFA)
-* `Sk-RollingHills` (93% duel, 65% FFA) 
-* `Sk-Basingstoke` (98% duel, 71% FFA)
-* `Sk-LittleEgypt` (96% duel, 52% FFA) 
-* `Sk-Cockpit` - (100% duel, 62% FFA)
-* `Sk-Urban-Chaos` (88% duel, 77% FFA)
-* `Sk-Pyramidal` (100% duel, 72% FFA)
+* `Sk-Rush` (100% duel, 80% FFA)
+* `Sk-Rush2` (99% duel, 70% FFA)
+* `Sk-UrbanDuel` (99% duel, 75% FFA)
+* `Sk-Mountain` (95% duel, 70% FFA)
+* `Sk-Valley` (97% duel, 75% FFA)
+* `Sk-FishNets` (85% duel, **22% FFA**) -- does not handle being attacked over water obstacles well
+* `Sk-GreatRift` (99% duel, 72% FFA)
+* `Sk-RollingHills` (92% duel, 82% FFA) 
+* `Sk-Basingstoke` (89% duel, 79% FFA)      -- check f2 c4
+* `Sk-LittleEgypt` (91% duel, 45% FFA)      -- check ffa-f1, check why it's so bad 1/10
+* `Sk-Cockpit` - (100% duel, 62% FFA) 
+* `Sk-Urban-Chaos` (88% duel, 72% FFA)
+* `Sk-Pyramidal` (100% duel, 82% FFA)
 * `DustyMaze-2v2` (*tested manually*)
 * `DustyMaze-FFA` (*tested manually*)
 
 ### 5 player (T2-NoScav)
-* `Bloat` (46% FFA)
+* `Bloat` (56% FFA)
 
 ### 6 player (T2-NoScav)
-* `Melting` (43% FFA)
+* `Melting` (36% FFA)
 * `Entropy` (*tested manually*)
 
 ### 7 player (T2-NoScav)
 * `Thales` (*tested manually*)
 
 ### 8 player (T2-NoScav)
-* `Sk-Clover` (41% FFA)
+* `Sk-Clover` (34% FFA) -- check f8 (0 / 10)
 * `Sk-MizaMaze` (40% FFA)
 * ~~`Sk-Manhattan`~~ - **not compatible**: central river blocks land units
-* `Sk-Bananas` (45% FFA)
+* `Sk-Bananas` (42% FFA)
 * `Sk-Wheel` (*tested manually*)
 * `Sk-Ziggurat` (*tested manually*)
 * `Sk-Concrete` (18% FFA)
@@ -86,9 +82,9 @@ FishBot is not compatible with scavengers; it currently ignores them.
 * `Sk-HideNSneak` (29% FFA)
 * `Sk-YinYang` (*tested manually*)
 * `Sk-SandCastles` (50% FFA)
-* `Sk-BeggarsKanyon` (78% FFA)
+* `Sk-BeggarsKanyon` (74% FFA)
 * `Sk-Gridlock` (51% FFA)
-* `Sk-Cockate` (26% FFA)
+* `Sk-Cockate` (39% FFA)
 
 ### 9 player (T2-NoScav)
 * `Sk-WindFury` (*tested manually*)
@@ -97,19 +93,18 @@ FishBot is not compatible with scavengers; it currently ignores them.
 * `Emergence` (*tested manually*)
 * ~~`WaterLoop`~~ - **not compatible**: sea map
 
-### How to determine if a map is supported
-The method is as follows:
-* For 2 player maps, FishBot has a 75%+ win rate (cumulatively, across both positions) against Cobra @ Medium difficulty.
-* For 3 & 4 player maps, FishBot has a:
-    * 50%+ win rate in FFA (cumulative across all positions) against Cobra @ Medium difficulty, and
-    * 75%+ win rate in duels (against Cobra @ Medium difficulty) across all pairs of positions (i.e. 1v1 with all other player slots being empty).
-* For 5 player maps and higher, FishBot is able to win a FFA game in 3 tries or less, and does not run into a breaking issue.
+### Test methodology
+For a map to be compatible, FishBot must have an absence of breaking issues, and ideally:
+* > 1/N win rate in N-player FFA (cumulative across all positions) against Cobra @ Medium difficulty, and
+* > 75%+ win rate in duels across all pairs of positions against Cobra @ Medium difficulty (i.e. 1v1 with all other player slots being spectators).
 
 ## Recent updates
 * **v0.5.2** - *released **x Aug 2026***
-    * Improved group-movement handling of chokepoints, which increases the number of supported maps.
-    * Widespread performance improvements, resulting in a smoother player experience.
-    * Squashed some minor bugs related to targeting & combat.
+    * Improved group movement, meaning that:
+        1. Group movement will now feel more smooth and less janky.
+        2. Unit groups now handle chokepoints better (and are much less likely to get stuck).
+        3. More compatible maps!
+    * Wide-ranging performance improvements, resulting in a smoother player experience.
 
 * **v0.5.1** - *released **04 Aug 2026***
     * Now supports custom structure limits in skirmish settings.
@@ -122,19 +117,6 @@ The method is as follows:
     * Major overhaul of the production, resupply & repair systems to support the above.
     * Improved base construction efficiency & added build order adaptation for very low-oil maps.
 
-* **v0.4.2** - *released **10 Jul 2026***
-    * Combat improvements:
-        * Improved direct-fire targeting and the effectiveness of AA units.
-        * Added support for Heavy Repair Turret units.
-    * Slightly improved research order and construction reliability.
-
-* **v0.4.1** - *released **27 Jun 2026***
-    * Increased combat group cohesion.
-    * Construction fixes:
-        * Repair facilities are more likely to be forward-constructed. 
-        * Base structure positions now account for terrain obstacles.
-    * Improved TL2 to TL3 research transition (now focuses on Gauss Cannon tree).
-    * FishBot now follows the same rules as human players on game start (will no longer produce Hover Trucks before the Command Center is built).
 
 Please see [`CHANGELOG.md`](CHANGELOG.md) for a detailed list of all past changes.
 
@@ -145,9 +127,9 @@ The current areas for improvement are:
 * Support for T1 & T3.
 
 ## Disclaimer: Use of AI
-Prior to **v0.5.2**, ChatGPT was used sparsely to implement some of the math functions, but the majority of the logic and architecture was human-written.
+Prior to **v0.5.2**, ChatGPT was used sparsely to implement some of the math functions, but the majority of the logic and architecture was human-authored.
 
-From **v0.5.2**, Claude Code has been used to make active incremental improvements to the bot. These improvements are still human-reviewed though. 
+From **v0.5.2** onwards, Claude Code has been actively used to make improvements to the bot, primarily using the Opus & Sonnet models. The work is still human-directed and reviewed though. 
 
 ## Background and Goals
 FishBot was initially forked from NullBot v3. I acknowledge and appreciate the work of the NullBot team in creating the foundation for this body of work. As of v0.4.0, not much of the original code remains, but I am grateful for the structural and spiritual influence of the original work.
