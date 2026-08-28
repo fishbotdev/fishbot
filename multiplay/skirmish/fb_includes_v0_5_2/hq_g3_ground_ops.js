@@ -77,46 +77,87 @@ class armyGroundOperations {
 	}
 
 	/**
-	 * Finds the 'median' droid's (x,y) coordinates
-	 * 1. Get x,y of all owned droids
-	 * 2. Iterate through (x,y) coordinate list, get the median, return as 'x' and 'y'. 
-	 * 
-	 * Returns 'baseLocation' if no units are found.
-	 * @param {number} brigadeID 
-	 * @returns {PositionInfo} `medianLocation` (if units exist); else `baseLocation`.
+	 * Averages the units' positions. Outlier-sensitive: a straggler drags the result backwards, which
+	 * pulls the brigade back with it.
+	 * @param {DroidObject[]} units must not be empty
+	 * @returns {{x: number, y: number}}
 	 */
-	getForceMedianLocation(brigadeID) {
+	#getAverageLoc(units) {
+		let sumX = 0;
+		let sumY = 0;
+		units.forEach((droid) => {
+			sumX += droid.x;
+			sumY += droid.y;
+		});
+		return {'x': Math.floor(sumX / units.length), 'y': Math.floor(sumY / units.length)};
+	}
+
+	/**
+	 * Takes the median of the units' positions in each axis. Outlier-resistant: stragglers no longer drag
+	 * the result backwards, so a large brigade keeps pressing the attack.
+	 * @param {DroidObject[]} units must not be empty
+	 * @returns {{x: number, y: number}}
+	 */
+	#getMedianLoc(units) {
+		const unitX = [];
+		const unitY = [];
+		units.forEach((droid) => {
+			unitX.push(droid.x);
+			unitY.push(droid.y);
+		});
+		return {'x': Math.floor(arrayMedian(unitX)), 'y': Math.floor(arrayMedian(unitY))};
+	}
+
+	/**
+	 * Approximates where the group currently is, using whichever estimator suits the brigade's strength:
+	 * a weak brigade is centred by average (which plays it safe), an established one by median (which
+	 * presses the attack). `strength` is smoothed by `updateBrigadeSupplyStatus()`, so the brigade does
+	 * not switch estimator every time a single unit dies and is replaced.
+	 *
+	 * Mortar units are excluded because their long attack range means they can sit far from the
+	 * rest of the group, which would skew the estimate of where the group actually is.
+	 *
+	 * The result is snapped to the direct-fire unit nearest the estimate. This is required: a per-axis
+	 * median is not a true 2D median, so it can land on a tile that no unit occupies and which may not
+	 * even be walkable.
+	 *
+	 * Returns `baseLocation` if no units are found.
+	 * @param {worldState} state
+	 * @param {number} brigadeID
+	 * @param {GroundForceParameters} parameters
+	 * @returns {PositionInfo} the location of the unit nearest the group's center (if units exist); else `baseLocation`.
+	 */
+	getForceCenterLoc(state, brigadeID, parameters) {
 		const heightMap = state.mapData.heightMap;
 
-		const getUnitsIn = (brigadeID) => state.g.enumGroup(brigadeID);
-		
-		const brigadeUnits = getUnitsIn(brigadeID);
+		const brigadeUnits = state.g.enumGroup(brigadeID);
 
 		const baseX = baseLocation.x;
 		const baseY = baseLocation.y;
 		const baseZ = heightMap[baseX][baseY];
 		const basePosition = {'x': baseX, 'y': baseY, 'z': baseZ};
-		if (brigadeUnits.length === 0) {
+
+		const directFireUnits = brigadeUnits.filter((droid) => !droid.hasIndirect);
+		if (directFireUnits.length === 0) {
 			return basePosition;
 		}
 
-		const droidX = [], droidY = [];
-		brigadeUnits.forEach((droid) => {
-			if (droid.hasIndirect) return;	// Experimental: removing mortar units, does that make this estimate more accurate?
-			droidX.push(droid.x);
-			droidY.push(droid.y);
-		});	
-		if (droidX.length === 0 || droidY.length === 0) {
-			// This is required because the `droid.hasIndirect` filtering may mean that droidX/droidY may be empty, in which case `arrayMedian` is invalid		
-			return basePosition;
-		}
-		
-		// Find median
-		const medianX = Math.floor(arrayMedian(droidX));
-		const medianY = Math.floor(arrayMedian(droidY));
-		const medianZ = heightMap[medianX][medianY];
-		
-		return {"x": medianX, "y": medianY, "z": medianZ};
+		const brigadeStrength = state.brigades[brigadeID].strength;
+		const BRIGADE_CAN_TAKE_RISKS = brigadeStrength >= parameters.MEDIAN_CENTER_STRENGTH_THRESHOLD;
+		const centerEstimate = BRIGADE_CAN_TAKE_RISKS ? this.#getMedianLoc(directFireUnits) : this.#getAverageLoc(directFireUnits);
+
+		// Snap the estimate to the nearest direct-fire unit
+		let nearestUnit = directFireUnits[0];
+		let nearestDistSq = Infinity;
+		directFireUnits.forEach((droid) => {
+			const currDistSq = distSq(droid.x, centerEstimate.x, droid.y, centerEstimate.y);
+			if (currDistSq < nearestDistSq) {
+				nearestDistSq = currDistSq;
+				nearestUnit = droid;
+			}
+		});
+
+		return {"x": nearestUnit.x, "y": nearestUnit.y, "z": heightMap[nearestUnit.x][nearestUnit.y]};
 	}
 
 }
