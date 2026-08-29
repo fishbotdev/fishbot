@@ -131,6 +131,7 @@ class TacticalOperationsCenter {
 					md.ceaseOrders();
 				}
 				md.missionStatus = MISSION_STATUS.FAILED_ABORTED;
+				telemetry.reportMissionOutcome(md, "abort", TEL_FAILURE_REASON.TOO_DANGEROUS);
 				continue;
 			}
 
@@ -155,12 +156,14 @@ class TacticalOperationsCenter {
 						}
 
 						md.missionStatus = MISSION_STATUS.SUCCEEDED;
+						telemetry.reportMissionOutcome(md, "ok");
 						break;
 					case MISSION_STATUS.FAILED:
 						if (defined(md.ceaseOrders)) {
 							md.ceaseOrders();
 						}
 						md.missionStatus = MISSION_STATUS.FAILED;
+						telemetry.reportMissionOutcome(md, "fail", retval.reason);
 						break;
 					case MISSION_STATUS.IN_PROGRESS:
 						continue;		// continue processing the next mission
@@ -234,6 +237,7 @@ class TacticalOperationsCenter {
 		buildTasks.forEach((task, i) => {	
 			const missionData = this.createNewMission({missionType: task.missionType, priority: PRIORITY}, task, i);		
 			if (missionData !== undefined) {
+				telemetry.reportOilCaptureCommitment(state, task, missionData);
 				state.activeMissions.push(missionData);
 				// this.#printConstructionDebugOutput(task, missionData.id, [MISSION_TYPE.DEMOLISH_REPAIR_CENTER, MISSION_TYPE.CONSTRUCT_REPAIR_CENTER]);
 			} 

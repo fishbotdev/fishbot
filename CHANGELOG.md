@@ -8,9 +8,9 @@ This file is used to record the changes to FishBot between each version.
     - Completely reworked the group movement code, resulting in smoother group movement with less rubberbanding and better handling of chokepoints.
     - Squashed minor targeting bugs.
 - Construction & production fixes:
-    - Fixed minor issues with prioritisation and improved avoids building repair centers in chokepoints.
+    - Fixed minor issues with prioritisation and avoids building repair centers in chokepoints.
 - Technical changes:
-    - Performance improvements which greatly reduce lag spikes; this version should now perform well across all maps.
+    - Performance improvements which further reduce lag spikes; this version should now perform well across all maps.
 
 ## Fishbot v0.5.1
 *Released **04 Aug 2026***
