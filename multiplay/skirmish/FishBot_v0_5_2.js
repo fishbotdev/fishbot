@@ -30,10 +30,8 @@
 
 	Project started: 15 Oct 2025
 
-	Fun stats: LINES OF CODE
-		
-	FishBot uses cloc to count lines of code (https://github.com/aldanial/cloc). 
-	More information can be found in `fishbot\software_tools\run_cloc.bat`.
+	=== Fun stats: LINES OF CODE ===
+	FishBot uses cloc to count lines of code (https://github.com/aldanial/cloc). More info can be found in `fishbot\software_tools\run_cloc.bat`.
 	- 3845 JS @ 30 Mar 2026: v0.3.1 release (commit `0565344`)
 	- 4420 JS @ 04 Apr 2026: v0.3.2 release (commit `69c4754`)
 	- 4437 JS @ 07 Apr 2026: v0.3.3 release (commit `b6c85a5`)
@@ -44,7 +42,6 @@
 	- 5580 JS @ 04 Aug 2026: v0.5.1 release
 	- 5626 JS @ 29 Aug 2026: v0.5.2 release
 */
-
 
 const FISHBOT_VERSION = "0.5.2";
 
@@ -59,8 +56,7 @@ const FB_INCLUDES = FISHBOT_PATH + "fb_includes_v0_5_2/";
 //	 - Transform Player 0 (forced human player slot) to spectator mode (used for automated bot testing)
 const DEBUG_MODE_ON = true;
 
-
-// See docs/DEVELOPMENT.md for the release checklist, and python_helper_scripts/bump_version.py & release.py.
+// For developers, please refer to `docs/DEVELOPMENT.md` for important info e.g. release checklist.
 
 ////////////////////////////////////////////////////////////////////////////////////////////
 

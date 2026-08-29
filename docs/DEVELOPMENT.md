@@ -93,18 +93,17 @@ On opening `spectate_map.exe`, make sure to Browse for the **Tests Folder** on y
 The tests folder should point to the **Development** Configuration Directory (e.g. `Documents\wz2100_config_dir\tests`) so you can make local changes and immediately test the effect of those changes in spectator mode.
 
 ## Release Checklist
-At the start of a new development cycle (right after the previous release's tag is cut on `main`), run `python_helper_scripts/bump_version.py`. It renames the version-suffixed files/folders, updates the version constants, and sets `DEBUG_MODE_ON = true` for the new cycle.
+At the start of a new development cycle for a new version, run `python_helper_scripts/bump_version.py`. It renames the version-suffixed files/folders, updates the version constants, and sets `DEBUG_MODE_ON = true`.
 
 When ready to release:
 1. Run `tests/run_tests.py` and check the perf logs with `python_helper_scripts/process_performance_data.py`. Also manually test all maps marked "tested manually" in `README.md`, against Cobra @ Medium (pass if it can win a single game in 3 tries or less). Pass if no regression.
-2. Update `README.md` (test results, changed maps, summary of changes) and `CHANGELOG.md` with the new version's entry.
+2. Update & commit `README.md` and `CHANGELOG.md` (test results & summary of changes).
 3. Run `python_helper_scripts/release.py` → **Toggle DEBUG_MODE_ON** (off).
 4. Run `python_helper_scripts/release.py` → **Update LOC stats**.
-5. Commit any remaining changes (e.g. README/CHANGELOG edits) via your IDE/git.
 6. Run `python_helper_scripts/release.py` → **Build release zip**.
-7. Push the `development` branch and open a PR on GitHub titled "FishBot vX.Y.Z Release".
+7. Push `development` to origin and open a PR on GitHub titled "FishBot vX.Y.Z Release".
 8. Merge the PR into `main`.
-9. On GitHub, create a new Release: tag it `fishbot-vX.Y.Z` targeting `main`, paste the `CHANGELOG.md` entry into the release notes, and attach the zip built in step 6.
+9. On GitHub, create a new Release: tag it `fishbot-vX.Y.Z` targeting `main`, paste the `CHANGELOG.md` entry into the release notes, and attach the zip built in Step 6.
 
 ## Software Documentation Methods
 The intent of the following documentation methods is to make changing the software easier:
