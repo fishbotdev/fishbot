@@ -6,11 +6,10 @@ previous release's tag was cut on main). It renames the version-suffixed
 files/folders, updates the version constants, and turns DEBUG_MODE_ON on
 for the new cycle. Mirrors the pattern used in commit ff443201.
 
-Usage:
-    python bump_version.py 0.5.3
+No command-line arguments needed -- just run this file (e.g. hit Run/F5 in
+your IDE) and it will prompt for the new version number.
 """
 
-import argparse
 import re
 import subprocess
 import sys
@@ -42,16 +41,13 @@ def get_current_version() -> str:
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Bump FishBot to a new version")
-    parser.add_argument("new_version", help="e.g. 0.5.3")
-    args = parser.parse_args()
-
-    new_dotted = args.new_version
-    if not re.fullmatch(r"\d+\.\d+\.\d+", new_dotted):
-        sys.exit(f"Version must look like X.Y.Z, got: {new_dotted}")
-
     old_underscore = get_current_version()
     old_dotted = old_underscore.replace("_", ".")
+    print(f"Current version: {old_dotted}")
+
+    new_dotted = input("New version (e.g. 0.5.3): ").strip()
+    if not re.fullmatch(r"\d+\.\d+\.\d+", new_dotted):
+        sys.exit(f"Version must look like X.Y.Z, got: {new_dotted}")
     if old_dotted == new_dotted:
         sys.exit(f"Already at version {old_dotted}")
     new_underscore = new_dotted.replace(".", "_")
@@ -63,7 +59,10 @@ def main():
     new_json = SKIRMISH_DIR / f"FishBot_v{new_underscore}.json"
     new_inc = SKIRMISH_DIR / f"fb_includes_v{new_underscore}"
 
-    print(f"Bumping {old_dotted} -> {new_dotted}")
+    if not confirm(f"Bump {old_dotted} -> {new_dotted}?"):
+        print("Aborted.")
+        return
+
     run(["git", "mv", str(old_js), str(new_js)])
     run(["git", "mv", str(old_json), str(new_json)])
     run(["git", "mv", str(old_inc), str(new_inc)])
