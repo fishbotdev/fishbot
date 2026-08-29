@@ -52,8 +52,8 @@ FishBot is currently not compatible with scavengers; it currently ignores them.
 * `Sk-FishNets` (85% duel, **22% FFA**) -- does not handle being attacked over water obstacles well
 * `Sk-GreatRift` (99% duel, 72% FFA)
 * `Sk-RollingHills` (92% duel, 82% FFA) 
-* `Sk-Basingstoke` (89% duel, 79% FFA)      -- check f2 c4
-* `Sk-LittleEgypt` (91% duel, 45% FFA)      -- check ffa-f1, check why it's so bad 1/10
+* `Sk-Basingstoke` (89% duel, 79% FFA)      
+* `Sk-LittleEgypt` (91% duel, 45% FFA)      
 * `Sk-Cockpit` - (100% duel, 62% FFA) 
 * `Sk-Urban-Chaos` (88% duel, 72% FFA)
 * `Sk-Pyramidal` (100% duel, 82% FFA)
@@ -71,19 +71,19 @@ FishBot is currently not compatible with scavengers; it currently ignores them.
 * `Thales` (*tested manually*)
 
 ### 8 player (T2-NoScav)
-* `Sk-Clover` (34% FFA) -- check f8 (0 / 10)
-* `Sk-MizaMaze` (40% FFA)
+* `Sk-Clover` (34% FFA) 
+* `Sk-MizaMaze` (20% FFA)
 * ~~`Sk-Manhattan`~~ - **not compatible**: central river blocks land units
 * `Sk-Bananas` (42% FFA)
-* `Sk-Wheel` (*tested manually*)
-* `Sk-Ziggurat` (*tested manually*)
-* `Sk-Concrete` (18% FFA)
-* `Sk-ThePit` (*tested manually*)
-* `Sk-HideNSneak` (29% FFA)
-* `Sk-YinYang` (*tested manually*)
-* `Sk-SandCastles` (50% FFA)
+* `Sk-Wheel` (44% FFA)
+* `Sk-Ziggurat` (36% FFA); test incomplete
+* `Sk-Concrete` (28% FFA)
+* `Sk-ThePit` (51% FFA)
+* `Sk-HideNSneak` (26% FFA)
+* `Sk-YinYang` (50% FFA)
+* `Sk-SandCastles` (54% FFA)
 * `Sk-BeggarsKanyon` (74% FFA)
-* `Sk-Gridlock` (51% FFA)
+* `Sk-Gridlock` (44% FFA)
 * `Sk-Cockate` (39% FFA)
 
 ### 9 player (T2-NoScav)
