@@ -40,7 +40,6 @@
 	- 5330 JS @ 10 Jul 2026: v0.4.2 release (commit `3781360`)
 	- 5315 JS @ 29 Jul 2026: v0.5.0 release 
 	- 5580 JS @ 04 Aug 2026: v0.5.1 release
-	- 5626 JS @ 29 Aug 2026: v0.5.2 release
 */
 
 const FISHBOT_VERSION = "0.5.2";

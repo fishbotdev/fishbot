@@ -14,7 +14,7 @@ It is designed for Tech Level 2 (No Scavenger) skirmish games on the supported m
 1. Open Warzone 2100. Click on "Options".
 2. Click "Open Configuration Directory" in the bottom left corner.
 3. Download 📦fishbot.zip from https://github.com/fishbotdev/fishbot/releases. 
-4. Move the .zip file to 📁`mods/4.7.0/autoload/`. **To avoid any version conflicts, please remove all previous versions of FishBot before v0.5.1**.
+4. Move the .zip file to 📁`mods/4.7.0/autoload/`. **To avoid any version conflicts, please remove all old versions of FishBot (v0.5.0 and below)**.
 5. Restart Warzone 2100.
 
 To check if the path is correct, you should be able to find `FishBot.js` in this location:
@@ -95,16 +95,14 @@ FishBot is currently not compatible with scavengers; it currently ignores them.
 
 ### Test methodology
 For a map to be compatible, FishBot must have an absence of breaking issues, and ideally:
-* > 1/N win rate in N-player FFA (cumulative across all positions) against Cobra @ Medium difficulty, and
-* > 75%+ win rate in duels across all pairs of positions against Cobra @ Medium difficulty (i.e. 1v1 with all other player slots being spectators).
+* Greater than 1/N win rate in N-player FFA (cumulative across all positions) against Cobra @ Medium difficulty, and
+* Greater than 75% win rate in duels across all pairs of positions against Cobra @ Medium difficulty (i.e. 1v1 with all other player slots being spectators).
 
 ## Recent updates
 * **v0.5.2** - *released **x Aug 2026***
-    * Improved group movement, meaning that:
-        1. Group movement will now feel more smooth and less janky.
-        2. Unit groups now handle chokepoints better (and are much less likely to get stuck).
-        3. More compatible maps!
-    * Wide-ranging performance improvements, resulting in a smoother player experience.
+    * Completely reworked the group movement code, resulting in smoother group movement with less rubberbanding and much improved handling of chokepoints.
+    * Performance improvements, resulting in a smoother player experience on all base maps shipped with the game.
+    * Fixed some more long-standing construction issues with oil capture.
 
 * **v0.5.1** - *released **04 Aug 2026***
     * Now supports custom structure limits in skirmish settings.
