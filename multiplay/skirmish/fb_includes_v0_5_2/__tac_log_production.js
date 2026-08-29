@@ -245,28 +245,6 @@ function produceCloseAirSupport(factory) {
 	});
 }
 
-function produceDeepAirSupport(factory) {
-
-	const fishBotDASWeapons = [
-		WEAPONS["Cluster Bomb"],
-		WEAPONS["HEAP Bomb"],
-		WEAPONS["Phosphor Bomb"],
-		WEAPONS["Thermite Bomb"],
-		WEAPONS["Plasmite Bomb"]
-	].reverse();
-
-	const vtolPropulsions = [
-		PROPULSIONS["VTOL"],
-	].reverse();
-
-	return produceVehicle({
-		factory: factory, 
-		weaponList: fishBotDASWeapons, 
-		propulsionList: vtolPropulsions, 
-		maxBodyWeight: BODY_WEIGHT.MEDIUM
-	});
-}
-
 /*
 	GROUND COMBAT UNIT PRODUCTION
 */
@@ -349,30 +327,6 @@ function produceHeavyRepair(factory) {
 }
 
 
-function produceLandAPFireSupport(factory) {
-	// Order these by tech level if you want the most technologically advanced weapon to be used
-	const fireSupportWeapons = [
-		WEAPONS["Mortar"],
-		WEAPONS["Bombard"],
-		WEAPONS["Pepperpot"],
-		WEAPONS["Incendiary Mortar"],
-		WEAPONS["Incendiary Howitzer"],
-	].reverse();
-	
-	const fireSupportPropulsions = [
-		PROPULSIONS["Wheels"], 
-		PROPULSIONS["Half-tracks"],
-		PROPULSIONS["Tracks"]
-	].reverse();
-
-	return produceVehicle({
-		factory: factory, 
-		weaponList: fireSupportWeapons, 
-		propulsionList: fireSupportPropulsions, 
-		maxBodyWeight: BODY_WEIGHT.LIGHT
-	});
-}
-
 function produceLandFireSupportGeneric(factory) {
 	// Part of the combined arms strategy
 
@@ -414,28 +368,6 @@ function produceHighVolumeAAUnit(factory) {
 	return produceVehicle({
 		factory: factory, 
 		weaponList: shortRangeAAWeapons, 
-		propulsionList: airDefenceArtilleryPropulsions, 
-		maxBodyWeight: BODY_WEIGHT.HEAVY
-	});
-}
-
-function produceAAFlakUnit(factory) {
-
-	// Order these by tech level if you want the most technologically advanced weapon to be used
-	const airDefenceArtilleryWeapons = [
-		WEAPONS["AA Cyclone Flak Cannon"],
-		WEAPONS["AA Tornado Flak Cannon"]
-	].reverse();
-	
-	const airDefenceArtilleryPropulsions = [
-		PROPULSIONS["Wheels"], 
-		PROPULSIONS["Half-tracks"],
-		PROPULSIONS["Tracks"]
-	].reverse();
-
-	return produceVehicle({
-		factory: factory, 
-		weaponList: airDefenceArtilleryWeapons, 
 		propulsionList: airDefenceArtilleryPropulsions, 
 		maxBodyWeight: BODY_WEIGHT.HEAVY
 	});

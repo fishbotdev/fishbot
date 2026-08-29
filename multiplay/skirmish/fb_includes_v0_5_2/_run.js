@@ -25,7 +25,7 @@ function runGameEndedWatchdog() {
 
 	if (gameIsFinished && state.botIsActive) {
 		deb(`gameHasEnded, stopping all function`);
-		hq.runEndOfGameTelemetry(state);			// emit the final telemetry event before the bot stops sampling
+		telemetry.endOfGame();			// emit the final telemetry event before the bot stops sampling
 		state.botIsActive = false;
 		clearAllTileHighlights();
 	}

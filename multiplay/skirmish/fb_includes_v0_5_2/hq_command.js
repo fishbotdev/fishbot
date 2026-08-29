@@ -871,8 +871,6 @@ class CommandCenter {
 
 			const brigadeLocation = state.brigades[brigadeID]['location'];
 
-			// const CLOSEST_ENEMY_BASE = intelligence.findClosestEnemyBase(state, brigadeLocation.x, brigadeLocation.y); 			
-
 			const groundTargets = this.#prioritiseBrigadeTargets(state, brigadeID, this.GROUND_FORCE_PARAMETERS);
 
 			this.toc.setBrigadeCASStrikeRequests(state, brigadeID, groundTargets['casTargets']);
@@ -1407,13 +1405,4 @@ class CommandCenter {
 		this.toc.manageMissions(state);
 	}
 
-	/**
-	 * Reports that the game has finished, so telemetry consumers know when the last sample stopped
-	 * being valid. Called once, on the game-ended edge detected in `_run.js`.
-	 * @param {worldState} state
-	 * @returns {void}
-	 */
-	runEndOfGameTelemetry(state) {
-		telemetry.endOfGame();
-	}
 }

@@ -144,34 +144,6 @@ function clampValue(value, min, max) {
 }
 
 /**
- * Converts a number `n` to its binary string representation (to 20 bits).
- * @param {number} n integer
- * @returns {string} binary string representation (to 20 bits) e.g. `"00001000010000100001"`
- */
-function toBinary20(n) {
-	return n.toString(2).padStart(20, '0');
-}
-
-/**
- * Converts a number into its ordinal string representation (e.g. 1 to "1st").
- *
- * @param {number} n positive integer
- * @returns {string} The number appended with the correct ordinal suffix (`st`, `nd`, `rd`, or `th`).
- * 
- * @example
- * getOrdinal(1);	// returns "1st"
- * getOrdinal(22);	// returns "22nd"
- * getOrdinal(3);	// returns "3rd"
- * getOrdinal(13);	// returns "13th"
- */
-function getOrdinal(n) {
-	const s = ["th", "st", "nd", "rd"];
-	const v = n % 100;
-	return n + (s[(v - 20) % 10] || s[v] || s[0]);
-};
-
-
-/**
  * Returns `true` if `variable` is either `null` or `undefined`, otherwise, returns `false`.
  * @param {any} variable 
  * @returns {boolean} 

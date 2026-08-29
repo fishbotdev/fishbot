@@ -15,62 +15,52 @@
 	If not, see <https://www.gnu.org/licenses/>.
 */
 
-/**
+/*
  * This file implements FishBot's *telemetry* output.
  *
- * The purpose of telemetry is to answer "how well did FishBot play?", as opposed to the existing
- * automated tests which only answer "did FishBot survive?". Telemetry lines are emitted during
- * autogames and are harvested by `tests/run_telemetry_parser.py`.
+ * Telemetry answers "how well did FishBot play?", as opposed to the automated tests, which only
+ * answer "did FishBot survive?". It is emitted during autogames and harvested by
+ * `tests/run_telemetry_parser.py`.
  *
- * Telemetry is emitted from the *decision* sites - `hq_command.js` for strategy, `hq_toc.js` for
- * mission commitment and outcome, `_events.js` for destruction - using the local variables which the
- * decision actually used. This is deliberate: it means telemetry reports what FishBot believed and
- * decided, rather than a separate re-derivation of the world state.
+ * Events are emitted from the *decision* sites, using the local variables the decision actually
+ * used, so telemetry reports what FishBot believed and decided rather than a re-derivation of it.
  *
  * --- WIRE FORMAT ---
  *
- * Each event is a single line:
+ * One event per line:
  *
  *      TEL|<schemaVersion>|<eventName>|<compact json payload>
- *
  * e.g.
  *      TEL|1|OIL|{"t":300000,"p":1,"tot":12,"dpp":6,"alive":[1,2],"der":[5,3],"dom":false}
  *
  * The payload always carries `t` (gameTime, ms) and `p` (player ID), so a consumer never has to
  * infer them from surrounding lines. `eventName` is the consumer's dispatch key.
+ * `tests/_telemetry.py` is the only consumer; keep the two in step.
  *
- * Events currently emitted:
- *      OIL      periodic oil position, at the strategy cadence
- *      OILCMT   trucks committed to capture a derrick (the intent)
- *      OILRES   how that commitment ended, with a reason if it failed (the outcome)
- *      OILLOST  a derrick was destroyed, with its owner and tile
- *      END      the game finished, so the last sample can be weighted
+ * Events: `OIL` periodic oil position | `OILCMT` trucks committed to a derrick |
+ * `OILRES` how that commitment ended | `OILLOST` a derrick destroyed | `END` game finished.
  *
  * --- DESIGN INVARIANTS ---
  *
- * These exist so that richer telemetry (map control, group locations, and eventually full world
- * state snapshots which can be replayed against a future version of the bot) can be added without
- * reworking anything:
+ * These exist so richer telemetry (map control, group locations, eventually full world state
+ * snapshots replayable against a future version of the bot) can be added without rework:
  *
- * 1. Payloads are plain JSON-serialisable objects, never pre-formatted strings. A future full-state
+ * 1. Payloads are plain JSON-serialisable objects, never pre-formatted strings. A full-state
  *    projection is then the same code path, just a bigger object.
- * 2. `#emit()` is the single transport chokepoint. Today the transport is the game console, which is
- *    scraped by `tests/_run_and_save_autogames.py`. That console has a limited scrollback, so a full
- *    state snapshot will NOT fit through it - when that day comes, `#emit()` (and the Python reader)
- *    change, and nothing else does.
+ * 2. `#emit()` is the single transport chokepoint. The transport today is the game console, scraped
+ *    by `tests/_run_and_save_autogames.py`. That console has limited scrollback, so a full state
+ *    snapshot will NOT fit through it - when that day comes, `#emit()` and the Python reader change,
+ *    and nothing else does.
  * 3. Every event uses the envelope above, so a new event type needs no format or parser change.
- * 4. An event may pair the state that fed a decision with the decision itself. `OILCMT`/`OILRES`
- *    do this across two correlated events (linked by `c`), which keeps each line short. A future
- *    state snapshot too large for one line should follow the same split rather than widening a line.
- * 5. Emit sites live next to the code they describe. Adding an event = one method here, plus one
- *    call at the point where the relevant local variables exist.
+ * 4. An event may pair the state that fed a decision with the decision itself. `OILCMT`/`OILRES` do
+ *    this across two events correlated by `c`, which keeps each line short. A future snapshot too
+ *    large for one line should split the same way rather than widening a line.
+ * 5. Emit sites live next to the code they describe: a new event is one method here, plus one call
+ *    where the relevant local variables exist.
  *
- * --- KEEPING LINES SHORT ---
- *
- * The console scraper reads back a fixed number of console *rows*, and a line longer than the
- * console width wraps onto a second row (which would split the JSON). Payload keys are therefore
- * abbreviated, and `debug()` is called directly rather than via `deb()` so that the
- * "F1:  05:00:  " prefix does not eat into the available width.
+ * Lines are kept short because the scraper reads back a fixed number of console *rows*, and a line
+ * longer than the console width wraps onto a second row (splitting the JSON). Hence the abbreviated
+ * payload keys, and `debug()` rather than `deb()`, whose "F1:  05:00:  " prefix would eat width.
  */
 
 const TEL_SCHEMA_VERSION = 1;
@@ -86,8 +76,10 @@ Object.freeze(TEL_FAILURE_REASON);
 
 class Telemetry {
 
-	// Correlates a commitment with its later resolution. Short, so the emitted line cannot wrap.
-	#nextCommitmentId = 0;
+	constructor() {
+		// Correlates a commitment with its later resolution. Short, so the emitted line cannot wrap.
+		this.nextCommitmentID = 0;
+	}
 
 	/**
 	 * The single point at which telemetry leaves the bot. See design invariant 2 above.
@@ -104,11 +96,8 @@ class Telemetry {
 
 	/**
 	 * Records FishBot's oil position, as seen by the strategic layer.
-	 *
-	 * Raw derrick counts are emitted (rather than the oil *share* ratios which `hq_command.js`
-	 * computes) so that the consumer can derive share, fair-share and unclaimed-oil metrics without
-	 * anything having to be back-calculated.
-	 *
+	 * Raw derrick counts are emitted (rather than the share ratios `hq_command.js` computes) so the
+	 * consumer can derive share, fair-share and unclaimed-oil without back-calculating anything.
 	 * @param {Object} p
 	 * @param {number} p.totalDerricks Total number of derrick positions on the map.
 	 * @param {number} p.derricksPerPlayer Derricks each living player would hold at an even split.
@@ -131,11 +120,9 @@ class Telemetry {
 
 	/**
 	 * Records FishBot committing trucks to capture a derrick (or a sector of derricks).
-	 *
 	 * This is the "intent" half of the intent -> outcome pair. Without it, a derrick that stays
-	 * unclaimed is ambiguous: trucks may have been sent and failed, or nothing may have been sent at
-	 * all. Those are opposite problems with opposite fixes.
-	 *
+	 * unclaimed is ambiguous: trucks may have been sent and failed, or nothing may have been sent
+	 * at all. Those are opposite problems with opposite fixes.
 	 * @param {Object} p
 	 * @param {string|number} p.sectorID Derrick ID, or grid-cell ID for a whole-sector task.
 	 * @param {boolean} p.isSector Whether this commits to a sector rather than a single derrick.
@@ -146,12 +133,12 @@ class Telemetry {
 	 * @returns {number} Correlation ID to store on the mission, for the matching `#oilResolution()`.
 	 */
 	#oilCommitment({sectorID, isSector, x, y, distanceFromBase, truckCount}) {
-		const commitmentId = this.#nextCommitmentId++;
+		const commitmentID = this.nextCommitmentID++;
 
 		this.#emit('OILCMT', {
 			't': gameTime,
 			'p': me,
-			'c': commitmentId,
+			'c': commitmentID,
 			'sec': sectorID,
 			'typ': isSector ? 'S' : 'D',
 			'x': x,
@@ -160,44 +147,36 @@ class Telemetry {
 			'n': truckCount,
 		});
 
-		return commitmentId;
+		return commitmentID;
 	}
 
 	/**
 	 * Records how an oil-capture commitment ended. Pairs with `#oilCommitment()` on `c`.
-	 *
-	 * The reason matters because the failures have very different costs: losing the trucks also costs
-	 * the production time to replace them, while being beaten to the derrick costs only the walk.
-	 *
-	 * @param {number} commitmentId The value returned by `#oilCommitment()`.
+	 * The reason matters because the failures have very different costs: losing the trucks also
+	 * costs the production time to replace them, while being beaten to the derrick costs only the walk.
+	 * @param {number} commitmentID The value returned by `#oilCommitment()`.
 	 * @param {string} outcome `"ok"` built, `"fail"` failed, `"abort"` called off.
 	 * @param {string} [reason] Why it failed. See `TEL_FAILURE_REASON`.
 	 * @returns {void}
 	 */
-	#oilResolution(commitmentId, outcome, reason) {
+	#oilResolution(commitmentID, outcome, reason) {
 		this.#emit('OILRES', {
 			't': gameTime,
 			'p': me,
-			'c': commitmentId,
+			'c': commitmentID,
 			'out': outcome,
 			'why': defined(reason) ? reason : '',
 		});
 	}
 
 	/**
-	 * Records an oil derrick being destroyed, so that losses can be located rather than merely counted.
-	 *
-	 * Called for every destroyed object; anything that is not a derrick is ignored here, which keeps
-	 * the check out of `_events.js`.
-	 *
+	 * Records an oil derrick being destroyed, so losses can be located rather than merely counted.
+	 * Called for every destroyed object; anything which is not a derrick is ignored here, which
+	 * keeps the check out of `_events.js`.
 	 * @param {Object} object The destroyed game object.
 	 * @returns {void}
 	 */
 	reportObjectDestroyed(object) {
-		if (!TELEMETRY_ON) {
-			return;
-		}
-
 		if (object.type !== STRUCTURE || object.stattype !== RESOURCE_EXTRACTOR) {
 			return;
 		}
@@ -212,12 +191,9 @@ class Telemetry {
 	}
 
 	/**
-	 * Reports an approved oil-capture task as a commitment, and tags the mission so that its outcome
-	 * can be matched back to it. Non-oil tasks are ignored.
-	 *
-	 * Lives here rather than in `hq_toc.js` so that the scheduling code stays free of telemetry
-	 * plumbing - the call site is a single line.
-	 *
+	 * Reports an approved oil-capture task as a commitment, and tags the mission so its outcome can
+	 * be matched back to it. Non-oil tasks are ignored.
+	 * Lives here rather than in `hq_toc.js` so the scheduling code stays free of telemetry plumbing.
 	 * @param {worldState} state
 	 * @param {Object} task The approved build request.
 	 * @param {Object} missionData The mission created from it.
@@ -225,7 +201,7 @@ class Telemetry {
 	 */
 	reportOilCaptureCommitment(state, task, missionData) {
 		if (!TELEMETRY_ON) {
-			return;
+			return;		// this function does real work (group lookup, distance), so check before doing it
 		}
 
 		const isSector = (task.missionType === MISSION_TYPE.CONSTRUCT_ALL_DERRICKS_IN_SECTOR);
@@ -252,11 +228,11 @@ class Telemetry {
 	}
 
 	/**
-	 * Reports the outcome of a mission which was recorded as a commitment. Missions that were never
+	 * Reports the outcome of a mission which was recorded as a commitment. Missions which were never
 	 * tagged (i.e. everything except oil capture) are ignored.
 	 * @param {Object} md Mission data.
 	 * @param {string} outcome `"ok"`, `"fail"` or `"abort"`.
-	 * @param {string} [reason] Why it failed.
+	 * @param {string} [reason] Why it failed. See `TEL_FAILURE_REASON`.
 	 * @returns {void}
 	 */
 	reportMissionOutcome(md, outcome, reason) {
@@ -267,7 +243,7 @@ class Telemetry {
 	}
 
 	/**
-	 * Marks the end of the game, so that the consumer has a definite end time to weight the final
+	 * Marks the end of the game, so the consumer has a definite end time to weight the final
 	 * sampling interval against (rather than assuming the last sample ran to the end).
 	 * @returns {void}
 	 */

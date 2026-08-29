@@ -457,11 +457,6 @@ PROPULSION_LIST.forEach(propName => {
 });
 Object.freeze(PROPULSIONS);
 
-const GROUND_PROPULSIONS = [PROPULSIONS["Wheels"], PROPULSIONS["Half-tracks"], PROPULSIONS["Tracks"]];
-const HOVER_PROPULSIONS = [PROPULSIONS["Hover"]];
-const VTOL_PROPULSIONS = [PROPULSIONS["VTOL"]];
-const CYBORG_PROPULSIONS = [PROPULSIONS["Cyborg Propulsion"]];
-
 /*
     WEAPON INFORMATION
 */
