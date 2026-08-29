@@ -60,6 +60,7 @@ class armyEngineering {
 		Algorithm:
 		Use the grid system to:
 		- Find cells with unclaimed derricks											-- uses state.fields.unclaimedDerricksInCell[gx][gy]
+		- Remove derricks which are already claimed									-- uses the DerrickObject's own `isClaimed`
 		- Remove cells with high threat from enemy struct concentrations 				-- uses state.grid.grid[gx][gy].targetStructures 
 		- Remove cells with defensive structures										-- uses state.fields.enemyStaticDefenceThreat
 		- Remove cells with enemy offensive units										-- uses state.fields.enemyUnitThreat
@@ -102,6 +103,7 @@ class armyEngineering {
 					const d = derricksInCell[i];
 
 					if (!isReachable[d.x][d.y]) continue;
+					if (d.isClaimed) continue;															// a derrick already stands here
 
 					// Check for existing missions
 					if (activeOilCapTaskIDs.indexOf(d.id) !== -1) continue; 									// found 'CONSTRUCT_OIL_DERRICK' task

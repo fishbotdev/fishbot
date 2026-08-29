@@ -97,6 +97,7 @@ class CommandCenter {
 			MAX_PARALLEL_OIL_CAP_TASKS: 4,
 			MAX_PARALLEL_DEFENCE_BUILD_TASKS: 1,
 			MAX_PARALLEL_REPAIR_CENTER_BUILD_TASKS: 1,
+			ABORTED_SECTOR_COOLDOWN_MS: 30000,		// how long a sector aborted as dangerous stays off the option list
 
 			// Structure limits
 			MAX_GENERATORS_AND_POWER_MODULES: 2,
@@ -893,12 +894,15 @@ class CommandCenter {
 	 * This function aborts active construction missions where conditions at the build site have become too dangerous.
 	 * @param {worldState} state 
 	 * @param {Array} activeRemoteMissions
+	 * @returns {(number | string)[]} the oil-capture sectorIDs aborted
 	 */
 	#abortDangerousConstructionTasks(state, activeRemoteMissions) {
 		const cellSize = state.grid.cellSize;
 
 		const enemyUnitThreat = state.fields.enemyUnitThreat;
 		const enemyStaticDefenceThreat = state.fields.enemyStaticDefenceThreat;
+
+		const abortedOilSectorIDs = [];
 
 		// New mission planning system has implemented .gx, .gy grid references for all missions
 		// This allows the following algorithm:
@@ -927,8 +931,17 @@ class CommandCenter {
 			if (moreThanOneCellAway) {
 				// debug(`aborted (${md.id}) @ (~ tileco ${md.gx * cellSize} ${md.gy * cellSize}); high threat`);
 				md.missionStatus = MISSION_STATUS.ABORT;
+
+				// Only oil capture cools down. Defence missions reuse the derrick's ID as their sectorID,
+				// so reporting those here would block *capturing* the derrick they were meant to protect.
+				if (md.missionType === MISSION_TYPE.CONSTRUCT_OIL_DERRICK ||
+					md.missionType === MISSION_TYPE.CONSTRUCT_ALL_DERRICKS_IN_SECTOR) {
+					abortedOilSectorIDs.push(md.sectorID);
+				}
 			}
 		});
+
+		return abortedOilSectorIDs;
 	}
 
 	/**
@@ -967,11 +980,20 @@ class CommandCenter {
 			}
 		});
 		
-		this.#abortDangerousConstructionTasks(state, activeRemoteMissions);
+		const abortedOilSectorIDs = this.#abortDangerousConstructionTasks(state, activeRemoteMissions);
 
 		// Command then terminates, if there are no available trucks this tick (avoids expensive planning tasks)
 		const trucksUnavailable = (state.g.enumGroup(ENGINEERING.ENGINEERING_RESERVE).length === 0) && 
 								  (state.g.enumGroup(ENGINEERING.BASE_BUILDER).length === 0);
+
+		// Oil capture is re-planned only once per intelligence refresh: the inputs cannot have changed in
+		// between, so planning again re-issues the same missions against a world state up to 5 seconds stale.
+		const oilCapDeficit = this.CONSTRUCTION_PARAMETERS.MAX_PARALLEL_OIL_CAP_TASKS - activeOilCapTaskIDs.length;
+		const WORLD_UNCHANGED_SINCE_LAST_PLAN = (state.grid.lastUpdatedAt === state.oilCapPlannedAt);
+		const SHOULD_PLAN_OIL_CAPTURE = !trucksUnavailable && (oilCapDeficit > 0) && !WORLD_UNCHANGED_SINCE_LAST_PLAN;
+
+		this.toc.updateOilCapturePlanningRecord(state, abortedOilSectorIDs, SHOULD_PLAN_OIL_CAPTURE,
+												this.CONSTRUCTION_PARAMETERS.ABORTED_SECTOR_COOLDOWN_MS);
 
 		if (trucksUnavailable) {
 			// warn(`No trucks to execute construction actions.`);
@@ -989,9 +1011,11 @@ class CommandCenter {
 		}
 
 		// OIL CAP
-		const oilCapDeficit = this.CONSTRUCTION_PARAMETERS.MAX_PARALLEL_OIL_CAP_TASKS - activeOilCapTaskIDs.length;
-		if (oilCapDeficit > 0) {
-			const sectorOilCapTasks = engineering.generateOilCaptureOptions(state, activeOilCapTaskIDs);
+		if (SHOULD_PLAN_OIL_CAPTURE) {
+			// The record was pruned above, so everything left in it is still cooling down.
+			const excludedSectorIDs = [];
+			excludedSectorIDs.push(...activeOilCapTaskIDs, ...state.abortedOilSectors.keys());
+			const sectorOilCapTasks = engineering.generateOilCaptureOptions(state, excludedSectorIDs);
 			approvedConstructionTasks.push(...sectorOilCapTasks.slice(0, oilCapDeficit));
 		}
 	

@@ -145,6 +145,7 @@ class fbGrid {
 
     constructor() {
         this.cellSize = 10;     // in game tiles
+        this.lastUpdatedAt = -1;    // gameTime of the last `updateCoreIntel()`; -1 until the first one runs
         
         this.numXCells = Math.ceil(mapWidth / this.cellSize);
         this.numYCells = Math.ceil(mapHeight / this.cellSize);
@@ -338,6 +339,12 @@ class worldState {
 
         /** @type {ProductionJob[]} */
         this.activeProductionJobs = [];
+
+        // Oil-capture planning 
+        /** @type {number} `gameTime` at the last oil-capture planning tick */
+        this.oilCapPlannedAt = -1;   
+        /** @type {Map<number | string, number>} Map from `sectorID` to the `gameTime` when a construction task was called off as dangerous */
+        this.abortedOilSectors = new Map();         
         
         // Load balancing parameters
         this.botIsActive = true;
