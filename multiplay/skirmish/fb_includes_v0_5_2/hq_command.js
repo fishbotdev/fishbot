@@ -950,8 +950,6 @@ class CommandCenter {
 	 */
 	runConstructionLogistics(state) {
 
-		const CONSTRUCTION_PARAMETERS = this.CONSTRUCTION_PARAMETERS;
-
 		const activeOilCapTaskIDs = [];
 		const activeBaseBuildTasks = []; 
 		const activeDefenceBuildTaskIDs = [];
@@ -990,12 +988,12 @@ class CommandCenter {
 
 		// Oil capture is re-planned only once per intelligence refresh: the inputs cannot have changed in
 		// between, so planning again re-issues the same missions against a world state up to 5 seconds stale.
-		const oilCapDeficit = CONSTRUCTION_PARAMETERS.MAX_PARALLEL_OIL_CAP_TASKS - activeOilCapTaskIDs.length;
+		const oilCapDeficit = this.CONSTRUCTION_PARAMETERS.MAX_PARALLEL_OIL_CAP_TASKS - activeOilCapTaskIDs.length;
 		const WORLD_UNCHANGED_SINCE_LAST_PLAN = (state.grid.lastUpdatedAt === state.oilCapPlannedAt);
 		const SHOULD_PLAN_OIL_CAPTURE = !trucksUnavailable && (oilCapDeficit > 0) && !WORLD_UNCHANGED_SINCE_LAST_PLAN;
 
 		this.toc.updateOilCapturePlanningRecord(state, abortedOilSectorIDs, SHOULD_PLAN_OIL_CAPTURE,
-												CONSTRUCTION_PARAMETERS.ABORTED_SECTOR_COOLDOWN_MS);
+												this.CONSTRUCTION_PARAMETERS.ABORTED_SECTOR_COOLDOWN_MS);
 
 		if (trucksUnavailable) {
 			// warn(`No trucks to execute construction actions.`);
@@ -1006,9 +1004,9 @@ class CommandCenter {
 		const approvedConstructionTasks = [];
 
 		// BASE BUILD
-		const baseBuildDeficit = CONSTRUCTION_PARAMETERS.MAX_PARALLEL_BASE_BUILD_TASKS - activeBaseBuildTasks.length;
+		const baseBuildDeficit = this.CONSTRUCTION_PARAMETERS.MAX_PARALLEL_BASE_BUILD_TASKS - activeBaseBuildTasks.length;
 		if (baseBuildDeficit > 0) {
-			const requestedBaseBuildTasks = engineering.requestBaseConstruction(state, CONSTRUCTION_PARAMETERS);
+			const requestedBaseBuildTasks = engineering.requestBaseConstruction(state, this.CONSTRUCTION_PARAMETERS);
 			approvedConstructionTasks.push(...requestedBaseBuildTasks.slice(0, baseBuildDeficit));
 		}
 
@@ -1022,14 +1020,14 @@ class CommandCenter {
 		}
 	
 		// DERRICK DEFENCES
-		const fortificationDeficit = CONSTRUCTION_PARAMETERS.MAX_PARALLEL_DEFENCE_BUILD_TASKS - activeDefenceBuildTaskIDs.length;
+		const fortificationDeficit = this.CONSTRUCTION_PARAMETERS.MAX_PARALLEL_DEFENCE_BUILD_TASKS - activeDefenceBuildTaskIDs.length;
 		if (fortificationDeficit > 0) {
 			const sectorDefenceTasks = engineering.generateOilDefenceConstructionOptions(state, activeDefenceBuildTaskIDs);
 			approvedConstructionTasks.push(...sectorDefenceTasks.slice(0, fortificationDeficit));
 		}
 
 		// LOCAL REPAIR CENTERS
-		const repairCenterEmptyTaskSlots = CONSTRUCTION_PARAMETERS.MAX_PARALLEL_REPAIR_CENTER_BUILD_TASKS - activeRepairCenterBuildTaskIDs.length;
+		const repairCenterEmptyTaskSlots = this.CONSTRUCTION_PARAMETERS.MAX_PARALLEL_REPAIR_CENTER_BUILD_TASKS - activeRepairCenterBuildTaskIDs.length;
 		if (repairCenterEmptyTaskSlots > 0) {
 
 			const myRepairFacilities = state.playerInfo[me]["repairFacilityFbObjects"];
