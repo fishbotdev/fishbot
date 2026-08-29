@@ -871,6 +871,8 @@ class CommandCenter {
 
 			const brigadeLocation = state.brigades[brigadeID]['location'];
 
+			// const CLOSEST_ENEMY_BASE = intelligence.findClosestEnemyBase(state, brigadeLocation.x, brigadeLocation.y); 			
+
 			const groundTargets = this.#prioritiseBrigadeTargets(state, brigadeID, this.GROUND_FORCE_PARAMETERS);
 
 			this.toc.setBrigadeCASStrikeRequests(state, brigadeID, groundTargets['casTargets']);

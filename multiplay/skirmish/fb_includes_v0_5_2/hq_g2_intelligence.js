@@ -299,6 +299,35 @@ class armyIntelligence {
 	}
 	
 	/**
+	 * Returns location of the closest enemy base. If none exists, returns the local player's `baseLocation`.
+	 * @param {worldState} state 
+	 * @param {number} x 
+	 * @param {number} y 
+	 */
+	findClosestEnemyBase(state, x, y) {
+		const bases = state.poi.bases;
+		const aliveEnemyPlayers = state.enumLivingPlayers().filter(isEnemy);
+
+		/** @type {PlayerHomeBaseObject[]} */
+		const enemyBases = [];
+		bases.forEach(b => {
+			if (b.playerID == null) 	return;
+			if (b.isEnemy && aliveEnemyPlayers.includes(b.playerID)) {
+				enemyBases.push(b);
+			}
+		});
+
+		enemyBases.sort((a, b) => distSq(a.x, x, a.y, y) - distSq(b.x, x, b.y, y));
+		
+		if (enemyBases.length > 0) {
+			return enemyBases[0];
+		} else {
+			// warn(`closestEnemyBase not found - returning player's home base location instead.`);
+			return state.poi.bases[me];
+		}
+	}
+
+	/**
 	 * Returns location of the closest target object.
 	 * @param {worldState} state 
 	 * @param {number} x 
