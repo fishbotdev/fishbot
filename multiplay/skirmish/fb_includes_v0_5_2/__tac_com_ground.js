@@ -120,7 +120,6 @@ function returnUnitGroupsToBase(unitGroups) {
 }
 
 /**
- * 
  * @param {number[]} reserveGroupIDs 
  * @param {number} x 
  * @param {number} y 
@@ -145,6 +144,31 @@ function moveReservesToShadow(reserveGroupIDs, x, y) {
 }
 
 /**
+ * @param {worldState} state 
+ * @param {number} x 
+ * @param {number} y 
+ * @returns 
+ */
+function isLocationCongested(state, x, y) {
+	const CHOKEPOINT_CONGESTION_RADIUS = 5;
+	const CHOKEPOINT_CONGESTION_THRESHOLD = 8;
+
+	const nearby = state.grid.enumRangeLazy(x, y, CHOKEPOINT_CONGESTION_RADIUS, false, true);
+
+	let nearbyArmourUnits = 0;
+	for (let i=0; i<nearby['friendlyUnits'].length; i++) {
+		if (nearby['friendlyUnits'][i].flags & OBJ_FLAGS.ARMOUR) {
+			nearbyArmourUnits++;
+			if (nearbyArmourUnits > CHOKEPOINT_CONGESTION_THRESHOLD) {
+				return true;
+			}
+		}
+	}
+
+	return false;
+}
+
+/**
  * TAC SOP: MOVE A BRIGADE COMBAT TEAM (BCT) TO A LOCATION
  * @param {worldState} state
  * @param {number} brigadeID
@@ -153,14 +177,13 @@ function moveReservesToShadow(reserveGroupIDs, x, y) {
  */
 function moveBrigadeToLocation(state, brigadeID, targetX, targetY) {
 
-	const isChokepoint = state.mapData.isChokepoint;
-
 	const brigadeUnits = state.g.enumGroup(brigadeID);
 
 	const LOCATION_X = state.brigades[brigadeID].location.x;
 	const LOCATION_Y = state.brigades[brigadeID].location.y;
 
 	const DISTSQ_CENTER_TO_TARGET = distSq(LOCATION_X, targetX, LOCATION_Y, targetY);
+	const BRIGADE_CONGESTED = isLocationCongested(state, LOCATION_X, LOCATION_Y);
 
 	brigadeUnits.forEach(droid => {
 		const DISTSQ_TO_CENTER = distSq(LOCATION_X, droid.x, LOCATION_Y, droid.y);
@@ -169,13 +192,13 @@ function moveBrigadeToLocation(state, brigadeID, targetX, targetY) {
 		const TOO_FAR_AWAY_FROM_CENTER = DISTSQ_TO_CENTER > 8 ** 2;
 		const FAR_AWAY_FROM_CENTER = DISTSQ_TO_CENTER > 5 ** 2;
 		const AHEAD_OF_GROUP = DISTSQ_TO_TARGET < DISTSQ_CENTER_TO_TARGET;
-		const UNIT_IN_CHOKEPOINT = isChokepoint[droid.x][droid.y];
+		const UNIT_ROADBLOCKED = state.mapData.isChokepoint[droid.x][droid.y] && BRIGADE_CONGESTED;
 
 		if (TOO_FAR_AWAY_FROM_CENTER) {
 			orderDroidLoc(droid, DORDER_MOVE, LOCATION_X, LOCATION_Y);
 		} else if (FAR_AWAY_FROM_CENTER) {
 			if (AHEAD_OF_GROUP) {
-				if (UNIT_IN_CHOKEPOINT) {
+				if (UNIT_ROADBLOCKED) {
 					orderDroidLoc(droid, DORDER_MOVE, targetX, targetY);
 				} else {
 					orderDroid(droid, DORDER_HOLD);
@@ -216,7 +239,7 @@ function moveBrigadeToAttack(state, brigadeID, groundTargets) {
 	const LOCATION_X = forceLocation.x;
 	const LOCATION_Y = forceLocation.y;
 
-	const isChokepoint = state.mapData.isChokepoint;
+	const BRIGADE_CONGESTED = isLocationCongested(state, LOCATION_X, LOCATION_Y);
 
 	const ARMOUR_UNITS = [];
 	const INFANTRY_UNITS = [];
@@ -273,23 +296,23 @@ function moveBrigadeToAttack(state, brigadeID, groundTargets) {
 	const moveToClosestDroid = (droid) => orderDroidLoc(droid, DORDER_MOVE, closestDroidToTarget.x, closestDroidToTarget.y);
 	
 	const attackDirectFireTarget = (droid, distSqGroupCenterToTarget) => {
-		const UNIT_IN_CHOKEPOINT = isChokepoint[droid.x][droid.y];
+		const UNIT_ROADBLOCKED = state.mapData.isChokepoint[droid.x][droid.y] && BRIGADE_CONGESTED;
 		const DISTSQ_TO_CENTER = distSq(LOCATION_X, droid.x, LOCATION_Y, droid.y);
-		
+
 		const TOO_FAR_AWAY_FROM_CENTER = DISTSQ_TO_CENTER > 8 ** 2;
 		const FAR_AWAY_FROM_CENTER = DISTSQ_TO_CENTER > 5 ** 2;
-		
+
 		const DISTSQ_TO_TARGET = distSq(targetX, droid.x, targetY, droid.y);
 		const AHEAD_OF_GROUP = DISTSQ_TO_TARGET < distSqGroupCenterToTarget;
-		
+
 		if (TOO_FAR_AWAY_FROM_CENTER) {
-			if (UNIT_IN_CHOKEPOINT) {
+			if (UNIT_ROADBLOCKED) {
 				attackTarget(droid, DIRECT_FIRE_TARGET);
 			} else {
 				orderDroidLoc(droid, DORDER_MOVE, LOCATION_X, LOCATION_Y);
 			}
 		} else if (FAR_AWAY_FROM_CENTER) {
-			if (AHEAD_OF_GROUP || UNIT_IN_CHOKEPOINT) {
+			if (AHEAD_OF_GROUP || UNIT_ROADBLOCKED) {
 				attackTarget(droid, DIRECT_FIRE_TARGET);
 			} else {
 				orderDroidLoc(droid, DORDER_MOVE, LOCATION_X, LOCATION_Y);
@@ -353,15 +376,15 @@ function moveBrigadeToAttack(state, brigadeID, groundTargets) {
 	const DIRECT_FIRE_TARGETS_TO_SEARCH = Math.min(5, directFireTargets.length);
 
 	SHORT_RANGE_FIRE_SUPPORT.forEach(droid => {
-		const UNIT_IN_CHOKEPOINT = isChokepoint[droid.x][droid.y];
+		const UNIT_ROADBLOCKED = state.mapData.isChokepoint[droid.x][droid.y] && BRIGADE_CONGESTED;
 		const DISTSQ_TO_CENTER = distSq(LOCATION_X, droid.x, LOCATION_Y, droid.y);
-		
+
 		const TOO_FAR_AWAY_FROM_CENTER = DISTSQ_TO_CENTER > 6 ** 2;
-		
+
 		const DISTSQ_TO_TARGET = distSq(targetX, droid.x, targetY, droid.y);
 		const AHEAD_OF_GROUP = DISTSQ_TO_TARGET < DISTSQ_CENTER_TO_TARGET;		// this is the direct fire target
-		
-		if ((AHEAD_OF_GROUP || TOO_FAR_AWAY_FROM_CENTER) && !UNIT_IN_CHOKEPOINT) {
+
+		if ((AHEAD_OF_GROUP || TOO_FAR_AWAY_FROM_CENTER) && !UNIT_ROADBLOCKED) {
 			orderDroidLoc(droid, DORDER_MOVE, LOCATION_X, LOCATION_Y);
 		} else {
 			const DROID_RANGE_SQ = (droid.range * WZ2100_TILERANGE_SCALING_FACTOR) ** 2;
