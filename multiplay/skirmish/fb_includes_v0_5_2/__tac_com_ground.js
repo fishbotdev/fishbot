@@ -411,13 +411,12 @@ function moveBrigadeToAttack(state, brigadeID, groundTargets) {
 
 	// DEBUG
 	if (false) {
-		hackMarkTiles();
 		if (defined(DIRECT_FIRE_TARGET)) {
 			addBeacon(DIRECT_FIRE_TARGET.x, DIRECT_FIRE_TARGET.y, 0);
 		}
 		if (defined(FIRE_SUPPORT_TARGET)) {
 			const RADIUS = 1;		// creates a bounding box with dimension [2*RADIUS + 1 by 2*RADIUS+1]
-			hackMarkTiles(FIRE_SUPPORT_TARGET.x - RADIUS, FIRE_SUPPORT_TARGET.y - RADIUS, FIRE_SUPPORT_TARGET.x + RADIUS, FIRE_SUPPORT_TARGET.y + RADIUS);
+			highlightTiles(FIRE_SUPPORT_TARGET.x - RADIUS, FIRE_SUPPORT_TARGET.y - RADIUS, FIRE_SUPPORT_TARGET.x + RADIUS, FIRE_SUPPORT_TARGET.y + RADIUS);
 		}
 	}
 }

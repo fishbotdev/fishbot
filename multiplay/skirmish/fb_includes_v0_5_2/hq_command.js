@@ -620,11 +620,7 @@ class CommandCenter {
 
 				for (let j=0; j<lineToTarget.length; j++) {
 					const point = lineToTarget[j];
-					// if (MapTiles[point.y][point.x].terrainType === 7 || MapTiles[point.y][point.x].terrainType === 8) {
-					// 	// water or cliff; hack
-					// 	break;
-					// }
-					hackMarkTiles(point[0], point[1]);		
+					highlightTiles(point[0], point[1]);		
 				}
 			}
 		}
@@ -860,7 +856,7 @@ class CommandCenter {
 			return;
 		}
 
-		if (DEBUG_MODE_ON) hackMarkTiles();
+		clearAllTileHighlights();
 		this.BRIGADE_DESIGNATIONS.forEach(brigadeID => {
 
 			const brigadeLocation = state.brigades[brigadeID]['location'];
@@ -882,7 +878,7 @@ class CommandCenter {
 			}
 			
 			moveBrigadeToAttack(state, brigadeID, groundTargets);	
-			markTile(brigadeLocation.x, brigadeLocation.y);
+			highlightTiles(brigadeLocation.x, brigadeLocation.y);
 		});
 
 		// Manage reserves: temporary: Move reserves to pre-emptively reinforce BCT0

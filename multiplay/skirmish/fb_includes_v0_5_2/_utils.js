@@ -45,13 +45,25 @@ function warn(...values) {
 }
 
 /**
- * Highlights a 2x2 area centered on a specified tile coordinate.
- * @param {number} x 
- * @param {number} y 
- * @returns {void}
+ * Note: To mark a 2x2 area centered on a specified tile coordinate, use `highlightTiles(x, y, x+2, y+2)`;
+ * @param {number} x1 
+ * @param {number} y1 
+ * @param {number?} x2
+ * @param {number?} y2
  */
-function markTile(x, y) {
-	hackMarkTiles(x, y, x+2, y+2);
+function highlightTiles(x1, y1, x2=null, y2=null) {
+	if (!DEBUG_MODE_ON) return;
+	
+	if (x2 == null || y2 == null) {
+		hackMarkTiles(x1, y1);
+		return;
+	}
+	hackMarkTiles(x1, y1, x2, y2); 
+}
+
+function clearAllTileHighlights() {
+	if (!DEBUG_MODE_ON) return;
+	hackMarkTiles();
 }
 
 /**
