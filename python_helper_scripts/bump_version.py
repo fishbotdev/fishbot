@@ -1,4 +1,21 @@
 """
+	This file is part of FishBot, a Warzone 2100 AI.
+
+	FishBot is free software; you can redistribute it and/or modify
+	it under the terms of the GNU General Public License as published by
+	the Free Software Foundation; either version 2 of the License, or
+	(at your option) any later version.
+
+	FishBot is distributed in the hope that it will be useful,
+	but WITHOUT ANY WARRANTY; without even the implied warranty of
+	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+	GNU General Public License for more details.
+
+	You should have received a copy of the GNU General Public License along with this program.
+	If not, see <https://www.gnu.org/licenses/>.
+"""
+
+"""
 FishBot version bump.
 
 Run this once, at the start of a new development cycle (right after the
@@ -8,6 +25,8 @@ for the new cycle. Mirrors the pattern used in commit ff443201.
 
 No command-line arguments needed -- just run this file (e.g. hit Run/F5 in
 your IDE) and it will prompt for the new version number.
+
+Authored by Claude (Opus 5).
 """
 
 import re
