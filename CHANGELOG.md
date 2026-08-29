@@ -11,7 +11,7 @@ This file is used to record the changes to FishBot between each version.
     - Fixed oil capture issues.
     - Avoids building repair centers in chokepoints.
 - Technical changes:
-    - Performance improvements which greatly reduce lag spikes; this version should now perform well across all maps.
+    - Performance improvements which further reduce lag spikes; this version should now perform well across all maps.
 
 ## Fishbot v0.5.1
 *Released **04 Aug 2026***

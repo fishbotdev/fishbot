@@ -39,6 +39,7 @@
  * @property {string} sectorID			Position parameter: (v0.3.0 sector system / object uid)
  * @property {number} gx				Position parameter: grid x coordinate (v0.4.0 sector system)
  * @property {number} gy				Position parameter: grid y coordinate (v0.4.0 sector system)
+ * @property {number} [telemetryCommitmentID]	Set on oil-capture missions only; correlates `OILCMT` with `OILRES` (see `_telemetry.js`)
  */
 
 /**
