@@ -26,7 +26,7 @@ function runGameEndedWatchdog() {
 	if (gameIsFinished && state.botIsActive) {
 		deb(`gameHasEnded, stopping all function`);
 		state.botIsActive = false;
-		if (DEBUG_MODE_ON) hackMarkTiles();		// clear all residual debug tiles
+		clearAllTileHighlights();
 	}
 
 	if (!gameIsFinished && !state.botIsActive) {

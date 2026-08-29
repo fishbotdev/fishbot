@@ -640,7 +640,7 @@ class worldStateBuilder {
                 const ox = x + o[0];
                 const oy = y + o[1];
                 isBaseNonWalkableTile[ox][oy] = true;
-                if (SHOW_FEATURES)  hackMarkTiles(ox, oy);              
+                if (SHOW_FEATURES)  highlightTiles(ox, oy);              
             });
         }
 
@@ -662,7 +662,7 @@ class worldStateBuilder {
                 isBaseNonWalkableTile[feature.x][feature.y] = true;     
             } else {
                 isBaseNonWalkableTile[feature.x][feature.y] = true;
-                if (SHOW_FEATURES)  hackMarkTiles(feature.x, feature.y);     
+                if (SHOW_FEATURES)  highlightTiles(feature.x, feature.y);     
             }
         });
 
@@ -702,7 +702,7 @@ class worldStateBuilder {
             const y = b[1];
             isWalkable[x][y] = true;
             isReachable[x][y] = true;
-            // hackMarkTiles(x, y);        // Uncomment this to see all the walkable tiles on the map that the algorithm found
+            // highlightTiles(x, y);        // Uncomment this to see all the walkable tiles on the map that the algorithm found
         });
 
         // Find chokepoint locations, assuming static terrain.
@@ -781,9 +781,7 @@ class worldStateBuilder {
 
                 chokepointWidth[x][y] = width;
                 isChokepoint[x][y] = width <= CHOKEPOINT_WIDTH_THRESHOLD;
-                // if (DEBUG_MODE_ON && isChokepoint[x][y]) {
-                //     hackMarkTiles(x, y);
-                // }
+                // if (DEBUG_MODE_ON && isChokepoint[x][y])    highlightTiles(x, y);
             }
         }
 
