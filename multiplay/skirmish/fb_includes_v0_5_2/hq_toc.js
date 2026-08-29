@@ -131,6 +131,7 @@ class TacticalOperationsCenter {
 					md.ceaseOrders();
 				}
 				md.missionStatus = MISSION_STATUS.FAILED_ABORTED;
+				telemetry.reportMissionOutcome(md, "abort", TEL_FAILURE_REASON.TOO_DANGEROUS);
 				continue;
 			}
 
@@ -155,12 +156,14 @@ class TacticalOperationsCenter {
 						}
 
 						md.missionStatus = MISSION_STATUS.SUCCEEDED;
+						telemetry.reportMissionOutcome(md, "ok");
 						break;
 					case MISSION_STATUS.FAILED:
 						if (defined(md.ceaseOrders)) {
 							md.ceaseOrders();
 						}
 						md.missionStatus = MISSION_STATUS.FAILED;
+						telemetry.reportMissionOutcome(md, "fail", retval.reason);
 						break;
 					case MISSION_STATUS.IN_PROGRESS:
 						continue;		// continue processing the next mission
@@ -234,8 +237,11 @@ class TacticalOperationsCenter {
 		buildTasks.forEach((task, i) => {	
 			const missionData = this.createNewMission({missionType: task.missionType, priority: PRIORITY}, task, i);		
 			if (missionData !== undefined) {
+				const MISSION_ID = missionData.id;		// read here: an `if (false)` body is unreachable, so it does not see this narrowing
+
+				telemetry.reportOilCaptureCommitment(state, task, missionData);
 				state.activeMissions.push(missionData);
-				// this.#printConstructionDebugOutput(task, missionData.id, [MISSION_TYPE.DEMOLISH_REPAIR_CENTER, MISSION_TYPE.CONSTRUCT_REPAIR_CENTER]);
+				if (false) this.#printConstructionDebugOutput(task, MISSION_ID, [MISSION_TYPE.DEMOLISH_REPAIR_CENTER, MISSION_TYPE.CONSTRUCT_REPAIR_CENTER]);
 			} 
 		});
 	}
@@ -543,86 +549,6 @@ class TacticalOperationsCenter {
 	}
 
 	/**
-	 * 
-	 * @param {Object} state 
-	 * @param {any[][]} newGrid 
-	 * @param {Array} playerInfo 
-	 * @returns {void}
-	 */
-	#printDebugGrid(state, newGrid, playerInfo) {
-		// Write updated units to grid (only overwriting "KEYS" defined below)
-		const numXCells = state.grid.numXCells;
-		const numYCells = state.grid.numYCells;
-
-		state.playerInfo = playerInfo;
-		
-		if (false) {
-			debug(`\nGrid-form derrickInfo @ ${gameTime}`);
-			for (let gy=0; gy<numYCells; gy++) {
-				let row = "\t";
-
-				for (let gx=0; gx<numXCells; gx++) {
-					let count = 0;
-
-					const derricksInCell = state.grid.grid[gx][gy]['derricks'];
-					derricksInCell.forEach(d => {
-						if (d.isClaimed) {
-							count++;
-						}
-					});
-					row += `${count} `;
-				}
-				debug(row);
-			}
-		}
-
-		if (false) {
-			// Test if grid['derricks'] & state.poi.derricks point to the same location in memory (yes)
-			debug(`List form - derrickInfo @ ${gameTime}`);
-			state.poi.derricks.forEach(d => debug(`	${d.id}\t\t${d.isClaimed ? `claimed by ${d.playerID}`: 'unclaimed'}`));
-		}
-
-		if (false) {
-			const cellSize = state.grid.cellSize;
-			const numXCells = Math.ceil(mapWidth / cellSize);
-			const numYCells = Math.ceil(mapHeight / cellSize);
-
-			if (false) {
-				for (let gx=0; gx<numXCells; gx++) {
-					for (let gy=0; gy<numYCells; gy++) {
-
-						if (newGrid[gx][gy]['targetUnits'].length > 0 || newGrid[gx][gy]['targetStructures'].length > 0) {
-							debug(`\nObjects in grid: (${gx} ${gy}) @ ${gameTime}`);
-
-							newGrid[gx][gy]['targetUnits'].forEach(t => debug(`	${t.name} (${t.id}): player ${t.player}`));							
-							newGrid[gx][gy]['targetStructures'].forEach(t => debug(`	${t.name} (${t.id}): player ${t.player} `));
-						}
-					}
-				}
-			}
-
-			for (let gx=0; gx<numXCells; gx++) {
-				for (let gy=0; gy<numYCells; gy++) {
-					if (state.grid.grid[gx][gy]['targetUnits'].length > 0 || state.grid.grid[gx][gy]['targetStructures'].length > 0) {
-						debug(`Objects in actual grid: (${gx} ${gy}) @ ${gameTime}`);
-
-						state.grid.grid[gx][gy]['targetUnits'].forEach(t => debug(`	${t.name} (${t.id}): player ${t.player}`));							
-						state.grid.grid[gx][gy]['targetStructures'].forEach(t => debug(`	${t.name} (${t.id}): player ${t.player} `));
-						debug(`${state.grid.grid[gx][gy]['derricks']}`);
-					}
-				}
-			}
-		}
-
-		if (false) {
-			playerInfo.forEach(p => {
-				debug(`${p.playerID} (${p.isFriendly})\n\tDROID tot ${p.numTotalUnits}, inf ${p.numInfantryUnits}, arm ${p.numArmourUnits}, air ${p.numAirUnits}, indi ${p.numIndirectUnits}, ada ${p.numADA}\n\tSTRUCTURE tot ${p.numStructs}, derr ${p.numDerricks}`);
-			});
-			debug('');
-		}
-	}
-
-	/**
 	 * Prints `playerInfo` to the console.
 	 * @param {*} p 
 	 */
@@ -861,7 +787,7 @@ class TacticalOperationsCenter {
 			}
 			})(playerID);	
 
-			// this.#debugPrintPlayerInfo(p);
+			if (false) this.#debugPrintPlayerInfo(p);
 			state.playerInfo[playerID] = p;		
 		}
 	

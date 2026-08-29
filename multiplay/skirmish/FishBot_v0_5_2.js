@@ -55,6 +55,12 @@ const FB_INCLUDES = FISHBOT_PATH + "fb_includes_v0_5_2/";
 //	 - Transform Player 0 (forced human player slot) to spectator mode (used for automated bot testing)
 const DEBUG_MODE_ON = true;
 
+// TELEMETRY_ON (global) emits machine-readable `TEL|...` lines to the console, describing how well
+// FishBot is playing (used by the automated telemetry pipeline `tests/run_pipeline.py`; see `_telemetry.js`).
+// Telemetry is only wanted while debugging & testing, so it follows DEBUG_MODE_ON and needs no separate
+// release step. Set this to `false` to silence TEL output while still using debug mode (e.g. when spectating).
+const TELEMETRY_ON = DEBUG_MODE_ON;
+
 // For developers, please refer to `docs/DEVELOPMENT.md` for important info e.g. release checklist.
 
 ////////////////////////////////////////////////////////////////////////////////////////////
@@ -68,6 +74,7 @@ const DEBUG_MODE_ON = true;
 	include(FB_INCLUDES + "__wz_head.js");
 	include(FB_INCLUDES + "_head.js");	
 	include(FB_INCLUDES + "_utils.js");
+	include(FB_INCLUDES + "_telemetry.js");		// must precede `_init.js`, which owns the Telemetry instance
 
 	/*
 		TACTICAL-LEVEL
@@ -108,7 +115,7 @@ const DEBUG_MODE_ON = true;
 		These files reason about, and then decide on next action that FishBot should take.
 	*/
 	include(FB_INCLUDES + "hq_toc.js");
-	include(FB_INCLUDES + "hq_command.js");		
+	include(FB_INCLUDES + "hq_command.js");
 
 	// The following three files contain event handlers and the hook for starting the game. 
 	// The files must be included in this order.

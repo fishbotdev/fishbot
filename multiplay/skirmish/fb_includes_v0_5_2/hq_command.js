@@ -257,6 +257,16 @@ class CommandCenter {
 			this.isOilDominant = oilDominance;
 		}
 
+		// Report the oil position which the decisions above were made against.
+		// This function runs at `TASK_SCHEDULE['runStrategy'].requestsPerMin` times per minute, which sets the telemetry sample rate.
+		telemetry.oilSample({
+			totalDerricks: TOTAL_DERRICKS,
+			derricksPerPlayer: DERRICKS_PER_PLAYER,
+			livingPlayers: livingPlayers,
+			derricksByLivingPlayer: livingPlayers.map(playerID => playerInfo[playerID].numDerricks),
+			oilDominance: oilDominance,
+		});
+
 		/*
 			CONSTRUCTION PARAMETERS
 		*/
@@ -1495,4 +1505,5 @@ class CommandCenter {
 	runMissionManager(state) {
 		this.toc.manageMissions(state);
 	}
+
 }
