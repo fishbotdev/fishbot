@@ -151,6 +151,8 @@ MENU = [
 def main():
     while True:
         print("\nFishBot release prep")
+        print("  Reminder: run tests/run_tests.py & check perf logs; manually test the 'tested manually' maps in README.md.")
+        print("  Reminder: update README.md & CHANGELOG.md with the changes and test results.")
         for key, label, _ in MENU:
             print(f"  {key}) {label}")
         choice = input("Choose an option: ").strip().lower()
