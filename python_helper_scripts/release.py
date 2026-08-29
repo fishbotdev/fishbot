@@ -150,12 +150,21 @@ MENU = [
 
 def main():
     while True:
-        print("\nFishBot release prep")
-        print("  Reminder: run tests/run_tests.py & check perf logs; manually test the 'tested manually' maps in README.md.")
-        print("  Reminder: update README.md & CHANGELOG.md with the changes and test results.")
+        print("\nFishBot Release\n")
+
+        print("REMINDERS\n")
+        print("> run tests/run_tests.py & check perf logs\n"
+              "> manually test remaining maps in README.md\n"
+              "> update README.md & CHANGELOG.md with changes and test results\n")
+
+        print("Tools\n")
+
         for key, label, _ in MENU:
-            print(f"  {key}) {label}")
-        choice = input("Choose an option: ").strip().lower()
+            print(f"  [{key}] {label}")
+        print()
+
+        choice = input("Enter Option number: ").strip().lower()
+
         if choice in ("0", "q", "quit", "exit"):
             break
         entry = next((e for e in MENU if e[0] == choice), None)
