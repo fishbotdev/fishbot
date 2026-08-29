@@ -304,6 +304,7 @@
  * @property {number} MAX_PARALLEL_OIL_CAP_TASKS
  * @property {number} MAX_PARALLEL_DEFENCE_BUILD_TASKS
  * @property {number} MAX_PARALLEL_REPAIR_CENTER_BUILD_TASKS
+ * @property {number} ABORTED_SECTOR_COOLDOWN_MS
  * 
  * @property {number} MAX_GENERATORS_AND_POWER_MODULES 
  * @property {number} MAX_VTOL_REARMING_PADS 

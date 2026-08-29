@@ -241,6 +241,30 @@ class TacticalOperationsCenter {
 	}
 
 	/**
+	 * Writes back what a construction tick learned about oil-capture planning: sectors called off as too
+	 * dangerous, and whether a planning pass ran. Cooldown entries which have expired are pruned here, so
+	 * everything left in `state.abortedOilSectors` afterwards is still cooling down.
+	 * @param {worldState} state 
+	 * @param {(number | string)[]} abortedSectorIDs Sectors called off as dangerous this tick.
+	 * @param {boolean} planningPassRan Whether oil-capture options were regenerated this tick.
+	 * @param {number} cooldownMs How long an aborted sector stays off the option list.
+	 * @returns {void}
+	 */
+	updateOilCapturePlanningRecord(state, abortedSectorIDs, planningPassRan, cooldownMs) {
+		state.abortedOilSectors.forEach((abortedAt, sectorID) => {
+			if (gameTime - abortedAt >= cooldownMs) {
+				state.abortedOilSectors.delete(sectorID);
+			}
+		});
+
+		abortedSectorIDs.forEach(sectorID => state.abortedOilSectors.set(sectorID, gameTime));
+
+		if (planningPassRan) {
+			state.oilCapPlannedAt = state.grid.lastUpdatedAt;
+		}
+	}
+
+	/**
 	 * @param {Object} missionData 
 	 * @param {number} missionData.missionType
 	 * @param {number} missionData.priority
@@ -842,6 +866,7 @@ class TacticalOperationsCenter {
 		}
 	
 		this.updateSpatialFields(state, TEMP_GRID);
+		state.grid.lastUpdatedAt = gameTime;
 
 	}
 
