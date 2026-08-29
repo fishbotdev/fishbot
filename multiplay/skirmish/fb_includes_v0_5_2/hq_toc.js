@@ -886,6 +886,34 @@ class TacticalOperationsCenter {
 	}
 
 	/**
+	 * Records the target a brigade is currently committed to engaging with direct fire, so that the next targeting cycle
+	 * can prefer it (and targets clustered around it) over whatever happens to be marginally closer at that moment.
+	 * 
+	 * Two things are recorded: 
+	 *   - `directFireTarget`, a lightweight `TargetReference`. Live game objects must not be held across cycles because 
+	 *      they become stale (or invalid) once the engine rebuilds its object list, so the reader re-acquires the object 
+	 *      with `getObject()`.
+	 *   - `engagementLocation`, where the fight is. This outlives the target itself, so a brigade which has just destroyed 
+	 *      one structure in an enemy base stays on the base rather than turning on whatever wandered past in the meantime.
+	 * @param {worldState} state 
+	 * @param {number} brigadeID 
+	 * @param {DroidObject | StructureObject | FeatureObject | undefined} target Pass `undefined` to release the commitment.
+	 * @returns {void}
+	 */
+	setBrigadeDirectFireTarget(state, brigadeID, target) {
+		const currentTargets = state.brigades[brigadeID]['currentTargets'];
+
+		if (target == null) {
+			currentTargets['directFireTarget'] = null;
+			currentTargets['engagementLocation'] = null;
+			return;
+		}
+
+		currentTargets['directFireTarget'] = {'type': target.type, 'player': target.player, 'id': target.id};
+		currentTargets['engagementLocation'] = {'x': target.x, 'y': target.y, 'z': state.mapData.heightMap[target.x][target.y]};
+	}
+
+	/**
 	 * This function writes `location` to `state.brigades[id].location`.
 	 * @param {worldState} state 
 	 * @param {number} brigadeID 

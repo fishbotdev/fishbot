@@ -69,6 +69,17 @@ class CommandCenter {
 		/** @type {GroundForceParameters} */
 		this.GROUND_FORCE_PARAMETERS = {
 			IMMEDIATE_DIRECT_FIRE_RADIUS: 10,
+			DIRECT_FIRE_COMMITMENT_RADIUS: 20,		// a committed target is only released once it is further away than this (or dead / unreachable)
+
+			// Direct fire scoring weights, applied by `directFireScore()` as multipliers on the *squared* distance to the
+			// target. Below 1.0 promotes a target, above 1.0 demotes it. Squared, so a weight of w lets a promoted target
+			// sit 1/sqrt(w) times further away than a rival and still win: 0.2 => ~2.2x, 0.25 => 2x, 0.56 => ~1.3x.
+			TARGET_COHESION_RADIUS: 8,				// how close a target must be to the engagement location to count as "part of the same fight"
+			COMMITMENT_WEIGHT: 0.2,					// the committed target only loses its place to something ~2.2x closer
+			COHESION_WEIGHT: 0.25,					// promotes further-away targets which are part of the same fight (e.g. the rest of an enemy base)
+			FINISH_OFF_WEIGHT: 0.56,				// promotes targets which the brigade has already damaged
+			FINISH_OFF_HEALTH_THRESHOLD: 60,		// a target below this health percentage is considered worth finishing off
+
 			EFFECTIVE_FIRE_SUPPORT_RADIUS: 10,		// todo: this should be adaptive - when the brigade has a sensor, this is better, without, it is restricted by sight range of the front units
 			EFFECTIVE_ADA_RADIUS: 12,
 			MEDIAN_CENTER_STRENGTH_THRESHOLD: Math.ceil(0.50 * MAX_DIRECT_FIRE_UNITS),		// at/above this brigade strength, the brigade center switches from average to median
@@ -549,7 +560,7 @@ class CommandCenter {
 		const x = POSITION.x;
 		const y = POSITION.y;
 		
-		/** @param {DroidObject | StructureObject | FeatureObject} obj */
+		/** @param {DroidObject | StructureObject | FeatureObject | PositionInfo} obj */
 		const outsideOfRadius = (obj, radius) => {
 			const d = distSq(obj.x, x, obj.y, y);		
 			if (d > radius ** 2) {		
@@ -560,7 +571,64 @@ class CommandCenter {
 		}
 
 		// Direct Fire Targeting
-		// Intent: only attack what is readily attackable & in front of the brigade
+		// Intent: finish the fight the brigade is already in, before starting a new one.
+		//
+		// `directFireScore()` scores each candidate once (lower is better): the squared distance from the brigade,
+		// adjusted by multiplicative weights which express that intent. The target the brigade is already engaging is
+		// promoted, so is anything belonging to the same fight, and so is anything the brigade has already damaged.
+
+		/**
+		 * Re-acquires the target this brigade committed to on the previous cycle.
+		 * The commitment is released when the target is destroyed, is unreachable, or the brigade has been drawn too
+		 * far away from it to keep fighting for it.
+		 * @returns {DroidObject | StructureObject | FeatureObject | null}
+		 */
+		const getCommittedTarget = () => {
+			const targetReference = brigadeInfo['currentTargets']['directFireTarget'];
+			if (targetReference == null) {
+				return null;
+			}
+
+			const obj = getObject(targetReference.type, targetReference.player, targetReference.id);
+			if (obj == null) {
+				return null;		// destroyed
+			}
+			if (!isReachable[obj.x][obj.y]) {
+				return null;		// on an island / water terrain
+			}
+			if (outsideOfRadius(obj, parameters.DIRECT_FIRE_COMMITMENT_RADIUS)) {
+				return null;		// the brigade has been pushed (or has wandered) off this fight
+			}
+			return obj;
+		};
+
+		const COMMITTED_TARGET = getCommittedTarget();
+
+		/**
+		 * Returns where the brigade's current fight is, or `null` if it is not in one.
+		 * This outlives the committed target: destroying one structure in an enemy base must not hand the brigade back
+		 * to a plain nearest-target rule, because that is exactly the moment a passing scout or truck steals its
+		 * attention. The fight is released once the brigade is no longer near it.
+		 * @returns {PositionInfo | null}
+		 */
+		const getEngagementLocation = () => {
+			const engagementLocation = brigadeInfo['currentTargets']['engagementLocation'];
+			if (engagementLocation == null) {
+				return null;
+			}
+			if (outsideOfRadius(engagementLocation, parameters.DIRECT_FIRE_COMMITMENT_RADIUS)) {
+				return null;		// the brigade is no longer near this fight
+			}
+			return engagementLocation;
+		};
+
+		const ENGAGEMENT_LOCATION = getEngagementLocation();
+
+		/** @param {DroidObject | StructureObject | FeatureObject} obj */
+		const isCommittedTarget = (obj) => COMMITTED_TARGET != null && obj.id === COMMITTED_TARGET.id && obj.player === COMMITTED_TARGET.player;
+
+		const COHESION_RADIUS_SQ = parameters.TARGET_COHESION_RADIUS ** 2;
+
 		const directFireScore = (obj) => {
 			const dist = distSq(x, obj.x, y, obj.y);
 			const line = drawLine(x, y, obj.x, obj.y);
@@ -573,7 +641,24 @@ class CommandCenter {
 					break;
 				}
 			}
-			return detourPenalty * dist;
+
+			let score = detourPenalty * dist;
+
+			if (isCommittedTarget(obj)) {
+				// Hysteresis: the brigade only drops the target it is engaging for something decisively better.
+				score *= parameters.COMMITMENT_WEIGHT;
+			} else if (ENGAGEMENT_LOCATION != null && distSq(obj.x, ENGAGEMENT_LOCATION.x, obj.y, ENGAGEMENT_LOCATION.y) <= COHESION_RADIUS_SQ) {
+				// Cohesion: promotes further-away targets which belong to the fight the brigade is already in, so the
+				// brigade works through an enemy base instead of being pulled away by whatever happens to be
+				// marginally closer to its center.
+				score *= parameters.COHESION_WEIGHT;
+			}
+
+			if (obj.health < parameters.FINISH_OFF_HEALTH_THRESHOLD) {
+				score *= parameters.FINISH_OFF_WEIGHT;
+			}
+
+			return score;
 		}
 
 		const primaryDroidTargets = [...enemyArmor, ...enemyInfantry, ...enemyDefenses];
@@ -586,7 +671,9 @@ class CommandCenter {
 		/** @param {(DroidObject | StructureObject | FeatureObject)[]} targetList */
 		const addDirectFireTargetByProximity = (targetList) => {
 			targetList.forEach(obj => {
-				if (outsideOfRadius(obj, parameters.IMMEDIATE_DIRECT_FIRE_RADIUS)) {
+				// Note: the committed target stays engageable out to `DIRECT_FIRE_COMMITMENT_RADIUS`, so a brigade which
+				// gets pushed back off a structure it is destroying does not immediately abandon it.
+				if (outsideOfRadius(obj, parameters.IMMEDIATE_DIRECT_FIRE_RADIUS) && !isCommittedTarget(obj)) {
 					targetsOutOfRange.push(obj);
 				} else {
 					directFireTargetsInRange.push(obj);
@@ -598,14 +685,22 @@ class CommandCenter {
 		addDirectFireTargetByProximity(secondaryDirectFireTargets);
 		addDirectFireTargetByProximity(tertiaryDirectFireTargets);
 
+		// `nearbyTargets` is refreshed less often than combat operations run, so the committed target can be missing
+		// from it for a cycle. Re-inserting it stops a gap in reporting from breaking the brigade's commitment.
+		if (COMMITTED_TARGET != null && !directFireTargetsInRange.some(isCommittedTarget)) {
+			directFireTargetsInRange.push(COMMITTED_TARGET);
+		}
+
 		directFireTargetsInRange.forEach(t => {t.score = directFireScore(t);});
 		directFireTargetsInRange.sort((a,b) => a.score - b.score);		// Note: this ignores the primary/secondary/tertiary ordering above (temporary)
 
 		brigadeTargets['directFireTargets'].push(...directFireTargetsInRange);
 
+		// Top up with the nearest targets outside the engagement envelope, so the brigade always has something to advance on.
 		const MAX_DIRECT_FIRE_TARGETS = 8;
 		const targetDeficit = MAX_DIRECT_FIRE_TARGETS - brigadeTargets['directFireTargets'].length;
 		if (targetDeficit > 0) {
+			targetsOutOfRange.sort((a,b) => distSq(x, a.x, y, a.y) - distSq(x, b.x, y, b.y));
 			brigadeTargets['directFireTargets'].push(...targetsOutOfRange.slice(0, targetDeficit));
 		}
 
@@ -643,7 +738,8 @@ class CommandCenter {
 
 		const NO_FIRE_SUPPORT_TARGETS_IN_RANGE = (brigadeTargets["fireSupportTargets"].length === 0);
 		if (NO_FIRE_SUPPORT_TARGETS_IN_RANGE) {
-			brigadeTargets["fireSupportTargets"].push(...directFireTargetsInRange);		// fallback
+			// Fallback: fire support follows the brigade's direct fire priorities, which keeps the mortars on the same fight.
+			brigadeTargets["fireSupportTargets"].push(...brigadeTargets['directFireTargets']);
 		}		
 
 		// CAS Targeting (Close Air Support)
@@ -867,6 +963,10 @@ class CommandCenter {
 			const groundTargets = this.#prioritiseBrigadeTargets(state, brigadeID, this.GROUND_FORCE_PARAMETERS);
 
 			this.toc.setBrigadeCASStrikeRequests(state, brigadeID, groundTargets['casTargets']);
+
+			// Record what the brigade is engaging so the next targeting cycle can stay committed to the same fight.
+			// `directFireTargets[0]` is `undefined` when nothing is available, which releases the commitment.
+			this.toc.setBrigadeDirectFireTarget(state, brigadeID, groundTargets['directFireTargets'][0]);
 
 			if (this.#noTargetsAvailable(groundTargets)) {
 				const CLOSEST_TARGET = intelligence.findClosestTarget(state, brigadeLocation.x, brigadeLocation.y); 

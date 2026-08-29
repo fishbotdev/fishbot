@@ -251,11 +251,25 @@
  * 
  * @typedef {Map<number, BattalionComposition>} BrigadeComposition
  * 
+ * @typedef {Object} TargetReference
+ * `TargetReference` is the minimum information required to re-acquire a game object with `getObject()` on a later cycle.
+ * Live game objects must not be stored in `state` because they are invalidated once the engine's object list is rebuilt.
+ * @property {number} type
+ * @property {number} player
+ * @property {number} id
+ * 
+ * @typedef {Object} BrigadeCommitments
+ * What a brigade committed to on the previous targeting cycle.
+ * @property {TargetReference | null} directFireTarget the object the brigade is engaging
+ * @property {PositionInfo | null} engagementLocation where the brigade's current fight is. Outlives `directFireTarget`, so
+ * that destroying one structure in an enemy base does not release the brigade from the base.
+ * 
  * @typedef {Object} BrigadeMetadata
  * @property {number} id This is the brigade ID (duplicate of the key).
  * @property {PositionInfo} location  
  * @property {number} strength Smoothed count of direct-fire units in the brigade (mortars excluded).
  * @property {NearbyTargets} nearbyTargets
+ * @property {BrigadeCommitments} currentTargets
  * @property {AirStrikeMissionRequest[]} casStrikeRequests
  * @property {BrigadeComposition} composition
  *  
@@ -293,6 +307,12 @@
 /**
  * @typedef {Object} GroundForceParameters
  * @property {number} IMMEDIATE_DIRECT_FIRE_RADIUS
+ * @property {number} DIRECT_FIRE_COMMITMENT_RADIUS
+ * @property {number} TARGET_COHESION_RADIUS
+ * @property {number} COMMITMENT_WEIGHT
+ * @property {number} COHESION_WEIGHT
+ * @property {number} FINISH_OFF_WEIGHT
+ * @property {number} FINISH_OFF_HEALTH_THRESHOLD
  * @property {number} EFFECTIVE_FIRE_SUPPORT_RADIUS
  * @property {number} EFFECTIVE_ADA_RADIUS
  * @property {number} MEDIAN_CENTER_STRENGTH_THRESHOLD
