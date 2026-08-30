@@ -146,32 +146,46 @@ if __name__ == "__main__":
 
     #################################### USER CONFIG START ####################################
 
+    # Which test set to run: a key of TEST_CONFIGS below.
+    TEST_CONFIG = "duel"
+
+    # Each entry is one named test set. Its manifest is `base_manifest_<test_set_name>.json` and its
+    # results land in `results/<short sha>/<test_set_name>/`, so no two sets can collide on test IDs.
+    # The keys of each entry are the arguments of `run_pipeline()`, and are passed straight through.
+    TEST_CONFIGS = {
+        # Fast feedback while iterating: duel only, against PeacemakerAI.
+        "duel": {
+            "test_set_name": "duel",
+            "test_types": (C.DUEL,),
+            "opponent_ai": C.PEACEMAKER_AI,
+            "base_maps_path": Path.cwd() / r'custom_test_map_packager\\v4.7.0_duel_maps',
+            "runs_per_test": 3,
+        },
+
+        # The release gate: the full matrix, both test types, against Cobra.
+        "release": {
+            "test_set_name": "release",
+            "test_types": (C.DUEL, C.FFA),
+            "opponent_ai": C.COBRA_AI,
+            "base_maps_path": Path.cwd() / r'custom_test_map_packager\\v4.7.0_base_maps',
+            "runs_per_test": 10,
+        },
+
+        # TODO: "ffa" - FFA only. Needs a `v4.7.0_ffa_maps` folder of 3-player-and-up maps; FFA tests
+        # are not generated for anything smaller.
+    }
+
+    ############################ SETTINGS SHARED BY EVERY TEST SET ############################
+
     # Which commit is under test. Used to name the results folder (`results/<short sha>/`).
     COMMIT_SHA = get_current_commit_sha()
-
-    # Games per test. The full matrix is large, so lower this when checking a code change quickly.
-    RUNS_PER_TEST = 3
 
     # Match to the number of CPU cores. Each worker gets its own console window.
     WORKER_COUNT = 10
 
-    # Re-run the map repackaging & test generation. Only needed when the maps or the skirmish
-    # settings have changed - the generated tests are reused between runs otherwise.
+    # Re-run the map repackaging & test generation. Needed whenever the maps, the skirmish settings
+    # or the selected TEST_CONFIG have changed - the generated tests are reused between runs otherwise.
     REGENERATE_TESTS = True
-
-    # Names this test set. Its manifest becomes `base_manifest_<name>.json` and its results land in
-    # `results/<short sha>/<name>/`, so switching sets never collides with another set's test IDs.
-    # Leave empty for the full E2E matrix, which keeps `base_manifest.json` and `results/<short sha>/`.
-    TEST_SET_NAME = "duel_maps"
-
-    # Which kinds of test to generate. `(C.DUEL,)` for duel-only, `(C.FFA,)` for FFA-only.
-    # The map still has to suit the type: duels are generated up to 4 players, FFA from 3 players up.
-    TEST_TYPES = (C.DUEL,)
-
-    # The script every non-FishBot player runs, e.g. `C.COBRA_AI` or `C.PEACEMAKER_AI`.
-    OPPONENT_AI = C.PEACEMAKER_AI
-
-    BASE_MAPS_PATH = Path.cwd() / r'custom_test_map_packager\\v4.7.0_duel_maps'
 
     # Where the generated maps & tests are written (only used when REGENERATE_TESTS is set).
     BASE_PRODUCTION_DIRECTORY = r"..\Warzone 2100\PRODCONFIG"
@@ -180,15 +194,14 @@ if __name__ == "__main__":
 
     #################################### USER CONFIG END ####################################
 
+    if TEST_CONFIG not in TEST_CONFIGS:
+        raise SystemExit(f"Unknown TEST_CONFIG {TEST_CONFIG!r}. Choose one of: {', '.join(TEST_CONFIGS)}")
+
     run_pipeline(
         commit_sha=COMMIT_SHA,
-        runs_per_test=RUNS_PER_TEST,
         worker_count=WORKER_COUNT,
         regenerate_tests=REGENERATE_TESTS,
-        base_maps_path=BASE_MAPS_PATH,
         maps_output_path=MAPS_OUTPUT_PATH,
         tests_output_path=TESTS_OUTPUT_PATH,
-        test_set_name=TEST_SET_NAME,
-        opponent_ai=OPPONENT_AI,
-        test_types=TEST_TYPES,
+        **TEST_CONFIGS[TEST_CONFIG],
     )
