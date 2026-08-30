@@ -594,6 +594,7 @@ class CommandCenter {
 
 		/**
 		 * Re-acquires lock on the existing target. Lock released when the target was destroyed, is unreachable, or the brigade is now too far from it.
+		 * @param {FbObject | undefined} previousTarget
 		 * @returns {DroidObject | StructureObject | FeatureObject | null}
 		 */
 		const getCommittedTarget = (previousTarget) => {
@@ -613,7 +614,7 @@ class CommandCenter {
 			return obj;
 		};
 
-		const COMMITTED_TARGET_OBJ = getCommittedTarget();
+		const COMMITTED_TARGET_OBJ = getCommittedTarget(PREVIOUS_TARGET);
 
 		/** @param {DroidObject | StructureObject | FeatureObject} obj */
 		const isCommittedTarget = (obj) => COMMITTED_TARGET_OBJ != null && obj.id === COMMITTED_TARGET_OBJ.id && obj.player === COMMITTED_TARGET_OBJ.player;
