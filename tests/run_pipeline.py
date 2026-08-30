@@ -116,18 +116,16 @@ if __name__ == "__main__":
     COMMIT_SHA = get_current_commit_sha()
 
     # Games per test. The full matrix is large, so lower this when checking a code change quickly.
-    RUNS_PER_TEST = 10
+    RUNS_PER_TEST = 4
 
     # Match to the number of CPU cores. Each worker gets its own console window.
-    WORKER_COUNT = 4
+    WORKER_COUNT = 10
 
     # Re-run the map repackaging & test generation. Only needed when the maps or the skirmish
     # settings have changed - the generated tests are reused between runs otherwise.
-    REGENERATE_TESTS = False
+    REGENERATE_TESTS = True
 
-    BASE_MAPS_PATH = Path.cwd() / r'custom_test_map_packager\\v4.7.0_base_maps'
-    # BASE_MAPS_PATH = Path.cwd() / r'custom_test_map_packager\\v4.7.0_base_maps_upto4p_short'
-    # BASE_MAPS_PATH = Path.cwd() / r'custom_test_map_packager\\v4.7.0_base_maps_upto6p_long'
+    BASE_MAPS_PATH = Path.cwd() / r'custom_test_map_packager\\v4.7.0_vertical_slice_maps'
 
     # Where the generated maps & tests are written (only used when REGENERATE_TESTS is set).
     BASE_PRODUCTION_DIRECTORY = r"..\Warzone 2100\PRODCONFIG"
