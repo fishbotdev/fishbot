@@ -204,7 +204,7 @@ def print_mode_summary(
     print(
         f"{mode_name:<5}"
         f"{summary['wins']:>4}/{summary['games']:<4}"
-        f" ({summary['win_rate']*100:>3.0f}%)  "
+        f" ({summary['win_rate']*100:>3.0f}%)    "
         f"[{make_bar(summary['win_rate'])}]"
     )
 
