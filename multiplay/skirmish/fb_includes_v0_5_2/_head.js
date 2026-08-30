@@ -251,7 +251,6 @@
  * 
  * @typedef {Map<number, BattalionComposition>} BrigadeComposition
  * 
- 
  * @typedef {Object} BrigadeMetadata
  * @property {number} id This is the brigade ID (duplicate of the key).
  * @property {PositionInfo} location  
@@ -263,6 +262,15 @@
  *  
  * @typedef {{ [brigadeID: number]: BrigadeMetadata }} BrigadeInfo
  *
+ */
+
+/**
+ * @typedef {Object} TargetCandidate
+ * A target under consideration this cycle. `target` is what FishBot reasons about and persists between cycles;
+ * `targetObj` is fetched fresh each cycle for its position & health, and to be handed to the engine.
+ * @property {FbObject} target
+ * @property {DroidObject | StructureObject | FeatureObject} targetObj not valid on a later cycle
+ * @property {number} cost direct fire ranking; lives here because `cost` is read-only on the game object
  */
 
 /** 
@@ -297,7 +305,7 @@
  * @typedef {Object} GroundForceParameters
  * @property {number} IMMEDIATE_DIRECT_FIRE_RADIUS
  * @property {number} DIRECT_FIRE_COMMITMENT_RADIUS
- * @property {number} TARGET_COHESION_RADIUS
+ * @property {number} TARGET_ADJACENCY_RADIUS
  * @property {number} COMMITMENT_WEIGHT
  * @property {number} ADJACENCY_WEIGHT
  * @property {number} KNOCKOUT_WEIGHT
