@@ -84,7 +84,21 @@ def extract_mapname_and_playercount(batch_report: list) -> list:
     return settings
 
 
-def repackage_maps_and_generate_tests(base_maps_path, production_maps_path, production_tests_path) -> Path:
+def repackage_maps_and_generate_tests(
+    base_maps_path,
+    production_maps_path,
+    production_tests_path,
+    manifest_path: Path = None,
+    opponent_ai: str = C.COBRA_AI,
+    test_types: tuple = (C.DUEL, C.FFA),
+) -> Path:
+    """
+    Repackages the maps and writes one test config per (map, test type, starting position).
+
+    `test_types` selects which kinds of test to generate - e.g. `(C.DUEL,)` for a duel-only map set.
+    `opponent_ai` is the script every non-FishBot player runs. `manifest_path` names the manifest, so a
+    focused set can be generated without overwriting the full matrix's.
+    """
     # Step 1: Regenerate custom maps if needed.
     # TODO: check if the required maps are present & automatically generate if they are not
     batch_report = p.run_batch_map_packaging(base_maps_path, production_maps_path)
@@ -148,12 +162,12 @@ def repackage_maps_and_generate_tests(base_maps_path, production_maps_path, prod
         player_count = len(base_config) - 1  # challenge entry excluded  # TODO refactor later into metadata
 
         # 'FFA' test is valid for 3-player maps and above.
-        if player_count >= 3 + 1:       # Note: the "+1" is required to account for the overwriting of Player 0.
-            final_configs.extend(g.generate_ffa_configs(base_config))
+        if C.FFA in test_types and player_count >= 3 + 1:       # Note: the "+1" is required to account for the overwriting of Player 0.
+            final_configs.extend(g.generate_ffa_configs(base_config, opponent_ai))
 
         # 'Duel' test is only valid up to 4-player maps.
-        if player_count <= 4 + 1:
-            final_configs.extend(g.generate_duel_configs(base_config))
+        if C.DUEL in test_types and player_count <= 4 + 1:
+            final_configs.extend(g.generate_duel_configs(base_config, opponent_ai))
 
     ## Note: Each entry in `final_configs` looks like this:
     """
@@ -175,7 +189,7 @@ def repackage_maps_and_generate_tests(base_maps_path, production_maps_path, prod
     base_manifest_path = g.write_test_configs(
         final_configs,
         output_dir=production_tests_path,
-        manifest_path=Path.cwd() / "base_manifest.json",
+        manifest_path=manifest_path or (Path.cwd() / "base_manifest.json"),
     )
     ## Note: the output file `base_manifest.json` has output formatted like so:
     """
