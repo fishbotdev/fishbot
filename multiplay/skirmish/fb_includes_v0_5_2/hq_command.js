@@ -522,7 +522,9 @@ class CommandCenter {
 			"directFireTargetRefs": [],
 		};
 
-		const POSITION = state.brigades[brigadeID].location;
+		const x = state.brigades[brigadeID].location.x;
+		const y = state.brigades[brigadeID].location.y;
+
 		const TARGETS = state.brigades[brigadeID].nearbyTargets;
 		const PREVIOUS_TARGET = state.brigades[brigadeID].currentDirectFireTargets[0];		
 
@@ -559,9 +561,6 @@ class CommandCenter {
 		const enemyIndustrial = getCandidates(TARGETS['enemyIndustrial']);
 		const enemyUtility = getCandidates(TARGETS['enemyUtility']);
 		const enemyDefenses = getCandidates(TARGETS['enemyDefenses']);
-
-		const x = POSITION.x;
-		const y = POSITION.y;
 		
 		/** @param {DroidObject | StructureObject | FeatureObject | PositionInfo | FbObject | null} obj */
 		const outsideOfRadius = (obj, radius) => {

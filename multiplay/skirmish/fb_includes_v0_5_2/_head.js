@@ -256,7 +256,7 @@
  * @property {PositionInfo} location  
  * @property {number} strength Smoothed count of direct-fire units in the brigade (mortars excluded).
  * @property {NearbyTargets} nearbyTargets
- * @property {FbObject[]} currentDirectFireTargets The target list from previous targeting cycle, ranked best-first.
+ * @property {FbObject[]} currentDirectFireTargets Previous cycle's ranked target list. Only `[0]` is read today; the rest is stored to be stepped through later.
  * @property {AirStrikeMissionRequest[]} casStrikeRequests
  * @property {BrigadeComposition} composition
  *  
@@ -267,16 +267,16 @@
 /**
  * @typedef {Object} TargetCandidate
  * A target under consideration this cycle. `target` is what FishBot reasons about and persists between cycles;
- * `targetObj` is fetched fresh each cycle for its position & health, and to be handed to the engine.
- * @property {FbObject} target
- * @property {DroidObject | StructureObject | FeatureObject} targetObj not valid on a later cycle
+ * `targetObj` is fetched fresh each cycle for its position & health, and is handed to the engine.
+ * @property {FbObject} target 
+ * @property {DroidObject | StructureObject | FeatureObject} targetObj 
  * @property {number} cost direct fire ranking; lives here because `cost` is read-only on the game object
  */
 
 /** 
  * @typedef {Object} BrigadeTargets
  * @property {(DroidObject | StructureObject | FeatureObject)[]} directFireTargets
- * @property {FbObject[]} directFireTargetRefs used for target persistence (not used by downstream __tac functions)
+ * @property {FbObject[]} directFireTargetRefs `directFireTargets` in persistable form, for `currentDirectFireTargets`. Not used by __tac.
  * @property {(DroidObject | StructureObject | FeatureObject)[]} fireSupportTargets
  * @property {(DroidObject | StructureObject | FeatureObject)[]} adaTargets
  * @property {AirStrikeMissionRequest[]} casTargets
