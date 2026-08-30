@@ -886,6 +886,18 @@ class TacticalOperationsCenter {
 	}
 
 	/**
+	 * Records the direct fire targets a brigade selected, ranked best-first. Used for target persistence.
+	 * Pass an empty list to `targets` to clear the brigade's current target list.
+	 * @param {worldState} state 
+	 * @param {number} brigadeID 
+	 * @param {FbObject[]} targets 
+	 * @returns {void}
+	 */
+	setBrigadeDirectFireTargets(state, brigadeID, targets) {
+		state.brigades[brigadeID].currentDirectFireTargets = targets;
+	}
+
+	/**
 	 * This function writes `location` to `state.brigades[id].location`.
 	 * @param {worldState} state 
 	 * @param {number} brigadeID 

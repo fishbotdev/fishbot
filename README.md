@@ -100,9 +100,10 @@ For a map to be compatible, FishBot must have an absence of breaking issues, and
 
 ## Recent updates
 * **v0.5.2** - *released **x Aug 2026***
-    * Completely reworked the group movement code, resulting in smoother group movement with less rubberbanding and much improved handling of chokepoints.
+    * Combat improvements, including a complete overhaul of group movement and targeting. 
+        * This should result in smoother and seemingly more intentional group behaviour, with better handling of chokepoints.
     * Performance improvements, resulting in a smoother player experience on all base maps shipped with the game.
-    * Fixed some more long-standing construction issues with oil capture.
+    * Fixed some more long-standing construction issues related to oil capture.
 
 * **v0.5.1** - *released **04 Aug 2026***
     * Now supports custom structure limits in skirmish settings.

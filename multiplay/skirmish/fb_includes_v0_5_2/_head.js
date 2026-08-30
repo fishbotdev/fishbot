@@ -256,6 +256,7 @@
  * @property {PositionInfo} location  
  * @property {number} strength Smoothed count of direct-fire units in the brigade (mortars excluded).
  * @property {NearbyTargets} nearbyTargets
+ * @property {FbObject[]} currentDirectFireTargets Previous cycle's ranked target list. Only `[0]` is read today; the rest is stored to be stepped through later.
  * @property {AirStrikeMissionRequest[]} casStrikeRequests
  * @property {BrigadeComposition} composition
  *  
@@ -263,9 +264,19 @@
  *
  */
 
+/**
+ * @typedef {Object} TargetCandidate
+ * A target under consideration this cycle. `target` is what FishBot reasons about and persists between cycles;
+ * `targetObj` is fetched fresh each cycle for its position & health, and is handed to the engine.
+ * @property {FbObject} target 
+ * @property {DroidObject | StructureObject | FeatureObject} targetObj 
+ * @property {number} cost direct fire ranking; lives here because `cost` is read-only on the game object
+ */
+
 /** 
  * @typedef {Object} BrigadeTargets
  * @property {(DroidObject | StructureObject | FeatureObject)[]} directFireTargets
+ * @property {FbObject[]} directFireTargetRefs `directFireTargets` in persistable form, for `currentDirectFireTargets`. Not used by __tac.
  * @property {(DroidObject | StructureObject | FeatureObject)[]} fireSupportTargets
  * @property {(DroidObject | StructureObject | FeatureObject)[]} adaTargets
  * @property {AirStrikeMissionRequest[]} casTargets
@@ -293,6 +304,12 @@
 /**
  * @typedef {Object} GroundForceParameters
  * @property {number} IMMEDIATE_DIRECT_FIRE_RADIUS
+ * @property {number} DIRECT_FIRE_COMMITMENT_RADIUS
+ * @property {number} TARGET_ADJACENCY_RADIUS
+ * @property {number} COMMITMENT_WEIGHT
+ * @property {number} ADJACENCY_WEIGHT
+ * @property {number} KNOCKOUT_WEIGHT
+ * @property {number} LOW_HEALTH_THRESHOLD
  * @property {number} EFFECTIVE_FIRE_SUPPORT_RADIUS
  * @property {number} EFFECTIVE_ADA_RADIUS
  * @property {number} MEDIAN_CENTER_STRENGTH_THRESHOLD

@@ -69,9 +69,20 @@ class CommandCenter {
 		/** @type {GroundForceParameters} */
 		this.GROUND_FORCE_PARAMETERS = {
 			IMMEDIATE_DIRECT_FIRE_RADIUS: 10,
+			DIRECT_FIRE_COMMITMENT_RADIUS: 20,		// a committed target is only released once it is further away than this (or dead / unreachable)
+
+			// Direct fire cost weights, applied by `directFireCost()` as multipliers on the *squared* distance to the
+			// target. Below 1.0 promotes a target, above 1.0 demotes it. Squared, so a weight of w lets a promoted target
+			// sit 1/sqrt(w) times further away than a rival and still win: 0.2 => ~2.2x, 0.25 => 2x, 0.56 => ~1.3x.
+			TARGET_ADJACENCY_RADIUS: 8,				// how close a target must be to the current battle to count as "part of the same fight"
+			COMMITMENT_WEIGHT: 0.2,					// the committed target only loses its place to something ~2.2x closer
+			ADJACENCY_WEIGHT: 0.25,					// promotes further-away targets which are part of the same fight (e.g. the rest of an enemy base)
+			KNOCKOUT_WEIGHT: 0.56,					// promotes targets which the brigade has already damaged
+			LOW_HEALTH_THRESHOLD: 50,				// a target below this health percentage is considered worth finishing off
+
 			EFFECTIVE_FIRE_SUPPORT_RADIUS: 10,		// todo: this should be adaptive - when the brigade has a sensor, this is better, without, it is restricted by sight range of the front units
 			EFFECTIVE_ADA_RADIUS: 12,
-			MEDIAN_CENTER_STRENGTH_THRESHOLD: Math.ceil(0.50 * MAX_DIRECT_FIRE_UNITS),		// at/above this brigade strength, the brigade center switches from average to median
+			MEDIAN_CENTER_STRENGTH_THRESHOLD: Math.ceil(0.50 * MAX_DIRECT_FIRE_UNITS),		// at/above this brigade strength, the brigade position estimator switches from average to median which changes the aggression of the brigade
 		};
 
 		// Aviation parameters
@@ -508,49 +519,54 @@ class CommandCenter {
 			"fireSupportTargets": [],
 			"adaTargets": [], 
 			"casTargets": [],
+			"directFireTargetRefs": [],
 		};
 
-		const brigadeInfo = state.brigades[brigadeID]; 
-		const POSITION = brigadeInfo['location'];
-		const TARGETS = brigadeInfo['nearbyTargets'];		
+		const x = state.brigades[brigadeID].location.x;
+		const y = state.brigades[brigadeID].location.y;
+
+		const TARGETS = state.brigades[brigadeID].nearbyTargets;
+		const PREVIOUS_TARGET = state.brigades[brigadeID].currentDirectFireTargets[0];		
 
 		if (this.#noTargetsAvailable(TARGETS)) {
 			return brigadeTargets;
 		}
 
 		/**
-		 * Gets a fresh object list.
-		 * @param {FbObject[]} targetObjectList
-		 * @returns {(StructureObject | DroidObject | FeatureObject)[]}
+		 * Pairs each target with a freshly fetched game object, dropping any which is gone or unreachable.
+		 * @param {FbObject[]} targetList
+		 * @returns {TargetCandidate[]}
 		 */
-		const getObjectList = (targetObjectList) => {
-			const objectList = [];
-			targetObjectList.forEach(t => {
-				const obj = getObject(t.type, t.player, t.id);
-				if (obj == null) {
+		const getCandidates = (targetList) => {
+			const candidates = [];
+			targetList.forEach(target => {
+				const targetObj = getObject(target.type, target.player, target.id);
+				if (targetObj == null) {
 					return;
-				} 
-				if (isReachable[obj.x][obj.y]) {		// This captures if the potential target is on an island / water terrain. FishBot will ignore these targets for now.
-					objectList.push(obj);
 				}
+				const ON_ISLAND_OR_WATER = !isReachable[targetObj.x][targetObj.y];
+				if (ON_ISLAND_OR_WATER) {
+					return;
+				}
+				candidates.push({'target': target, 'targetObj': targetObj, 'cost': 0});
 			});
-			return objectList;
+			return candidates;
 		}
 
-		const enemyArmor = getObjectList(TARGETS['enemyArmor']);
-		const enemyInfantry = getObjectList(TARGETS['enemyInfantry']);
-		const enemyIndirectFire = getObjectList(TARGETS['enemyIndirectFire']);
-		const enemyADA = getObjectList(TARGETS['enemyADA']);
-		const enemyConstructor = getObjectList(TARGETS['enemyConstructor']);
-		const enemyIndustrial = getObjectList(TARGETS['enemyIndustrial']);
-		const enemyUtility = getObjectList(TARGETS['enemyUtility']);
-		const enemyDefenses = getObjectList(TARGETS['enemyDefenses']);
-
-		const x = POSITION.x;
-		const y = POSITION.y;
+		const enemyArmor = getCandidates(TARGETS['enemyArmor']);
+		const enemyInfantry = getCandidates(TARGETS['enemyInfantry']);
+		const enemyIndirectFire = getCandidates(TARGETS['enemyIndirectFire']);
+		const enemyADA = getCandidates(TARGETS['enemyADA']);
+		const enemyConstructor = getCandidates(TARGETS['enemyConstructor']);
+		const enemyIndustrial = getCandidates(TARGETS['enemyIndustrial']);
+		const enemyUtility = getCandidates(TARGETS['enemyUtility']);
+		const enemyDefenses = getCandidates(TARGETS['enemyDefenses']);
 		
-		/** @param {DroidObject | StructureObject | FeatureObject} obj */
+		/** @param {DroidObject | StructureObject | FeatureObject | PositionInfo | FbObject | null} obj */
 		const outsideOfRadius = (obj, radius) => {
+			if (obj == null) {
+				return true;
+			}
 			const d = distSq(obj.x, x, obj.y, y);		
 			if (d > radius ** 2) {		
 				return true;
@@ -559,21 +575,68 @@ class CommandCenter {
 			}
 		}
 
-		// Direct Fire Targeting
-		// Intent: only attack what is readily attackable & in front of the brigade
-		const directFireScore = (obj) => {
-			const dist = distSq(x, obj.x, y, obj.y);
-			const line = drawLine(x, y, obj.x, obj.y);
-			let detourPenalty = 1;
-			for (let i=0; i<line.length; i++) {
-				const point = line[i];
-				const terrainType = MapTiles[point[1]][point[0]].terrainType;
-				if (terrainType === TER_CLIFFFACE || terrainType === TER_WATER) {
-					detourPenalty++;
-					break;
-				}
+		/*
+			Direct Fire Targeting
+			Intent: attack what is closest (distSq to brigade) and see the current battle to completion (e.g. distSq to current target, health).
+			The targets in radius have their cost adjusted (percentage-based) based on proximity to the current battle & various other factors.
+		*/
+
+		// Where the brigade's fight is, or `null` if it is not near one. Relies on FbObject carrying the stale 'x', 'y'.
+		let CURRENT_BATTLE_LOCATION = null;
+		const PREV_TARGET_DEFINED = PREVIOUS_TARGET != null;
+		const PREV_TARGET_TOO_FAR_AWAY = outsideOfRadius(PREVIOUS_TARGET, parameters.DIRECT_FIRE_COMMITMENT_RADIUS);
+		if (PREV_TARGET_DEFINED && !PREV_TARGET_TOO_FAR_AWAY) {
+			CURRENT_BATTLE_LOCATION = PREVIOUS_TARGET;
+		}
+
+		/**
+		 * Re-acquires lock on the existing target. Lock released when the target was destroyed, is unreachable, or the brigade is now too far from it.
+		 * @param {FbObject | undefined} previousTarget
+		 * @returns {DroidObject | StructureObject | FeatureObject | null}
+		 */
+		const getCommittedTarget = (previousTarget) => {
+			if (previousTarget == null) {
+				return null;
 			}
-			return detourPenalty * dist;
+			const obj = getObject(previousTarget.type, previousTarget.player, previousTarget.id);
+			if (obj == null) {
+				return null;		// destroyed
+			}
+			if (!isReachable[obj.x][obj.y]) {
+				return null;		// on an island / water terrain
+			}
+			if (outsideOfRadius(obj, parameters.DIRECT_FIRE_COMMITMENT_RADIUS)) {
+				return null;		// the brigade has been pushed (or has wandered) off this fight
+			}
+			return obj;
+		};
+
+		const COMMITTED_TARGET_OBJ = getCommittedTarget(PREVIOUS_TARGET);
+
+		const COMMITTED_TARGET_FOUND = COMMITTED_TARGET_OBJ != null;
+
+		/** @param {TargetCandidate} c */
+		const isCommittedTarget = (c) => COMMITTED_TARGET_FOUND && c.target.id === PREVIOUS_TARGET.id && c.target.player === PREVIOUS_TARGET.player;
+
+		const ADJACENCY_RADIUS_SQ = parameters.TARGET_ADJACENCY_RADIUS ** 2;
+
+		/** @param {TargetCandidate} c */
+		const directFireCost = (c) => {
+			const obj = c.targetObj;
+			let cost = distSq(x, obj.x, y, obj.y);
+
+			if (isCommittedTarget(c)) {
+				// Inertia 1: Prefers the existing target 
+				cost *= parameters.COMMITMENT_WEIGHT;
+			} else if (CURRENT_BATTLE_LOCATION != null && distSq(obj.x, CURRENT_BATTLE_LOCATION.x, obj.y, CURRENT_BATTLE_LOCATION.y) <= ADJACENCY_RADIUS_SQ) {
+				// Inertia 2: Prefers targets near the current battle
+				cost *= parameters.ADJACENCY_WEIGHT;
+			}
+			if (obj.health < parameters.LOW_HEALTH_THRESHOLD) {
+				// Opportunity 1: Prefers weak targets if available
+				cost *= parameters.KNOCKOUT_WEIGHT;
+			}
+			return cost;
 		}
 
 		const primaryDroidTargets = [...enemyArmor, ...enemyInfantry, ...enemyDefenses];
@@ -581,15 +644,22 @@ class CommandCenter {
 		const tertiaryDirectFireTargets = [...enemyConstructor, ...enemyUtility];
 
 		const directFireTargetsInRange = [];
-		const targetsOutOfRange = [];		// this will also be ordered in the priority order specified in `primaryDirectFireTargets`
+		const targetsOutOfRange = [];		
 
-		/** @param {(DroidObject | StructureObject | FeatureObject)[]} targetList */
-		const addDirectFireTargetByProximity = (targetList) => {
-			targetList.forEach(obj => {
-				if (outsideOfRadius(obj, parameters.IMMEDIATE_DIRECT_FIRE_RADIUS)) {
-					targetsOutOfRange.push(obj);
+		let FOUND_COMMITTED_TARGET_IN_RANGE = false;
+
+		/** @param {TargetCandidate[]} candidates */
+		const addDirectFireTargetByProximity = (candidates) => {
+			candidates.forEach(c => {
+				if (isCommittedTarget(c)) {		
+					FOUND_COMMITTED_TARGET_IN_RANGE = true;
+					directFireTargetsInRange.push(c);
+					return;					
+				}
+				if (outsideOfRadius(c.targetObj, parameters.IMMEDIATE_DIRECT_FIRE_RADIUS)) {
+					targetsOutOfRange.push(c);
 				} else {
-					directFireTargetsInRange.push(obj);
+					directFireTargetsInRange.push(c);
 				}
 			});
 		};
@@ -598,31 +668,33 @@ class CommandCenter {
 		addDirectFireTargetByProximity(secondaryDirectFireTargets);
 		addDirectFireTargetByProximity(tertiaryDirectFireTargets);
 
-		directFireTargetsInRange.forEach(t => {t.score = directFireScore(t);});
-		directFireTargetsInRange.sort((a,b) => a.score - b.score);		// Note: this ignores the primary/secondary/tertiary ordering above (temporary)
+		// Note: currently, `nearbyTargets` (INTEL) is refreshed less often than combat operations run (RUN_C2), so the committed target can be missing
+		// from RUNC2 for a cycle (as RUNC2 finds out that the target is destroyed first). Re-inserting it stops a gap from breaking the brigade's commitment.
+		if (COMMITTED_TARGET_FOUND && !FOUND_COMMITTED_TARGET_IN_RANGE) {
+			directFireTargetsInRange.push({'target': PREVIOUS_TARGET, 'targetObj': COMMITTED_TARGET_OBJ, 'cost': 0});
+		}
 
-		brigadeTargets['directFireTargets'].push(...directFireTargetsInRange);
+		directFireTargetsInRange.forEach(c => {c.cost = directFireCost(c);});
+		directFireTargetsInRange.sort((a,b) => a.cost - b.cost);		// Note: this ignores the primary/secondary/tertiary ordering currently; cost based on type will be added later.
 
 		const MAX_DIRECT_FIRE_TARGETS = 8;
-		const targetDeficit = MAX_DIRECT_FIRE_TARGETS - brigadeTargets['directFireTargets'].length;
+		const targetDeficit = MAX_DIRECT_FIRE_TARGETS - directFireTargetsInRange.length;
 		if (targetDeficit > 0) {
-			brigadeTargets['directFireTargets'].push(...targetsOutOfRange.slice(0, targetDeficit));
+			targetsOutOfRange.sort((a,b) => distSq(x, a.targetObj.x, y, a.targetObj.y) - distSq(x, b.targetObj.x, y, b.targetObj.y));
+			directFireTargetsInRange.push(...targetsOutOfRange.slice(0, targetDeficit));
 		}
+
+		directFireTargetsInRange.forEach(c => {
+			brigadeTargets['directFireTargets'].push(c.targetObj);
+			brigadeTargets['directFireTargetRefs'].push(c.target);
+		});
 
 		if (false) {
 			// Draw lines to the top 3 targets (to see what the brigade is trying to attack)
-			for (let i=0; i<4; i++) {
-				if (i >= brigadeTargets['directFireTargets'].length) {
-					break;
-				}
-
+			for (let i=0; i<Math.min(brigadeTargets['directFireTargets'].length, 3); i++) {
 				const target = brigadeTargets['directFireTargets'][i];
 				const lineToTarget = drawLine(x, y, target.x, target.y);
-
-				for (let j=0; j<lineToTarget.length; j++) {
-					const point = lineToTarget[j];
-					highlightTiles(point[0], point[1]);		
-				}
+				lineToTarget.forEach(point => highlightTiles(point[0], point[1]));		
 			}
 		}
 
@@ -631,19 +703,19 @@ class CommandCenter {
 		const primaryIndirectFireTargets = [...enemyInfantry, ...enemyDefenses, ...enemyIndirectFire, ...enemyADA, ...enemyIndustrial, ...enemyArmor];
 		const secondaryIndirectFireTargets = [...enemyConstructor, ...enemyUtility];
 
-		primaryIndirectFireTargets.forEach(obj => {
-			if (outsideOfRadius(obj, parameters.EFFECTIVE_FIRE_SUPPORT_RADIUS)) 	return;
-			brigadeTargets["fireSupportTargets"].push(obj);
+		primaryIndirectFireTargets.forEach(c => {
+			if (outsideOfRadius(c.targetObj, parameters.EFFECTIVE_FIRE_SUPPORT_RADIUS)) 	return;
+			brigadeTargets["fireSupportTargets"].push(c.targetObj);
 		});
 
-		secondaryIndirectFireTargets.forEach(obj => {
-			if (outsideOfRadius(obj, parameters.EFFECTIVE_FIRE_SUPPORT_RADIUS)) 	return;
-			brigadeTargets["fireSupportTargets"].push(obj);
+		secondaryIndirectFireTargets.forEach(c => {
+			if (outsideOfRadius(c.targetObj, parameters.EFFECTIVE_FIRE_SUPPORT_RADIUS)) 	return;
+			brigadeTargets["fireSupportTargets"].push(c.targetObj);
 		});
 
-		const NO_FIRE_SUPPORT_TARGETS_IN_RANGE = (brigadeTargets["fireSupportTargets"].length === 0);
-		if (NO_FIRE_SUPPORT_TARGETS_IN_RANGE) {
-			brigadeTargets["fireSupportTargets"].push(...directFireTargetsInRange);		// fallback
+		const FALLBACK_TO_DIRECT_FIRE_TARGETS = (brigadeTargets["fireSupportTargets"].length === 0);
+		if (FALLBACK_TO_DIRECT_FIRE_TARGETS) {
+			brigadeTargets["fireSupportTargets"].push(...brigadeTargets['directFireTargets']);
 		}		
 
 		// CAS Targeting (Close Air Support)
@@ -652,23 +724,24 @@ class CommandCenter {
 		const secondaryCASTargets = [...enemyADA, ...enemyArmor, ...enemyDefenses];
 
 		const isHealthy = (obj) => obj.health > 25;
-		secondaryCASTargets.forEach(obj => {
-			if (isHealthy(obj)) {
-				brigadeTargets['casTargets'].unshift(aviation.translateIntoCASRequest(obj, MISSION_PRIORITY.VERY_HIGH));
+		secondaryCASTargets.forEach(c => {
+			if (isHealthy(c.targetObj)) {
+				brigadeTargets['casTargets'].unshift(aviation.translateIntoCASRequest(c.targetObj, MISSION_PRIORITY.VERY_HIGH));
 			} else {
-				brigadeTargets['casTargets'].push(aviation.translateIntoCASRequest(obj, MISSION_PRIORITY.HIGH));
+				brigadeTargets['casTargets'].push(aviation.translateIntoCASRequest(c.targetObj, MISSION_PRIORITY.HIGH));
 			}			
 		});
 
-		primaryCASTargets.forEach(obj => {
-			const missionRequest = aviation.translateIntoCASRequest(obj, MISSION_PRIORITY.URGENT); 
+		primaryCASTargets.forEach(c => {
+			const missionRequest = aviation.translateIntoCASRequest(c.targetObj, MISSION_PRIORITY.URGENT); 
 			brigadeTargets['casTargets'].unshift(missionRequest);
 		});
 
 		// ADA Targeting (Air Defense Artillery)
 		// Intent: Concentrate fire on one target.
-		const enemyAircraft = getObjectList(TARGETS['enemyAviation']);		
-		enemyAircraft.forEach(obj => {
+		const enemyAircraft = getCandidates(TARGETS['enemyAviation']);		
+		enemyAircraft.forEach(c => {
+			const obj = c.targetObj;
 			if (outsideOfRadius(obj, parameters.EFFECTIVE_ADA_RADIUS)) return;
 			if (!('isFlying' in obj)) return;
 			if (obj.isFlying !== true) return;
@@ -867,6 +940,8 @@ class CommandCenter {
 			const groundTargets = this.#prioritiseBrigadeTargets(state, brigadeID, this.GROUND_FORCE_PARAMETERS);
 
 			this.toc.setBrigadeCASStrikeRequests(state, brigadeID, groundTargets['casTargets']);
+
+			this.toc.setBrigadeDirectFireTargets(state, brigadeID, groundTargets['directFireTargetRefs']);
 
 			if (this.#noTargetsAvailable(groundTargets)) {
 				const CLOSEST_TARGET = intelligence.findClosestTarget(state, brigadeLocation.x, brigadeLocation.y); 
