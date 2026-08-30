@@ -440,6 +440,7 @@ def _average_metrics(per_match_metrics: list[dict]) -> dict:
             averaged[key] = None
         elif isinstance(values[0], bool):
             averaged[key] = any(values)
+            averaged[f"{key}_matches"] = sum(1 for value in values if value)
         elif isinstance(values[0], dict):
             # e.g. failure_reasons - totalled across matches rather than averaged.
             totals = {}
@@ -519,6 +520,17 @@ def _mean(tests: list[dict], key: str) -> float:
     return sum(values) / len(values) if values else 0.0
 
 
+def _total(tests: list[dict], key: str) -> int:
+    """
+    Recovers the true total of a count metric.
+
+    `_average_metrics` divides every count by the number of matches in its test, so summing those
+    averages across tests gives neither a total nor a mean. Multiplying back by `matches` first does.
+    """
+    total = sum(t[key] * t["matches"] for t in tests if t.get(key) is not None)
+    return round(total)
+
+
 def print_mode_summary(mode_name: str, tests: list[dict]) -> None:
 
     if not tests:
@@ -556,15 +568,25 @@ def print_mode_summary(mode_name: str, tests: list[dict]) -> None:
 
     # Only present once the bot under test emits commitment telemetry.
     if any("conversion_rate" in test for test in tests):
-        converted = sum(test.get("commitments_converted", 0) for test in tests)
-        commitments = sum(test.get("commitments", 0) for test in tests)
-        rate = _mean(tests, "conversion_rate")
+
+        # Counted over every game, so the rate is the raw ratio of the two numbers printed beside it.
+        # Unresolved commitments were still in flight at the final whistle, and are neither converted
+        # nor failed, so they are excluded from the rate and reported separately.
+        converted = _total(tests, "commitments_converted")
+        failed = _total(tests, "commitments_failed")
+        aborted = _total(tests, "commitments_aborted")
+        unresolved = _total(tests, "commitments_unresolved")
+
+        resolved = converted + failed + aborted
+        rate = (converted / resolved) if resolved else 0.0
+
         print(
             f"     "
             f"           "
             f"conversion {rate:>4.2f}  "
             f"[{make_bar(rate)}]"
-            f"   {converted}/{commitments} commitments"
+            f"   {converted} built / {resolved} resolved"
+            f"   ({failed} failed, {aborted} aborted, {unresolved} unfinished)"
         )
 
     worst = min(tests, key=lambda t: t["mean_fair_share_contested"] or 0.0)
@@ -576,8 +598,13 @@ def print_mode_summary(mode_name: str, tests: list[dict]) -> None:
         f"{worst['config_file']}"
     )
 
-    if any(test.get("truncated") for test in tests):
-        print(f"  WARNING: telemetry was truncated in at least one game (console scrollback overflow?)")
+    truncated_matches = sum(test.get("truncated_matches", 0) for test in tests)
+
+    if truncated_matches:
+        print(
+            f"  WARNING: {truncated_matches} of {matches} games lost early telemetry "
+            f"(console buffer overflowed - these games bias every metric above)"
+        )
 
 
 def print_map_summary(grouped_results: dict[str, dict]) -> None:
@@ -667,6 +694,6 @@ def main(
 
 if __name__ == "__main__":
 
-    COMMIT_SHA = "b155be21ee55cffe7240ab54bd39e5a2ced12ab2"
+    COMMIT_SHA = "f2e70000c1f7855500253f6ee7655594f7bf5473"
 
     main(commit_sha=COMMIT_SHA)
