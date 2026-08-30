@@ -106,7 +106,15 @@ def windows_scrape_terminal_history(lines_to_read):
         
     csbi = CONSOLE_SCREEN_BUFFER_INFO()
     kernel32.GetConsoleScreenBufferInfo(stdout_handle, ctypes.byref(csbi))
-    
+
+    # The screen buffer is the hard limit: anything older has already been discarded by the OS, so
+    # asking for more rows than it holds silently returns fewer. Report it rather than losing data
+    # without a trace - a game longer than the buffer loses the START of its telemetry.
+    if lines_to_read > csbi.dwSize.Y:
+        print(f"WARNING: console buffer holds {csbi.dwSize.Y} lines, {lines_to_read} requested. "
+              f"Increase the terminal's buffer height or long games will lose early telemetry.")
+        lines_to_read = csbi.dwSize.Y
+
     # Calculate the bounding block to extract from based on where the cursor left off
     start_row = max(0, csbi.dwCursorPosition.Y - lines_to_read)
     read_coord = COORD(0, start_row)
@@ -272,6 +280,13 @@ def telemetry_path_for(in_progress_file_path: Path) -> Path:
 
 #################################### TEST RUNNERS ####################################
 
+# Telemetry costs ~13.5 console lines per minute of game time, on top of the game's own output. At 1000
+# lines the scrape covered ~35 minutes: measured truncation was 0% below 35 min, 67% at 35-45 min and 100%
+# beyond 60 min. 3000 covers the longest game observed (82 min) with headroom. The console buffer height
+# must be at least this, or `windows_scrape_terminal_history` will warn and read less.
+CONSOLE_LINES_TO_SCRAPE = 3000
+
+
 def run_autogame(commands: List[str]) -> Tuple[List[str], List[dict]]:
     # Execute normally (let WZ write directly to the console)
     TIMEOUT_SECONDS = 1200
@@ -279,7 +294,7 @@ def run_autogame(commands: List[str]) -> Tuple[List[str], List[dict]]:
     del TIMEOUT_SECONDS, commands
 
     # Scrapes the console output and stores it into `console_history`, then clears the console in prep for further processing
-    console_history = windows_scrape_terminal_history(lines_to_read=1000)
+    console_history = windows_scrape_terminal_history(lines_to_read=CONSOLE_LINES_TO_SCRAPE)
 
     # Gets the final game summary table
     summary_table_start_idx = find_final_game_summary_table_index(console_history)
