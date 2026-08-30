@@ -263,6 +263,13 @@ class armyIntelligence {
 					continue;
 				}
 
+				// Repair vehicles keep enemy armour alive, so they are worth the same attention as armour.
+				const TRACKED_REPAIR_VEHICLE = (flags & OBJ_FLAGS.REPAIR) && (flags & OBJ_FLAGS.TRACKED_PROPULSION);
+				if (TRACKED_REPAIR_VEHICLE) {
+					proposedTargets["enemyArmor"].push(t);
+					continue;
+				}
+
 				// This leaves only direct fire land vehicles & other utility vehicles e.g. sensors / commanders
 				if (flags & OBJ_FLAGS.ARMOUR) {
 					proposedTargets["enemyArmor"].push(t);
