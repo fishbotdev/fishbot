@@ -251,25 +251,20 @@
  * 
  * @typedef {Map<number, BattalionComposition>} BrigadeComposition
  * 
- * @typedef {Object} TargetReference
- * `TargetReference` is the minimum information required to re-acquire a game object with `getObject()` on a later cycle.
- * Live game objects must not be stored in `state` because they are invalidated once the engine's object list is rebuilt.
- * @property {number} type
- * @property {number} player
- * @property {number} id
+ * @typedef {Object} BrigadeCurrentTargets
+ * The targets a brigade selected on the previous targeting cycle, ranked best-first.
  * 
- * @typedef {Object} BrigadeCommitments
- * What a brigade committed to on the previous targeting cycle.
- * @property {TargetReference | null} directFireTarget the object the brigade is engaging
- * @property {PositionInfo | null} engagementLocation where the brigade's current fight is. Outlives `directFireTarget`, so
- * that destroying one structure in an enemy base does not release the brigade from the base.
+ * Held as `FbObject` (the same lightweight form `nearbyTargets` uses) rather than live game objects, which must not be
+ * stored in `state` because they are invalidated once the engine rebuilds its object list. `FbObject` also carries a
+ * last-known position, so `[0]` still says where the brigade's fight is even after that target has been destroyed.
+ * @property {FbObject[]} directFireTargets `[0]` is the target the brigade is engaging
  * 
  * @typedef {Object} BrigadeMetadata
  * @property {number} id This is the brigade ID (duplicate of the key).
  * @property {PositionInfo} location  
  * @property {number} strength Smoothed count of direct-fire units in the brigade (mortars excluded).
  * @property {NearbyTargets} nearbyTargets
- * @property {BrigadeCommitments} currentTargets
+ * @property {BrigadeCurrentTargets} currentTargets
  * @property {AirStrikeMissionRequest[]} casStrikeRequests
  * @property {BrigadeComposition} composition
  *  
@@ -283,6 +278,8 @@
  * @property {(DroidObject | StructureObject | FeatureObject)[]} fireSupportTargets
  * @property {(DroidObject | StructureObject | FeatureObject)[]} adaTargets
  * @property {AirStrikeMissionRequest[]} casTargets
+ * @property {FbObject[]} directFireTargetRefs `directFireTargets` in its storable form. Not read by the `__tac` layer;
+ * handed to `toc.setBrigadeDirectFireTargets()` so the next targeting cycle can see what this one chose.
  */
 
 

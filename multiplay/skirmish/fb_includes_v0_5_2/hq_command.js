@@ -519,6 +519,7 @@ class CommandCenter {
 			"fireSupportTargets": [],
 			"adaTargets": [], 
 			"casTargets": [],
+			"directFireTargetRefs": [],
 		};
 
 		const brigadeInfo = state.brigades[brigadeID]; 
@@ -528,6 +529,9 @@ class CommandCenter {
 		if (this.#noTargetsAvailable(TARGETS)) {
 			return brigadeTargets;
 		}
+
+		/** @type {Map<number, FbObject>} Live object id -> the `FbObject` it came from, so the chosen targets can be cached in `state`. */
+		const sourceObjects = new Map();
 
 		/**
 		 * Gets a fresh object list.
@@ -543,6 +547,7 @@ class CommandCenter {
 				} 
 				if (isReachable[obj.x][obj.y]) {		// This captures if the potential target is on an island / water terrain. FishBot will ignore these targets for now.
 					objectList.push(obj);
+					sourceObjects.set(obj.id, t);
 				}
 			});
 			return objectList;
@@ -577,19 +582,22 @@ class CommandCenter {
 		// adjusted by multiplicative weights which express that intent. The target the brigade is already engaging is
 		// promoted, so is anything belonging to the same fight, and so is anything the brigade has already damaged.
 
+		// The head of the list this brigade chose last cycle. Being an `FbObject`, it carries a last-known position, so
+		// it says where the fight is even once the target itself is gone - which is exactly when a passing scout or
+		// truck would otherwise steal the brigade's attention.
+		const PREVIOUS_TARGET = brigadeInfo['currentTargets']['directFireTargets'][0];
+
 		/**
-		 * Re-acquires the target this brigade committed to on the previous cycle.
-		 * The commitment is released when the target is destroyed, is unreachable, or the brigade has been drawn too
-		 * far away from it to keep fighting for it.
+		 * Re-acquires the target this brigade was engaging last cycle.
+		 * Released when the target is destroyed, is unreachable, or the brigade has been drawn too far from it.
 		 * @returns {DroidObject | StructureObject | FeatureObject | null}
 		 */
 		const getCommittedTarget = () => {
-			const targetReference = brigadeInfo['currentTargets']['directFireTarget'];
-			if (targetReference == null) {
+			if (!defined(PREVIOUS_TARGET)) {
 				return null;
 			}
 
-			const obj = getObject(targetReference.type, targetReference.player, targetReference.id);
+			const obj = getObject(PREVIOUS_TARGET.type, PREVIOUS_TARGET.player, PREVIOUS_TARGET.id);
 			if (obj == null) {
 				return null;		// destroyed
 			}
@@ -604,25 +612,11 @@ class CommandCenter {
 
 		const COMMITTED_TARGET = getCommittedTarget();
 
-		/**
-		 * Returns where the brigade's current fight is, or `null` if it is not in one.
-		 * This outlives the committed target: destroying one structure in an enemy base must not hand the brigade back
-		 * to a plain nearest-target rule, because that is exactly the moment a passing scout or truck steals its
-		 * attention. The fight is released once the brigade is no longer near it.
-		 * @returns {PositionInfo | null}
-		 */
-		const getEngagementLocation = () => {
-			const engagementLocation = brigadeInfo['currentTargets']['engagementLocation'];
-			if (engagementLocation == null) {
-				return null;
-			}
-			if (outsideOfRadius(engagementLocation, parameters.DIRECT_FIRE_COMMITMENT_RADIUS)) {
-				return null;		// the brigade is no longer near this fight
-			}
-			return engagementLocation;
-		};
-
-		const ENGAGEMENT_LOCATION = getEngagementLocation();
+		// Where the brigade's fight is, or `null` if it is not near one. Taken from the last-known position of the
+		// previous target, so it survives that target's destruction.
+		const ENGAGEMENT_LOCATION = (defined(PREVIOUS_TARGET) && !outsideOfRadius(PREVIOUS_TARGET, parameters.DIRECT_FIRE_COMMITMENT_RADIUS))
+			? PREVIOUS_TARGET
+			: null;
 
 		/** @param {DroidObject | StructureObject | FeatureObject} obj */
 		const isCommittedTarget = (obj) => COMMITTED_TARGET != null && obj.id === COMMITTED_TARGET.id && obj.player === COMMITTED_TARGET.player;
@@ -630,19 +624,7 @@ class CommandCenter {
 		const COHESION_RADIUS_SQ = parameters.TARGET_COHESION_RADIUS ** 2;
 
 		const directFireScore = (obj) => {
-			const dist = distSq(x, obj.x, y, obj.y);
-			const line = drawLine(x, y, obj.x, obj.y);
-			let detourPenalty = 1;
-			for (let i=0; i<line.length; i++) {
-				const point = line[i];
-				const terrainType = MapTiles[point[1]][point[0]].terrainType;
-				if (terrainType === TER_CLIFFFACE || terrainType === TER_WATER) {
-					detourPenalty++;
-					break;
-				}
-			}
-
-			let score = detourPenalty * dist;
+			let score = distSq(x, obj.x, y, obj.y);
 
 			if (isCommittedTarget(obj)) {
 				// Hysteresis: the brigade only drops the target it is engaging for something decisively better.
@@ -689,6 +671,7 @@ class CommandCenter {
 		// from it for a cycle. Re-inserting it stops a gap in reporting from breaking the brigade's commitment.
 		if (COMMITTED_TARGET != null && !directFireTargetsInRange.some(isCommittedTarget)) {
 			directFireTargetsInRange.push(COMMITTED_TARGET);
+			sourceObjects.set(COMMITTED_TARGET.id, PREVIOUS_TARGET);
 		}
 
 		directFireTargetsInRange.forEach(t => {t.score = directFireScore(t);});
@@ -703,6 +686,14 @@ class CommandCenter {
 			targetsOutOfRange.sort((a,b) => distSq(x, a.x, y, a.y) - distSq(x, b.x, y, b.y));
 			brigadeTargets['directFireTargets'].push(...targetsOutOfRange.slice(0, targetDeficit));
 		}
+
+		// The same ranking in storable form, for `toc.setBrigadeDirectFireTargets()`.
+		brigadeTargets['directFireTargets'].forEach(t => {
+			const ref = sourceObjects.get(t.id);
+			if (defined(ref)) {
+				brigadeTargets['directFireTargetRefs'].push(ref);
+			}
+		});
 
 		if (false) {
 			// Draw lines to the top 3 targets (to see what the brigade is trying to attack)
@@ -964,9 +955,8 @@ class CommandCenter {
 
 			this.toc.setBrigadeCASStrikeRequests(state, brigadeID, groundTargets['casTargets']);
 
-			// Record what the brigade is engaging so the next targeting cycle can stay committed to the same fight.
-			// `directFireTargets[0]` is `undefined` when nothing is available, which releases the commitment.
-			this.toc.setBrigadeDirectFireTarget(state, brigadeID, groundTargets['directFireTargets'][0]);
+			// Record the ranked list so the next targeting cycle can stay on the same fight. An empty list releases it.
+			this.toc.setBrigadeDirectFireTargets(state, brigadeID, groundTargets['directFireTargetRefs']);
 
 			if (this.#noTargetsAvailable(groundTargets)) {
 				const CLOSEST_TARGET = intelligence.findClosestTarget(state, brigadeLocation.x, brigadeLocation.y); 
