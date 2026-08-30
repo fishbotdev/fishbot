@@ -879,12 +879,8 @@ class worldStateBuilder {
         /** @returns {AirStrikeMissionRequest[]} */
         const createCASStrikeRequests = () => [];
 
-        /** @returns {BrigadeCurrentTargets} */
-        const createCurrentTargets = () => {
-            return {
-                'directFireTargets': [],
-            };
-        };
+        /** @returns {FbObject[]} */
+        const createCurrentDirectFireTargets = () => [];
 
         /** @returns {BattalionComposition} */
         const createBattalionComposition = (category) => {return {
@@ -915,7 +911,7 @@ class worldStateBuilder {
                 'id': brigadeID,
                 'location': {'x': x, 'y': y, 'z': z},
                 'nearbyTargets': createNearbyTargetsArray(),
-                'currentTargets': createCurrentTargets(),
+                'currentDirectFireTargets': createCurrentDirectFireTargets(),
                 'casStrikeRequests': createCASStrikeRequests(),
                 'strength': 0,
                 'composition': createBrigadeComposition()

@@ -251,20 +251,13 @@
  * 
  * @typedef {Map<number, BattalionComposition>} BrigadeComposition
  * 
- * @typedef {Object} BrigadeCurrentTargets
- * The targets a brigade selected on the previous targeting cycle, ranked best-first.
- * 
- * Held as `FbObject` (the same lightweight form `nearbyTargets` uses) rather than live game objects, which must not be
- * stored in `state` because they are invalidated once the engine rebuilds its object list. `FbObject` also carries a
- * last-known position, so `[0]` still says where the brigade's fight is even after that target has been destroyed.
- * @property {FbObject[]} directFireTargets `[0]` is the target the brigade is engaging
- * 
+ 
  * @typedef {Object} BrigadeMetadata
  * @property {number} id This is the brigade ID (duplicate of the key).
  * @property {PositionInfo} location  
  * @property {number} strength Smoothed count of direct-fire units in the brigade (mortars excluded).
  * @property {NearbyTargets} nearbyTargets
- * @property {BrigadeCurrentTargets} currentTargets
+ * @property {FbObject[]} currentDirectFireTargets The target list from previous targeting cycle, ranked best-first.
  * @property {AirStrikeMissionRequest[]} casStrikeRequests
  * @property {BrigadeComposition} composition
  *  
@@ -275,11 +268,10 @@
 /** 
  * @typedef {Object} BrigadeTargets
  * @property {(DroidObject | StructureObject | FeatureObject)[]} directFireTargets
+ * @property {FbObject[]} directFireTargetRefs used for target persistence (not used by downstream __tac functions)
  * @property {(DroidObject | StructureObject | FeatureObject)[]} fireSupportTargets
  * @property {(DroidObject | StructureObject | FeatureObject)[]} adaTargets
  * @property {AirStrikeMissionRequest[]} casTargets
- * @property {FbObject[]} directFireTargetRefs `directFireTargets` in its storable form. Not read by the `__tac` layer;
- * handed to `toc.setBrigadeDirectFireTargets()` so the next targeting cycle can see what this one chose.
  */
 
 
@@ -307,9 +299,9 @@
  * @property {number} DIRECT_FIRE_COMMITMENT_RADIUS
  * @property {number} TARGET_COHESION_RADIUS
  * @property {number} COMMITMENT_WEIGHT
- * @property {number} COHESION_WEIGHT
- * @property {number} FINISH_OFF_WEIGHT
- * @property {number} FINISH_OFF_HEALTH_THRESHOLD
+ * @property {number} ADJACENCY_WEIGHT
+ * @property {number} KNOCKOUT_WEIGHT
+ * @property {number} LOW_HEALTH_THRESHOLD
  * @property {number} EFFECTIVE_FIRE_SUPPORT_RADIUS
  * @property {number} EFFECTIVE_ADA_RADIUS
  * @property {number} MEDIAN_CENTER_STRENGTH_THRESHOLD

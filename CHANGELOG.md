@@ -5,9 +5,9 @@ This file is used to record the changes to FishBot between each version.
 *Released **x Aug 2026***
 ### Changes in v0.5.2
 - Combat improvements:
-    - Completely reworked the group movement code, resulting in smoother group movement with less rubberbanding and better handling of chokepoints.
-    - Unit groups now commit to a fight, working through an enemy base instead of breaking off to chase whatever drove past.
-    - Squashed minor targeting bugs.
+    - Complete overhaul of:
+        1. Group movement, resulting in smoother group movement with less rubberbanding and better handling of chokepoints.
+        2. Group targeting rules, improving focus on objectives and reducing targeting oscillations (further reducing rubberbanding).
 - Construction & production fixes:
     - Fixed oil capture issues.
     - Avoids building repair centers in chokepoints.

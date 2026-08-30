@@ -886,15 +886,15 @@ class TacticalOperationsCenter {
 	}
 
 	/**
-	 * Records the direct fire targets a brigade selected, ranked best-first, so the next targeting cycle can stay on the
-	 * same fight rather than re-picking from scratch. `[0]` is the target the brigade is engaging.
+	 * Records the direct fire targets a brigade selected, ranked best-first. Used for target persistence.
+	 * Pass an empty list to `targets` to clear the brigade's current target list.
 	 * @param {worldState} state 
 	 * @param {number} brigadeID 
-	 * @param {FbObject[]} targets Ranked best-first. Pass an empty list to release the brigade's current fight.
+	 * @param {FbObject[]} targets 
 	 * @returns {void}
 	 */
 	setBrigadeDirectFireTargets(state, brigadeID, targets) {
-		state.brigades[brigadeID]['currentTargets']['directFireTargets'] = targets;
+		state.brigades[brigadeID].currentDirectFireTargets = targets;
 	}
 
 	/**
