@@ -148,6 +148,8 @@ if __name__ == "__main__":
 
     # Which test set to run: a key of TEST_CONFIGS below.
     TEST_CONFIG = "duel"
+    # TEST_CONFIG = "release"
+    # TEST_CONFIG = "ffa"
 
     # Each entry is one named test set. Its manifest is `base_manifest_<test_set_name>.json` and its
     # results land in `results/<short sha>/<test_set_name>/`, so no two sets can collide on test IDs.
@@ -157,7 +159,7 @@ if __name__ == "__main__":
         "duel": {
             "test_set_name": "duel",
             "test_types": (C.DUEL,),
-            "opponent_ai": C.PEACEMAKER_AI,
+            "opponent_ai": C.COBRA_AI,
             "base_maps_path": Path.cwd() / r'custom_test_map_packager\\v4.7.0_duel_maps',
             "runs_per_test": 3,
         },
