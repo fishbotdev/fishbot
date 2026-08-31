@@ -148,9 +148,10 @@ class armyEngineering {
 	 * @param {worldState} state 
 	 * @param {(number | string)[]} activeOilCapTaskIDs 
 	 * @param {ConstructionParameters} parameters
+	 * @param {number} maxTasks how many tasks command can actually start this tick
 	 * @returns {Array}
 	 */
-	generateOilCaptureOptions(state, activeOilCapTaskIDs, parameters) {
+	generateOilCaptureOptions(state, activeOilCapTaskIDs, parameters, maxTasks) {
 		/*
 		Algorithm:
 		Use the grid system to:
@@ -161,6 +162,7 @@ class armyEngineering {
 		- Remove cells with enemy offensive units										-- uses state.fields.enemyUnitThreat
 		- Remove cells the trucks cannot reach without walking through the enemy		-- uses `#computeOilRouteCostField()`
 		- Once the brigades are established, keep unsupported cells within reach of home	-- uses state.fields.friendlySupport & controlStability
+		- Confirm that reach against the real walk, for the few candidates about to be committed	-- uses `findPathAstarLength()`
 		- Remove cells with all derricks already being claimed in active missions		-- uses this.toc.getActiveConstructionMissions()
 		
 		-> if all conditions satisfied, build a task for the derrick
@@ -174,7 +176,8 @@ class armyEngineering {
 
 		Both lists are then ordered by the cost of the route to them, so the nearest oil by *safe* travel is
 		taken first rather than the nearest in a straight line, with oil the army covers promoted over oil
-		it does not.
+		it does not. Only the first `maxTasks` survivors are returned, so the tile-level walk check below is
+		paid for the candidates which are actually about to receive trucks and no others.
 		*/
 		const grid = state.grid.grid;
 		const numXCells = state.grid.numXCells;
@@ -231,6 +234,10 @@ class armyEngineering {
 				// Supported oil is preferred over unsupported oil at equal travel; see `SUPPORTED_OIL_WEIGHT`.
 				const priorityCost = routeCost[gx][gy] * (CELL_IS_SUPPORTED ? SUPPORTED_WEIGHT : 1);
 
+				// The cell route is measured in whole cells, which is coarse enough that a target just inside the
+				// budget may be a much longer walk in practice. Those are re-checked tile by tile below.
+				const NEEDS_WALK_CHECK = REQUIRE_SUPPORT && !CELL_IS_SUPPORTED;
+
 				const derricksInCell = grid[gx][gy].derricks;
 				for (let i=0; i<derricksInCell.length; i++) {
 					const d = derricksInCell[i];
@@ -250,7 +257,7 @@ class armyEngineering {
 							structureData: STRUCTURES["Oil Derrick"],
 							payload: grid[gx][gy]		// needs to have the '.derricks' property to work with the existing system
 						});
-						highPriorityDerricks.push([priorityCost, br]);
+						highPriorityDerricks.push({'cost': priorityCost, 'buildRequest': br, 'needsWalkCheck': NEEDS_WALK_CHECK, 'target': derricksInCell[0]});
 						if (DEBUG_ON) debugGrid[gx][gy] = "X";
 						break;
 					} else {
@@ -259,7 +266,7 @@ class armyEngineering {
 							structureData: STRUCTURES["Oil Derrick"],
 							payload: d
 						});
-						normalPriorityDerricks.push([priorityCost, br]);
+						normalPriorityDerricks.push({'cost': priorityCost, 'buildRequest': br, 'needsWalkCheck': NEEDS_WALK_CHECK, 'target': d});
 						if (DEBUG_ON) debugGrid[gx][gy] = "X";
 					}
 				}
@@ -280,12 +287,72 @@ class armyEngineering {
 		}
 
 		// Nearest by safe travel first, within each priority band.
-		const byPriorityCost = (a, b) => a[0] - b[0];
+		const byPriorityCost = (a, b) => a.cost - b.cost;
 		highPriorityDerricks.sort(byPriorityCost);
 		normalPriorityDerricks.sort(byPriorityCost);
 
-		const takeBuildRequest = (entry) => entry[1];
-		return [...highPriorityDerricks.map(takeBuildRequest), ...normalPriorityDerricks.map(takeBuildRequest)];
+		return this.#confirmOilCaptureTargets(state, [...highPriorityDerricks, ...normalPriorityDerricks], parameters, maxTasks);
+	}
+
+	/**
+	 * Takes the best `maxTasks` candidates whose walk stands up to a tile-level check.
+	 *
+	 * `#computeOilRouteCostField()` works in whole grid cells, which is the right granularity for comparing
+	 * every candidate cheaply but too coarse to decide whether a particular derrick is genuinely close enough
+	 * to be worth sending unescorted trucks to: terrain inside those cells can turn a three-cell hop into a
+	 * long walk around a cliff. So the candidates which the range budget actually governs get their walk
+	 * measured properly, one at a time, in the order they would be committed - at most `maxTasks` of them,
+	 * and none at all during the opening land grab or for ground the army already covers.
+	 *
+	 * @param {worldState} state
+	 * @param {Object[]} candidates ordered best-first
+	 * @param {ConstructionParameters} parameters
+	 * @param {number} maxTasks
+	 * @returns {Array} build requests, at most `maxTasks` of them
+	 */
+	#confirmOilCaptureTargets(state, candidates, parameters, maxTasks) {
+		const isReachable = state.mapData.isReachable;
+
+		// A* has to start somewhere walkable. If base is not (which would take unusual terrain under the
+		// starting position), the check cannot run, and the cell-level budget already applied stands on its
+		// own - so fall back to it rather than rejecting every target.
+		const BASE_IS_PATHABLE = isReachable[baseLocation.x][baseLocation.y];
+		const BASE_TILE = [baseLocation.x, baseLocation.y];
+
+		const MAX_WALK = parameters.UNSUPPORTED_OIL_CAPTURE_RANGE;
+		const ASTAR_BUDGET = parameters.OIL_RANGE_CHECK_ASTAR_BUDGET;
+
+		// Terrain can produce a run of candidates which all look close by cell but are all long walks, and
+		// checking every one of them is how a planning tick turns into a lag spike. The pass gets a fixed
+		// number of checks; once they are spent it stops offering candidates rather than waving through ones
+		// it has not confirmed. Nothing is lost by that - planning runs again on the next intelligence
+		// refresh, and the trucks it would have committed are still free.
+		let checksRemaining = parameters.OIL_RANGE_CHECKS_PER_PASS;
+
+		const approved = [];
+
+		for (let i=0; i<candidates.length && approved.length < maxTasks; i++) {
+			const candidate = candidates[i];
+
+			if (candidate.needsWalkCheck && BASE_IS_PATHABLE && defined(candidate.target)) {
+				if (checksRemaining <= 0) {
+					break;
+				}
+				checksRemaining--;
+
+				// `Infinity` covers both "further than the budget allows" and "so obstructed that A* gave up
+				// looking" - neither is somewhere to send trucks on their own.
+				const walkLength = findPathAstarLength(state, BASE_TILE, [candidate.target.x, candidate.target.y], ASTAR_BUDGET);
+
+				if (walkLength > MAX_WALK) {
+					continue;
+				}
+			}
+
+			approved.push(candidate.buildRequest);
+		}
+
+		return approved;
 	}
 
 	/**

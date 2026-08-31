@@ -362,3 +362,317 @@ function getWalkableTiles(isBaseNonReachableTile) {
 
 	return visited;
 }
+
+
+/////////////////////////////////	A* pathfinding	/////////////////////////////////
+
+/**
+ * Min-heap ordered on f = g + h, breaking ties towards the node closer to the goal.
+ * Ported from `fishbot\python_helper_scripts\map_analysis\pathfinding_test.py`.
+ */
+class AStarMinHeap {
+	constructor() {
+		this.heap = [];
+	}
+
+	length() {
+		return this.heap.length;
+	}
+
+	push(value) {
+		this.heap.push(value);		// this adds it to the end of the complete binary tree
+
+		// Bubble up the tree to make the heap-invariant true
+		// Algorithm:
+		//   1. Compare with parent.
+		//   2. If smaller, swap, else, do nothing.
+		//   3. Recursively perform until curr_idx is at the root (index 0) or the parent is smaller
+
+		let curr_idx = this.heap.length - 1;
+
+		while (curr_idx > 0) {
+			const parent_idx = Math.floor((curr_idx - 1) / 2);
+
+			const currNode = this.heap[curr_idx];
+			const parentNode = this.heap[parent_idx];
+
+			const parent_fcost = parentNode.g + parentNode.h;
+			const curr_fcost = currNode.g + currNode.h;
+
+			if (parent_fcost < curr_fcost) {
+				// normal minheap invariant for f
+				break;
+			} else if (parent_fcost == curr_fcost && parentNode.h <= currNode.h) {
+				// A-star prioritisation of nodes closer to the target
+				break;
+			}
+
+			this.heap[parent_idx] = currNode;
+			this.heap[curr_idx] = parentNode;
+			curr_idx = parent_idx;
+		}
+	}
+
+	pop() {
+		if (this.heap.length === 0) {
+			return undefined;
+		}
+
+		const last_entry = this.heap.pop();
+		if (this.heap.length == 0) {
+			return last_entry;
+		}
+
+		const first_entry = this.heap[0];
+		this.heap[0] = last_entry;
+
+		// Bubble down to preserve the heap invariant
+		// Algorithm:
+		//   1. Find the min of the two children nodes
+		//   2. Compare the parent to the minimum of the two children nodes
+		//   3. If child is smaller, swap, else, break.
+		let curr_idx = 0;
+		const LAST_VALID_IDX = this.heap.length - 1;
+
+		while (curr_idx <= LAST_VALID_IDX) {
+			const currNode = this.heap[curr_idx];
+
+			const child1_idx = 2 * curr_idx + 1;
+			const child2_idx = 2 * curr_idx + 2;
+
+			let child_idx;
+
+			if (child1_idx <= LAST_VALID_IDX) {
+				if (child2_idx <= LAST_VALID_IDX) {
+					const child1Node = this.heap[child1_idx];
+					const child2Node = this.heap[child2_idx];
+
+					const child1_fcost = child1Node.g + child1Node.h;
+					const child2_fcost = child2Node.g + child2Node.h;
+
+					if (child1_fcost < child2_fcost || (child1_fcost === child2_fcost && child1Node.h <= child2Node.h)) {
+						child_idx = child1_idx;
+					} else {
+						child_idx = child2_idx;
+					}
+				} else {
+					child_idx = child1_idx;
+				}
+			} else {
+				break;
+			}
+
+			const childNode = this.heap[child_idx];
+
+			const currNode_fcost = currNode.g + currNode.h;
+			const child_fcost = childNode.g + childNode.h;
+
+			if (currNode_fcost < child_fcost) {
+				// normal minheap invariant for f
+				break;
+			} else if (currNode_fcost === child_fcost && currNode.h <= childNode.h) {
+				// A-star prioritisation of nodes closer to the target
+				break;
+			}
+
+			// Else swap & continue the loop
+			this.heap[curr_idx] = childNode;
+			this.heap[child_idx] = currNode;
+			curr_idx = child_idx;
+		}
+
+		return first_entry;
+	}
+}
+
+/**
+ * @typedef {Object} AstarNode
+ * @property {number} x
+ * @property {number} y
+ * @property {AstarNode | null} parentNode
+ * @property {number} g		cost from the start node
+ * @property {number} h 		estimated cost to the goal (fcost = g + h)
+ * @property {boolean} stale	set when a cheaper route to this tile is found; the heap entry is then skipped on retrieval
+ */
+
+/**
+ * Per-map scratch buffers for `findPathAstarLength()`. Two map-sized arrays per call is a real cost on a
+ * large map when several targets are checked in one planning tick, so they are allocated once and reused.
+ * A search stamps entries with its own `#astarSearchGeneration`, which makes anything written by an earlier
+ * search read as absent without having to clear the arrays between calls.
+ */
+let astarSeenNodes = null;
+let astarSeenStamp = null;
+let astarOpenNodes = null;
+let astarOpenStamp = null;
+let astarSearchGeneration = 0;
+
+/**
+ * Finds the length, in tiles, of the shortest walkable path from `start` to `goal`.
+ *
+ * A* over the tile map, ported from `fishbot\python_helper_scripts\map_analysis\pathfinding_test.py`, and
+ * optimised for performance so many of the readable helpers in that function have been inlined.
+ *
+ * The search is deliberately bounded. A caller asking "is this target within reach?" does not need the true
+ * distance to something far away, only to know that it is far; `iterationBudget` caps the work spent finding
+ * that out, so the cost of the call scales with the range being asked about rather than with the map. An
+ * unreachable goal, or one outside the budget, returns `Infinity`.
+ *
+ * @param {worldState} state
+ * @param {Coordinate} start
+ * @param {Coordinate} goal
+ * @param {number} iterationBudget maximum nodes expanded before the search gives up
+ * @returns {number} path length in tiles, or `Infinity` if the goal was not reached within the budget
+ */
+function findPathAstarLength(state, start, goal, iterationBudget) {
+
+	const GOAL_WEIGHT = 1;		// set this to 1 for standard A*
+
+	const isWalkable = state.mapData.isReachable;
+	const startX = start[0], startY = start[1];
+	const goalX = goal[0], goalY = goal[1];
+
+	if (!isWalkable[startX][startY] || !isWalkable[goalX][goalY]) {
+		return Infinity;
+	}
+
+	const ymax = mapHeight;
+	const xmax = mapWidth;
+
+	// Initialise heap & lookup tables
+	const h = new AStarMinHeap();
+
+	if (astarSeenNodes === null || astarSeenNodes.length !== ymax * xmax) {
+		astarSeenNodes = new Array(ymax * xmax).fill(null);
+		astarOpenNodes = new Array(ymax * xmax).fill(null);
+		astarSeenStamp = new Int32Array(ymax * xmax);
+		astarOpenStamp = new Int32Array(ymax * xmax);
+		astarSearchGeneration = 0;
+	}
+
+	astarSearchGeneration++;
+	const GENERATION = astarSearchGeneration;
+
+	/** @type {AstarNode} */
+	const startNode = {
+		'x': startX,
+		'y': startY,
+		'g': 0,
+		'h': GOAL_WEIGHT * (Math.abs(startX - goalX) + Math.abs(startY - goalY)),		// Manhattan distance
+		'parentNode': null,
+		'stale': false
+	};
+	h.push(startNode);
+
+	const neighbour_offsets_and_gcosts = [
+		// The data format chosen below is chosen for performance reasons (this does make the code harder to read though):
+		//   (xoffset, yoffset, gcost_delta), where gcost_delta = additional g cost compared to the parent
+
+		// Manhattan heuristic remains admissible because diagonal cost == 2, equivalent to two orthogonal moves.
+		// If diagonal cost changes (e.g. sqrt(2)), the heuristic must change.
+		[-1, 0, 1], [1, 0, 1], [0, -1, 1], [0, 1, 1], [-1, -1, 2], [-1, 1, 2], [1, 1, 2], [1, -1, 2]
+	];
+
+	let goalNode = null;
+	let iters = 0;
+
+	while (h.length() > 0 && iters < iterationBudget) {
+
+		const node = h.pop();
+		if (node.stale) {
+			continue;		// stale entries remain in the heap but are ignored on retrieval.
+		}
+
+		const nidx = node.y * xmax + node.x;
+		astarOpenStamp[nidx] = 0;
+		astarSeenNodes[nidx] = node;
+		astarSeenStamp[nidx] = GENERATION;
+
+		if (node.x == goalX && node.y == goalY) {
+			goalNode = node;
+			break;
+		}
+
+		for (let i=0; i<neighbour_offsets_and_gcosts.length; i++) {
+			const nn = neighbour_offsets_and_gcosts[i];
+			const nnx = node.x + nn[0];
+			const nny = node.y + nn[1];
+			const gdelta = nn[2];
+
+			// Check map bounds
+			if (nnx < 0 || nnx >= xmax || nny < 0 || nny >= ymax) {
+				continue;
+			}
+
+			if (!isWalkable[nnx][nny]) {
+				continue;
+			}
+
+			// Attempt to retrieve the node from the `seen` list
+			const nb_idx = nny * xmax + nnx;
+			if (astarSeenStamp[nb_idx] === GENERATION) {
+				continue;			// already processed
+			}
+
+			// Search the 'open' list for the node
+			const OPEN = (astarOpenStamp[nb_idx] === GENERATION);
+			const existing_node = OPEN ? astarOpenNodes[nb_idx] : null;
+
+			// Check the special case of a node which is already in the 'open' list, but has a higher than optimal g-cost
+			if (existing_node !== null) {
+				// Find the new g cost if the current node is taken as parent
+				const potential_new_g_cost = node.g + gdelta;
+
+				// Check if new g cost is lower than the the gcost already logged for that node, if so, mark the existing one as stale & enter a replacement node.
+				if (potential_new_g_cost < existing_node.g) {
+					existing_node.stale = true;			// implemented this way for compatibility with min heap
+
+					/** @type {AstarNode} */
+					const replacementNode = {
+						'x': nnx,
+						'y': nny,
+						'g': potential_new_g_cost,
+						'h': GOAL_WEIGHT * (Math.abs(nnx - goalX) + Math.abs(nny - goalY)),		// Manhattan distance
+						'parentNode': node,
+						'stale': false
+					};
+
+					h.push(replacementNode);
+					astarOpenNodes[nb_idx] = replacementNode;
+					astarOpenStamp[nb_idx] = GENERATION;
+				}
+				continue;
+			}
+
+			/** @type {AstarNode} */
+			const newNode = {
+				'x': nnx,
+				'y': nny,
+				'g': node.g + gdelta,
+				'h': GOAL_WEIGHT * (Math.abs(nnx - goalX) + Math.abs(nny - goalY)),		// Manhattan distance
+				'parentNode': node,
+				'stale': false
+			};
+			h.push(newNode);
+			astarOpenNodes[nb_idx] = newNode;
+			astarOpenStamp[nb_idx] = GENERATION;
+		}
+
+		iters += 1;
+	}
+
+	if (goalNode === null) {
+		return Infinity;		// ran out of budget, or the goal is walled off from the start
+	}
+
+	// Walk the parent chain back to the start. The chain cannot be longer than the number of nodes
+	// expanded, so it terminates without needing a bound of its own.
+	let pathLength = 0;
+	let n = goalNode;
+	while (n.parentNode !== null) {
+		pathLength++;
+		n = n.parentNode;
+	}
+
+	return pathLength;
+}

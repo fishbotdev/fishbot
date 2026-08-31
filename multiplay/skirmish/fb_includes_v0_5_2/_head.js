@@ -328,6 +328,8 @@
  * @property {boolean} REQUIRE_SUPPORTED_OIL_CAPTURE
  * @property {number} SUPPORTED_OIL_WEIGHT
  * @property {number} UNSUPPORTED_OIL_CAPTURE_RANGE
+ * @property {number} OIL_RANGE_CHECK_ASTAR_BUDGET
+ * @property {number} OIL_RANGE_CHECKS_PER_PASS
  * @property {number} OIL_ROUTE_THREAT_WEIGHT
  * @property {number} OIL_ROUTE_BLOCK_THRESHOLD
  * 

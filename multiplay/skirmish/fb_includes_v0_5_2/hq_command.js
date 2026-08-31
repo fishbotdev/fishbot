@@ -114,6 +114,8 @@ class CommandCenter {
 			REQUIRE_SUPPORTED_OIL_CAPTURE: false,	// when true, oil the army does not cover must also be close to home
 			SUPPORTED_OIL_WEIGHT: 0.5,				// multiplier on the route cost of supported ground; below 1.0 promotes, so supported oil wins against unsupported oil up to 2x closer
 			UNSUPPORTED_OIL_CAPTURE_RANGE: 40,		// tiles of route budget allowed to unsupported oil once the brigades are established
+			OIL_RANGE_CHECK_ASTAR_BUDGET: 1500,		// nodes A* may expand confirming that walk; a target it cannot reach inside this is out of range by definition
+			OIL_RANGE_CHECKS_PER_PASS: 6,			// walks confirmed per planning pass, so one tick's planning cannot become a lag spike
 
 			// Route costing, in cells. Trucks are walked to a derrick by the engine's own pathfinder, which is
 			// unaware of the enemy, so the planner prices the trip itself and declines targets it cannot reach safely.
@@ -1134,8 +1136,8 @@ class CommandCenter {
 			// The record was pruned above, so everything left in it is still cooling down.
 			const excludedSectorIDs = [];
 			excludedSectorIDs.push(...activeOilCapTaskIDs, ...state.abortedOilSectors.keys());
-			const sectorOilCapTasks = engineering.generateOilCaptureOptions(state, excludedSectorIDs, this.CONSTRUCTION_PARAMETERS);
-			approvedConstructionTasks.push(...sectorOilCapTasks.slice(0, oilCapDeficit));
+			const sectorOilCapTasks = engineering.generateOilCaptureOptions(state, excludedSectorIDs, this.CONSTRUCTION_PARAMETERS, oilCapDeficit);
+			approvedConstructionTasks.push(...sectorOilCapTasks);
 		}
 	
 		// DERRICK DEFENCES
