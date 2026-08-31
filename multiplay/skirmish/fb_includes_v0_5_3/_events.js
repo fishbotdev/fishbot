@@ -62,5 +62,5 @@ function eventBeaconRemoved(from, to) {
 
 function eventDestroyed(object) {
 	// this is regularly called if defined
-	// does nothing for now
+	telemetry.reportObjectDestroyed(object);		// records derrick losses; ignores everything else
 }

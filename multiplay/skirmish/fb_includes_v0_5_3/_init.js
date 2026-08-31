@@ -49,6 +49,12 @@ const engineering = new armyEngineering();
 const rnd = new armyResearchAndDevelopment();
 
 /**
+ * 	**TELEMETRY (LOGS)**
+ * 	- Reports how well FishBot is playing, for the automated telemetry pipeline. Emits nothing unless `TELEMETRY_ON`.
+ */
+const telemetry = new Telemetry();
+
+/**
  * 	**COMMANDER**
  * 	- Makes strategic decisions (with support of G2 - G4). Implements with the support of G2 - G4.
  */

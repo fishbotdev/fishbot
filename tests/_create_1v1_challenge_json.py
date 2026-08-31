@@ -122,10 +122,12 @@ def build_all_base_map_configs(
     return configs
 
 
-def generate_ffa_configs(base_config: dict) -> list:
+def generate_ffa_configs(base_config: dict, opponent_ai: str = C.COBRA_AI) -> list:
     """
     Generate one FFA test for every FishBot starting position
     on a single base configuration.
+
+    `opponent_ai` sets the script every non-FishBot player runs, e.g. `C.COBRA_AI`, `C.PEACEMAKER_AI`.
     """
 
     results = []
@@ -147,17 +149,16 @@ def generate_ffa_configs(base_config: dict) -> list:
         for position in range(1, max_players + 1):
 
             if position == fishbot_position:
-                config[f"player_{position}"] = {
-                    "difficulty": C.MEDIUM_DIFFICULTY,
-                    "team": C.DEFAULT_FISHBOT_TEAM,
-                    "ai": C.FISHBOT_AI,
-                }
+                config[f"player_{position}"] = create_fishbot_player(
+                    team=C.DEFAULT_FISHBOT_TEAM,
+                    difficulty=C.MEDIUM_DIFFICULTY,
+                )
             else:
-                config[f"player_{position}"] = {
-                    "difficulty": C.MEDIUM_DIFFICULTY,
-                    "team": position,
-                    "ai": C.COBRA_AI,
-                }
+                config[f"player_{position}"] = create_opponent_player(
+                    team=position,
+                    difficulty=C.MEDIUM_DIFFICULTY,
+                    ai_name=opponent_ai,
+                )
 
         results.append({
             "test_type": C.FFA,
@@ -166,15 +167,16 @@ def generate_ffa_configs(base_config: dict) -> list:
             "opponent_position": None,
             "fishbot_difficulty": C.MEDIUM_DIFFICULTY,
             "opponent_difficulty": C.MEDIUM_DIFFICULTY,
+            "opponent_ai": opponent_ai,
             "config": config,
         })
 
     return results
 
 
-def generate_duel_configs(base_config: dict) -> list:
+def generate_duel_configs(base_config: dict, opponent_ai: str = C.COBRA_AI) -> list:
     """
-    Generate all ordered 1v1 FishBot vs Cobra tests for a single map.
+    Generate all ordered 1v1 FishBot vs `opponent_ai` tests for a single map.
 
     Every ordered pair of distinct player positions is generated.
 
@@ -205,17 +207,16 @@ def generate_duel_configs(base_config: dict) -> list:
             for position in range(1, max_players + 1):
 
                 if position == fishbot_position:
-                    config[f"player_{position}"] = {
-                        "difficulty": C.MEDIUM_DIFFICULTY,
-                        "team": C.DEFAULT_FISHBOT_TEAM,
-                        "ai": C.FISHBOT_AI,
-                    }
+                    config[f"player_{position}"] = create_fishbot_player(
+                        team=C.DEFAULT_FISHBOT_TEAM,
+                        difficulty=C.MEDIUM_DIFFICULTY,
+                    )
                 elif position == opponent_position:
-                    config[f"player_{position}"] = {
-                        "difficulty": C.MEDIUM_DIFFICULTY,
-                        "team": position,
-                        "ai": C.COBRA_AI,
-                    }
+                    config[f"player_{position}"] = create_opponent_player(
+                        team=position,
+                        difficulty=C.MEDIUM_DIFFICULTY,
+                        ai_name=opponent_ai,
+                    )
                 else:
                     config[f"player_{position}"] = create_spectator_player(team=C.DEFAULT_FISHBOT_TEAM)
 
@@ -226,6 +227,7 @@ def generate_duel_configs(base_config: dict) -> list:
                 "opponent_position": opponent_position,
                 "fishbot_difficulty": C.MEDIUM_DIFFICULTY,
                 "opponent_difficulty": C.MEDIUM_DIFFICULTY,
+                "opponent_ai": opponent_ai,
                 "config": config,
             })
 

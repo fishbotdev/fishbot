@@ -92,16 +92,6 @@ class fbGroup {
 
 		return this.groups.get(groupID)["groupMembers"];
 	}
-	
-	groupSize(groupID) {
-		if (!this.groups.has(groupID)) {
-            return undefined;
-        }
-			
-		this.#lazyUpdateGroup(groupID);
-
-		return this.groups.get(groupID)["groupSize"];
-	}
 
 	addDroidToGroup({groupID, droidID}) {
 		if (!this.groups.has(groupID)) {

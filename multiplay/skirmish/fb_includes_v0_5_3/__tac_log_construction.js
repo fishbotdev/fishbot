@@ -342,7 +342,7 @@ function buildOilDerrick(taskForceID, structureID, derrickLocation) {
 	const trucks = state.g.enumGroup(taskForceID);
 	if (trucks.length === 0) {
 		// debug(`buildOilDerrick(): failed, no trucks`);
-		return {status: MISSION_STATUS.FAILED};
+		return {status: MISSION_STATUS.FAILED, reason: TEL_FAILURE_REASON.TRUCKS_LOST};
 	}
 
 	// Check if the structure has been built yet
@@ -369,7 +369,7 @@ function buildOilDerrick(taskForceID, structureID, derrickLocation) {
 
 		if (isEnemy(oilDerrick.player)) {
 			// debug(`buildOilDerrick(): failed, enemy derrick (player ${oilDerrick.player}) at ${derrickLocation.x}, ${derrickLocation.y}`);
-			return {status: MISSION_STATUS.FAILED};
+			return {status: MISSION_STATUS.FAILED, reason: TEL_FAILURE_REASON.ENEMY_BUILT};
 		}
 
 		if (oilDerrick.status === BUILT) {
@@ -384,7 +384,7 @@ function buildOilDerrick(taskForceID, structureID, derrickLocation) {
 	}
 
 	debug(`Error: more than 1 struct at (${ derrickLocation.x}, ${derrickLocation.y}). Failing mission`);
-	return {status: MISSION_STATUS.FAILED};		
+	return {status: MISSION_STATUS.FAILED, reason: TEL_FAILURE_REASON.UNEXPECTED};		
 
 }
 
@@ -396,7 +396,7 @@ function buildMultipleOilDerricks(taskForceID, structureID, derrickLocations) {
 	const trucks = state.g.enumGroup(taskForceID);
 	if (trucks.length === 0) {
 		// debug(`buildMultipleOilDerricks(): failed, no trucks`);
-		return {status: MISSION_STATUS.FAILED};
+		return {status: MISSION_STATUS.FAILED, reason: TEL_FAILURE_REASON.TRUCKS_LOST};
 	}
 
 	let totalDerrickCount = derrickLocations.length;
