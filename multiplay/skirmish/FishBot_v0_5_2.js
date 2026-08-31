@@ -30,10 +30,8 @@
 
 	Project started: 15 Oct 2025
 
-	Fun stats: LINES OF CODE
-		
-	FishBot uses cloc to count lines of code (https://github.com/aldanial/cloc). 
-	More information can be found in `fishbot\software_tools\run_cloc.bat`.
+	=== Fun stats: LINES OF CODE ===
+	FishBot uses cloc to count lines of code (https://github.com/aldanial/cloc). More info can be found in `fishbot\software_tools\run_cloc.bat`.
 	- 3845 JS @ 30 Mar 2026: v0.3.1 release (commit `0565344`)
 	- 4420 JS @ 04 Apr 2026: v0.3.2 release (commit `69c4754`)
 	- 4437 JS @ 07 Apr 2026: v0.3.3 release (commit `b6c85a5`)
@@ -42,15 +40,15 @@
 	- 5330 JS @ 10 Jul 2026: v0.4.2 release (commit `3781360`)
 	- 5315 JS @ 29 Jul 2026: v0.5.0 release 
 	- 5580 JS @ 04 Aug 2026: v0.5.1 release
+	- 5718 JS @ 01 Sep 2026: v0.5.2 release
 */
 
-
-const FISHBOT_VERSION = "0.5.1";
+const FISHBOT_VERSION = "0.5.2";
 
 //	This file connects all remaining pieces of AI code together. It shouldn't contain any code itself.
 //	NOTE: order matters!
 const FISHBOT_PATH = "/multiplay/skirmish/";
-const FB_INCLUDES = FISHBOT_PATH + "fb_includes_v0_5_1/";
+const FB_INCLUDES = FISHBOT_PATH + "fb_includes_v0_5_2/";
 
 // Enable DEBUG_MODE_ON (global) to:
 //	 - Show some useful debug information in the console
@@ -58,27 +56,7 @@ const FB_INCLUDES = FISHBOT_PATH + "fb_includes_v0_5_1/";
 //	 - Transform Player 0 (forced human player slot) to spectator mode (used for automated bot testing)
 const DEBUG_MODE_ON = false;
 
-
-/*
--- RELEASE CHECKLIST --
-1. Update FISHBOT_VERSION to latest version number. Also update the version number in the "name" property in `FishBot.json`.
-2. Disable all beacons / hackMarkTiles() used for debugging.
-3. Run automated tests using `tests/run_tests.py`. Update `README.md` with the test results. Pass if no regression.
-4. Extract logs from autogames (`\logs` folder) & display using `python_helper_scripts/process_performance_data.py`. Pass if no regression.
-5. Set `DEBUG_MODE_ON` = `false`.
-6. Test all manually tested maps in `README.md` once, against Cobra @ Medium. Pass if it can win a single game in 3 tries or less.
-7. Update LOC above with `fishbot\python_helper_scripts\run_cloc.bat`. Ideally, without a major change in function, the LOC should remain roughly the same. Otherwise, it's just a fun metric.
-8. Update `README.md` with summary of changes.
-9. Update `CHANGELOG.md`.
-10. Commit all changes as the latest commit on the `vx.y.z-development` branch.
-11. Open a PR on GitHub (titled 'FishBot vx.y.z Release') & merge into `main`.
-12. On the main branch, add tag: `fishbot-vx.y.z` and push to origin.
-13. .zip the completed mod files as: `fishbot-vx.y.z/multiplay/skirmish/[bot-files-here]` and move this .zip file to the `.\releases` folder.
-14. Create a new "Release" on GitHub titled "FishBot vx.y.z". 
-	a. Set the release tag to the tag created two steps before.
-	b. Copy-paste the `CHANGELOG.md` description for the new release into the "Release notes" section.
-	c. Attach the .zip file from Step 12 into the field labeled: "Attach binaries by dropping them here or selecting them". 
-*/
+// For developers, please refer to `docs/DEVELOPMENT.md` for important info e.g. release checklist.
 
 ////////////////////////////////////////////////////////////////////////////////////////////
 

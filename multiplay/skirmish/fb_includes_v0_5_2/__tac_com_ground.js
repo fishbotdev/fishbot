@@ -120,7 +120,6 @@ function returnUnitGroupsToBase(unitGroups) {
 }
 
 /**
- * 
  * @param {number[]} reserveGroupIDs 
  * @param {number} x 
  * @param {number} y 
@@ -145,35 +144,70 @@ function moveReservesToShadow(reserveGroupIDs, x, y) {
 }
 
 /**
- * TAC SOP: MOVE A BRIGADE COMBAT TEAM (BCT) TO A LOCATION
  * @param {worldState} state 
- * @param {number} brigadeID 
- * @param {number} targetX 
- * @param {number} targetY 
+ * @param {number} x 
+ * @param {number} y 
+ * @returns 
+ */
+function isLocationCongested(state, x, y) {
+	const CHOKEPOINT_CONGESTION_RADIUS = 5;
+	const CHOKEPOINT_CONGESTION_THRESHOLD = 8;
+
+	const nearby = state.grid.enumRangeLazy(x, y, CHOKEPOINT_CONGESTION_RADIUS, false, true);
+
+	let nearbyArmourUnits = 0;
+	for (let i=0; i<nearby['friendlyUnits'].length; i++) {
+		if (nearby['friendlyUnits'][i].flags & OBJ_FLAGS.ARMOUR) {
+			nearbyArmourUnits++;
+			if (nearbyArmourUnits > CHOKEPOINT_CONGESTION_THRESHOLD) {
+				return true;
+			}
+		}
+	}
+
+	return false;
+}
+
+/**
+ * TAC SOP: MOVE A BRIGADE COMBAT TEAM (BCT) TO A LOCATION
+ * @param {worldState} state
+ * @param {number} brigadeID
+ * @param {number} targetX
+ * @param {number} targetY
  */
 function moveBrigadeToLocation(state, brigadeID, targetX, targetY) {
 
 	const brigadeUnits = state.g.enumGroup(brigadeID);
-	const brigadeLocation = state.brigades[brigadeID]['location'];
 
-	const DISTSQ_CENTER_TO_TARGET = distSq(brigadeLocation.x, targetX, brigadeLocation.y, targetY);
+	const LOCATION_X = state.brigades[brigadeID].location.x;
+	const LOCATION_Y = state.brigades[brigadeID].location.y;
+
+	const DISTSQ_CENTER_TO_TARGET = distSq(LOCATION_X, targetX, LOCATION_Y, targetY);
+	const BRIGADE_CONGESTED = isLocationCongested(state, LOCATION_X, LOCATION_Y);
 
 	brigadeUnits.forEach(droid => {
-		const DISTSQ_TO_CENTER = distSq(brigadeLocation.x, droid.x, brigadeLocation.y, droid.y); 
+		const DISTSQ_TO_CENTER = distSq(LOCATION_X, droid.x, LOCATION_Y, droid.y);
 		const DISTSQ_TO_TARGET = distSq(targetX, droid.x, targetY, droid.y);
-		
+
 		const TOO_FAR_AWAY_FROM_CENTER = DISTSQ_TO_CENTER > 8 ** 2;
 		const FAR_AWAY_FROM_CENTER = DISTSQ_TO_CENTER > 5 ** 2;
 		const AHEAD_OF_GROUP = DISTSQ_TO_TARGET < DISTSQ_CENTER_TO_TARGET;
+		const UNIT_ROADBLOCKED = state.mapData.isChokepoint[droid.x][droid.y] && BRIGADE_CONGESTED;
 
-		if (AHEAD_OF_GROUP && TOO_FAR_AWAY_FROM_CENTER) {
-			orderDroidLoc(droid, DORDER_MOVE, brigadeLocation.x, brigadeLocation.y);	
-		} else if (AHEAD_OF_GROUP && FAR_AWAY_FROM_CENTER) {
-			orderDroid(droid, DORDER_HOLD);
-		} else if (!FAR_AWAY_FROM_CENTER) {
-			orderDroidLoc(droid, DORDER_MOVE, targetX, targetY);			
+		if (TOO_FAR_AWAY_FROM_CENTER) {
+			orderDroidLoc(droid, DORDER_MOVE, LOCATION_X, LOCATION_Y);
+		} else if (FAR_AWAY_FROM_CENTER) {
+			if (AHEAD_OF_GROUP) {
+				if (UNIT_ROADBLOCKED) {
+					orderDroidLoc(droid, DORDER_MOVE, targetX, targetY);
+				} else {
+					orderDroid(droid, DORDER_HOLD);
+				}
+			} else {
+				orderDroidLoc(droid, DORDER_MOVE, LOCATION_X, LOCATION_Y);
+			}
 		} else {
-			orderDroidLoc(droid, DORDER_MOVE, brigadeLocation.x, brigadeLocation.y);	
+			orderDroidLoc(droid, DORDER_MOVE, targetX, targetY);
 		}
 	});
 }
@@ -204,11 +238,12 @@ function moveBrigadeToAttack(state, brigadeID, groundTargets) {
 	const forceLocation = state.brigades[brigadeID].location;
 	const LOCATION_X = forceLocation.x;
 	const LOCATION_Y = forceLocation.y;
-	const BASE_LOCATION_X = baseLocation.x;
-	const BASE_LOCATION_Y = baseLocation.y
+
+	const BRIGADE_CONGESTED = isLocationCongested(state, LOCATION_X, LOCATION_Y);
 
 	const ARMOUR_UNITS = [];
 	const INFANTRY_UNITS = [];
+	/** @type {DroidObject[]} */
 	const SHORT_RANGE_FIRE_SUPPORT = [];
 	const AA_UNITS = [];
 	const SENSOR_UNITS = [];
@@ -250,25 +285,48 @@ function moveBrigadeToAttack(state, brigadeID, groundTargets) {
 		return;
 	}
 
-	if (DIRECT_FIRE_TARGET == undefined) {
+	if (!DIRECT_FIRE_TARGET_AVAILABLE) {
 		return;
 	}
 
 	const closestDroidToTarget = findClosestDroidToTarget(ARMOUR_UNITS, DIRECT_FIRE_TARGET);
-	
-	const isTooFarFromBrigade = (droid) => distSq(droid.x, LOCATION_X, droid.y, LOCATION_Y) > 6 ** 2;
 
 	const _distSqToClosestDroid = (droid) => distSq(droid.x, closestDroidToTarget.x, droid.y, closestDroidToTarget.y);
 
-	const isNearFrontLine = (droid) => _distSqToClosestDroid(droid) <= 4 ** 2;
-
 	const moveToClosestDroid = (droid) => orderDroidLoc(droid, DORDER_MOVE, closestDroidToTarget.x, closestDroidToTarget.y);
 	
+	const attackDirectFireTarget = (droid, distSqGroupCenterToTarget) => {
+		const UNIT_ROADBLOCKED = state.mapData.isChokepoint[droid.x][droid.y] && BRIGADE_CONGESTED;
+		const DISTSQ_TO_CENTER = distSq(LOCATION_X, droid.x, LOCATION_Y, droid.y);
+
+		const TOO_FAR_AWAY_FROM_CENTER = DISTSQ_TO_CENTER > 8 ** 2;
+		const FAR_AWAY_FROM_CENTER = DISTSQ_TO_CENTER > 5 ** 2;
+
+		const DISTSQ_TO_TARGET = distSq(targetX, droid.x, targetY, droid.y);
+		const AHEAD_OF_GROUP = DISTSQ_TO_TARGET < distSqGroupCenterToTarget;
+
+		if (TOO_FAR_AWAY_FROM_CENTER) {
+			if (UNIT_ROADBLOCKED) {
+				attackTarget(droid, DIRECT_FIRE_TARGET);
+			} else {
+				orderDroidLoc(droid, DORDER_MOVE, LOCATION_X, LOCATION_Y);
+			}
+		} else if (FAR_AWAY_FROM_CENTER) {
+			if (AHEAD_OF_GROUP || UNIT_ROADBLOCKED) {
+				attackTarget(droid, DIRECT_FIRE_TARGET);
+			} else {
+				orderDroidLoc(droid, DORDER_MOVE, LOCATION_X, LOCATION_Y);
+			}
+		} else {
+			attackTarget(droid, DIRECT_FIRE_TARGET);
+		}
+	}
+
 	const maintainPosition = (droid) => {
-		if (!isNearFrontLine(droid)) {
+		if (_distSqToClosestDroid(droid) > 4 ** 2) {
 			moveToClosestDroid(droid);
 		} else {
-			returnUnitToBase(droid);
+			orderDroidLoc(droid, DORDER_MOVE, LOCATION_X, LOCATION_Y);
 		}
 	};
 
@@ -293,32 +351,19 @@ function moveBrigadeToAttack(state, brigadeID, groundTargets) {
 		}
 	};
 
-	// MAIN ASSAULT UNITS
-	ARMOUR_UNITS.forEach(droid => {
-		if (isTooFarFromBrigade(droid)) {
-			orderDroidLoc(droid, DORDER_MOVE, LOCATION_X, LOCATION_Y);
-			return;
-		}
+	let targetX, targetY, DISTSQ_CENTER_TO_TARGET;
+	if (DIRECT_FIRE_TARGET_AVAILABLE) {
+		targetX = DIRECT_FIRE_TARGET.x;
+		targetY = DIRECT_FIRE_TARGET.y;
+		DISTSQ_CENTER_TO_TARGET = distSq(LOCATION_X, targetX, LOCATION_Y, targetY);
+	}
 
-		if (isNearFrontLine(droid) && DIRECT_FIRE_TARGET_AVAILABLE) {
-			attackTarget(droid, DIRECT_FIRE_TARGET);
-		} else {
-			moveToClosestDroid(droid);
-		}
-	});
+	ARMOUR_UNITS.forEach(droid => attackDirectFireTarget(droid, DISTSQ_CENTER_TO_TARGET));
 
-	INFANTRY_UNITS.forEach(droid => {
-		if (isNearFrontLine(droid) && DIRECT_FIRE_TARGET_AVAILABLE) {
-			attackTarget(droid, DIRECT_FIRE_TARGET);
-		} else {
-			moveToClosestDroid(droid);
-		}		
-	});
+	INFANTRY_UNITS.forEach(droid => attackDirectFireTarget(droid, DISTSQ_CENTER_TO_TARGET));
 
-	// SENSOR UNITS
-	SENSOR_UNITS.forEach(droid => maintainPosition(droid));
+	SENSOR_UNITS.forEach(maintainPosition);
 
-	// ADA UNITS
 	AA_UNITS.forEach((droid) => {
 		if (ANTI_AIR_TARGET_AVAILABLE) {
 			attackTarget(droid, ADA_TARGET);		
@@ -327,51 +372,51 @@ function moveBrigadeToAttack(state, brigadeID, groundTargets) {
 		}
 	});
 
-	// FIRE SUPPORT UNITS
-	const FRONTLINE_DISTSQ_TO_BASE = _distSqToClosestDroid(baseLocation);
-
-	let TARGET_DISTSQ_TO_BASE = 0;
-	if (FIRE_SUPPORT_TARGET_AVAILABLE) {
-		TARGET_DISTSQ_TO_BASE = distSq(FIRE_SUPPORT_TARGET.x, BASE_LOCATION_X, FIRE_SUPPORT_TARGET.y, BASE_LOCATION_Y);
-	}
+	const FIRE_SUPPORT_TARGETS_TO_SEARCH = Math.min(5, fireSupportTargets.length);
+	const DIRECT_FIRE_TARGETS_TO_SEARCH = Math.min(5, directFireTargets.length);
 
 	SHORT_RANGE_FIRE_SUPPORT.forEach(droid => {
-		if (isTooFarFromBrigade(droid)) {
+		const UNIT_ROADBLOCKED = state.mapData.isChokepoint[droid.x][droid.y] && BRIGADE_CONGESTED;
+		const DISTSQ_TO_CENTER = distSq(LOCATION_X, droid.x, LOCATION_Y, droid.y);
+
+		const TOO_FAR_AWAY_FROM_CENTER = DISTSQ_TO_CENTER > 6 ** 2;
+
+		const DISTSQ_TO_TARGET = distSq(targetX, droid.x, targetY, droid.y);
+		const AHEAD_OF_GROUP = DISTSQ_TO_TARGET < DISTSQ_CENTER_TO_TARGET;		// this is the direct fire target
+
+		if ((AHEAD_OF_GROUP || TOO_FAR_AWAY_FROM_CENTER) && !UNIT_ROADBLOCKED) {
 			orderDroidLoc(droid, DORDER_MOVE, LOCATION_X, LOCATION_Y);
-			return;
-		}
-		
-		if (!FIRE_SUPPORT_TARGET_AVAILABLE) {
-			moveToClosestDroid(droid);
-			return;
-		}
-
-		// The intent of this code is to implement intelligent retreat.
-		// Artillery is squishy so if an enemy has flanked around the back / side of the formation, artillery should keep firing rather than running the gauntlet.
-		const DROID_DISTSQ_TO_BASE = distSq(droid.x, BASE_LOCATION_X, droid.y, BASE_LOCATION_Y);
-
-		const MORTAR_CLOSEST_TO_BASE = DROID_DISTSQ_TO_BASE < FRONTLINE_DISTSQ_TO_BASE && DROID_DISTSQ_TO_BASE < TARGET_DISTSQ_TO_BASE;
-		const ENEMY_CLOSEST_TO_BASE = TARGET_DISTSQ_TO_BASE < DROID_DISTSQ_TO_BASE && TARGET_DISTSQ_TO_BASE < FRONTLINE_DISTSQ_TO_BASE;
-
-		if (MORTAR_CLOSEST_TO_BASE || ENEMY_CLOSEST_TO_BASE) {
-			attackTarget(droid, FIRE_SUPPORT_TARGET);	
 		} else {
-			moveToClosestDroid(droid);
+			const DROID_RANGE_SQ = (droid.range * WZ2100_TILERANGE_SCALING_FACTOR) ** 2;
+
+			if (FIRE_SUPPORT_TARGET_AVAILABLE) {
+				for (let i=0; i<FIRE_SUPPORT_TARGETS_TO_SEARCH; i++) {
+					if (distSq(droid.x, fireSupportTargets[i].x, droid.y, fireSupportTargets[i].y) < DROID_RANGE_SQ) {
+						attackTarget(droid, fireSupportTargets[i]);
+						return;
+					}
+				}
+			}
+			for (let i=0; i<DIRECT_FIRE_TARGETS_TO_SEARCH; i++) {
+				if (distSq(droid.x, directFireTargets[i].x, droid.y, directFireTargets[i].y) < DROID_RANGE_SQ) {
+					attackTarget(droid, directFireTargets[i]);
+					return;
+				}
+			}
+			orderDroidLoc(droid, DORDER_MOVE, LOCATION_X, LOCATION_Y);
 		}
 	});
 
-	// MECHANIC (REPAIR) UNITS
-	REPAIR_UNITS.forEach(droid => fixNearestDamaged(droid));
+	REPAIR_UNITS.forEach(fixNearestDamaged);
 
 	// DEBUG
 	if (false) {
-		hackMarkTiles();
 		if (defined(DIRECT_FIRE_TARGET)) {
 			addBeacon(DIRECT_FIRE_TARGET.x, DIRECT_FIRE_TARGET.y, 0);
 		}
 		if (defined(FIRE_SUPPORT_TARGET)) {
 			const RADIUS = 1;		// creates a bounding box with dimension [2*RADIUS + 1 by 2*RADIUS+1]
-			hackMarkTiles(FIRE_SUPPORT_TARGET.x - RADIUS, FIRE_SUPPORT_TARGET.y - RADIUS, FIRE_SUPPORT_TARGET.x + RADIUS, FIRE_SUPPORT_TARGET.y + RADIUS);
+			highlightTiles(FIRE_SUPPORT_TARGET.x - RADIUS, FIRE_SUPPORT_TARGET.y - RADIUS, FIRE_SUPPORT_TARGET.x + RADIUS, FIRE_SUPPORT_TARGET.y + RADIUS);
 		}
 	}
 }

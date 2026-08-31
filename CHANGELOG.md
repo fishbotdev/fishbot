@@ -1,6 +1,19 @@
 # Changelog
 This file is used to record the changes to FishBot between each version.
 
+## Fishbot v0.5.2
+*Released **1 Sep 2026***
+### Changes in v0.5.2
+- Combat improvements:
+    - Complete overhaul of:
+        1. Group movement, resulting in smoother group movement with less rubberbanding and better handling of chokepoints.
+        2. Group targeting rules, improving focus on objectives and reducing targeting oscillations (further reducing rubberbanding).
+- Construction & production fixes:
+    - Fixed oil capture issues.
+    - Avoids building repair centers in chokepoints.
+- Technical changes:
+    - Performance improvements which further reduce lag spikes.
+
 ## Fishbot v0.5.1
 *Released **04 Aug 2026***
 ### Changes in v0.5.1
@@ -65,7 +78,6 @@ It is tested in both duel (1v1) & FFA (1v1v1v1) modes, on all combinations of po
     - Improved initial oil capture.
 - Infrastructure improvements
     - Improved the reliability of construction drivers (trucks are less likely to get stuck trying to perform an illegal action).
-    - Included PeacemakerAI in FishBot benchmarking.
 
 #### Test results (Warzone 2100 v4.7.0)
 FishBot `v0.4.2` (commit `c21f69e`) was tested 1v1 against Cobra & PeacemakerAI. Sides were swapped mid-way through all tests to account for map-induced imbalances (i.e. 100 games as Player 1, and then 100 games as Player 2). The average is taken as the final win percentage.

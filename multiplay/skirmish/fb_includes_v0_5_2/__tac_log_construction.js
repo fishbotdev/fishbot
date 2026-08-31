@@ -458,10 +458,14 @@ function buildSingleModule(taskForceID, structureID, x, y, finishedNumModules) {
 	
 }
 
-/*
-	TAC SOP: BUILD NEARBY DEFENCES
-*/
-function buildNearbyDefences(taskForceID, structureID, x, y) {
+/**
+ * Builds a single structure (using the given structureID) nearby the specified location (x, y).
+ * @param {number | string} taskForceID 
+ * @param {string} structureID 
+ * @param {number} x 
+ * @param {number} y 
+ */
+function buildSingleStructure(taskForceID, structureID, x, y) {
 
 	const trucks = state.g.enumGroup(taskForceID);
 	if (trucks.length === 0) {

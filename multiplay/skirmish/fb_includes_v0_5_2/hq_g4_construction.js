@@ -60,6 +60,7 @@ class armyEngineering {
 		Algorithm:
 		Use the grid system to:
 		- Find cells with unclaimed derricks											-- uses state.fields.unclaimedDerricksInCell[gx][gy]
+		- Remove derricks which are already claimed									-- uses the DerrickObject's own `isClaimed`
 		- Remove cells with high threat from enemy struct concentrations 				-- uses state.grid.grid[gx][gy].targetStructures 
 		- Remove cells with defensive structures										-- uses state.fields.enemyStaticDefenceThreat
 		- Remove cells with enemy offensive units										-- uses state.fields.enemyUnitThreat
@@ -102,6 +103,7 @@ class armyEngineering {
 					const d = derricksInCell[i];
 
 					if (!isReachable[d.x][d.y]) continue;
+					if (d.isClaimed) continue;															// a derrick already stands here
 
 					// Check for existing missions
 					if (activeOilCapTaskIDs.indexOf(d.id) !== -1) continue; 									// found 'CONSTRUCT_OIL_DERRICK' task
@@ -205,6 +207,8 @@ class armyEngineering {
 		let highPrioOil = [], normalPrioOil = [];		
 		let seenDerricks = [];
 
+		const BUILT_DEFENCES = OBJ_FLAGS.DEFENSIVE_STRUCTURE | OBJ_FLAGS.IS_BUILT;
+
 		for (let i=0; i<derricks.length; i++) {
 			const d = derricks[i];
 
@@ -245,10 +249,8 @@ class armyEngineering {
 			// Intent: enumRange is used as this offers better granularity compared to directly accessing the grid
 			const nearby = state.grid.enumRangeLazy(d.x, d.y, PROXIMITY_RADIUS, true, true);
 			
-			let friendlyDefencesNearby = 0, friendlyBuildSitesNearby = 0, friendlyDerricksNearby = 0;
+			let friendlyDefencesNearby = 0, friendlyDerricksNearby = 0;
 			nearby['friendlyStructures'].forEach(obj => {	
-				if (gameObjectNoLongerExists(obj)) return;
-
 				const flags = obj.flags;
 
 				if (flags & OBJ_FLAGS.RESOURCE_EXTRACTOR) {
@@ -260,12 +262,8 @@ class armyEngineering {
 					}
 				}
 
-				if (flags & OBJ_FLAGS.DEFENSIVE_STRUCTURE && !(flags & OBJ_FLAGS.ADA)) {
-					if (flags && OBJ_FLAGS.IS_BUILT) {
-						friendlyDefencesNearby++;
-					} else {
-						friendlyBuildSitesNearby++;
-					}
+				if ((flags & BUILT_DEFENCES) === BUILT_DEFENCES && !(flags & OBJ_FLAGS.ADA)) {
+					friendlyDefencesNearby++;
 				}
 			});
 
@@ -273,12 +271,8 @@ class armyEngineering {
 				continue;
 			}
 
-			const BUILT_DEFENCES = OBJ_FLAGS.DEFENSIVE_STRUCTURE | OBJ_FLAGS.IS_BUILT;
-
 			let enemyDefencesNearby = 0, enemyDerricksNearby = 0;
 			nearby['targetStructures'].forEach(obj => {	
-				if (gameObjectNoLongerExists(obj)) return;
-
 				const flags = obj.flags;
 
 				if (flags & OBJ_FLAGS.RESOURCE_EXTRACTOR) {
@@ -351,12 +345,14 @@ class armyEngineering {
 	 * @param {worldState} state
 	 * @param {FbObject[]} myRepairFacilities
 	 * @param {PositionInfo[]} forceLocations
-	 * @returns 
+	 * @param {boolean} demolitionRequired 
+	 * @returns
 	 */
-	generateRemoteServiceCenterConstructionOptions(state, myRepairFacilities, forceLocations) {
+	generateRemoteServiceCenterConstructionOptions(state, myRepairFacilities, forceLocations, demolitionRequired) {
 
 		const enemyUnitThreat = state.fields.enemyUnitThreat;
 		const cellSize = state.grid.cellSize;
+		const isChokepoint = state.mapData.isChokepoint;
 
 		const potentialRepairCenterLocations = [];
 		const potentialDemolitionLocations = [];
@@ -369,58 +365,59 @@ class armyEngineering {
 		const REPAIR_CENTER_SEARCH_RADIUS = 14;
 
 		// PART 1: FIND DEMOLITION LOCATIONS
-		myRepairFacilities.forEach(f => {
-			if (enemyUnitThreat[f.gx][f.gy] !== 0) {
-				return;
-			}
+		if (demolitionRequired) {
+			myRepairFacilities.forEach(f => {
+				const gx = Math.floor(f.x / cellSize);
+				const gy = Math.floor(f.y / cellSize);
 
-			const repairFacility = getObject(f.type, f.player, f.id);
-			if (repairFacility == null) {
-				return;
-			}
-
-			const FACILITY_INSIDE_BASE_RADIUS = distSq(repairFacility.x, baseLocation.x, repairFacility.y, baseLocation.y) <= REPAIR_CENTER_SEARCH_RADIUS ** 2;
-			if (FACILITY_INSIDE_BASE_RADIUS) {
-				// debug(`${gameTime}: repair facility @ ${repairFacility.x}, ${repairFacility.y} - ignored`);
-				return;
-			}
-
-			const FACILITY_NEAR_SOME_GROUP = forceLocations.some(brigadeLoc => {
-				if (distSq(brigadeLoc.x, repairFacility.x, brigadeLoc.y, repairFacility.y) <= REPAIR_CENTER_SEARCH_RADIUS ** 2) {
-					return true;
+				if (enemyUnitThreat[gx][gy] !== 0) {
+					return;
 				}
-				return false;
+
+				const repairFacility = getObject(f.type, f.player, f.id);
+				if (repairFacility == null) {
+					return;
+				}
+
+				const FACILITY_INSIDE_BASE_RADIUS = distSq(repairFacility.x, baseLocation.x, repairFacility.y, baseLocation.y) <= REPAIR_CENTER_SEARCH_RADIUS ** 2;
+				if (FACILITY_INSIDE_BASE_RADIUS) {
+					// debug(`${gameTime}: repair facility @ ${repairFacility.x}, ${repairFacility.y} - ignored`);
+					return;
+				}
+
+				const FACILITY_NEAR_SOME_GROUP = forceLocations.some(brigadeLoc => {
+					if (distSq(brigadeLoc.x, repairFacility.x, brigadeLoc.y, repairFacility.y) <= REPAIR_CENTER_SEARCH_RADIUS ** 2) {
+						return true;
+					}
+					return false;
+				});
+				if (FACILITY_NEAR_SOME_GROUP) {
+					return;
+				}
+
+				const buildRequest = this.translateIntoBuildRequest({
+					missionType: MISSION_TYPE.DEMOLISH_REPAIR_CENTER,
+					structureData: STRUCTURES["Repair Facility"],
+					payload: repairFacility
+				});
+
+				potentialDemolitionLocations.push(buildRequest);
 			});
-			if (FACILITY_NEAR_SOME_GROUP) {
-				return;
-			}
 
-			const buildRequest = this.translateIntoBuildRequest({
-				missionType: MISSION_TYPE.DEMOLISH_REPAIR_CENTER, 
-				structureData: STRUCTURES["Repair Facility"],
-				payload: repairFacility
-			});
-
-			potentialDemolitionLocations.push(buildRequest);
-		});
-
-		// Sort closest to furthest from base (simplistic assumption). TODO: find loc with largest combined distance from active BCTs
-		potentialDemolitionLocations.sort((a,b) => 
-			distSq(a.payload.x, baseLocation.x, a.payload.y, baseLocation.y) - distSq(b.payload.x, baseLocation.x, b.payload.y, baseLocation.y));
+			// Sort closest to furthest from base (simplistic assumption). Intent: want to find the least useful repair facility
+			potentialDemolitionLocations.sort((a,b) =>
+				distSq(a.payload.x, baseLocation.x, a.payload.y, baseLocation.y) - distSq(b.payload.x, baseLocation.x, b.payload.y, baseLocation.y));
+		}
 
 		// PART 2: FIND CONSTRUCTION LOCATIONS
+		// Note: `pickStructLocation3()` is expensive so it should be run only after all possible cheap tests are passed.
 		forceLocations.forEach(LOCATION => {
-			if (distSq(baseLocation.x, LOCATION.x, baseLocation.y, LOCATION.y) < REPAIR_CENTER_SEARCH_RADIUS ** 2) {
-				// Too close to the base (prevents doubling-up on the repair facility in the base build order)
-				return;
-			}
+			const x = LOCATION.x, y = LOCATION.y;
 
-			const potentialLocation = pickStructLocation3(STRUCTURES["Repair Facility"].id, LOCATION.x, LOCATION.y);
-			if (potentialLocation == undefined) {
+			const TOO_CLOSE_TO_BASE = distSq(baseLocation.x, x, baseLocation.y, y) < REPAIR_CENTER_SEARCH_RADIUS ** 2;
+			if (TOO_CLOSE_TO_BASE) {
 				return;
 			}
-			const x = potentialLocation.x;
-			const y = potentialLocation.y;
 
 			const gx = Math.floor(x / cellSize);
 			const gy = Math.floor(y / cellSize);
@@ -428,29 +425,14 @@ class armyEngineering {
 				return;
 			}
 
-			let friendlyRepairCenterCount = 0;
-
 			const nearby = state.grid.enumRangeLazy(x, y, REPAIR_CENTER_SEARCH_RADIUS, false, true);
-			nearby['friendlyStructures'].forEach(s => {
-				if (!(s.flags & OBJ_FLAGS.REPAIR)) {
-					return;
-				}
-				if (gameObjectNoLongerExists(s)) {
-					return;
-				}
-				friendlyRepairCenterCount++;
-			});
-			
-			if (friendlyRepairCenterCount > 0) {
+
+			const NEARBY_REPAIR_FACILITY = nearby['friendlyStructures'].some(s => s.flags & OBJ_FLAGS.REPAIR);
+			if (NEARBY_REPAIR_FACILITY) {
 				return;
 			}
 
-			const NEARBY_FRIENDLY_UNIT_COUNT = nearby['friendlyUnits'].length;
 			const MIN_NEARBY_FRIENDLY_UNITS = 4;
-			if (NEARBY_FRIENDLY_UNIT_COUNT < MIN_NEARBY_FRIENDLY_UNITS) {
-				return;		
-			}
-
 			let nearbyFriendlyUnits = 0;
 			for (let i=0; i<nearby['friendlyUnits'].length; i++) {
 				const unit = nearby['friendlyUnits'][i];
@@ -465,12 +447,18 @@ class armyEngineering {
 			if (nearbyFriendlyUnits < MIN_NEARBY_FRIENDLY_UNITS) {
 				return;
 			}
-			
-			// debug(`\t\t${gameTime}: repair center not within ${SEARCH_RADIUS} tiles of ${BRIGADE_ID} (${x} ${y})`);
 
-			// Else, schedule a new task
+			const potentialLocation = pickStructLocation3(STRUCTURES["Repair Facility"].id, x, y);
+			if (potentialLocation == undefined) {
+				return;
+			}
+
+			if (isChokepoint[potentialLocation.x][potentialLocation.y]) {
+				return;
+			}
+
 			const buildRequest = this.translateIntoBuildRequest({
-				missionType: MISSION_TYPE.CONSTRUCT_REPAIR_CENTER, 
+				missionType: MISSION_TYPE.CONSTRUCT_REPAIR_CENTER,
 				structureData: STRUCTURES["Repair Facility"],
 				payload: potentialLocation
 			});
@@ -1033,7 +1021,7 @@ class armyEngineering {
 			state.g.addDroidToGroup({groupID: md.taskForceID, droidID: droid.id});
 			state.g.removeDroidFromGroup({groupID: ENGINEERING.ENGINEERING_RESERVE, droidID: droid.id});
 		});		
-		md.orders = () => buildNearbyDefences(md.taskForceID, buildTask.structureID, preferredLoc.x, preferredLoc.y);		
+		md.orders = () => buildSingleStructure(md.taskForceID, buildTask.structureID, preferredLoc.x, preferredLoc.y);		
 		md.ceaseOrders = () => this.#finaliseConstruction(md, ENGINEERING.ENGINEERING_RESERVE);
 
 		return md;
@@ -1041,6 +1029,7 @@ class armyEngineering {
 
 	/**
 	 * Creates a task to build one repair facility near a specified location.
+	 * Note: the specified location is already validated by pickStructLocation3 (incl. chokepoint check), so it should not be re-evaluated here.
 	 * @param {MissionParams} params Build information. Note: `buildTask.payload` requires the `.x` and `.y` properties.
 	 * @returns {ConstructionMissionData | undefined} Returns `missionData` if mission was successfully created (all conditions satisfied), else `undefined`.
 	 */
@@ -1064,24 +1053,18 @@ class armyEngineering {
 			return undefined;
 		}
 
-		let preferredLoc = pickStructLocation3(buildTask.structureID, loc.x, loc.y);
-		if (preferredLoc === undefined) {
-			warn(`createBuildRepairCenterTask / pickStructLocation3(): could not find a valid location near (${loc.x}, ${loc.y})`);
-			return undefined;
-		}
-
 		// Create mission details
 		const id = gameTime + "_CONSTRUCT_REPAIR_CENTER_" + tickUID;
 		const sectorID = loc.id;			
-		const gx = Math.floor(preferredLoc.x / cellSize);
-		const gy = Math.floor(preferredLoc.y / cellSize);
+		const gx = Math.floor(loc.x / cellSize);
+		const gy = Math.floor(loc.y / cellSize);
 		
 		const md = this.#createMissionOrders(missionType, id, id, sectorID, gx, gy);
 		taskForceUnits.forEach((droid) => {
 			state.g.addDroidToGroup({groupID: md.taskForceID, droidID: droid.id});
 			state.g.removeDroidFromGroup({groupID: ENGINEERING.ENGINEERING_RESERVE, droidID: droid.id});
 		});		
-		md.orders = () => buildNearbyDefences(md.taskForceID, buildTask.structureID, preferredLoc.x, preferredLoc.y);		// reuses this driver; can be renamed to 'buildSingleNearbyStructure' in the future
+		md.orders = () => buildSingleStructure(md.taskForceID, buildTask.structureID, loc.x, loc.y);		
 		md.ceaseOrders = () => this.#finaliseConstruction(md, ENGINEERING.ENGINEERING_RESERVE);
 
 		return md;
