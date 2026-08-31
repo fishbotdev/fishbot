@@ -165,18 +165,18 @@ class armyEngineering {
 
 	/**
 	 * Generates options for constructing defenses near oil derricks.
-	 * @param {worldState} state 
-	 * @param {(number | string)[]} activeDefenceBuildTaskIDs 
+	 * @param {worldState} state
+	 * @param {(number | string)[]} excludedDerrickIDs derricks already covered by an active defence-build task, or cooling down after one was called off as dangerous
 	 * @returns {Array}
 	 */
-	generateOilDefenceConstructionOptions(state, activeDefenceBuildTaskIDs) {
+	generateOilDefenceConstructionOptions(state, excludedDerrickIDs) {
 		/*
 		Algorithm:
 		- For each derrick in `state.poi.derricks`
 			. If grid cell previously processed, continue
 			. Check static defence threat grid (continue if high threat), check unit defence threat grid (after five mins)
 			. Check grid ref for friendly defences in sector (continue if done)
-			. Check active missions (continue if already active)
+			. Check excluded derricks (continue if already tasked, or still cooling down after a dangerous abort)
 			. Check grid ref for other derricks in sector ( -- influences how many defences)
 			. Check owner ( -- influences offensive vs friendly oil; if other types of defences are needed) or if tileIsBurning 
 			. Build one defence per undefended location also 
@@ -231,8 +231,8 @@ class armyEngineering {
 
 			seenDerricks.push(d);			
 
-			if (activeDefenceBuildTaskIDs.includes(d.id)) {
-				// debug(`skipped ${d.id}: activeMission`);
+			if (excludedDerrickIDs.includes(d.id)) {
+				// debug(`skipped ${d.id}: active mission or cooling down`);
 				continue;
 			}
 
@@ -257,7 +257,7 @@ class armyEngineering {
 					friendlyDerricksNearby++;
 					
 					const friendlyDerrickID = obj.id;
-					if (activeDefenceBuildTaskIDs.includes(friendlyDerrickID)) {
+					if (excludedDerrickIDs.includes(friendlyDerrickID)) {
 						previouslySeen = true;
 					}
 				}
@@ -279,7 +279,7 @@ class armyEngineering {
 					enemyDerricksNearby++;
 
 					const enemyDerrickID = obj.id;
-					if (activeDefenceBuildTaskIDs.includes(enemyDerrickID)) {
+					if (excludedDerrickIDs.includes(enemyDerrickID)) {
 						previouslySeen = true;
 					}
 				}

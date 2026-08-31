@@ -967,9 +967,9 @@ class CommandCenter {
 	/////////////////////////////////////////////////// G4: LOGISTICS ///////////////////////////////////////////////////
 	/**
 	 * This function aborts active construction missions where conditions at the build site have become too dangerous.
-	 * @param {worldState} state 
+	 * @param {worldState} state
 	 * @param {Array} activeRemoteMissions
-	 * @returns {(number | string)[]} the oil-capture sectorIDs aborted
+	 * @returns {{abortedOilSectorIDs: (number | string)[], abortedDefenceSectorIDs: (number | string)[]}} the sectorIDs aborted, split by task type
 	 */
 	#abortDangerousConstructionTasks(state, activeRemoteMissions) {
 		const cellSize = state.grid.cellSize;
@@ -977,7 +977,10 @@ class CommandCenter {
 		const enemyUnitThreat = state.fields.enemyUnitThreat;
 		const enemyStaticDefenceThreat = state.fields.enemyStaticDefenceThreat;
 
+		/** @type {(number | string)[]} */
 		const abortedOilSectorIDs = [];
+		/** @type {(number | string)[]} */
+		const abortedDefenceSectorIDs = [];
 
 		// New mission planning system has implemented .gx, .gy grid references for all missions
 		// This allows the following algorithm:
@@ -1007,16 +1010,18 @@ class CommandCenter {
 				// debug(`aborted (${md.id}) @ (~ tileco ${md.gx * cellSize} ${md.gy * cellSize}); high threat`);
 				md.missionStatus = MISSION_STATUS.ABORT;
 
-				// Only oil capture cools down. Defence missions reuse the derrick's ID as their sectorID,
-				// so reporting those here would block *capturing* the derrick they were meant to protect.
+				// Defence missions reuse the derrick's ID as their sectorID, so they are recorded separately:
+				// a defence site cooling down must not block *capturing* the derrick it was meant to protect.
 				if (md.missionType === MISSION_TYPE.CONSTRUCT_OIL_DERRICK ||
 					md.missionType === MISSION_TYPE.CONSTRUCT_ALL_DERRICKS_IN_SECTOR) {
 					abortedOilSectorIDs.push(md.sectorID);
+				} else if (md.missionType === MISSION_TYPE.CONSTRUCT_NEARBY_DEFENCE) {
+					abortedDefenceSectorIDs.push(md.sectorID);
 				}
 			}
 		});
 
-		return abortedOilSectorIDs;
+		return {abortedOilSectorIDs: abortedOilSectorIDs, abortedDefenceSectorIDs: abortedDefenceSectorIDs};
 	}
 
 	/**
@@ -1055,7 +1060,7 @@ class CommandCenter {
 			}
 		});
 		
-		const abortedOilSectorIDs = this.#abortDangerousConstructionTasks(state, activeRemoteMissions);
+		const abortedSectors = this.#abortDangerousConstructionTasks(state, activeRemoteMissions);
 
 		// Command then terminates, if there are no available trucks this tick (avoids expensive planning tasks)
 		const trucksUnavailable = (state.g.enumGroup(ENGINEERING.ENGINEERING_RESERVE).length === 0) && 
@@ -1067,8 +1072,8 @@ class CommandCenter {
 		const WORLD_UNCHANGED_SINCE_LAST_PLAN = (state.grid.lastUpdatedAt === state.oilCapPlannedAt);
 		const SHOULD_PLAN_OIL_CAPTURE = !trucksUnavailable && (oilCapDeficit > 0) && !WORLD_UNCHANGED_SINCE_LAST_PLAN;
 
-		this.toc.updateOilCapturePlanningRecord(state, abortedOilSectorIDs, SHOULD_PLAN_OIL_CAPTURE,
-												this.CONSTRUCTION_PARAMETERS.ABORTED_SECTOR_COOLDOWN_MS);
+		this.toc.updateConstructionPlanningRecord(state, abortedSectors, SHOULD_PLAN_OIL_CAPTURE,
+												 this.CONSTRUCTION_PARAMETERS.ABORTED_SECTOR_COOLDOWN_MS);
 
 		if (trucksUnavailable) {
 			// warn(`No trucks to execute construction actions.`);
@@ -1097,7 +1102,12 @@ class CommandCenter {
 		// DERRICK DEFENCES
 		const fortificationDeficit = this.CONSTRUCTION_PARAMETERS.MAX_PARALLEL_DEFENCE_BUILD_TASKS - activeDefenceBuildTaskIDs.length;
 		if (fortificationDeficit > 0) {
-			const sectorDefenceTasks = engineering.generateOilDefenceConstructionOptions(state, activeDefenceBuildTaskIDs);
+			// As with oil capture: a site called off as too dangerous stays off the option list until its
+			// cooldown expires, so the trucks are not sent straight back into the threat which turned them away.
+			// The record was pruned above, so everything left in it is still cooling down.
+			const excludedDerrickIDs = [];
+			excludedDerrickIDs.push(...activeDefenceBuildTaskIDs, ...state.abortedDefenceSectors.keys());
+			const sectorDefenceTasks = engineering.generateOilDefenceConstructionOptions(state, excludedDerrickIDs);
 			approvedConstructionTasks.push(...sectorDefenceTasks.slice(0, fortificationDeficit));
 		}
 
