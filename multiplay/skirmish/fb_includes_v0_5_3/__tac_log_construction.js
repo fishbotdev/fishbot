@@ -16,6 +16,88 @@
 */
 
 /**
+ * Returns the tile offsets of a structure's bounding box, relative to the tile the structure is built from:
+ * - `footprint`: the tiles the structure itself occupies.
+ * - `clearance`: the tiles surrounding the footprint, which are kept free so that the base stays traversable.
+ * @param {string} structureID 
+ * @returns {{footprint: number[][], clearance: number[][]}} Offsets in the form `[dx, dy]`.
+ */
+function getStructureBounds(structureID) {
+
+	const BBOX_3x3_STRUCTURES = [STRUCTURES["Factory"].id, STRUCTURES["VTOL Factory"].id, STRUCTURES["Laser Satellite Command Post"].id, STRUCTURES["Satellite Uplink Center"].id];
+	const BBOX_2x2_STRUCTURES = [STRUCTURES["Command Center"].id, STRUCTURES["Command Relay Center"].id, STRUCTURES["Power Generator"].id, STRUCTURES["Research Facility"].id];
+
+	if (BBOX_3x3_STRUCTURES.includes(structureID)) {
+		// coordinate for a 3x3 structure is the center tile of the structure
+		return {
+			footprint: [[-1, -1], [-1, 0], [-1, 1], [0, -1], [0, 0], [0, 1], [1, -1], [1, 0], [1, 1]],
+			clearance: [[-2, -2], [-2, -1], [-2, 0], [-2, 1], [-2, 2], [-1, 2], [0, 2], [1, 2], [2, 2], [2, 1], [2, 0], [2, -1], [2, -2], [1, -2], [0, -2], [-1, -2]]
+		};
+	}
+
+	if (BBOX_2x2_STRUCTURES.includes(structureID)) {
+		// coordinate for a 2x2 structure is the bottom right tile of the structure ((7, 16) center = (7, 15), (6, 15), (6, 16))
+		return {
+			footprint: [[-1, -1], [-1, 0], [0, -1], [0, 0]],
+			clearance: [[-2, -2], [-2, -1], [-2, 0], [-2, 1], [-2, 2], [-1, 1], [0, 1], [1, 1], [1, 0], [1, -1], [1, -2], [0, -2], [-1, -2]]
+		};
+	}
+
+	return {
+		footprint: [[0, 0]],
+		clearance: [[-1, -1], [-1, 0], [-1, 1], [0, 1], [1, 1], [1, 0], [1, -1], [0, -1]]
+	};
+}
+
+/**
+ * Checks whether any structure occupies the tiles a structure would be built on. Used to detect a build 
+ * location which was free when the mission was planned, but has been taken since.
+ * Note: this only reports what `enumRange` has actually seen. `enumRange` may lag behind (it can report no
+ * structures while a stub is being built), so a blocked footprint is reported, but a clear one is not proven.
+ * @param {string} structureID 
+ * @param {number} x 
+ * @param {number} y 
+ * @param {Object[]} nearbyObjects Game objects around (x, y), e.g. from `enumRange`.
+ * @returns {boolean}
+ */
+function footprintIsBlocked(structureID, x, y, nearbyObjects) {
+
+	const footprint = getStructureBounds(structureID).footprint;
+
+	for (let i=0; i<nearbyObjects.length; i++) {
+		const obj = nearbyObjects[i];
+
+		if (obj.type !== STRUCTURE) {
+			continue;
+		}
+
+		const lookup = STRUCTURES[obj.name];
+
+		// Never report our own stub of the structure being built as a blocker, wherever `enumRange` places it.
+		if (obj.player === me && lookup !== undefined && lookup.id === structureID) {
+			continue;
+		}
+
+		// The other structure occupies its own bounding box, which may reach into this footprint 
+		// (an unrecognised structure is assumed to be 1x1, so that construction is not blocked unnecessarily).
+		const otherFootprint = (lookup !== undefined) ? getStructureBounds(lookup.id).footprint : [[0, 0]];
+
+		for (let j=0; j<otherFootprint.length; j++) {
+			const otherX = obj.x + otherFootprint[j][0];
+			const otherY = obj.y + otherFootprint[j][1];
+
+			for (let k=0; k<footprint.length; k++) {
+				if (otherX === x + footprint[k][0] && otherY === y + footprint[k][1]) {
+					return true;
+				}
+			}
+		}
+	}
+
+	return false;
+}
+
+/**
  * Iterates through ranged walkable tiles from the player's base to determine the position of base structures.
  * Replaces the inbuilt `pickStructLocation`. Unlike `pickStructLocation`, it accounts for terrain obstacles.
  * @param {string} structureID 
@@ -26,21 +108,7 @@ function pickBaseStructLocation(structureID) {
 	const walkableTiles = state.mapData.walkableTiles;
 	const isPlaceable = state.mapData.isWalkable;
 
-	const BBOX_3x3_STRUCTURES = [STRUCTURES["Factory"].id, STRUCTURES["VTOL Factory"].id, STRUCTURES["Laser Satellite Command Post"].id, STRUCTURES["Satellite Uplink Center"].id];
-	const BBOX_2x2_STRUCTURES = [STRUCTURES["Command Center"].id, STRUCTURES["Command Relay Center"].id, STRUCTURES["Power Generator"].id, STRUCTURES["Research Facility"].id];
-
-	const BBOX_1X1_STRUCTURES = [[-1, -1], [-1, 0], [-1, 1], [0, 1], [1, 1], [1, 0], [1, -1], [0, -1]];
-	let BBOX_COORDS = BBOX_1X1_STRUCTURES;
-		
-	if (BBOX_3x3_STRUCTURES.includes(structureID)) {
-		// coordinate for a 3x3 structure is the center tile of the structure
-		const BBOX_3X3_COORDS = [[-2, -2], [-2, -1], [-2, 0], [-2, 1], [-2, 2], [-1, 2], [0, 2], [1, 2], [2, 2], [2, 1], [2, 0], [2, -1], [2, -2], [1, -2], [0, -2], [-1, -2]];
-		BBOX_COORDS = BBOX_3X3_COORDS;
-	} else if (BBOX_2x2_STRUCTURES.includes(structureID)) {
-		// coordinate for a 2x2 structure is the bottom right tile of the structure ((7, 16) center = (7, 15), (6, 15), (6, 16))
-		const BBOX_2X2_COORDS = [[-2, -2], [-2, -1], [-2, 0], [-2, 1], [-2, 2], [-1, 1], [0, 1], [1, 1], [1, 0], [1, -1], [1, -2], [0, -2], [-1, -2]];
-		BBOX_COORDS = BBOX_2X2_COORDS
-	}
+	const BBOX_COORDS = getStructureBounds(structureID).clearance;
 	
 	for (let i=0; i<walkableTiles.length; i++) {
 		
@@ -229,7 +297,9 @@ function buildBaseStructure(taskForceID, structureID, x, y) {
 	}
 
 	// Check if the structure has been built yet
-	let struct = enumRange(x, y, 3).filter(obj => {
+	const nearbyObjects = enumRange(x, y, 3);
+
+	let struct = nearbyObjects.filter(obj => {
 		const lookup = STRUCTURES[obj.name];
 		if (lookup !== undefined) {
 			if (lookup.id === structureID && obj.x === x && obj.y === y) {
@@ -246,6 +316,16 @@ function buildBaseStructure(taskForceID, structureID, x, y) {
 
 	// Case 1: Nothing exists yet -> build
 	if (struct.length === 0) {
+		// The location was picked when the mission was planned, so another structure may have taken part of the
+		// footprint since (e.g. a repair facility built on the corner tile of a planned factory). The build order
+		// is then silently ignored forever, which stalls base construction (only one base structure is built at
+		// a time). Note: `structureCanFit()` is deliberately not used here - it also reports "does not fit" for
+		// our own stub before `enumRange` reports it, which would fail the mission & delete the stub.
+		if (footprintIsBlocked(structureID, x, y, nearbyObjects)) {
+			// debug(`buildBaseStructure(): failed, the footprint of "${structureID}" at ${x}, ${y} is occupied.`);
+			return {status: MISSION_STATUS.FAILED};
+		}
+
 		// debug(`buildBaseStructure(): Nothing exists at ${x}, ${y} yet; building...`);
 		trucks.forEach(truck => orderDroidBuild(truck, DORDER_BUILD, structureID, x, y));
 		return {status: MISSION_STATUS.IN_PROGRESS};	
