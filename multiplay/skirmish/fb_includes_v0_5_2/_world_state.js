@@ -432,9 +432,18 @@ class worldStateBuilder {
     #initialiseSpatialFields(state) {
         const numXCells = state.grid.numXCells;
         const numYCells = state.grid.numYCells;
+        const cellSize = state.grid.cellSize;
 
         const createZeroCell = () => {return 0;};
         const createGridWithZeros = () => {return create2DGrid(numXCells, numYCells, createZeroCell);};
+
+        // Which cells contain ground a truck can actually stand on, derived from the walkable-tile flood
+        // fill, so a cell of pure cliff or water is `false`. Terrain is static, so unlike every other
+        // field this one is built once here and never recomputed.
+        const cellIsTraversable = create2DGrid(numXCells, numYCells, () => {return false;});
+        state.mapData.walkableTiles.forEach(t => {
+            cellIsTraversable[Math.floor(t[0] / cellSize)][Math.floor(t[1] / cellSize)] = true;
+        });
 
         return {
             'adaThreat': createGridWithZeros(),
@@ -444,6 +453,11 @@ class worldStateBuilder {
             'totalDerricksInCell': createGridWithZeros(),
             'unclaimedDerricksInCell': createGridWithZeros(),
             'controlStability': createGridWithZeros(),
+
+            // Where FishBot's own field army can cover a construction site. See `updateSpatialFields()`.
+            'friendlySupport': createGridWithZeros(),
+
+            'cellIsTraversable': cellIsTraversable,
         };
     }
 

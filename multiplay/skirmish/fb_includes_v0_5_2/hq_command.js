@@ -110,6 +110,16 @@ class CommandCenter {
 			MAX_PARALLEL_REPAIR_CENTER_BUILD_TASKS: 1,
 			ABORTED_SECTOR_COOLDOWN_MS: 30000,		// how long a sector aborted as dangerous stays off the option list
 
+			// Oil capture posture. `REQUIRE_SUPPORTED_OIL_CAPTURE` is re-decided every `updateStrategicParameters()`.
+			REQUIRE_SUPPORTED_OIL_CAPTURE: false,	// when true, oil the army does not cover must also be close to home
+			SUPPORTED_OIL_WEIGHT: 0.5,				// multiplier on the route cost of supported ground; below 1.0 promotes, so supported oil wins against unsupported oil up to 2x closer
+			UNSUPPORTED_OIL_CAPTURE_RANGE: 40,		// tiles of route budget allowed to unsupported oil once the brigades are established
+
+			// Route costing, in cells. Trucks are walked to a derrick by the engine's own pathfinder, which is
+			// unaware of the enemy, so the planner prices the trip itself and declines targets it cannot reach safely.
+			OIL_ROUTE_THREAT_WEIGHT: 4,				// cells of detour that one unit of (blurred) enemy unit threat is worth avoiding
+			OIL_ROUTE_BLOCK_THRESHOLD: 1,			// enemy unit threat at or above which a cell is not routed through at all
+
 			// Structure limits
 			MAX_GENERATORS_AND_POWER_MODULES: 2,
 			MAX_VTOL_REARMING_PADS: 2, 
@@ -281,6 +291,30 @@ class CommandCenter {
 		this.CONSTRUCTION_PARAMETERS.MAX_PARALLEL_OIL_CAP_TASKS = MAX_PARALLEL_OIL_CAP_TASKS;
 		this.CONSTRUCTION_PARAMETERS.MAX_PARALLEL_DEFENCE_BUILD_TASKS = MAX_PARALLEL_DEFENCE_BUILD_TASKS;
 		this.CONSTRUCTION_PARAMETERS.MAX_PARALLEL_REPAIR_CENTER_BUILD_TASKS = MAX_PARALLEL_REPAIR_CENTER_BUILD_TASKS;
+
+		/*
+			Oil capture posture
+
+			The opening land grab is deliberately risky, and should stay that way: nobody has an army yet, an
+			unescorted truck usually survives the walk, and the oil is worth far more than the truck. That stops
+			being true once armies exist - the same plan then walks trucks into standing forces, which is the
+			expensive failure (it costs the trucks *and* the production time to replace them).
+
+			The switch is tied to FishBot's own brigades rather than to a clock, so it tracks how far the game has
+			actually developed. A brigade counts as established at the strength where it is already trusted to take
+			risks on its own (`MEDIAN_CENTER_STRENGTH_THRESHOLD`); by then there is an army whose position is worth
+			planning oil capture around, on both sides.
+
+			What flips is not "stop taking oil" - ceding the map is a worse loss than the trucks. Oil the army
+			covers is promoted, and oil it does not cover has to be close enough to home to be worth the walk.
+		*/
+		const ESTABLISHED_BRIGADE_STRENGTH = this.GROUND_FORCE_PARAMETERS.MEDIAN_CENTER_STRENGTH_THRESHOLD;
+		const BRIGADES_ESTABLISHED = this.BRIGADE_DESIGNATIONS.some(id => state.brigades[id]['strength'] >= ESTABLISHED_BRIGADE_STRENGTH);
+
+		if (this.CONSTRUCTION_PARAMETERS.REQUIRE_SUPPORTED_OIL_CAPTURE !== BRIGADES_ESTABLISHED) {
+			deb(`oil capture now ${BRIGADES_ESTABLISHED ? "restricted to supported ground" : "unrestricted"}`);
+		}
+		this.CONSTRUCTION_PARAMETERS.REQUIRE_SUPPORTED_OIL_CAPTURE = BRIGADES_ESTABLISHED;
 
 		// Structure limit adaptation
 		const generatorsRequired = Math.ceil((MY_DERRICK_COUNT + 1) / 4);		// + 1 is here to provide extra capacity
@@ -1100,7 +1134,7 @@ class CommandCenter {
 			// The record was pruned above, so everything left in it is still cooling down.
 			const excludedSectorIDs = [];
 			excludedSectorIDs.push(...activeOilCapTaskIDs, ...state.abortedOilSectors.keys());
-			const sectorOilCapTasks = engineering.generateOilCaptureOptions(state, excludedSectorIDs);
+			const sectorOilCapTasks = engineering.generateOilCaptureOptions(state, excludedSectorIDs, this.CONSTRUCTION_PARAMETERS);
 			approvedConstructionTasks.push(...sectorOilCapTasks.slice(0, oilCapDeficit));
 		}
 	

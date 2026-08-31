@@ -50,12 +50,107 @@ class armyEngineering {
 	}
 
 	/**
+	 * Costs the safest route from base to every grid cell, so oil capture can price the *trip* to a derrick
+	 * rather than only the derrick itself.
+	 *
+	 * Trucks are dispatched with `orderDroidBuild()`, which leaves the walk to the engine's own pathfinder.
+	 * That pathfinder knows nothing about the enemy, so it will happily route a truck straight through a
+	 * standing army. This field is the planner's own view of the trip: cells holding an enemy force (or any
+	 * static defence) are not routed through at all, and cells near one cost extra, so a target is only
+	 * offered if some route to it avoids the enemy's field army, and a target reachable only by a long
+	 * detour sorts below one on open ground.
+	 *
+	 * Dijkstra over the *cell* grid rather than the tile map: one pass costs every candidate at once, and at
+	 * `state.grid.cellSize` tiles per cell the grid is small enough (map size / cell size per axis) that the
+	 * linear-scan minimum search is cheaper than maintaining a heap. Diagonal steps cost the same as
+	 * orthogonal ones - this is a risk measure, not a movement plan.
+	 *
+	 * @param {worldState} state
+	 * @param {ConstructionParameters} parameters
+	 * @returns {number[][]} cost in cells, keyed by [gx][gy]; `Infinity` where no route avoiding the enemy exists.
+	 */
+	#computeOilRouteCostField(state, parameters) {
+		const numXCells = state.grid.numXCells;
+		const numYCells = state.grid.numYCells;
+		const cellSize = state.grid.cellSize;
+
+		const enemyUnitThreat = state.fields.enemyUnitThreat;
+		const enemyStaticDefenceThreat = state.fields.enemyStaticDefenceThreat;
+		const cellIsTraversable = state.fields.cellIsTraversable;
+
+		const THREAT_WEIGHT = parameters.OIL_ROUTE_THREAT_WEIGHT;
+		const BLOCK_THRESHOLD = parameters.OIL_ROUTE_BLOCK_THRESHOLD;
+
+		/**
+		 * The cost of *entering* a cell. `enemyUnitThreat` is blurred by `updateSpatialFields()`, so a cell
+		 * beside a force carries a fraction of it: skirting the edge of an army costs more than open ground
+		 * without being forbidden outright.
+		 */
+		const entryCost = (gx, gy) => {
+			if (!cellIsTraversable[gx][gy]) 				return Infinity;
+			if (enemyStaticDefenceThreat[gx][gy] > 0) 		return Infinity;
+
+			const threat = enemyUnitThreat[gx][gy];
+			if (threat >= BLOCK_THRESHOLD) 					return Infinity;
+
+			return 1 + (THREAT_WEIGHT * threat);
+		};
+
+		const routeCost = create2DGrid(numXCells, numYCells, () => Infinity);
+		const visited = create2DGrid(numXCells, numYCells, () => false);
+
+		// The trucks start at base, so its own cell costs nothing to be in - whatever is standing on it.
+		routeCost[Math.floor(baseLocation.x / cellSize)][Math.floor(baseLocation.y / cellSize)] = 0;
+
+		const NEIGHBOUR_OFFSETS = [[0, 1], [0, -1], [1, 0], [-1, 0], [1, 1], [1, -1], [-1, 1], [-1, -1]];
+
+		while (true) {
+			// Take the cheapest cell not yet expanded.
+			let cheapestGX = -1, cheapestGY = -1, cheapestCost = Infinity;
+			for (let gx=0; gx<numXCells; gx++) {
+				for (let gy=0; gy<numYCells; gy++) {
+					if (visited[gx][gy]) continue;
+					if (routeCost[gx][gy] >= cheapestCost) continue;
+					cheapestGX = gx;
+					cheapestGY = gy;
+					cheapestCost = routeCost[gx][gy];
+				}
+			}
+
+			if (cheapestGX === -1) {
+				break;			// everything reachable has been expanded
+			}
+
+			visited[cheapestGX][cheapestGY] = true;
+
+			NEIGHBOUR_OFFSETS.forEach(o => {
+				const gx = cheapestGX + o[0];
+				const gy = cheapestGY + o[1];
+
+				if (gx < 0 || gx >= numXCells || gy < 0 || gy >= numYCells) 	return;
+				if (visited[gx][gy]) 											return;
+
+				const stepCost = entryCost(gx, gy);
+				if (stepCost === Infinity) 										return;
+
+				const newCost = cheapestCost + stepCost;
+				if (newCost < routeCost[gx][gy]) {
+					routeCost[gx][gy] = newCost;
+				}
+			});
+		}
+
+		return routeCost;
+	}
+
+	/**
 	 * Generates options for oil capture.
 	 * @param {worldState} state 
 	 * @param {(number | string)[]} activeOilCapTaskIDs 
+	 * @param {ConstructionParameters} parameters
 	 * @returns {Array}
 	 */
-	generateOilCaptureOptions(state, activeOilCapTaskIDs) {
+	generateOilCaptureOptions(state, activeOilCapTaskIDs, parameters) {
 		/*
 		Algorithm:
 		Use the grid system to:
@@ -64,16 +159,22 @@ class armyEngineering {
 		- Remove cells with high threat from enemy struct concentrations 				-- uses state.grid.grid[gx][gy].targetStructures 
 		- Remove cells with defensive structures										-- uses state.fields.enemyStaticDefenceThreat
 		- Remove cells with enemy offensive units										-- uses state.fields.enemyUnitThreat
+		- Remove cells the trucks cannot reach without walking through the enemy		-- uses `#computeOilRouteCostField()`
+		- Once the brigades are established, keep unsupported cells within reach of home	-- uses state.fields.friendlySupport & controlStability
 		- Remove cells with all derricks already being claimed in active missions		-- uses this.toc.getActiveConstructionMissions()
 		
-		-> if all conditions satisfied, push derrick ID to be used to filter state.poi.derricks
+		-> if all conditions satisfied, build a task for the derrick
 		
-		Iterate through the ordered list
+		For each surviving derrick
 		1. Skip if id not found in grid entries
 		2. >= 4 derricks which are close to one another (multiple in one grid); move to front of list
 			2a. create new CONSTRUCT_ALL_DERRICKS_IN_SECTOR
-		3. Else, continue (the ordered list already orders the derricks in order of increasing distance from base)
+		3. Else, continue
 			3a. create new CONSTRUCT_OIL_DERRICK for single, CONSTRUCT_ALL_DERRICKS_IN_SECTOR for multiple
+
+		Both lists are then ordered by the cost of the route to them, so the nearest oil by *safe* travel is
+		taken first rather than the nearest in a straight line, with oil the army covers promoted over oil
+		it does not.
 		*/
 		const grid = state.grid.grid;
 		const numXCells = state.grid.numXCells;
@@ -82,7 +183,24 @@ class armyEngineering {
 		const unclaimedDerricksInCell = state.fields.unclaimedDerricksInCell;
 		const enemyStaticDefenceThreat = state.fields.enemyStaticDefenceThreat;
 		const enemyUnitThreat = state.fields.enemyUnitThreat;
+		const friendlySupport = state.fields.friendlySupport;
+		const controlStability = state.fields.controlStability;
 		const isReachable = state.mapData.isReachable;
+
+		const routeCost = this.#computeOilRouteCostField(state, parameters);
+
+		// Set once FishBot has an army of its own; see `updateStrategicParameters()` for why this is not
+		// applied from the start of the game.
+		const REQUIRE_SUPPORT = parameters.REQUIRE_SUPPORTED_OIL_CAPTURE;
+		const SUPPORTED_WEIGHT = parameters.SUPPORTED_OIL_WEIGHT;
+		const UNSUPPORTED_ROUTE_BUDGET = parameters.UNSUPPORTED_OIL_CAPTURE_RANGE / state.grid.cellSize;
+
+		/**
+		 * Whether FishBot can cover a construction site: ground the field army is on (`friendlySupport`), or
+		 * ground we already hold (`controlStability`, which counts our structures *other than* derricks - so a
+		 * bare unfortified derrick does not make the ground around it count as held).
+		 */
+		const isSupported = (gx, gy) => (friendlySupport[gx][gy] > 0) || (controlStability[gx][gy] > 0);
 
 		const DEBUG_ON = false;
 		let debugGrid = create2DGrid(numXCells, numYCells, (...args) => {return "_";});
@@ -97,6 +215,21 @@ class armyEngineering {
 				if (unclaimedDerricksInCell[gx][gy] === 0) continue;
 				if (enemyStaticDefenceThreat[gx][gy] > 0) continue;			
 				if (enemyUnitThreat[gx][gy] > 0) continue;
+
+				// Every route to the cell runs through an enemy force, so the trip costs the trucks.
+				if (routeCost[gx][gy] === Infinity) continue;
+
+				const CELL_IS_SUPPORTED = isSupported(gx, gy);
+
+				// Once there are armies on the map, oil the army cannot cover is only worth walking to if it is
+				// close to home: the longer the walk, the longer the trucks are exposed to a force which can be
+				// somewhere else entirely by the time they arrive. Supported ground carries no such limit.
+				// The budget is spent on route cost rather than raw distance, so ground near the enemy - which
+				// `#computeOilRouteCostField()` prices up - eats into it faster.
+				if (REQUIRE_SUPPORT && !CELL_IS_SUPPORTED && routeCost[gx][gy] > UNSUPPORTED_ROUTE_BUDGET) continue;
+
+				// Supported oil is preferred over unsupported oil at equal travel; see `SUPPORTED_OIL_WEIGHT`.
+				const priorityCost = routeCost[gx][gy] * (CELL_IS_SUPPORTED ? SUPPORTED_WEIGHT : 1);
 
 				const derricksInCell = grid[gx][gy].derricks;
 				for (let i=0; i<derricksInCell.length; i++) {
@@ -117,7 +250,7 @@ class armyEngineering {
 							structureData: STRUCTURES["Oil Derrick"],
 							payload: grid[gx][gy]		// needs to have the '.derricks' property to work with the existing system
 						});
-						highPriorityDerricks.push(br);
+						highPriorityDerricks.push([priorityCost, br]);
 						if (DEBUG_ON) debugGrid[gx][gy] = "X";
 						break;
 					} else {
@@ -126,7 +259,7 @@ class armyEngineering {
 							structureData: STRUCTURES["Oil Derrick"],
 							payload: d
 						});
-						normalPriorityDerricks.push([d.id, br]);
+						normalPriorityDerricks.push([priorityCost, br]);
 						if (DEBUG_ON) debugGrid[gx][gy] = "X";
 					}
 				}
@@ -146,21 +279,13 @@ class armyEngineering {
 			}
 		}
 
-		const result = [...highPriorityDerricks];
-		if (normalPriorityDerricks.length === 0) {
-			return result;
-		}
-		
-		// Else, order the tasks in order of decreasing distance from base (assumes state.poi.derricks is in order).
-		state.poi.derricks.forEach(d => {
-			for (let i=0; i<normalPriorityDerricks.length; i++) {
-				if (d.id === normalPriorityDerricks[i][0]) {
-					result.push(normalPriorityDerricks[i][1]);
-					return;
-				}
-			}
-		});
-		return result;
+		// Nearest by safe travel first, within each priority band.
+		const byPriorityCost = (a, b) => a[0] - b[0];
+		highPriorityDerricks.sort(byPriorityCost);
+		normalPriorityDerricks.sort(byPriorityCost);
+
+		const takeBuildRequest = (entry) => entry[1];
+		return [...highPriorityDerricks.map(takeBuildRequest), ...normalPriorityDerricks.map(takeBuildRequest)];
 	}
 
 	/**

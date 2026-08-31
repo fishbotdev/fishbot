@@ -102,6 +102,8 @@
  * @property {number[][]} totalDerricksInCell
  * @property {number[][]} unclaimedDerricksInCell
  * @property {number[][]} controlStability
+ * @property {number[][]} friendlySupport
+ * @property {boolean[][]} cellIsTraversable
  */
 
 /**
@@ -323,6 +325,11 @@
  * @property {number} MAX_PARALLEL_DEFENCE_BUILD_TASKS
  * @property {number} MAX_PARALLEL_REPAIR_CENTER_BUILD_TASKS
  * @property {number} ABORTED_SECTOR_COOLDOWN_MS
+ * @property {boolean} REQUIRE_SUPPORTED_OIL_CAPTURE
+ * @property {number} SUPPORTED_OIL_WEIGHT
+ * @property {number} UNSUPPORTED_OIL_CAPTURE_RANGE
+ * @property {number} OIL_ROUTE_THREAT_WEIGHT
+ * @property {number} OIL_ROUTE_BLOCK_THRESHOLD
  * 
  * @property {number} MAX_GENERATORS_AND_POWER_MODULES 
  * @property {number} MAX_VTOL_REARMING_PADS 

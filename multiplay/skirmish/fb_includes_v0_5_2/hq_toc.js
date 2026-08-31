@@ -528,6 +528,23 @@ class TacticalOperationsCenter {
 		if (false) this.#debugPrintSpatialField(state.fields['enemyUnitThreat'], 'enemyUnitThreat');
 		if (false) this.#debugPrintSpatialField(state.fields['unclaimedDerricksInCell'], 'unclaimedDerricksInCell');
 		state.fields['controlStability'] = this.#filterField(state.fields['controlStability'], numXCells, numYCells);						
+
+		// Friendly support: the ground FishBot's field army can actually cover. Each brigade is stamped at
+		// its current location with its strength, then blurred by the same kernel as the threat fields, so a
+		// brigade covers its own cell and the ring around it. Brigades which do not exist (undesignated) or
+		// which have been wiped out have zero strength and cover nothing.
+		// This is the mobile half of "ground we hold"; `controlStability` above is the static half.
+		const friendlySupport = create2DGrid(numXCells, numYCells, () => 0);
+		BRIGADE_IDS.forEach(brigadeID => {
+			const brigade = state.brigades[brigadeID];
+			if (brigade['strength'] === 0) {
+				return;
+			}
+			const gx = Math.floor(brigade['location'].x / cellSize);
+			const gy = Math.floor(brigade['location'].y / cellSize);
+			friendlySupport[gx][gy] += brigade['strength'];
+		});
+		state.fields['friendlySupport'] = this.#filterField(friendlySupport, numXCells, numYCells);
 						
 		if (false) this.#debugPrintSpatialField(state.fields['controlStability'], 'controlStability - BEFORE');
 
