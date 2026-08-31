@@ -32,59 +32,59 @@ As of **v0.5.2**, FishBot works on most "low-oil" maps shipped with the game.
 FishBot is currently not compatible with scavengers; it currently ignores them.
 
 ### 2 player (T2-NoScav)
-* `Sk-Startup` (100% duel) 
-* `Sk-UrbanChasm` (95% duel)
+* `Sk-Startup` (100% duel)
+* `Sk-UrbanChasm` (100%)
 * `Sk-HighGround` (90% duel)
 * `Roughness` (100% duel) 
-* `Vision` (95% duel)
+* `Vision` (90% duel)
 * `DustyMaze (2P)` (*tested manually*)
 
 ### 3 player (T2-NoScav)
-* `Monocot` (100% duel, 97% FFA)
-* `Gamma` (100% duel, 77% FFA)
+* `Monocot` (100% duel, 100% FFA)
+* `Gamma` (100% duel, 73% FFA)
 
 ### 4 player (T2-NoScav)
-* `Sk-Rush` (100% duel, 80% FFA)
-* `Sk-Rush2` (99% duel, 70% FFA)
-* `Sk-UrbanDuel` (99% duel, 75% FFA)
-* `Sk-Mountain` (95% duel, 70% FFA)
-* `Sk-Valley` (97% duel, 75% FFA)
-* `Sk-FishNets` (85% duel, **22% FFA**) -- does not handle being attacked over water obstacles well
-* `Sk-GreatRift` (99% duel, 72% FFA)
-* `Sk-RollingHills` (92% duel, 82% FFA) 
+* `Sk-Rush` (100% duel, 68% FFA)
+* `Sk-Rush2` (98% duel, 80% FFA)
+* `Sk-UrbanDuel` (98% duel, 98% FFA)
+* `Sk-Mountain` (97% duel, 72% FFA)
+* `Sk-Valley` (98% duel, 80% FFA)
+* `Sk-FishNets` (88% duel, **22% FFA**) -- does not handle narrow water obstacles well
+* `Sk-GreatRift` (98% duel, 68% FFA)
+* `Sk-RollingHills` (91% duel, 90% FFA) 
 * `Sk-Basingstoke` (89% duel, 79% FFA)      
-* `Sk-LittleEgypt` (91% duel, 45% FFA)      
-* `Sk-Cockpit` - (100% duel, 62% FFA) 
-* `Sk-Urban-Chaos` (88% duel, 72% FFA)
-* `Sk-Pyramidal` (100% duel, 82% FFA)
+* `Sk-LittleEgypt` (95% duel, 54% FFA)      
+* `Sk-Cockpit` - (100% duel, 77% FFA) 
+* `Sk-Urban-Chaos` (95% duel, 88% FFA)
+* `Sk-Pyramidal` (100% duel, 72% FFA)
 * `DustyMaze-2v2` (*tested manually*)
 * `DustyMaze-FFA` (*tested manually*)
 
 ### 5 player (T2-NoScav)
-* `Bloat` (56% FFA)
+* `Bloat` (64% FFA)
 
 ### 6 player (T2-NoScav)
-* `Melting` (36% FFA)
+* `Melting` (55% FFA)
 * `Entropy` (*tested manually*)
 
 ### 7 player (T2-NoScav)
 * `Thales` (*tested manually*)
 
 ### 8 player (T2-NoScav)
-* `Sk-Clover` (34% FFA) 
-* `Sk-MizaMaze` (20% FFA)
+* `Sk-Clover` (45% FFA) 
+* `Sk-MizaMaze` (38% FFA)
 * ~~`Sk-Manhattan`~~ - **not compatible**: central river blocks land units
-* `Sk-Bananas` (42% FFA)
+* `Sk-Bananas` (39% FFA)
 * `Sk-Wheel` (44% FFA)
-* `Sk-Ziggurat` (36% FFA); test incomplete
-* `Sk-Concrete` (28% FFA)
-* `Sk-ThePit` (51% FFA)
-* `Sk-HideNSneak` (26% FFA)
-* `Sk-YinYang` (50% FFA)
-* `Sk-SandCastles` (54% FFA)
-* `Sk-BeggarsKanyon` (74% FFA)
-* `Sk-Gridlock` (44% FFA)
-* `Sk-Cockate` (39% FFA)
+* `Sk-Ziggurat` (29% FFA)
+* `Sk-Concrete` (37% FFA)
+* `Sk-ThePit` (46% FFA)
+* `Sk-HideNSneak` (39% FFA)
+* `Sk-YinYang` (59% FFA)
+* `Sk-SandCastles` (55% FFA)
+* `Sk-BeggarsKanyon` (56% FFA)
+* `Sk-Gridlock` (40% FFA)
+* `Sk-Cockate` (45% FFA)
 
 ### 9 player (T2-NoScav)
 * `Sk-WindFury` (*tested manually*)
@@ -99,11 +99,11 @@ For a map to be compatible, FishBot must have an absence of breaking issues, and
 * Greater than 75% win rate in duels across all pairs of positions against Cobra @ Medium difficulty (i.e. 1v1 with all other player slots being spectators).
 
 ## Recent updates
-* **v0.5.2** - *released **x Aug 2026***
+* **v0.5.2** - *released **1 Sep 2026***
     * Combat improvements, including a complete overhaul of group movement and targeting. 
         * This should result in smoother and seemingly more intentional group behaviour, with better handling of chokepoints.
     * Performance improvements, resulting in a smoother player experience on all base maps shipped with the game.
-    * Fixed some more long-standing construction issues related to oil capture.
+    * Fixed some long-standing construction issues related to oil capture.
 
 * **v0.5.1** - *released **04 Aug 2026***
     * Now supports custom structure limits in skirmish settings.

@@ -2,7 +2,7 @@
 This file is used to record the changes to FishBot between each version.
 
 ## Fishbot v0.5.2
-*Released **x Aug 2026***
+*Released **1 Sep 2026***
 ### Changes in v0.5.2
 - Combat improvements:
     - Complete overhaul of:
@@ -12,7 +12,7 @@ This file is used to record the changes to FishBot between each version.
     - Fixed oil capture issues.
     - Avoids building repair centers in chokepoints.
 - Technical changes:
-    - Performance improvements which greatly reduce lag spikes; this version should now perform well across all maps.
+    - Performance improvements which further reduce lag spikes.
 
 ## Fishbot v0.5.1
 *Released **04 Aug 2026***
