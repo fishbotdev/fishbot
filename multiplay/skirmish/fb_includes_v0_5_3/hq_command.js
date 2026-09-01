@@ -1064,18 +1064,14 @@ class CommandCenter {
 		const trucksUnavailable = (state.g.enumGroup(ENGINEERING.ENGINEERING_RESERVE).length === 0) && 
 								  (state.g.enumGroup(ENGINEERING.BASE_BUILDER).length === 0);
 
-		// Oil capture is re-planned only once per intelligence refresh: the inputs cannot have changed in
-		// between, so planning again re-issues the same missions against a world state up to 5 seconds stale.
-		const oilCapDeficit = this.CONSTRUCTION_PARAMETERS.MAX_PARALLEL_OIL_CAP_TASKS - activeOilCapTaskIDs.length;
-		const WORLD_UNCHANGED_SINCE_LAST_PLAN = (state.grid.lastUpdatedAt === state.oilCapPlannedAt);
-		const SHOULD_PLAN_OIL_CAPTURE = !trucksUnavailable && (oilCapDeficit > 0) && !WORLD_UNCHANGED_SINCE_LAST_PLAN;
+		// `state.fields` / `state.grid` is updated slowly by intel (nominally once every 5 seconds). 
+		// To avoid redundant work, construction should be planned only once per intel update.
+		const WORLD_UNCHANGED_SINCE_LAST_PLAN = (state.grid.lastUpdatedAt === state.constructionPlannedAt);
+		const SHOULD_PLAN_REMOTE_CONSTRUCTION = !trucksUnavailable && !WORLD_UNCHANGED_SINCE_LAST_PLAN;
 
-		this.toc.updateConstructionPlanningRecord(state, abortedSectors, SHOULD_PLAN_OIL_CAPTURE,
-												 this.CONSTRUCTION_PARAMETERS.ABORTED_SECTOR_COOLDOWN_MS);
+		this.toc.updateConstructionPlanningRecord(state, abortedSectors, SHOULD_PLAN_REMOTE_CONSTRUCTION, this.CONSTRUCTION_PARAMETERS.ABORTED_SECTOR_COOLDOWN_MS);
 
 		if (trucksUnavailable) {
-			// warn(`No trucks to execute construction actions.`);
-			// deb(`Active construction missions | oilcap: ${activeOilCapTaskIDs.length} |  basebuild: ${activeBaseBuildTasks.length}  | defencebuild: ${activeDefenceBuildTaskIDs.length}  | repairCenter: ${activeRepairCenterBuildTaskIDs.length}`);
 			return;
 		}
 
@@ -1088,8 +1084,14 @@ class CommandCenter {
 			approvedConstructionTasks.push(...requestedBaseBuildTasks.slice(0, baseBuildDeficit));
 		}
 
+		if (!SHOULD_PLAN_REMOTE_CONSTRUCTION) {
+			this.toc.assignConstructionTasks(state, approvedConstructionTasks);
+			return;
+		}
+
 		// OIL CAP
-		if (SHOULD_PLAN_OIL_CAPTURE) {
+		const oilCapDeficit = this.CONSTRUCTION_PARAMETERS.MAX_PARALLEL_OIL_CAP_TASKS - activeOilCapTaskIDs.length;
+		if (oilCapDeficit > 0) {
 			// The record was pruned above, so everything left in it is still cooling down.
 			const excludedSectorIDs = [];
 			excludedSectorIDs.push(...activeOilCapTaskIDs, ...state.abortedOilSectors.keys());

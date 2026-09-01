@@ -261,12 +261,12 @@ class TacticalOperationsCenter {
 	/**
 	 * Writes back what a construction tick learned about remote construction planning: the sectors called off
 	 * as too dangerous (oil capture and derrick defences are recorded separately, as a defence mission reuses
-	 * the derrick's ID as its sectorID), and whether an oil-capture planning pass ran.
+	 * the derrick's ID as its sectorID), and whether a planning pass ran.
 	 * @param {worldState} state
 	 * @param {Object} abortedSectors Sectors called off as dangerous this tick.
 	 * @param {(number | string)[]} abortedSectors.abortedOilSectorIDs
 	 * @param {(number | string)[]} abortedSectors.abortedDefenceSectorIDs
-	 * @param {boolean} planningPassRan Whether oil-capture options were regenerated this tick.
+	 * @param {boolean} planningPassRan Whether construction options were regenerated this tick.
 	 * @param {number} cooldownMs How long an aborted sector stays off the option list.
 	 * @returns {void}
 	 */
@@ -275,7 +275,7 @@ class TacticalOperationsCenter {
 		this.#updateAbortedSectorRecord(state.abortedDefenceSectors, abortedDefenceSectorIDs, cooldownMs);
 
 		if (planningPassRan) {
-			state.oilCapPlannedAt = state.grid.lastUpdatedAt;
+			state.constructionPlannedAt = state.grid.lastUpdatedAt;
 		}
 	}
 
