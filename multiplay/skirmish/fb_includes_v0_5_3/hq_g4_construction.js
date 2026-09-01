@@ -247,13 +247,9 @@ class armyEngineering {
 			// Intent: enumRange is used as this offers better granularity compared to directly accessing the grid
 			const nearby = state.grid.enumRangeLazy(d.x, d.y, PROXIMITY_RADIUS, true, true);
 			
-			let friendlyDefencesNearby = 0, friendlyDerricksNearby = 0;
+			let friendlyDefencesNearby = 0;
 			nearby['friendlyStructures'].forEach(obj => {
 				const flags = obj.flags;
-
-				if (flags & OBJ_FLAGS.RESOURCE_EXTRACTOR) {
-					friendlyDerricksNearby++;
-				}
 
 				if ((flags & BUILT_DEFENCES) === BUILT_DEFENCES && !(flags & OBJ_FLAGS.ADA)) {
 					friendlyDefencesNearby++;
