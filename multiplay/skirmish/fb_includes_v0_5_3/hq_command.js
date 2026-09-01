@@ -1067,11 +1067,11 @@ class CommandCenter {
 		// `state.fields` / `state.grid` is updated slowly by intel (nominally once every 5 seconds). 
 		// To avoid redundant work, construction should be planned only once per intel update.
 		const WORLD_UNCHANGED_SINCE_LAST_PLAN = (state.grid.lastUpdatedAt === state.constructionPlannedAt);
-		const SHOULD_PLAN_CONSTRUCTION = !trucksUnavailable && !WORLD_UNCHANGED_SINCE_LAST_PLAN;
+		const SHOULD_PLAN_REMOTE_CONSTRUCTION = !trucksUnavailable && !WORLD_UNCHANGED_SINCE_LAST_PLAN;
 
-		this.toc.updateConstructionPlanningRecord(state, abortedSectors, SHOULD_PLAN_CONSTRUCTION, this.CONSTRUCTION_PARAMETERS.ABORTED_SECTOR_COOLDOWN_MS);
-		
-		if (!SHOULD_PLAN_CONSTRUCTION) {
+		this.toc.updateConstructionPlanningRecord(state, abortedSectors, SHOULD_PLAN_REMOTE_CONSTRUCTION, this.CONSTRUCTION_PARAMETERS.ABORTED_SECTOR_COOLDOWN_MS);
+
+		if (trucksUnavailable) {
 			return;
 		}
 
@@ -1082,6 +1082,11 @@ class CommandCenter {
 		if (baseBuildDeficit > 0) {
 			const requestedBaseBuildTasks = engineering.requestBaseConstruction(state, this.CONSTRUCTION_PARAMETERS);
 			approvedConstructionTasks.push(...requestedBaseBuildTasks.slice(0, baseBuildDeficit));
+		}
+
+		if (!SHOULD_PLAN_REMOTE_CONSTRUCTION) {
+			this.toc.assignConstructionTasks(state, approvedConstructionTasks);
+			return;
 		}
 
 		// OIL CAP
