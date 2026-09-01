@@ -178,7 +178,6 @@ class CommandCenter {
 		// Update `_run.js` if any of the below task names change.
 		this.TASK_SCHEDULE = {
 			'combat_runC2': {"requestsPerMin": 60},
-			'combat_runAviationOperations': {"requestsPerMin": 60},
 			'global_missionManager': {"requestsPerMin": 60},
 			'logistics_runConstruction': {"requestsPerMin": 60},
 			'logistics_runResupplyLogistics': {"requestsPerMin": 30},
@@ -1065,17 +1064,18 @@ class CommandCenter {
 		const trucksUnavailable = (state.g.enumGroup(ENGINEERING.ENGINEERING_RESERVE).length === 0) && 
 								  (state.g.enumGroup(ENGINEERING.BASE_BUILDER).length === 0);
 
-		// Oil capture is re-planned only once per intelligence refresh: the inputs cannot have changed in
-		// between, so planning again re-issues the same missions against a world state up to 5 seconds stale.
-		const oilCapDeficit = this.CONSTRUCTION_PARAMETERS.MAX_PARALLEL_OIL_CAP_TASKS - activeOilCapTaskIDs.length;
-		const WORLD_UNCHANGED_SINCE_LAST_PLAN = (state.grid.lastUpdatedAt === state.oilCapPlannedAt);
-		const SHOULD_PLAN_OIL_CAPTURE = !trucksUnavailable && (oilCapDeficit > 0) && !WORLD_UNCHANGED_SINCE_LAST_PLAN;
+		// Every planner below reads `state.fields` / `state.grid`, which only change when intelligence refreshes.
+		// Planning is therefore run once per refresh: planning again in between re-issues the same options
+		// against a world state up to 5 seconds stale. Aborting missions above stays on the construction tick,
+		// as it also reads truck positions, which are live.
+		const WORLD_UNCHANGED_SINCE_LAST_PLAN = (state.grid.lastUpdatedAt === state.constructionPlannedAt);
+		const SHOULD_PLAN_CONSTRUCTION = !trucksUnavailable && !WORLD_UNCHANGED_SINCE_LAST_PLAN;
 
-		this.toc.updateConstructionPlanningRecord(state, abortedSectors, SHOULD_PLAN_OIL_CAPTURE,
+		this.toc.updateConstructionPlanningRecord(state, abortedSectors, SHOULD_PLAN_CONSTRUCTION,
 												 this.CONSTRUCTION_PARAMETERS.ABORTED_SECTOR_COOLDOWN_MS);
 
-		if (trucksUnavailable) {
-			// warn(`No trucks to execute construction actions.`);
+		if (!SHOULD_PLAN_CONSTRUCTION) {
+			// warn(`No trucks to execute construction actions, or already planned against this refresh.`);
 			// deb(`Active construction missions | oilcap: ${activeOilCapTaskIDs.length} |  basebuild: ${activeBaseBuildTasks.length}  | defencebuild: ${activeDefenceBuildTaskIDs.length}  | repairCenter: ${activeRepairCenterBuildTaskIDs.length}`);
 			return;
 		}
@@ -1090,7 +1090,8 @@ class CommandCenter {
 		}
 
 		// OIL CAP
-		if (SHOULD_PLAN_OIL_CAPTURE) {
+		const oilCapDeficit = this.CONSTRUCTION_PARAMETERS.MAX_PARALLEL_OIL_CAP_TASKS - activeOilCapTaskIDs.length;
+		if (oilCapDeficit > 0) {
 			// The record was pruned above, so everything left in it is still cooling down.
 			const excludedSectorIDs = [];
 			excludedSectorIDs.push(...activeOilCapTaskIDs, ...state.abortedOilSectors.keys());
