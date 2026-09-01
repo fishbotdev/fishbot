@@ -340,9 +340,9 @@ class worldState {
         /** @type {ProductionJob[]} */
         this.activeProductionJobs = [];
 
-        // Oil-capture planning
-        /** @type {number} `gameTime` at the last oil-capture planning tick */
-        this.oilCapPlannedAt = -1;
+        // Construction planning
+        /** @type {number} `grid.lastUpdatedAt` of the intelligence refresh the last planning pass ran against */
+        this.constructionPlannedAt = -1;
         /** @type {Map<number | string, number>} Map from `sectorID` to the `gameTime` when an oil-capture task was called off as dangerous */
         this.abortedOilSectors = new Map();
         /** @type {Map<number | string, number>} Map from `sectorID` (a derrick ID) to the `gameTime` when a defence-build task was called off as dangerous */
@@ -352,6 +352,7 @@ class worldState {
         this.botIsActive = true;
         this.TIME_BLOCK_MS = 200;
         this.BLOCKS_PER_MIN = Math.floor(60000 / this.TIME_BLOCK_MS);
+		/** @type {Object<string, number[]>} Task name -> per-time-block schedule; a block is skipped where the entry is -1 */
 		this.WORKER_IDS = {};
     }
 
