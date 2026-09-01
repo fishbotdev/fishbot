@@ -39,7 +39,7 @@ function getStructureBounds(structureID) {
 		// coordinate for a 2x2 structure is the bottom right tile of the structure ((7, 16) center = (7, 15), (6, 15), (6, 16))
 		return {
 			footprint: [[-1, -1], [-1, 0], [0, -1], [0, 0]],
-			clearance: [[-2, -2], [-2, -1], [-2, 0], [-2, 1], [-2, 2], [-1, 1], [0, 1], [1, 1], [1, 0], [1, -1], [1, -2], [0, -2], [-1, -2]]
+			clearance: [[-2, -2], [-2, -1], [-2, 0], [-2, 1], [-1, 1], [0, 1], [1, 1], [1, 0], [1, -1], [1, -2], [0, -2], [-1, -2]]
 		};
 	}
 
@@ -290,7 +290,7 @@ function buildBaseStructure(taskForceID, structureID, x, y) {
 
 	// Check if the structure has been built yet
 	const nearbyObjects = enumRange(x, y, 3);
-	
+
 	const struct = nearbyObjects.filter(obj => {
 		const lookup = STRUCTURES[obj.name];
 		if (lookup !== undefined) {
