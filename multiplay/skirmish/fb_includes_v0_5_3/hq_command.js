@@ -1010,8 +1010,7 @@ class CommandCenter {
 				// debug(`aborted (${md.id}) @ (~ tileco ${md.gx * cellSize} ${md.gy * cellSize}); high threat`);
 				md.missionStatus = MISSION_STATUS.ABORT;
 
-				// Defence missions reuse the derrick's ID as their sectorID, so they are recorded separately:
-				// a defence site cooling down must not block *capturing* the derrick it was meant to protect.
+				// Todo: combine these into a unified concept of 'denied region' rather than keying by sectorID (resolves to derrickID)
 				if (md.missionType === MISSION_TYPE.CONSTRUCT_OIL_DERRICK ||
 					md.missionType === MISSION_TYPE.CONSTRUCT_ALL_DERRICKS_IN_SECTOR) {
 					abortedOilSectorIDs.push(md.sectorID);
