@@ -1064,19 +1064,14 @@ class CommandCenter {
 		const trucksUnavailable = (state.g.enumGroup(ENGINEERING.ENGINEERING_RESERVE).length === 0) && 
 								  (state.g.enumGroup(ENGINEERING.BASE_BUILDER).length === 0);
 
-		// Every planner below reads `state.fields` / `state.grid`, which only change when intelligence refreshes.
-		// Planning is therefore run once per refresh: planning again in between re-issues the same options
-		// against a world state up to 5 seconds stale. Aborting missions above stays on the construction tick,
-		// as it also reads truck positions, which are live.
+		// `state.fields` / `state.grid` is updated slowly by intel (nominally once every 5 seconds). 
+		// To avoid redundant work, construction should be planned only once per intel update.
 		const WORLD_UNCHANGED_SINCE_LAST_PLAN = (state.grid.lastUpdatedAt === state.constructionPlannedAt);
 		const SHOULD_PLAN_CONSTRUCTION = !trucksUnavailable && !WORLD_UNCHANGED_SINCE_LAST_PLAN;
 
-		this.toc.updateConstructionPlanningRecord(state, abortedSectors, SHOULD_PLAN_CONSTRUCTION,
-												 this.CONSTRUCTION_PARAMETERS.ABORTED_SECTOR_COOLDOWN_MS);
-
+		this.toc.updateConstructionPlanningRecord(state, abortedSectors, SHOULD_PLAN_CONSTRUCTION, this.CONSTRUCTION_PARAMETERS.ABORTED_SECTOR_COOLDOWN_MS);
+		
 		if (!SHOULD_PLAN_CONSTRUCTION) {
-			// warn(`No trucks to execute construction actions, or already planned against this refresh.`);
-			// deb(`Active construction missions | oilcap: ${activeOilCapTaskIDs.length} |  basebuild: ${activeBaseBuildTasks.length}  | defencebuild: ${activeDefenceBuildTaskIDs.length}  | repairCenter: ${activeRepairCenterBuildTaskIDs.length}`);
 			return;
 		}
 
