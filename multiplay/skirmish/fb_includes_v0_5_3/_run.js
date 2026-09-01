@@ -69,8 +69,11 @@ function scheduleCoreFunctions() {
 	if (state.WORKER_IDS['combat_runC2'][currWorkerID] !== -1) {
 		const combat_runC2 = () => hq.runCombatOperations(state);
 		fprof(combat_runC2);
-		const combat_runAviation = () => hq.runAviationOperations(state);
-		fprof(combat_runAviation);
+	}
+
+	if (state.WORKER_IDS['combat_runAviationOperations'][currWorkerID] !== -1) {
+		const combat_runAviationOperations = () => hq.runAviationOperations(state);
+		fprof(combat_runAviationOperations);
 	}
 
 	const subtasks = ['intel_getNearbyGroundTargets', 'intel_getAviationTargets'];
