@@ -65,6 +65,16 @@ DERRICK_CLUSTER_RADIUS = 9
 # Hard ceiling on region count; the smallest regions are merged until it is met.
 MAX_REGIONS = 24
 
+# How far a captured start position may be from walkable ground before it is treated as
+# bogus rather than snapped inland. A real base sits on or beside ground it can build on.
+BASE_SNAP_RADIUS = 4
+
+# Oil sitting this close to a start position is that player's own base oil. It is absorbed
+# into the base region rather than seeded as a separate one: a derrick inside your own base
+# is not ground to go and capture, and seeding it separately splits the base lobe in two
+# along an arbitrary line through open ground.
+BASE_ABSORBS_OIL_RADIUS = 12
+
 ############################### USER CONFIG END ###############################
 
 # terrainType enum, from warzone2100/lib/wzmaplib/include/wzmaplib/terrain_type.h
@@ -198,39 +208,53 @@ def compute_chokepoints(is_walkable, width, height):
     return chokepoint_width, is_chokepoint
 
 
-def find_reachable_component(is_walkable, width, height, start):
+def find_largest_walkable_component(is_walkable, width, height):
     """
-    Port of `getWalkableTiles` in `_utils.js`: the 4-connected component of walkable
-    tiles reachable from `start`. Islands the army could never drive to are excluded, so
-    they never become regions.
+    Returns (reachable, component_sizes) for the LARGEST 4-connected block of walkable
+    tiles: the main landmass.
 
-    Unlike the JS (which uses an O(n) `Array.shift()`), this uses a real queue.
+    Deriving the playable area from the terrain itself, rather than by flooding out from
+    some point of interest, is what keeps this honest. A map like gamma is 68% water and
+    cliff and breaks into dozens of walkable pieces -- ponds, ledges, coastal pockets --
+    and seeding the flood from a bad point of interest lands the whole analysis on a
+    pocket instead of the map. Regions must be carved out of the ground the army can
+    actually drive around, so the ground comes first and the points of interest are fitted
+    to it afterwards.
     """
+    visited = create_grid(width, height, False)
+    best_tiles = []
+    component_sizes = []
+
+    for sx in range(width):
+        for sy in range(height):
+            if not is_walkable[sx][sy] or visited[sx][sy]:
+                continue
+
+            tiles = []
+            visited[sx][sy] = True
+            queue = deque([(sx, sy)])
+            while queue:
+                x, y = queue.popleft()
+                tiles.append((x, y))
+                for ox, oy in ADJACENT_OFFSETS:
+                    nx, ny = x + ox, y + oy
+                    if nx < 0 or nx >= width or ny < 0 or ny >= height:
+                        continue
+                    if visited[nx][ny] or not is_walkable[nx][ny]:
+                        continue
+                    visited[nx][ny] = True
+                    queue.append((nx, ny))
+
+            component_sizes.append(len(tiles))
+            if len(tiles) > len(best_tiles):
+                best_tiles = tiles
+
     reachable = create_grid(width, height, False)
+    for x, y in best_tiles:
+        reachable[x][y] = True
 
-    sx, sy = start
-    if not is_walkable[sx][sy]:
-        raise ValueError(f"start tile {start} is not walkable")
-
-    reachable[sx][sy] = True
-    queue = deque([start])
-
-    while queue:
-        x, y = queue.popleft()
-        for ox, oy in ADJACENT_OFFSETS:
-            nx, ny = x + ox, y + oy
-            if nx < 0 or nx >= width or ny < 0 or ny >= height:
-                continue
-            if reachable[nx][ny] or not is_walkable[nx][ny]:
-                continue
-            reachable[nx][ny] = True
-            queue.append((nx, ny))
-
-    return reachable
-
-
-############################## SEEDING ##############################
-
+    component_sizes.sort(reverse=True)
+    return reachable, component_sizes
 def cluster_points(points, radius):
     """
     Groups points within `radius` of an already-accepted point.
@@ -260,16 +284,22 @@ def centroid_of(points):
     return (cx, cy)
 
 
-def snap_to_reachable(point, reachable, width, height):
+def snap_to_reachable(point, reachable, width, height, max_radius=None):
     """
-    Returns the reachable tile nearest `point` (spiral search). A cluster centroid can
-    easily land on a cliff or inside a feature, and a seed must sit on real ground.
+    Returns the reachable tile nearest `point` (spiral search), or None if there is none
+    within `max_radius`. A cluster centroid can easily land on a cliff or in water, and a
+    seed must sit on real ground.
+
+    `max_radius` matters: without a bound, a point of interest that is nowhere near the
+    playable area (the forced-spectator slot at (0, 0), say) silently snaps onto the map
+    edge and manufactures a region that has no business existing. Better to drop it.
     """
     px, py = point
     if 0 <= px < width and 0 <= py < height and reachable[px][py]:
         return (px, py)
 
-    for r in range(1, max(width, height)):
+    limit = max_radius if max_radius is not None else max(width, height)
+    for r in range(1, limit + 1):
         for dx in range(-r, r + 1):
             for dy in range(-r, r + 1):
                 if max(abs(dx), abs(dy)) != r:
@@ -304,21 +334,72 @@ def load_points_of_interest(map_name):
     }
 
 
+def nearest_base_seed(point, seeds, max_distance):
+    """Returns the base seed within `max_distance` of `point`, nearest first, else None."""
+    best = None
+    best_distance_sq = max_distance ** 2
+    for seed in seeds:
+        if seed["kind"] != "base":
+            continue
+        distance_sq = (seed["tile"][0] - point[0]) ** 2 + (seed["tile"][1] - point[1]) ** 2
+        if distance_sq <= best_distance_sq:
+            best_distance_sq = distance_sq
+            best = seed
+    return best
+
+
 def build_seeds_from_poi(poi, reachable, width, height):
-    """The real seeding: one seed per start position, one per derrick cluster."""
+    """
+    The real seeding: one seed per start position, one per derrick cluster.
+
+    Points of interest that do not sit on the main landmass are DROPPED, not snapped onto
+    it. Two real cases this guards against:
+      - In debug mode player 0 is forced to spectator and its start position is (0, 0),
+        the map corner. Snapping it inland invents a base region against the map edge --
+        and because base regions are protected from merging, that phantom survives and
+        drags the decomposition out to the outline.
+      - A derrick on an island the army cannot drive to is not an objective.
+
+    Returns (seeds, dropped), where `dropped` explains what was discarded and why.
+    """
     seeds = []
+    dropped = []
 
     for start_position in poi["startPositions"]:
-        tile = snap_to_reachable(start_position, reachable, width, height)
-        if tile is not None:
-            seeds.append({"tile": tile, "kind": "base"})
+        tile = snap_to_reachable(start_position, reachable, width, height,
+                                 max_radius=BASE_SNAP_RADIUS)
+        if tile is None:
+            dropped.append(f"start position {tuple(start_position)}: not on the main landmass")
+            continue
+        seeds.append({"tile": tile, "kind": "base"})
 
     for cluster in cluster_points(poi["derricks"], DERRICK_CLUSTER_RADIUS):
-        tile = snap_to_reachable(centroid_of(cluster), reachable, width, height)
-        if tile is not None:
-            seeds.append({"tile": tile, "kind": "oil", "derricks": cluster})
+        # A cluster earns a region only if the army can actually reach one of its derricks.
+        # The centroid itself is synthetic and may legitimately sit in water between them,
+        # so it is allowed to snap further than a base.
+        reachable_derricks = [
+            d for d in cluster
+            if 0 <= d[0] < width and 0 <= d[1] < height and reachable[d[0]][d[1]]
+        ]
+        if not reachable_derricks:
+            dropped.append(f"derrick cluster at {centroid_of(cluster)} "
+                           f"({len(cluster)} derricks): none reachable")
+            continue
 
-    return deduplicate_seeds(seeds)
+        centroid = centroid_of(cluster)
+        home_base = nearest_base_seed(centroid, seeds, BASE_ABSORBS_OIL_RADIUS)
+        if home_base is not None:
+            home_base.setdefault("derricks", []).extend(reachable_derricks)
+            continue
+
+        tile = snap_to_reachable(centroid, reachable, width, height,
+                                 max_radius=DERRICK_CLUSTER_RADIUS)
+        if tile is None:
+            tile = reachable_derricks[0]
+
+        seeds.append({"tile": tile, "kind": "oil", "derricks": reachable_derricks})
+
+    return deduplicate_seeds(seeds), dropped
 
 
 def build_seeds_from_open_ground(chokepoint_width, reachable, width, height):
@@ -754,30 +835,74 @@ def check_regions_are_connected(region_id, records, width, height):
 REGION_GLYPHS = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ"
 
 
-def render_ascii(region_id, reachable, width, height, seeds=None, gateway_tiles=None):
+def render_ascii(result):
     """
-    Prints the region map to the terminal, one character per tile.
-      '.' unreachable   '+' gateway tile   '*' seed   0-9/A-Z region
-    Rows are y, columns are x, matching how the map looks in game.
+    Prints the map one character per tile, so terrain and regions can be read together.
+
+      ~  water          #  cliff face      ,  walkable, but not on the main landmass
+      .  off-map        *  seed            +  gateway tile      0-9/A-Z  region
+
+    Showing water and cliff separately from "not a region" matters: it is how you tell a
+    boundary that follows a real feature from one the flood merely drew across open
+    ground, and how you spot a landmass that is not the one you meant to analyse.
     """
-    seed_tiles = {seed["tile"] for seed in (seeds or [])}
-    gateway_tiles = gateway_tiles or set()
+    width, height = result["width"], result["height"]
+    terrain = result["terrain"]
+    reachable = result["reachable"]
+    is_walkable = result["is_walkable"]
+    region_id = result["region_id"]
+
+    seed_tiles = {seed["tile"] for seed in result["seeds"]}
+
+    gateway_tiles = set()
+    for entry in result["gateways"].values():
+        gateway_tiles.update(entry["tiles"])
 
     lines = []
     for y in range(height):
         row = []
         for x in range(width):
-            if not reachable[x][y]:
-                row.append(".")
-            elif (x, y) in seed_tiles:
-                row.append("*")
-            elif (x, y) in gateway_tiles:
-                row.append("+")
+            if reachable[x][y]:
+                if (x, y) in seed_tiles:
+                    row.append("*")
+                elif (x, y) in gateway_tiles:
+                    row.append("+")
+                else:
+                    r = region_id[x][y]
+                    row.append(REGION_GLYPHS[r % len(REGION_GLYPHS)] if r != NO_REGION else "?")
+            elif is_walkable[x][y]:
+                row.append(",")
+            elif terrain[x][y] == TER_WATER:
+                row.append("~")
+            elif terrain[x][y] == TER_CLIFFFACE:
+                row.append("#")
             else:
-                r = region_id[x][y]
-                row.append(REGION_GLYPHS[r % len(REGION_GLYPHS)] if r != NO_REGION else "?")
+                row.append(".")
         lines.append("".join(row))
     return "\n".join(lines)
+
+
+def terrain_summary(result):
+    """One line per terrain class, so the map's makeup is visible at a glance."""
+    width, height = result["width"], result["height"]
+    terrain = result["terrain"]
+    reachable, is_walkable = result["reachable"], result["is_walkable"]
+
+    water = cliff = stranded = 0
+    for x in range(width):
+        for y in range(height):
+            if reachable[x][y]:
+                continue
+            if is_walkable[x][y]:
+                stranded += 1
+            elif terrain[x][y] == TER_WATER:
+                water += 1
+            elif terrain[x][y] == TER_CLIFFFACE:
+                cliff += 1
+
+    return (f"terrain        : {water} water (~), {cliff} cliff (#), "
+            f"{stranded} walkable but stranded off the landmass (,)")
+
 
 
 def print_region_table(records):
@@ -815,21 +940,25 @@ def analyse_map(map_name, chokepoint_cost=CHOKEPOINT_COST, min_area=MIN_REGION_A
     is_walkable = build_is_walkable(terrain, width, height)
     chokepoint_width, is_chokepoint = compute_chokepoints(is_walkable, width, height)
 
+    # Ground first: the playable area is the largest connected block of walkable tiles,
+    # derived from the terrain alone. Points of interest are fitted to it afterwards.
+    reachable, component_sizes = find_largest_walkable_component(is_walkable, width, height)
+
     poi = load_points_of_interest(map_name)
 
-    if poi and poi["startPositions"]:
-        origin = snap_to_reachable(poi["startPositions"][0], is_walkable, width, height)
-    else:
-        origin = pick_largest_open_tile(chokepoint_width, is_walkable, width, height)
-
-    reachable = find_reachable_component(is_walkable, width, height, origin)
-
     if poi:
-        seeds = build_seeds_from_poi(poi, reachable, width, height)
+        seeds, dropped_poi = build_seeds_from_poi(poi, reachable, width, height)
         seed_source = f"{map_name}_poi.json"
     else:
         seeds = build_seeds_from_open_ground(chokepoint_width, reachable, width, height)
+        dropped_poi = []
         seed_source = "open-ground fallback (no _poi.json capture)"
+
+    if not seeds:
+        raise ValueError(
+            f"no usable seeds for {map_name}: all {len(dropped_poi)} points of interest "
+            f"were off the main landmass"
+        )
 
     region_id, cost_to_seed = flood_regions(
         reachable, is_chokepoint, seeds, width, height, chokepoint_cost
@@ -850,14 +979,25 @@ def analyse_map(map_name, chokepoint_cost=CHOKEPOINT_COST, min_area=MIN_REGION_A
 
     if verbose:
         reachable_tiles = sum(1 for x in range(width) for y in range(height) if reachable[x][y])
+        walkable_tiles = sum(1 for x in range(width) for y in range(height) if is_walkable[x][y])
         chokepoint_tiles = sum(
             1 for x in range(width) for y in range(height)
             if reachable[x][y] and is_chokepoint[x][y]
         )
-        print(f"\nmap            : {map_name} ({width} x {height})")
+        impassable = width * height - walkable_tiles
+        print()
+        print(f"map            : {map_name} ({width} x {height} = {width * height} tiles)")
+        print(f"impassable     : {impassable} tiles "
+              f"({100 * impassable // (width * height)}% water, cliff or map edge)")
+        print(f"walkable       : {walkable_tiles} tiles in {len(component_sizes)} "
+              f"disconnected pieces; largest {component_sizes[:4]}")
+        print(f"landmass used  : {reachable_tiles} tiles "
+              f"({100 * reachable_tiles // max(walkable_tiles, 1)}% of walkable), of which "
+              f"{chokepoint_tiles} are chokepoint "
+              f"({100 * chokepoint_tiles // max(reachable_tiles, 1)}%)")
         print(f"seeds          : {len(seeds)} from {seed_source}")
-        print(f"reachable      : {reachable_tiles} tiles "
-              f"({chokepoint_tiles} chokepoint, {100 * chokepoint_tiles // max(reachable_tiles, 1)}%)")
+        for reason in dropped_poi:
+            print(f"  dropped      : {reason}")
         print(f"parameters     : chokepoint_cost={chokepoint_cost} "
               f"min_area={min_area} max_regions={max_regions}")
         print(f"regions        : {len(records)}")
@@ -879,42 +1019,30 @@ def analyse_map(map_name, chokepoint_cost=CHOKEPOINT_COST, min_area=MIN_REGION_A
         "failures": failures,
         "chokepoint_fraction": chokepoint_fraction,
         "gateway_tile_count": gateway_tile_count,
+        "is_walkable": is_walkable,
+        "terrain": terrain,
+        "component_sizes": component_sizes,
+        "dropped_poi": dropped_poi,
     }
-
-
-def pick_largest_open_tile(chokepoint_width, is_walkable, width, height):
-    """Origin for the reachability flood when no start position has been captured."""
-    best = None
-    best_width = -1
-    for x in range(width):
-        for y in range(height):
-            if is_walkable[x][y] and chokepoint_width[x][y] > best_width:
-                best_width = chokepoint_width[x][y]
-                best = (x, y)
-    return best
-
 
 if __name__ == "__main__":
     result = analyse_map(MAP_NAME)
+    print(terrain_summary(result))
 
     print_region_table(result["records"])
 
-    gateway_tiles = set()
-    for entry in result["gateways"].values():
-        gateway_tiles.update(entry["tiles"])
-
     print()
-    print(render_ascii(result["region_id"], result["reachable"],
-                       result["width"], result["height"],
-                       seeds=result["seeds"], gateway_tiles=gateway_tiles))
+    print(render_ascii(result))
 
     path = export_region_id(result["map_name"], result["region_id"],
                             result["width"], result["height"])
-    print(f"\nwrote {path}")
+    print()
+    print(f"wrote {path}")
 
+    print()
     if result["failures"]:
-        print("\nINVARIANT FAILURES:")
+        print("INVARIANT FAILURES:")
         for failure in result["failures"]:
             print(f"  - {failure}")
     else:
-        print("\nAll invariants passed.")
+        print("All invariants passed.")

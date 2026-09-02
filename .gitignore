@@ -5,6 +5,7 @@ releases/
 python_helper_scripts/process_results/v3/
 python_helper_scripts/process_results/v4/
 python_helper_scripts/map_analysis/*.json
+python_helper_scripts/map_analysis/*.png
 
 spectate_map.bat
 _internal/
