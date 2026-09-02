@@ -180,6 +180,9 @@ function setupDebugMode() {
  */
 function eventStartLevel() {
 
+	debug(`POI startPositions: ${JSON.stringify(startPositions.map(p => [p.x, p.y]))}`);
+	debug(`POI derricks: ${JSON.stringify(derrickPositions.map(p => [p.x, p.y]))}`);
+
 	if (DEBUG_MODE_ON) {
 		setupDebugMode();		// Debug mode is enabled for development & automated testing 
 	}

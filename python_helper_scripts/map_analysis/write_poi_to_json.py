@@ -37,12 +37,10 @@ import json
 MAP_NAME = "gamma"
 
 # One [x, y] per player start position (index == playerID, as in `startPositions`).
-START_POSITIONS = [
-]
+START_POSITIONS =  [[0,0],[6,16],[110,20],[58,98]]
 
 # One [x, y] per oil resource on the map (as in `derrickPositions`).
-DERRICKS = [
-]
+DERRICKS = [[53,103],[107,16],[107,17],[108,17],[108,16],[7,13],[8,13],[8,12],[52,103],[52,104],[53,104],[7,12],[69,68],[42,68],[86,46],[70,25],[45,20],[53,67],[78,37],[33,42],[40,30],[47,81],[92,32],[87,24],[30,18],[61,81],[24,30]]
 
 ############################### USER CONFIG END ###############################
 
