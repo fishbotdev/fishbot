@@ -63,6 +63,7 @@ import re
 import shutil
 import subprocess
 import sys
+import zipfile
 from datetime import datetime, timezone
 from pathlib import Path
 from time import perf_counter
@@ -73,6 +74,14 @@ from time import perf_counter
 # `docs/DEVELOPMENT.md`: a portable install inside the repo, with a PRODCONFIG config directory.
 INSTALL_DIRECTORY = Path(__file__).resolve().parents[2] / "Warzone 2100"
 CONFIG_DIRECTORY = INSTALL_DIRECTORY / "PRODCONFIG"
+
+# The maps to capture, taken from the base map folders the test map packager reads. These are the
+# ORIGINAL maps that ship with the game (e.g. `3c-Gamma`), not the repackaged `<N+1>c-` copies the
+# test pipeline installs. That distinction matters here: repackaging duplicates Player 0 to add a
+# slot, which leaves a start position at the map corner that is not a real base. Capturing the
+# originals keeps that artefact out of the data entirely.
+BASE_MAPS_DIRECTORY = (Path(__file__).resolve().parents[2]
+                       / "tests" / "custom_test_map_packager" / "v4.7.0_base_maps")
 
 # Where the finished data lands. It goes straight into the analysis folder, which is what consumes it.
 OUTPUT_FILE = Path(__file__).resolve().parents[1] / "map_analysis" / "map_data.json"
@@ -113,7 +122,7 @@ DUMPER_MOD_NAME = "mapdatadumper"
 DUMPER_AI_PATH = "MapDataDumper.js"
 SPECTATOR_AI_PATH = "Spectator.js"
 
-# Matches the repackaged map naming convention, e.g. `4c-Gamma` -> 4 players.
+# Map folders are named `<players>c-<name>`, e.g. `3c-Gamma` -> 3 players.
 MAP_NAME_PATTERN = re.compile(r"^(\d+)c-")
 
 SCRIPT_DIRECTORY = Path(__file__).resolve().parent
@@ -154,33 +163,108 @@ def remove_dumper_mod() -> None:
 
 ############################## MAP DISCOVERY ##############################
 
-def discover_installed_maps() -> list:
+def parse_stock_level_names() -> dict:
     """
-    Returns [{"mapName": "4c-Gamma", "maxPlayers": 4}, ...] for the packaged maps in the config
-    directory, which are the same maps the test pipeline runs on.
+    Returns {"3c-Gamma": {"levelName": "Gamma", "players": 3}, ...} by reading `addon.lev` out of the
+    game's own `mp.wz`.
+
+    This lookup is necessary, not incidental. A challenge file names a map by its LEVEL name, which is
+    not the folder name and is not derivable from it: the folder `3c-Gamma` is the level `Gamma`, and
+    `2c-startup` is `Sk-Startup`. Guessing gets you "Map not found!".
+
+    `addon.lev` is a flat, line-based list of `<key> <value>` pairs, one block per level, so no regex
+    is needed to read it.
     """
-    maps_directory = CONFIG_DIRECTORY / "maps"
-    if not maps_directory.is_dir():
-        raise FileNotFoundError(
-            f"no maps directory at {maps_directory}. "
-            f"Run tests/run_test_generator.py first to package the maps."
-        )
+    archive_path = INSTALL_DIRECTORY / "data" / "mp.wz"
+    if not archive_path.exists():
+        raise FileNotFoundError(f"no map archive at {archive_path}")
 
-    discovered = []
-    for map_file in sorted(maps_directory.glob("*.wz")):
-        map_name = map_file.stem
+    with zipfile.ZipFile(archive_path) as archive:
+        text = archive.read("addon.lev").decode("utf-8", errors="ignore")
 
-        match = MAP_NAME_PATTERN.match(map_name)
-        if match is None:
-            print(f"  skipping {map_name}: name does not match the '<players>c-' convention")
+    levels = {}
+    level_name, players = None, None
+
+    for raw_line in text.splitlines():
+        parts = raw_line.split()
+        if not parts:
             continue
 
-        discovered.append({"mapName": map_name, "maxPlayers": int(match.group(1))})
+        key, value = parts[0], (parts[1] if len(parts) > 1 else "")
+
+        if key == "level":
+            level_name, players = value, None
+        elif key == "players" and value.isdigit():
+            players = int(value)
+        elif key == "game" and level_name is not None:
+            # e.g. "multiplay/maps/3c-Gamma.gam" -> folder "3c-Gamma"
+            folder = value.strip('"').split("/")[-1]
+            if folder.endswith(".gam"):
+                folder = folder[:-len(".gam")]
+            levels[folder] = {"levelName": level_name, "players": players}
+            level_name, players = None, None
+
+    return levels
+
+
+def discover_maps() -> list:
+    """
+    Returns [{"mapName": "3c-Gamma", "levelName": "Gamma", "maxPlayers": 3}, ...].
+
+    The base map folders are the list of WHAT to capture; the level name each one resolves to comes
+    from the game's own archive. Nothing needs installing -- these are stock maps the engine already
+    ships, unlike the repackaged copies the test pipeline builds.
+    """
+    if not BASE_MAPS_DIRECTORY.is_dir():
+        raise FileNotFoundError(f"no base maps directory at {BASE_MAPS_DIRECTORY}")
+
+    stock_levels = parse_stock_level_names()
+
+    discovered = []
+    for map_folder in sorted(BASE_MAPS_DIRECTORY.iterdir()):
+        if not map_folder.is_dir():
+            continue
+
+        map_name = map_folder.name
+
+        level = stock_levels.get(map_name)
+        if level is None:
+            print(f"  skipping {map_name}: no matching level in the game's map archive")
+            continue
+
+        match = MAP_NAME_PATTERN.match(map_name)
+        players = level["players"] or (int(match.group(1)) if match else None)
+        if players is None:
+            print(f"  skipping {map_name}: player count unknown")
+            continue
+
+        discovered.append({
+            "mapName": map_name,
+            "levelName": level["levelName"],
+            "maxPlayers": players,
+        })
 
     return discovered
 
 
 ############################## CHALLENGE FILE ##############################
+
+def remove_stale_challenge_files() -> None:
+    """
+    Clears out challenge files from an earlier run that was interrupted before it could tidy up.
+    They are harmless but they accumulate in a folder the test pipeline also writes to.
+    """
+    tests_directory = CONFIG_DIRECTORY / "tests"
+    if not tests_directory.is_dir():
+        return
+
+    stale = list(tests_directory.glob("mapdump_*.json"))
+    for challenge_path in stale:
+        challenge_path.unlink(missing_ok=True)
+
+    if stale:
+        print(f"removed {len(stale)} stale challenge file(s) from a previous run")
+
 
 def write_challenge_file(map_info: dict) -> Path:
     """
@@ -195,7 +279,8 @@ def write_challenge_file(map_info: dict) -> Path:
     config = {
         "challenge": {
             "bases": 1,
-            "map": map_name,
+            # The engine resolves a map by its level name, not the folder it lives in.
+            "map": map_info["levelName"],
             "powerLevel": 2,
             "scavengers": 0,
             "techLevel": 2,
@@ -450,11 +535,18 @@ def capture_one_map(map_info: dict) -> dict:
 
         record = parse_dump_lines(dump_lines)
 
-        # The console is cleared before each game, but confirm anyway: silently writing one map's
-        # terrain under another map's name would be near-impossible to notice later.
-        if record["mapName"] != map_name:
-            raise ValueError(f"scraped data is for {record['mapName']}, not {map_name}")
+        # The engine reports the LEVEL name, so that is what the dump comes back with. The console is
+        # cleared before each game, but confirm anyway: silently writing one map's terrain under
+        # another map's name would be near-impossible to notice later.
+        if record["mapName"] != map_info["levelName"]:
+            raise ValueError(
+                f"scraped data is for level {record['mapName']}, expected {map_info['levelName']}"
+            )
 
+        # Key the record by the folder name, which is the identity the rest of the map tooling uses
+        # and which carries the player count. The level name is kept alongside it.
+        record["levelName"] = record["mapName"]
+        record["mapName"] = map_name
         record["maxPlayers"] = map_info["maxPlayers"]
         return record
     finally:
@@ -467,8 +559,9 @@ def main() -> None:
         raise FileNotFoundError(f"warzone2100.exe not found under {INSTALL_DIRECTORY}")
 
     prepare_console()
+    remove_stale_challenge_files()
 
-    all_maps = discover_installed_maps()
+    all_maps = discover_maps()
     if ONLY_THESE_MAPS:
         all_maps = [m for m in all_maps if m["mapName"] in ONLY_THESE_MAPS]
 
