@@ -74,6 +74,21 @@ measured from the strength and force centre which the strategic layer itself act
         Time-weighted mean distance, in tiles, between every pair of fielded force centres. Low
         means the brigades are fighting as one mass, high means they are split across the map.
         Read it against the win rate: losses at high dispersion suggest defeat in detail.
+
+With `TEL_INSTRUMENT_OPPONENTS` on in `_telemetry.js`, the opposition is sampled on the same tick and
+the game can be read as a contest:
+
+  `mean_strength_ratio`
+        Time-weighted mean of (own strength / opposition strength). `1.00` means the two sides were
+        evenly matched; below it FishBot was fighting outnumbered. Samples where the opposition held
+        nothing are skipped rather than counted as an infinite ratio.
+
+  `mean_engagement_distance`
+        Time-weighted mean distance, in tiles, between the two sides' force centres. Read it with the
+        ratio: a good ratio at a large distance means FishBot massed an army it never brought to bear.
+
+In an FFA every living opponent is summed into one "the opposition", so both mean the same thing in
+a duel and in a free-for-all.
 """
 
 import math
@@ -425,18 +440,63 @@ def _mean_pairwise_distance(positions: list[tuple[float, float]]) -> float:
     return sum(distances) / len(distances)
 
 
+def _subject_player(event: dict) -> int:
+    """
+    Which player a `BRIG` sample describes, as opposed to `p`, which is always the bot that emitted it.
+
+    `o` arrived with opponent instrumentation, so a log recorded before that (or one recorded with
+    `TEL_INSTRUMENT_OPPONENTS` off) carries own-force samples only: a missing `o` means the emitter.
+    """
+
+    subject = event.get("o")
+
+    # None when no row in the file has the key; NaN when only some do, since the frame is a union of
+    # every event's columns.
+    if subject is None or subject != subject:
+        return event["p"]
+
+    return int(subject)
+
+
+def _centroid(positions: list[tuple[float, float]]) -> tuple[float, float]:
+    return (
+        sum(x for x, _ in positions) / len(positions),
+        sum(y for _, y in positions) / len(positions),
+    )
+
+
+def _fielded_positions(rows: list[dict]) -> list[tuple[float, float]]:
+    """
+    Positions of the forces in `rows` which actually held units.
+
+    A force with no units has no meaningful position (`_telemetry.js` emits 0,0 for it), so it is
+    dropped here rather than being counted or plotted.
+    """
+
+    return [
+        (x, y)
+        for row in rows
+        for x, y, count in zip(row["x"], row["y"], row["n"])
+        if count > 0
+    ]
+
+
 def extract_brigade_metrics(events: list[dict]) -> dict | None:
     """
     Computes the force metrics for a single match from its `BRIG` events.
 
-    Each `BRIG` event carries one sample of every commanded brigade, as parallel arrays:
+    Each `BRIG` event is one force sample of one player, carried as parallel arrays:
         t  game time (ms)
-        p  FishBot's player ID
-        b  brigade IDs
-        s  smoothed strength (direct-fire units only), aligned to `b`
-        n  every unit in the brigade, aligned to `b`
+        p  the player that emitted the line (always FishBot)
+        o  the player the sample describes; `o == p` is FishBot's own force
+        b  brigade IDs, or `[TEL_WHOLE_ARMY]` for an opponent, which has no brigade structure
+        s  strength - direct-fire units, smoothed for FishBot's own and raw for an opponent
+        n  every unit in the force, aligned to `b`
         x  force centre x, aligned to `b`
         y  force centre y, aligned to `b`
+
+    FishBot and its opponents are sampled on the same tick, so samples are grouped by time before
+    being weighted - otherwise the opponent row would hand the row beside it a zero-length duration.
 
     Like the oil metrics, the averages are time-weighted, so an uneven sampling cadence does not
     bias them.
@@ -447,45 +507,95 @@ def extract_brigade_metrics(events: list[dict]) -> dict | None:
     if not brigade_events:
         return None
 
-    brigade_events.sort(key=lambda e: e["t"])
+    samples_by_time = defaultdict(list)
+
+    for event in brigade_events:
+        samples_by_time[event["t"]].append(event)
+
+    sample_times = sorted(samples_by_time)
 
     end_events = [e for e in events if e.get("event") == "END"]
-    end_time_ms = max(e["t"] for e in end_events) if end_events else brigade_events[-1]["t"]
-    end_time_ms = max(end_time_ms, brigade_events[-1]["t"])
+    end_time_ms = max(e["t"] for e in end_events) if end_events else sample_times[-1]
+    end_time_ms = max(end_time_ms, sample_times[-1])
 
-    durations = _sample_durations([e["t"] for e in brigade_events], end_time_ms)
+    durations = _sample_durations(sample_times, end_time_ms)
 
-    strength_samples = []
-    unit_samples = []
+    own_strength_samples = []
+    own_unit_samples = []
     fielded_samples = []
     dispersion_samples = []
 
-    for index, event in enumerate(brigade_events):
+    opponent_strength_samples = []
+    opponent_unit_samples = []
+    strength_ratio_samples = []
+    engagement_samples = []
+
+    saw_opponent = False
+
+    for index, time_ms in enumerate(sample_times):
 
         duration = durations[index]
-        strengths = list(event["s"])
-        unit_counts = list(event["n"])
+        rows = samples_by_time[time_ms]
 
-        strength_samples.append((duration, float(sum(strengths))))
-        unit_samples.append((duration, float(sum(unit_counts))))
+        own_rows = [r for r in rows if _subject_player(r) == r["p"]]
+        opponent_rows = [r for r in rows if _subject_player(r) != r["p"]]
 
-        # A brigade with no units is a designation, not a force: it has no meaningful position, so
-        # it is excluded from both the fielded count and the dispersion.
-        fielded = [i for i, count in enumerate(unit_counts) if count > 0]
-        fielded_samples.append((duration, float(len(fielded))))
+        own_strength = sum(sum(r["s"]) for r in own_rows)
+        own_positions = _fielded_positions(own_rows)
 
-        positions = [(event["x"][i], event["y"][i]) for i in fielded]
-        dispersion_samples.append((duration, _mean_pairwise_distance(positions)))
+        own_strength_samples.append((duration, float(own_strength)))
+        own_unit_samples.append((duration, float(sum(sum(r["n"]) for r in own_rows))))
+        fielded_samples.append((duration, float(len(own_positions))))
+        dispersion_samples.append((duration, _mean_pairwise_distance(own_positions)))
 
-    strength_values = [value for _, value in strength_samples]
+        if not opponent_rows:
+            continue
 
-    return {
-        "mean_total_strength": _time_weighted_mean(strength_samples),
-        "mean_total_units": _time_weighted_mean(unit_samples),
+        # Every living opponent is summed into one "the opposition" figure, so the metric means the
+        # same thing in a duel and in an FFA.
+        saw_opponent = True
+        opponent_strength = sum(sum(r["s"]) for r in opponent_rows)
+        opponent_positions = _fielded_positions(opponent_rows)
+
+        opponent_strength_samples.append((duration, float(opponent_strength)))
+        opponent_unit_samples.append((duration, float(sum(sum(r["n"]) for r in opponent_rows))))
+
+        # Skipped rather than clamped when the opposition is wiped out: a ratio against nothing is
+        # infinite, and averaging in a made-up number would flatter whatever came before it.
+        if opponent_strength > 0:
+            strength_ratio_samples.append((duration, own_strength / opponent_strength))
+
+        if own_positions and opponent_positions:
+            own_center = _centroid(own_positions)
+            opponent_center = _centroid(opponent_positions)
+            engagement_samples.append((
+                duration,
+                math.hypot(own_center[0] - opponent_center[0], own_center[1] - opponent_center[1]),
+            ))
+
+    own_strength_values = [value for _, value in own_strength_samples]
+
+    metrics = {
+        "mean_total_strength": _time_weighted_mean(own_strength_samples),
+        "mean_total_units": _time_weighted_mean(own_unit_samples),
         "mean_brigades_fielded": _time_weighted_mean(fielded_samples),
         "mean_brigade_dispersion": _time_weighted_mean(dispersion_samples),
-        "peak_total_strength": max(strength_values) if strength_values else 0.0,
+        "peak_total_strength": max(own_strength_values) if own_strength_values else 0.0,
     }
+
+    # Only present when the bot under test had opponent instrumentation switched on, so a run without
+    # it reports exactly the keys it always did.
+    if saw_opponent:
+        opponent_strength_values = [value for _, value in opponent_strength_samples]
+        metrics.update({
+            "mean_opponent_strength": _time_weighted_mean(opponent_strength_samples),
+            "mean_opponent_units": _time_weighted_mean(opponent_unit_samples),
+            "peak_opponent_strength": max(opponent_strength_values) if opponent_strength_values else 0.0,
+            "mean_strength_ratio": _time_weighted_mean(strength_ratio_samples),
+            "mean_engagement_distance": _time_weighted_mean(engagement_samples),
+        })
+
+    return metrics
 
 
 # Dispatch table: event name -> function computing that event's metrics for one match.
@@ -716,6 +826,20 @@ def print_mode_summary(mode_name: str, tests: list[dict]) -> None:
             f"brigades  {fielded:>5.1f}   "
             f"spread {dispersion:.1f} tiles"
         )
+
+        # Only present when the bot under test also instrumented its opponents.
+        if any("mean_strength_ratio" in test for test in tests):
+
+            ratio = _mean(tests, "mean_strength_ratio")
+
+            print(
+                f"     "
+                f"           "
+                f"vs enemy  {ratio:>5.2f}   "
+                f"[{make_bar(min(ratio / 2.0, 1.0))}]"
+                f"   {strength:.1f} vs {_mean(tests, 'mean_opponent_strength'):.1f}"
+                f"   {_mean(tests, 'mean_engagement_distance'):.0f} tiles apart"
+            )
 
     worst = min(tests, key=lambda t: t["mean_fair_share_contested"] or 0.0)
     worst_fair_share = worst["mean_fair_share_contested"] or 0.0

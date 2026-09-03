@@ -280,10 +280,15 @@ def telemetry_path_for(in_progress_file_path: Path) -> Path:
 
 #################################### TEST RUNNERS ####################################
 
-# Telemetry costs ~13.5 console lines per minute of game time, on top of the game's own output. At 1000
-# lines the scrape covered ~35 minutes: measured truncation was 0% below 35 min, 67% at 35-45 min and 100%
-# beyond 60 min. 3000 covers the longest game observed (82 min) with headroom. The console buffer height
-# must be at least this, or `windows_scrape_terminal_history` will warn and read less.
+# Telemetry costs ~13.5 console lines per minute of game time for the oil events, on top of the game's
+# own output. At 1000 lines the scrape covered ~35 minutes: measured truncation was 0% below 35 min, 67%
+# at 35-45 min and 100% beyond 60 min. 3000 covers the longest game observed (82 min) with headroom. The
+# console buffer height must be at least this, or `windows_scrape_terminal_history` will warn and read less.
+#
+# Force telemetry (`BRIG`) adds 6 lines per minute for FishBot, plus 6 per living opponent when
+# `TEL_INSTRUMENT_OPPONENTS` is on in `_telemetry.js` - so ~25 lines per minute in a duel and ~38 in a
+# 4-player FFA. A duel still fits comfortably; if a long FFA starts reporting truncation, turn opponent
+# instrumentation off before raising this, since it is the larger and less interesting half of the cost.
 CONSOLE_LINES_TO_SCRAPE = 3000
 
 

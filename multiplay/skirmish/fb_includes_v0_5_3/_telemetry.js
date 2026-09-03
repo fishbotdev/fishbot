@@ -37,9 +37,13 @@
  * infer them from surrounding lines. `eventName` is the consumer's dispatch key.
  * `tests/_telemetry.py` is the only consumer; keep the two in step.
  *
+ * `p` is always FishBot itself: it says who emitted the line, not who the line is about. An event
+ * describing another player carries that player in `o` (as `BRIG` does when opponent instrumentation
+ * is on), so `o === p` reads as "this is FishBot's own".
+ *
  * Events: `OIL` periodic oil position | `OILCMT` trucks committed to a derrick |
  * `OILRES` how that commitment ended | `OILLOST` a derrick destroyed |
- * `BRIG` periodic brigade strength and position | `END` game finished.
+ * `BRIG` periodic force strength and position, per player | `END` game finished.
  *
  * --- DESIGN INVARIANTS ---
  *
@@ -65,6 +69,24 @@
  */
 
 const TEL_SCHEMA_VERSION = 1;
+
+/**
+ * Whether `BRIG` also samples the opponents' forces, so a game can be read as a contest rather than
+ * as FishBot alone. Set to `false` to sample FishBot only: the opponent lines then cost nothing at
+ * all, not even the unit enumeration behind them.
+ *
+ * This reads the opponents' units directly. That is only sound because telemetry is an observer -
+ * nothing here feeds a decision, and the bot's own intelligence still comes from `hq_toc.js`. Do not
+ * route any of this into the bot's own reasoning: it would be cheating, and it would invalidate
+ * every test result measured against it.
+ */
+const TEL_INSTRUMENT_OPPONENTS = true;
+
+/**
+ * `b` entry used when the subject has no brigade structure to report - i.e. an opponent, whose army
+ * is emitted as a single force. Negative so it can never collide with a real brigade ID.
+ */
+const TEL_WHOLE_ARMY = -1;
 
 /** Why an oil-capture commitment failed. Emitted as `why` on an `OILRES` event. */
 const TEL_FAILURE_REASON = {
@@ -139,6 +161,7 @@ class Telemetry {
 		this.#emit('BRIG', {
 			't': gameTime,
 			'p': me,
+			'o': me,		// this sample is FishBot's own; an opponent's carries their player ID
 			'b': brigadeIDs,
 			// `s` is smoothed and counts direct-fire units only, so `n` (every unit in the brigade)
 			// is emitted alongside it to tell "understrength" apart from "decaying after a fight".
@@ -147,6 +170,77 @@ class Telemetry {
 			'x': brigadeIDs.map(id => Math.round(state.brigades[id].location.x)),
 			'y': brigadeIDs.map(id => Math.round(state.brigades[id].location.y)),
 		});
+
+		if (!TEL_INSTRUMENT_OPPONENTS) {
+			return;
+		}
+
+		state.enumLivingPlayers().forEach(playerID => {
+			if (isEnemy(playerID)) {
+				this.#opponentSample(playerID);
+			}
+		});
+	}
+
+	/**
+	 * Emits one opponent's army as a `BRIG` sample, so it can be read against FishBot's own on the
+	 * same timeline. The opponent has no brigade structure to report, so its whole army is emitted as
+	 * a single force under `TEL_WHOLE_ARMY`.
+	 *
+	 * `s` counts direct-fire units, matching what brigade `strength` counts - but unsmoothed, because
+	 * smoothing exists to stop FishBot's *own* estimator flapping, and an observer wants the reading
+	 * as it is. Consumers comparing the two should expect the opponent's to be the twitchier series.
+	 * @param {number} playerID
+	 * @returns {void}
+	 */
+	#opponentSample(playerID) {
+		const units = enumDroid(playerID);
+		const directFireUnits = units.filter(droid => !droid.hasIndirect);
+		const center = this.#armyCenter(directFireUnits);
+
+		this.#emit('BRIG', {
+			't': gameTime,
+			'p': me,
+			'o': playerID,
+			'b': [TEL_WHOLE_ARMY],
+			's': [directFireUnits.length],
+			'n': [units.length],
+			'x': [center.x],
+			'y': [center.y],
+		});
+	}
+
+	/**
+	 * Approximates where an army is, mirroring `getForceCenterLoc()` in `hq_g3_ground_ops.js` so that
+	 * an opponent's position is measured the same way FishBot measures its own: a per-axis median
+	 * (outlier-resistant, so stragglers do not drag the estimate backwards), snapped to the nearest
+	 * real unit because a per-axis median is not a true 2D median and can land on an empty tile.
+	 * @param {DroidObject[]} units Direct-fire units. May be empty.
+	 * @returns {{x: number, y: number}} `{x: 0, y: 0}` if there are no units; `n` is then 0 too, so
+	 *                                   the consumer discards the position rather than plotting it.
+	 */
+	#armyCenter(units) {
+		if (units.length === 0) {
+			return {'x': 0, 'y': 0};
+		}
+
+		const estimate = {
+			'x': arrayMedian(units.map(droid => droid.x)),
+			'y': arrayMedian(units.map(droid => droid.y)),
+		};
+
+		let nearestUnit = units[0];
+		let nearestDistSq = Infinity;
+
+		units.forEach(droid => {
+			const currDistSq = distSq(droid.x, estimate.x, droid.y, estimate.y);
+			if (currDistSq < nearestDistSq) {
+				nearestDistSq = currDistSq;
+				nearestUnit = droid;
+			}
+		});
+
+		return {'x': nearestUnit.x, 'y': nearestUnit.y};
 	}
 
 	/**

@@ -143,6 +143,17 @@ def print_metrics(label: str, events: list[dict], metrics: dict) -> None:
         print(f"  brigades fielded {metrics['mean_brigades_fielded']:>5.1f}"
               f"   spread {metrics['mean_brigade_dispersion']:.1f} tiles between force centres")
 
+        # Opponent telemetry is only present when the bot ran with TEL_INSTRUMENT_OPPONENTS on.
+        if "mean_strength_ratio" in metrics:
+            ratio = metrics["mean_strength_ratio"]
+            print(f"  enemy strength   {metrics['mean_opponent_strength']:>5.1f}"
+                  f"   peak {metrics['peak_opponent_strength']:.1f}"
+                  f", {metrics['mean_opponent_units']:.1f} units total")
+            print(f"  strength ratio   {ratio:>5.2f}  [{make_bar(min(ratio / 2.0, 1.0))}]"
+                  f"   (above 1.00 means FishBot out-massed the opposition)")
+            print(f"  forces apart     {metrics['mean_engagement_distance']:>5.1f} tiles"
+                  f" between force centres")
+
     if metrics["truncated"]:
         print()
         print(f"  WARNING: the first sample arrives late, so early telemetry is missing from this log.")
