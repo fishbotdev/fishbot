@@ -44,7 +44,20 @@ import region_analysis as ra
 
 ############################## USER CONFIG START ##############################
 
-MAP_NAME = "3c-Gamma"
+MAP_NAME_LIST = ['2c-urbanchasm', '2c-Roughness', '2c-startup', '2c-Vision', '2c-DustyMaze', '2c-highground',
+                 '3c-Gamma', '3c-Monocot_i',
+                 '4c-basingstoke', '4c-cockpit', '4c-DustyMaze-2v2', '4c-DustyMaze-FFA', '4c-fishnet', '4c-greatrift',
+                 '4c-littleegypt', '4c-mountain', '4c-pyramidal', '4c-rollinghills', '4c-rush', '4c-rush2',
+                 '4c-urban-chaos', '4c-urbanduel', '4c-valleyofdeath',
+                 '5c-bloat',
+                 '6c-Entropy', '6c-Melting',
+                 '7c-Thales',
+                 '8c-bananas', '8c-beggarskanyon', '8c-clover', '8c-concreteplayground', '8c-gridlock',
+                 '8c-hidensneak', '8c-manhattan', '8c-mizamaze', '8c-sandcastles', '8c-thepit', '8c-wheeloffortune',
+                 '8c-yinyang', '8c-cockate', '8c-ziggurat',
+                 '9c-WindFury']
+
+# MAP_NAME_LIST = []
 
 VIEW = "detail"        # "detail" or "sweep"
 
@@ -259,22 +272,24 @@ def show_or_save():
 
 
 if __name__ == "__main__":
-    if VIEW == "sweep":
-        plot_sweep(MAP_NAME)
-    else:
-        result = ra.analyse_map(MAP_NAME, chokepoint_cost=CHOKEPOINT_COST,
-                                min_area=MIN_REGION_AREA)
-        print(ra.terrain_summary(result))
-        ra.print_region_table(result["records"])
+    for MAP_NAME in MAP_NAME_LIST:
 
-        print()
-        if result["failures"]:
-            print("INVARIANT FAILURES:")
-            for failure in result["failures"]:
-                print("  - {}".format(failure))
+        if VIEW == "sweep":
+            plot_sweep(MAP_NAME)
         else:
-            print("All invariants passed.")
+            result = ra.analyse_map(MAP_NAME, chokepoint_cost=CHOKEPOINT_COST,
+                                    min_area=MIN_REGION_AREA)
+            print(ra.terrain_summary(result))
+            ra.print_region_table(result["records"])
 
-        plot_detail(result)
+            print()
+            if result["failures"]:
+                print("INVARIANT FAILURES:")
+                for failure in result["failures"]:
+                    print("  - {}".format(failure))
+            else:
+                print("All invariants passed.")
 
-    show_or_save()
+            plot_detail(result)
+
+        show_or_save()
