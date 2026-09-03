@@ -18,7 +18,9 @@ tests/custom_test_map_packager/*/
 *.jsonl
 *.json
 !multiplay/skirmish/**/*.json
+!python_helper_scripts/map_data_generator/*.json
 *.pyc
+__pycache__/
 *.lprof
 *.exe
 .claude/

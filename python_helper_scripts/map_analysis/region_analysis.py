@@ -45,7 +45,9 @@ from collections import deque
 
 ############################## USER CONFIG START ##############################
 
-MAP_NAME = "gamma"
+# Any map name in `map_data.json`, or None to summarise every map in it. Run this file with an
+# invalid name to have the available ones listed.
+MAP_NAME = "3c-Gamma"
 
 # Chokepoint traversal cost. 1 == chokepoints are ordinary ground, so regions become a
 # plain Voronoi of the seeds and ignore terrain entirely; larger == frontiers stall in the
@@ -92,15 +94,16 @@ NO_REGION = -1
 
 ############################## LOADING ##############################
 
-def load_grid_xy(file_name):
-    """
-    Reads one of the `write_map_data_to_json.py` captures (a JSON list of
-    comma-separated rows, one row per y) and returns (grid, width, height) where
-    `grid[x][y]` is an int -- the FishBot indexing convention.
-    """
-    with open(f"{file_name}.json", "r") as f:
-        raw_rows = json.load(f)
+# Every map's terrain and points of interest in one file, keyed by map name, as produced by
+# `../map_data_generator/generate_map_data.py`. This is the only input the analysis takes.
+MAP_DATA_FILE = "map_data.json"
 
+
+def rows_to_grid_xy(raw_rows):
+    """
+    Turns a list of comma-separated rows (one per y, the format every capture in this folder uses)
+    into (grid, width, height) where `grid[x][y]` is an int -- the FishBot indexing convention.
+    """
     rows = [[int(float(v)) for v in row.split(",")] for row in raw_rows]
 
     height = len(rows)
@@ -111,6 +114,35 @@ def load_grid_xy(file_name):
 
     grid = [[rows[y][x] for y in range(height)] for x in range(width)]
     return grid, width, height
+def load_all_map_data():
+    """Returns the whole `map_data.json` payload, keyed by map name under "maps"."""
+    if not os.path.exists(MAP_DATA_FILE):
+        raise FileNotFoundError(
+            f"{MAP_DATA_FILE} not found. Generate it with "
+            f"../map_data_generator/generate_map_data.py"
+        )
+
+    with open(MAP_DATA_FILE, "r") as f:
+        return json.load(f)
+
+
+def list_available_maps():
+    """Map names available to analyse, in sorted order."""
+    return sorted(load_all_map_data().get("maps", {}))
+
+
+def load_map_record(map_name):
+    """Returns one map's entry, or raises naming what is actually available."""
+    maps = load_all_map_data().get("maps", {})
+
+    record = maps.get(map_name)
+    if record is None:
+        raise KeyError(
+            f"{map_name!r} is not in {MAP_DATA_FILE}. "
+            f"{len(maps)} maps available, e.g. {sorted(maps)[:3]}"
+        )
+
+    return record
 
 
 def create_grid(width, height, value):
@@ -310,30 +342,6 @@ def snap_to_reachable(point, reachable, width, height, max_radius=None):
                 if reachable[nx][ny]:
                     return (nx, ny)
     return None
-
-
-def load_points_of_interest(map_name):
-    """
-    Reads `<map>_poi.json`, if present:
-        {"startPositions": [[x, y], ...], "derricks": [[x, y], ...]}
-
-    Capture it the same way the terrain grids are captured -- print `startPositions` and
-    `derrickPositions` from the running bot and save them next to the terrain JSON.
-    Returns None when no capture exists.
-    """
-    path = f"{map_name}_poi.json"
-    if not os.path.exists(path):
-        return None
-
-    with open(path, "r") as f:
-        poi = json.load(f)
-
-    return {
-        "startPositions": [tuple(p) for p in poi.get("startPositions", [])],
-        "derricks": [tuple(p) for p in poi.get("derricks", [])],
-    }
-
-
 def nearest_base_seed(point, seeds, max_distance):
     """Returns the base seed within `max_distance` of `point`, nearest first, else None."""
     best = None
@@ -400,43 +408,6 @@ def build_seeds_from_poi(poi, reachable, width, height):
         seeds.append({"tile": tile, "kind": "oil", "derricks": reachable_derricks})
 
     return deduplicate_seeds(seeds), dropped
-
-
-def build_seeds_from_open_ground(chokepoint_width, reachable, width, height):
-    """
-    Fallback seeding for a map whose points of interest have not been captured yet.
-
-    Picks the most open tiles on the map (highest corridor width) subject to a minimum
-    separation. Open pockets are where bases and oil clusters actually sit, so this
-    approximates the real seed set well enough to judge whether the FLOOD is behaving --
-    which is what Stage A0 is really asking. It is not a substitute for a real
-    `<map>_poi.json` capture.
-    """
-    candidates = []
-    for x in range(width):
-        for y in range(height):
-            if reachable[x][y]:
-                candidates.append((chokepoint_width[x][y], x, y))
-    candidates.sort(reverse=True)
-
-    # Seeds must be spread out, at roughly the spacing real points of interest sit at.
-    # Scaled off the map's short side so it holds on small and large maps alike; floored
-    # at the derrick clustering radius, since two seeds closer than that would have been
-    # one cluster anyway.
-    separation = max(DERRICK_CLUSTER_RADIUS, min(width, height) // 8)
-    separation_sq = separation ** 2
-
-    seeds = []
-    for _, x, y in candidates:
-        if len(seeds) >= MAX_REGIONS:
-            break
-        if any((s["tile"][0] - x) ** 2 + (s["tile"][1] - y) ** 2 < separation_sq for s in seeds):
-            continue
-        seeds.append({"tile": (x, y), "kind": "open"})
-
-    return seeds
-
-
 def deduplicate_seeds(seeds):
     """Two points of interest can snap to the same tile; one tile can only seed one region."""
     seen = set()
@@ -931,11 +902,71 @@ def export_region_id(map_name, region_id, width, height):
     return path
 
 
+############################## ALL MAPS ##############################
+
+def summarise_all_maps(chokepoint_cost=CHOKEPOINT_COST, min_area=MIN_REGION_AREA,
+                       max_regions=MAX_REGIONS):
+    """
+    Runs the decomposition over every map and prints one line each.
+
+    This is the check that the parameters generalise. Tuning them against a single map says nothing
+    about a wide-open map with no necks to find, or a corridor map that wants to shatter into
+    fragments -- and both are in here.
+    """
+    map_names = list_available_maps()
+
+    print(f"\n{len(map_names)} maps, chokepoint_cost={chokepoint_cost} "
+          f"min_area={min_area} max_regions={max_regions}")
+    print(f"\n{'map':<24} {'size':>9} {'land':>6} {'seeds':>6} {'regions':>8} "
+          f"{'gateways':>9} {'bound':>6} {'onChoke':>8}  status")
+    print("-" * 104)
+
+    failures = []
+    for map_name in map_names:
+        try:
+            result = analyse_map(map_name, chokepoint_cost=chokepoint_cost, min_area=min_area,
+                                 max_regions=max_regions, verbose=False)
+        except Exception as error:
+            print(f"{map_name:<24} {'-':>9} {'-':>6} {'-':>6} {'-':>8} {'-':>9} {'-':>6} {'-':>8}  "
+                  f"ERROR: {error}")
+            failures.append((map_name, str(error)))
+            continue
+
+        land = sum(1 for x in range(result["width"]) for y in range(result["height"])
+                   if result["reachable"][x][y])
+        status = "ok" if not result["failures"] else "; ".join(result["failures"])[:34]
+        if result["failures"]:
+            failures.append((map_name, status))
+
+        print(f"{map_name:<24} {result['width']}x{result['height']:<5} {land:>6} "
+              f"{len(result['seeds']):>6} {len(result['records']):>8} "
+              f"{len(result['gateways']):>9} {result['gateway_tile_count']:>6} "
+              f"{100 * result['chokepoint_fraction']:>7.0f}%  {status}")
+
+    print(f"\n{len(map_names) - len(failures)}/{len(map_names)} maps decomposed cleanly")
+    for map_name, reason in failures:
+        print(f"  {map_name}: {reason}")
+
+    return failures
+
+
 ############################## ENTRY POINT ##############################
+
+def load_map_inputs(map_name):
+    """Returns (terrain, width, height, poi) for a map, from `map_data.json`."""
+    record = load_map_record(map_name)
+
+    terrain, width, height = rows_to_grid_xy(record["terrainType"])
+    poi = {
+        "startPositions": [tuple(p) for p in record["startPositions"]],
+        "derricks": [tuple(p) for p in record["derricks"]],
+    }
+    return terrain, width, height, poi
+
 
 def analyse_map(map_name, chokepoint_cost=CHOKEPOINT_COST, min_area=MIN_REGION_AREA,
                 max_regions=MAX_REGIONS, verbose=True):
-    terrain, width, height = load_grid_xy(f"{map_name}_terrainType")
+    terrain, width, height, poi = load_map_inputs(map_name)
 
     is_walkable = build_is_walkable(terrain, width, height)
     chokepoint_width, is_chokepoint = compute_chokepoints(is_walkable, width, height)
@@ -944,15 +975,7 @@ def analyse_map(map_name, chokepoint_cost=CHOKEPOINT_COST, min_area=MIN_REGION_A
     # derived from the terrain alone. Points of interest are fitted to it afterwards.
     reachable, component_sizes = find_largest_walkable_component(is_walkable, width, height)
 
-    poi = load_points_of_interest(map_name)
-
-    if poi:
-        seeds, dropped_poi = build_seeds_from_poi(poi, reachable, width, height)
-        seed_source = f"{map_name}_poi.json"
-    else:
-        seeds = build_seeds_from_open_ground(chokepoint_width, reachable, width, height)
-        dropped_poi = []
-        seed_source = "open-ground fallback (no _poi.json capture)"
+    seeds, dropped_poi = build_seeds_from_poi(poi, reachable, width, height)
 
     if not seeds:
         raise ValueError(
@@ -995,7 +1018,7 @@ def analyse_map(map_name, chokepoint_cost=CHOKEPOINT_COST, min_area=MIN_REGION_A
               f"({100 * reachable_tiles // max(walkable_tiles, 1)}% of walkable), of which "
               f"{chokepoint_tiles} are chokepoint "
               f"({100 * chokepoint_tiles // max(reachable_tiles, 1)}%)")
-        print(f"seeds          : {len(seeds)} from {seed_source}")
+        print(f"seeds          : {len(seeds)} from {MAP_DATA_FILE}")
         for reason in dropped_poi:
             print(f"  dropped      : {reason}")
         print(f"parameters     : chokepoint_cost={chokepoint_cost} "
@@ -1026,6 +1049,10 @@ def analyse_map(map_name, chokepoint_cost=CHOKEPOINT_COST, min_area=MIN_REGION_A
     }
 
 if __name__ == "__main__":
+    if MAP_NAME is None:
+        summarise_all_maps()
+        raise SystemExit(0)
+
     result = analyse_map(MAP_NAME)
     print(terrain_summary(result))
 
