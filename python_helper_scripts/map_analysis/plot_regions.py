@@ -44,7 +44,7 @@ import region_analysis as ra
 
 ############################## USER CONFIG START ##############################
 
-MAP_NAME = "gamma"
+MAP_NAME = "3c-Gamma"
 
 VIEW = "detail"        # "detail" or "sweep"
 
