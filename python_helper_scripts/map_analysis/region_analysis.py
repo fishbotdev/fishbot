@@ -92,15 +92,16 @@ NO_REGION = -1
 
 ############################## LOADING ##############################
 
-def load_grid_xy(file_name):
-    """
-    Reads one of the `write_map_data_to_json.py` captures (a JSON list of
-    comma-separated rows, one row per y) and returns (grid, width, height) where
-    `grid[x][y]` is an int -- the FishBot indexing convention.
-    """
-    with open(f"{file_name}.json", "r") as f:
-        raw_rows = json.load(f)
+# Every map's data in one file, keyed by map name, as produced by
+# `../map_data_generator/generate_map_data.py`. Preferred over the older one-file-per-map captures.
+MAP_DATA_FILE = "map_data.json"
 
+
+def rows_to_grid_xy(raw_rows):
+    """
+    Turns a list of comma-separated rows (one per y, the format every capture in this folder uses)
+    into (grid, width, height) where `grid[x][y]` is an int -- the FishBot indexing convention.
+    """
     rows = [[int(float(v)) for v in row.split(",")] for row in raw_rows]
 
     height = len(rows)
@@ -111,6 +112,29 @@ def load_grid_xy(file_name):
 
     grid = [[rows[y][x] for y in range(height)] for x in range(width)]
     return grid, width, height
+
+
+def load_grid_xy(file_name):
+    """Reads a single-grid capture written by `write_map_data_to_json.py`."""
+    with open(f"{file_name}.json", "r") as f:
+        raw_rows = json.load(f)
+
+    return rows_to_grid_xy(raw_rows)
+
+
+def load_map_record(map_name):
+    """
+    Returns one map's entry from the combined `map_data.json`, or None if that file does not exist or
+    does not have the map. Callers fall back to the per-map captures, so a map captured by hand before
+    the generator existed still works.
+    """
+    if not os.path.exists(MAP_DATA_FILE):
+        return None
+
+    with open(MAP_DATA_FILE, "r") as f:
+        data = json.load(f)
+
+    return data.get("maps", {}).get(map_name)
 
 
 def create_grid(width, height, value):
@@ -933,9 +957,27 @@ def export_region_id(map_name, region_id, width, height):
 
 ############################## ENTRY POINT ##############################
 
+def load_map_inputs(map_name):
+    """
+    Returns (terrain, width, height, poi, source) for a map, preferring the combined
+    `map_data.json` and falling back to the older per-map captures.
+    """
+    record = load_map_record(map_name)
+    if record is not None:
+        terrain, width, height = rows_to_grid_xy(record["terrainType"])
+        poi = {
+            "startPositions": [tuple(p) for p in record.get("startPositions", [])],
+            "derricks": [tuple(p) for p in record.get("derricks", [])],
+        }
+        return terrain, width, height, poi, MAP_DATA_FILE
+
+    terrain, width, height = load_grid_xy(f"{map_name}_terrainType")
+    return terrain, width, height, load_points_of_interest(map_name), f"{map_name}_poi.json"
+
+
 def analyse_map(map_name, chokepoint_cost=CHOKEPOINT_COST, min_area=MIN_REGION_AREA,
                 max_regions=MAX_REGIONS, verbose=True):
-    terrain, width, height = load_grid_xy(f"{map_name}_terrainType")
+    terrain, width, height, poi, poi_source = load_map_inputs(map_name)
 
     is_walkable = build_is_walkable(terrain, width, height)
     chokepoint_width, is_chokepoint = compute_chokepoints(is_walkable, width, height)
@@ -944,11 +986,9 @@ def analyse_map(map_name, chokepoint_cost=CHOKEPOINT_COST, min_area=MIN_REGION_A
     # derived from the terrain alone. Points of interest are fitted to it afterwards.
     reachable, component_sizes = find_largest_walkable_component(is_walkable, width, height)
 
-    poi = load_points_of_interest(map_name)
-
     if poi:
         seeds, dropped_poi = build_seeds_from_poi(poi, reachable, width, height)
-        seed_source = f"{map_name}_poi.json"
+        seed_source = poi_source
     else:
         seeds = build_seeds_from_open_ground(chokepoint_width, reachable, width, height)
         dropped_poi = []
