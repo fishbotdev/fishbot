@@ -38,7 +38,8 @@
  * `tests/_telemetry.py` is the only consumer; keep the two in step.
  *
  * Events: `OIL` periodic oil position | `OILCMT` trucks committed to a derrick |
- * `OILRES` how that commitment ended | `OILLOST` a derrick destroyed | `END` game finished.
+ * `OILRES` how that commitment ended | `OILLOST` a derrick destroyed |
+ * `BRIG` periodic brigade strength and position | `END` game finished.
  *
  * --- DESIGN INVARIANTS ---
  *
@@ -115,6 +116,36 @@ class Telemetry {
 			'alive': livingPlayers,
 			'der': derricksByLivingPlayer,
 			'dom': oilDominance,
+		});
+	}
+
+	/**
+	 * Records where FishBot's brigades are and how strong they are, as the strategic layer sees them.
+	 * Every brigade goes in one event as parallel arrays (as `OIL` does for players) so that a sample
+	 * costs one console row rather than one per brigade. Should a brigade ever carry enough fields to
+	 * threaten the line width, split per brigade rather than widening this line (design invariant 4).
+	 * Nothing is computed here: `strength` and `location` are read from `state.brigades`, which is
+	 * refreshed far faster than this samples (in `hq_toc.js` 30/min and `hq_g3_ground_ops.js` 20/min
+	 * respectively), and the unit count comes from the brigade's group.
+	 * @param {worldState} state
+	 * @param {number[]} brigadeIDs The brigades actually commanded, i.e. `hq.BRIGADE_DESIGNATIONS`.
+	 * @returns {void}
+	 */
+	brigadeSample(state, brigadeIDs) {
+		if (!TELEMETRY_ON) {
+			return;		// this function does real work (a group lookup per brigade), so check first
+		}
+
+		this.#emit('BRIG', {
+			't': gameTime,
+			'p': me,
+			'b': brigadeIDs,
+			// `s` is smoothed and counts direct-fire units only, so `n` (every unit in the brigade)
+			// is emitted alongside it to tell "understrength" apart from "decaying after a fight".
+			's': brigadeIDs.map(id => Math.round(state.brigades[id].strength)),
+			'n': brigadeIDs.map(id => state.g.enumGroup(id).length),
+			'x': brigadeIDs.map(id => Math.round(state.brigades[id].location.x)),
+			'y': brigadeIDs.map(id => Math.round(state.brigades[id].location.y)),
 		});
 	}
 

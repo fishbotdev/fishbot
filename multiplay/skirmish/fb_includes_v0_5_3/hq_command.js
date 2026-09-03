@@ -266,6 +266,9 @@ class CommandCenter {
 			oilDominance: oilDominance,
 		});
 
+		// Report the forces those decisions are made with, on the same clock as the oil sample above.
+		telemetry.brigadeSample(state, this.BRIGADE_DESIGNATIONS);
+
 		/*
 			CONSTRUCTION PARAMETERS
 		*/

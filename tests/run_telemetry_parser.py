@@ -55,7 +55,28 @@ Note on `mean_fair_share` in duels: once the opponent is knocked out, the even-s
 collapses to the whole map, so the ratio *drops* at the moment FishBot wins. `mean_fair_share_contested`
 is the same average restricted to the period where more than one player was alive, and is therefore
 the better measure of capture skill in a duel.
+
+--- THE FORCE METRICS ---
+
+FishBot fights with brigades (`hq_command.js`, `BRIGADE_DESIGNATIONS`), so its military position is
+measured from the strength and force centre which the strategic layer itself acted on.
+
+  `mean_total_strength`
+        Time-weighted mean of the summed brigade strength. `strength` is smoothed and counts only
+        direct-fire units (see `_telemetry.js`), so it is what FishBot *believes* it can fight with,
+        not a raw headcount - `mean_total_units` is the raw headcount beside it.
+
+  `mean_brigades_fielded`
+        Time-weighted mean number of brigades that actually held units. Brigades with no units are
+        designations rather than forces, and are excluded from the spread below.
+
+  `mean_brigade_dispersion`
+        Time-weighted mean distance, in tiles, between every pair of fielded force centres. Low
+        means the brigades are fighting as one mass, high means they are split across the map.
+        Read it against the win rate: losses at high dispersion suggest defeat in detail.
 """
+
+import math
 
 import _telemetry
 from run_result_parser import make_bar, read_json
@@ -384,12 +405,96 @@ def extract_derrick_series(events: list[dict]) -> dict | None:
     }
 
 
+def _mean_pairwise_distance(positions: list[tuple[float, float]]) -> float:
+    """
+    Mean distance in tiles between every pair of force centres.
+
+    This is the concentration measure: 0 with fewer than two brigades in the field, small when the
+    brigades are stacked, large when they are spread across the map.
+    """
+
+    if len(positions) < 2:
+        return 0.0
+
+    distances = [
+        math.hypot(positions[i][0] - positions[j][0], positions[i][1] - positions[j][1])
+        for i in range(len(positions))
+        for j in range(i + 1, len(positions))
+    ]
+
+    return sum(distances) / len(distances)
+
+
+def extract_brigade_metrics(events: list[dict]) -> dict | None:
+    """
+    Computes the force metrics for a single match from its `BRIG` events.
+
+    Each `BRIG` event carries one sample of every commanded brigade, as parallel arrays:
+        t  game time (ms)
+        p  FishBot's player ID
+        b  brigade IDs
+        s  smoothed strength (direct-fire units only), aligned to `b`
+        n  every unit in the brigade, aligned to `b`
+        x  force centre x, aligned to `b`
+        y  force centre y, aligned to `b`
+
+    Like the oil metrics, the averages are time-weighted, so an uneven sampling cadence does not
+    bias them.
+    """
+
+    brigade_events = [e for e in events if e.get("event") == "BRIG"]
+
+    if not brigade_events:
+        return None
+
+    brigade_events.sort(key=lambda e: e["t"])
+
+    end_events = [e for e in events if e.get("event") == "END"]
+    end_time_ms = max(e["t"] for e in end_events) if end_events else brigade_events[-1]["t"]
+    end_time_ms = max(end_time_ms, brigade_events[-1]["t"])
+
+    durations = _sample_durations([e["t"] for e in brigade_events], end_time_ms)
+
+    strength_samples = []
+    unit_samples = []
+    fielded_samples = []
+    dispersion_samples = []
+
+    for index, event in enumerate(brigade_events):
+
+        duration = durations[index]
+        strengths = list(event["s"])
+        unit_counts = list(event["n"])
+
+        strength_samples.append((duration, float(sum(strengths))))
+        unit_samples.append((duration, float(sum(unit_counts))))
+
+        # A brigade with no units is a designation, not a force: it has no meaningful position, so
+        # it is excluded from both the fielded count and the dispersion.
+        fielded = [i for i, count in enumerate(unit_counts) if count > 0]
+        fielded_samples.append((duration, float(len(fielded))))
+
+        positions = [(event["x"][i], event["y"][i]) for i in fielded]
+        dispersion_samples.append((duration, _mean_pairwise_distance(positions)))
+
+    strength_values = [value for _, value in strength_samples]
+
+    return {
+        "mean_total_strength": _time_weighted_mean(strength_samples),
+        "mean_total_units": _time_weighted_mean(unit_samples),
+        "mean_brigades_fielded": _time_weighted_mean(fielded_samples),
+        "mean_brigade_dispersion": _time_weighted_mean(dispersion_samples),
+        "peak_total_strength": max(strength_values) if strength_values else 0.0,
+    }
+
+
 # Dispatch table: event name -> function computing that event's metrics for one match.
 # Add an entry here when a new telemetry event type is introduced (see the header).
 EVENT_EXTRACTORS = {
     "OIL": extract_oil_metrics,
     "OILCMT": extract_commitment_metrics,
     "OILLOST": extract_loss_metrics,
+    "BRIG": extract_brigade_metrics,
 }
 
 
@@ -587,6 +692,29 @@ def print_mode_summary(mode_name: str, tests: list[dict]) -> None:
             f"[{make_bar(rate)}]"
             f"   {converted} built / {resolved} resolved"
             f"   ({failed} failed, {aborted} aborted, {unresolved} unfinished)"
+        )
+
+    # Only present once the bot under test emits force telemetry.
+    if any("mean_total_strength" in test for test in tests):
+
+        strength = _mean(tests, "mean_total_strength")
+        units = _mean(tests, "mean_total_units")
+        fielded = _mean(tests, "mean_brigades_fielded")
+        dispersion = _mean(tests, "mean_brigade_dispersion")
+
+        print(
+            f"     "
+            f"           "
+            f"strength  {strength:>5.1f}   "
+            f"peak {_mean(tests, 'peak_total_strength'):.1f}"
+            f"   units {units:.1f}"
+        )
+
+        print(
+            f"     "
+            f"           "
+            f"brigades  {fielded:>5.1f}   "
+            f"spread {dispersion:.1f} tiles"
         )
 
     worst = min(tests, key=lambda t: t["mean_fair_share_contested"] or 0.0)

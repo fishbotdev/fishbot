@@ -134,6 +134,15 @@ def print_metrics(label: str, events: list[dict], metrics: dict) -> None:
         if metrics["mean_held_time_s"] is not None:
             print(f"  mean held time   {metrics['mean_held_time_s']:>5.0f} s before being destroyed")
 
+    # Force telemetry is only present in logs from a bot emitting BRIG.
+    if "mean_total_strength" in metrics:
+        print()
+        print(f"  brigade strength {metrics['mean_total_strength']:>5.1f}"
+              f"   peak {metrics['peak_total_strength']:.1f}"
+              f", {metrics['mean_total_units']:.1f} units total")
+        print(f"  brigades fielded {metrics['mean_brigades_fielded']:>5.1f}"
+              f"   spread {metrics['mean_brigade_dispersion']:.1f} tiles between force centres")
+
     if metrics["truncated"]:
         print()
         print(f"  WARNING: the first sample arrives late, so early telemetry is missing from this log.")

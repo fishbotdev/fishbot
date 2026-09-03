@@ -63,7 +63,7 @@
 ## Running Automated Tests
 1. Pull the latest commits for FishBot into both the development (for the test runner) and production folders (for the source code under test).
 2. Open up `fishbot/tests` in your Python IDE.
-3. Oil-capture telemetry is collected automatically whenever `DEBUG_MODE_ON` is `true` (which it is throughout a development cycle). See *Oil-capture telemetry* below.
+3. Telemetry (oil capture and brigade strength/position) is collected automatically whenever `DEBUG_MODE_ON` is `true` (which it is throughout a development cycle). See *Telemetry* below.
 4. Run `run_pipeline.py`. This runs the whole pipeline in sequence (may take up to ~1 day to complete, depending on the number of tests requested):
    1. `run_test_generator.py` (~5 seconds) — only when `REGENERATE_TESTS` is set. Re-run this if the map or test information has changed (e.g. a new set of maps, or modified skirmish settings), or if the output folder location has changed. Please double check the output folder path before enabling it.
    2. `run_tests.py` — runs the autogames.
@@ -78,7 +78,7 @@
 
 For any test that warrants further investigation, you can use `spectate_map.exe` to select and run the test in spectator mode.
 
-### Oil-capture telemetry
+### Telemetry
 FishBot can emit machine-readable `TEL|...` lines describing how well it is playing. These are picked up by the same console scrape which already recovers the Game State summary table, and are reported by `run_telemetry_parser.py` as part of the pipeline above.
 
 To use it:
@@ -92,8 +92,10 @@ The report gives, per map and per test type:
 * **free oil** — the fraction of derricks nobody had claimed. A high value means there was oil available which FishBot did not go and take.
 * **peak**, **@5min** and **@10min** oil share, which show how quickly it expanded.
 * **conversion rate** — how often a decision to capture a derrick actually produced one. This is the intent half of the picture: without it, a derrick left unclaimed is ambiguous, because trucks may have been sent and failed, or nothing may have been sent at all.
+* **strength** — the summed strength of FishBot's brigades, with its **peak** and the raw **units** count beside it. Brigade `strength` is smoothed and counts direct-fire units only, so it is what FishBot believes it can fight with; the units count is every unit in the brigades, so the two together separate "understrength" from "still decaying after a fight".
+* **brigades** — how many brigades actually held units, and the **spread**: the mean distance in tiles between their force centres. Low spread means the brigades fought as one mass, high means they were split across the map. Losses at high spread suggest FishBot was defeated in detail.
 
-The oil-share figures above are time-weighted, so an uneven sampling cadence does not bias them.
+The oil-share and force figures above are time-weighted, so an uneven sampling cadence does not bias them.
 
 The manual log parser (below) additionally reports the **failure reasons** behind unconverted commitments (trucks lost / beaten to the derrick / called off as too dangerous), the **mean distance** of converted versus lost commitments, and **derrick losses** with how long a derrick survived before being destroyed.
 
