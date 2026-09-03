@@ -21,7 +21,7 @@
 	It is deliberately a SEPARATE MOD rather than a flag inside FishBot. Map data is only ever needed
 	offline, by the analysis scripts, so FishBot itself carries no dumping code and no conditionals
 	for it. `generate_map_data.py` installs this mod, runs one headless game per map, reads the lines
-	below out of the debug log, and uninstalls it again.
+	below back out of the Windows console, and uninstalls it again.
 
 	Everything here is read once, at `eventStartLevel`, from the engine's own globals -- so the output
 	is ground truth for both pre-baked (JSONV2) maps and script-generated maps, which have no terrain
@@ -30,69 +30,95 @@
 
 const DUMP_PREFIX = "MAPDUMP";
 
-// Grid rows are emitted in chunks of at most this many values. 256 is the engine's maximum map
-// dimension, so in practice every row fits in one line.
-//
-// The chunking exists because the runner recovers these lines from the Windows console buffer, which
-// stores a fixed number of columns per row: a line longer than the buffer is width-wrapped and would
-// come back split into pieces. The runner widens the console buffer to fit a whole row before it
-// launches the game, and the reader checks every reassembled row against mapWidth, so a line lost to
-// wrapping is a loud failure rather than silently corrupt data.
-const VALUES_PER_CHUNK = 256;
+/*
+	Maximum characters of payload per line.
+
+	Output is written with `debug()` and recovered from the console, and a line that runs past the
+	limit is silently cut off mid-value. This was measured on real maps: lines up to about 600
+	characters came back intact, while longer ones were truncated at roughly 690 -- which corrupted
+	the wide maps (8c-ziggurat, 9c-WindFury) and the derrick-heavy ones (7c-Thales, 8c-cockate).
+
+	So nothing is emitted as one long line. Values are packed up to this budget and then flushed,
+	which keeps the output independent of map width and derrick count. 400 leaves generous headroom
+	under the shortest length observed to work.
+*/
+const MAX_PAYLOAD_CHARS = 400;
 
 // End the game as soon as the dump is written. Without this the runner waits out a real match for
 // data that was already complete a fraction of a second in.
 const END_GAME_AFTER_DUMP = true;
 
-/*
-	`debug()` writes to the command line, which the runner then reads back out of the Windows console
-	buffer. That is the same channel `fishbot/tests` uses to recover autogame results, and it is the
-	one that actually holds up: the debug file written by `--debugfile` does not reliably receive
-	script output.
-*/
 function dumpLine(parts) {
 	debug(`${DUMP_PREFIX}|${parts.join("|")}`);
 }
 
 /**
- * Emits one [y][x]-indexed grid, one line per row per chunk.
+ * Emits `values` as comma-separated chunks, each within the payload budget.
+ * Every line carries its own chunk index so the reader can reassemble them in order.
+ * @param {(string|number)[]} headerParts line parts preceding the chunk index
+ * @param {(string|number)[]} values
+ * @returns {void}
+ */
+function dumpChunkedValues(headerParts, values) {
+	let chunkIndex = 0;
+	let chunk = [];
+	let chunkLength = 0;
+
+	const flush = () => {
+		dumpLine(headerParts.concat([chunkIndex, chunk.join(",")]));
+		chunkIndex++;
+		chunk = [];
+		chunkLength = 0;
+	};
+
+	for (let i = 0; i < values.length; i++) {
+		const text = String(values[i]);
+
+		// +1 for the comma that will join this value to the previous one.
+		if (chunk.length > 0 && chunkLength + text.length + 1 > MAX_PAYLOAD_CHARS) {
+			flush();
+		}
+
+		chunkLength += text.length + (chunk.length > 0 ? 1 : 0);
+		chunk.push(text);
+	}
+
+	// Always flush, even when empty: the reader must see an empty row as empty rather than missing.
+	flush();
+}
+
+/**
+ * Emits one [y][x]-indexed grid, one row at a time.
  * @param {string} name grid name, used as the key in the generated JSON
  * @param {function(number, number): number} readValue called as readValue(x, y)
  * @returns {void}
  */
 function dumpGrid(name, readValue) {
 	for (let y = 0; y < mapHeight; y++) {
-		let chunkIndex = 0;
-
-		for (let xStart = 0; xStart < mapWidth; xStart += VALUES_PER_CHUNK) {
-			const xEnd = Math.min(xStart + VALUES_PER_CHUNK, mapWidth);
-
-			const values = [];
-			for (let x = xStart; x < xEnd; x++) {
-				values.push(readValue(x, y));
-			}
-
-			dumpLine(["grid", name, y, chunkIndex, values.join(",")]);
-			chunkIndex++;
+		const row = [];
+		for (let x = 0; x < mapWidth; x++) {
+			row.push(readValue(x, y));
 		}
+		dumpChunkedValues(["grid", name, y], row);
 	}
 }
 
-function dumpPointsOfInterest() {
-	// `startPositions` is indexed by playerID. Slots that a map does not use, and the human slot
-	// that challenge files force-add, still appear here; the reader keeps them as-is and the
-	// analysis decides what is real, so nothing is silently discarded at capture time.
-	const starts = [];
-	for (let i = 0; i < startPositions.length; i++) {
-		starts.push([startPositions[i].x, startPositions[i].y]);
+/**
+ * Emits a list of positions as a flat x,y,x,y sequence.
+ *
+ * Flat numbers rather than JSON, because these lists chunk cleanly whereas a JSON array cut in half
+ * by a line limit is unparseable -- which is exactly how the derrick-heavy maps used to fail.
+ * @param {string} name
+ * @param {Object[]} positions objects with x and y
+ * @returns {void}
+ */
+function dumpPositions(name, positions) {
+	const flat = [];
+	for (let i = 0; i < positions.length; i++) {
+		flat.push(positions[i].x);
+		flat.push(positions[i].y);
 	}
-	dumpLine(["startPositions", JSON.stringify(starts)]);
-
-	const derricks = [];
-	for (let i = 0; i < derrickPositions.length; i++) {
-		derricks.push([derrickPositions[i].x, derrickPositions[i].y]);
-	}
-	dumpLine(["derricks", JSON.stringify(derricks)]);
+	dumpChunkedValues(["list", name], flat);
 }
 
 function eventStartLevel() {
@@ -107,7 +133,11 @@ function eventStartLevel() {
 		"scavengers": scavengers,
 	})]);
 
-	dumpPointsOfInterest();
+	// `startPositions` is indexed by playerID. Slots a map does not use, and the human slot that
+	// challenge files force-add, still appear here; the reader keeps them as-is and the analysis
+	// decides what is real, so nothing is silently discarded at capture time.
+	dumpPositions("startPositions", startPositions);
+	dumpPositions("derricks", derrickPositions);
 
 	// The engine indexes MapTiles as [y][x].
 	//

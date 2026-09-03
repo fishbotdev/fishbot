@@ -104,12 +104,18 @@ GAME_TIMEOUT_SECONDS = 180
 # The console buffer is resized before each game so that a whole grid row fits on one line and is not
 # width-wrapped into unparseable pieces, and so that a whole map's dump fits without scrolling away.
 # Width must exceed the longest line: roughly 40 characters of prefix plus 4 per tile of map width.
-CONSOLE_BUFFER_WIDTH = 1400
+CONSOLE_BUFFER_WIDTH = 3000
 CONSOLE_BUFFER_HEIGHT = 12000
 
-# Keep the per-map debug logs and challenge files instead of deleting them. For diagnosing a map that
-# refuses to capture.
+# Keep the scraped console text and challenge files instead of deleting them. For diagnosing a map
+# that refuses to capture. The scraped text of a FAILED attempt is always kept regardless, since that
+# is the only evidence of what went wrong.
 KEEP_INTERMEDIATE_FILES = False
+
+# Attempts per map before giving up. A capture depends on the game's output surviving a trip through
+# the console buffer, which is not perfectly repeatable, so one retry costs a few seconds and saves a
+# manual re-run.
+ATTEMPTS_PER_MAP = 2
 
 ##################################### USER CONFIG END #####################################
 
@@ -121,6 +127,10 @@ DUMPER_MOD_NAME = "mapdatadumper"
 # every loaded mod. This is the same form the Spectator mod is referenced by.
 DUMPER_AI_PATH = "MapDataDumper.js"
 SPECTATOR_AI_PATH = "Spectator.js"
+
+# The slot the dumper occupies. Not adjustable: slot 0 is taken by the force-added human player,
+# which overrides any AI put there, so the dumper would never run.
+DUMPER_PLAYER_ID = 1
 
 # Map folders are named `<players>c-<name>`, e.g. `3c-Gamma` -> 3 players.
 MAP_NAME_PATTERN = re.compile(r"^(\d+)c-")
@@ -270,11 +280,20 @@ def write_challenge_file(map_info: dict) -> Path:
     """
     Writes the one-off challenge that loads a map with the dumper in it.
 
-    Player 0 is the slot challenge files force-add for a human, so the dumper goes in player 1 and
-    every other slot is a Spectator. That leaves the dumper as the only participant, which is also why
-    the game ends the moment it is done.
+    THE DUMPER MUST BE PLAYER 1. Player 0 is the slot a challenge file force-adds for a human, and
+    that human overrides whatever AI is placed there -- a dumper in slot 0 simply never runs. Every
+    remaining slot is a Spectator.
+
+    This is why 2-player maps are the tight case: slot 0 goes to the human and slot 1 to the dumper,
+    leaving no spectators at all.
     """
     map_name = map_info["mapName"]
+
+    if map_info["maxPlayers"] < DUMPER_PLAYER_ID + 1:
+        raise ValueError(
+            f"{map_name} has {map_info['maxPlayers']} slots, too few to place the dumper at "
+            f"player {DUMPER_PLAYER_ID}"
+        )
 
     config = {
         "challenge": {
@@ -294,7 +313,7 @@ def write_challenge_file(map_info: dict) -> Path:
             "ai": SPECTATOR_AI_PATH,
         }
 
-    config["player_1"] = {
+    config[f"player_{DUMPER_PLAYER_ID}"] = {
         "difficulty": "Easy",
         "team": 0,
         "ai": DUMPER_AI_PATH,
@@ -450,12 +469,15 @@ def parse_dump_lines(dump_lines: list) -> dict:
     """
     Rebuilds one map's record from the dumped lines.
 
-    Grid rows arrive in chunks; they are reassembled here and every row is checked against mapWidth,
-    so a row lost to a truncated log line fails loudly instead of quietly producing a map with a
-    dented edge.
+    Both grids and position lists arrive as character-budgeted chunks, because a single long line
+    gets silently truncated on its way through the console. They are reassembled here and checked:
+    every grid row against mapWidth, and every position list against being a whole number of pairs.
+    A chunk lost in transit therefore fails loudly instead of quietly producing a map with a dented
+    edge or a derrick at half a coordinate.
     """
     record = {}
-    chunks = {}
+    grid_chunks = {}
+    list_chunks = {}
 
     for line in dump_lines:
         parts = line.split("|")
@@ -463,20 +485,38 @@ def parse_dump_lines(dump_lines: list) -> dict:
 
         if kind == "meta":
             record.update(json.loads(parts[1]))
-        elif kind == "startPositions":
-            record["startPositions"] = json.loads(parts[1])
-        elif kind == "derricks":
-            record["derricks"] = json.loads(parts[1])
+        elif kind == "list":
+            name, chunk_index, values = parts[1], int(parts[2]), parts[3]
+            list_chunks.setdefault(name, {})[chunk_index] = values
         elif kind == "grid":
             grid_name, y, chunk_index, values = parts[1], int(parts[2]), int(parts[3]), parts[4]
-            chunks.setdefault(grid_name, {}).setdefault(y, {})[chunk_index] = values
+            grid_chunks.setdefault(grid_name, {}).setdefault(y, {})[chunk_index] = values
 
     if "mapName" not in record:
-        raise ValueError("no meta line found; the dumper did not run")
+        raise ValueError(
+            f"no meta line found in {len(dump_lines)} dumped line(s); "
+            f"either the dumper did not run or its output never reached the console buffer"
+        )
 
     width, height = record["mapWidth"], record["mapHeight"]
 
-    for grid_name, rows in chunks.items():
+    for name, chunks in list_chunks.items():
+        flat = []
+        for chunk_index in sorted(chunks):
+            values = chunks[chunk_index]
+            if values:
+                flat.extend(int(v) for v in values.split(","))
+
+        if len(flat) % 2 != 0:
+            raise ValueError(f"{name}: {len(flat)} values is not a whole number of x,y pairs")
+
+        record[name] = [[flat[i], flat[i + 1]] for i in range(0, len(flat), 2)]
+
+    for name in ("startPositions", "derricks"):
+        if name not in record:
+            raise ValueError(f"{name}: no data captured")
+
+    for grid_name, rows in grid_chunks.items():
         if grid_name not in GRIDS_TO_KEEP:
             continue
 
@@ -487,7 +527,7 @@ def parse_dump_lines(dump_lines: list) -> dict:
         for y in range(height):
             row = ",".join(rows[y][chunk_index] for chunk_index in sorted(rows[y]))
 
-            value_count = row.count(",") + 1
+            value_count = row.count(",") + 1 if row else 0
             if value_count != width:
                 raise ValueError(f"{grid_name} row {y}: got {value_count} values, expected {width}")
 
@@ -500,6 +540,7 @@ def parse_dump_lines(dump_lines: list) -> dict:
             raise ValueError(f"{grid_name}: no data captured")
 
     return record
+
 
 
 ############################## OUTPUT FILE ##############################
@@ -521,7 +562,14 @@ def save_output(data: dict) -> None:
 
 ############################## ENTRY POINT ##############################
 
-def capture_one_map(map_info: dict) -> dict:
+def save_scraped_text(map_name: str, dump_lines: list, suffix: str = "") -> Path:
+    WORKING_DIRECTORY.mkdir(parents=True, exist_ok=True)
+    path = WORKING_DIRECTORY / f"{map_name}{suffix}.txt"
+    path.write_text("\n".join(dump_lines), encoding="utf-8")
+    return path
+
+
+def capture_one_map_once(map_info: dict) -> dict:
     map_name = map_info["mapName"]
     challenge_path = write_challenge_file(map_info)
 
@@ -529,11 +577,16 @@ def capture_one_map(map_info: dict) -> dict:
         dump_lines = run_dump_game(map_name, challenge_path)
 
         if KEEP_INTERMEDIATE_FILES:
-            WORKING_DIRECTORY.mkdir(parents=True, exist_ok=True)
-            (WORKING_DIRECTORY / f"{map_name}.txt").write_text(
-                "\n".join(dump_lines), encoding="utf-8")
+            save_scraped_text(map_name, dump_lines)
 
-        record = parse_dump_lines(dump_lines)
+        try:
+            record = parse_dump_lines(dump_lines)
+        except Exception:
+            # The scraped text is the only evidence of what went wrong, so keep it even when the
+            # run is not otherwise keeping intermediates.
+            saved = save_scraped_text(map_name, dump_lines, suffix="_FAILED")
+            print(f"  scraped output kept at {saved}")
+            raise
 
         # The engine reports the LEVEL name, so that is what the dump comes back with. The console is
         # cleared before each game, but confirm anyway: silently writing one map's terrain under
@@ -552,6 +605,25 @@ def capture_one_map(map_info: dict) -> dict:
     finally:
         if not KEEP_INTERMEDIATE_FILES:
             challenge_path.unlink(missing_ok=True)
+
+
+def capture_one_map(map_info: dict) -> dict:
+    """
+    Captures a map, retrying on failure. Whether the game's output survives the console buffer is not
+    perfectly repeatable, so a second attempt is worth more than a manual re-run later.
+    """
+    last_error = None
+
+    for attempt in range(1, ATTEMPTS_PER_MAP + 1):
+        try:
+            return capture_one_map_once(map_info)
+        except Exception as error:
+            last_error = error
+            if attempt < ATTEMPTS_PER_MAP:
+                print(f"  attempt {attempt} failed ({error}); retrying")
+
+    raise last_error
+
 
 
 def main() -> None:
