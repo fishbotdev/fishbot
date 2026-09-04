@@ -289,6 +289,7 @@ def telemetry_path_for(in_progress_file_path: Path) -> Path:
 # `TEL_INSTRUMENT_OPPONENTS` is on in `_telemetry.js` - so ~25 lines per minute in a duel and ~38 in a
 # 4-player FFA. A duel still fits comfortably; if a long FFA starts reporting truncation, turn opponent
 # instrumentation off before raising this, since it is the larger and less interesting half of the cost.
+# Measured on a real 32-minute duel (`temp15.txt`): 385 BRIG + 193 OIL lines, longest line 140 chars.
 CONSOLE_LINES_TO_SCRAPE = 3000
 
 

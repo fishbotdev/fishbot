@@ -78,9 +78,18 @@ measured from the strength and force centre which the strategic layer itself act
 With `TEL_INSTRUMENT_OPPONENTS` on in `_telemetry.js`, the opposition is sampled on the same tick and
 the game can be read as a contest:
 
+  `mean_army_strength` / `mean_uncommitted_strength`
+        The whole army FishBot owned, and how much of it was not in a commanded brigade. The brigade
+        figures above cover the four commanded brigades only, so a unit in the reserve or not yet
+        grouped counts towards the army but not towards them. A large gap means FishBot built a force
+        and never committed it, which looks identical to never building one if only the brigades are
+        measured.
+
   `mean_strength_ratio`
-        Time-weighted mean of (own strength / opposition strength). `1.00` means the two sides were
-        evenly matched; below it FishBot was fighting outnumbered. Samples where the opposition held
+        Time-weighted mean of (own army strength / opposition strength). `1.00` means the two sides
+        were evenly matched; below it FishBot was fighting outnumbered. Both sides count armed
+        direct-fire units only - trucks, sensors and repair units are excluded, so the ratio measures
+        fighting power rather than how many trucks somebody built. Samples where the opposition held
         nothing are skipped rather than counted as an infinite ratio.
 
   `mean_engagement_distance`
@@ -458,6 +467,22 @@ def _subject_player(event: dict) -> int:
     return int(subject)
 
 
+def _optional_number(event: dict, key: str) -> float | None:
+    """
+    A scalar that only some events carry, or None.
+
+    Absent keys read back as None when no row in the file has them and as NaN when only some do,
+    since the frame is a union of every event's columns.
+    """
+
+    value = event.get(key)
+
+    if value is None or value != value:
+        return None
+
+    return float(value)
+
+
 def _centroid(positions: list[tuple[float, float]]) -> tuple[float, float]:
     return (
         sum(x for x, _ in positions) / len(positions),
@@ -494,6 +519,10 @@ def extract_brigade_metrics(events: list[dict]) -> dict | None:
         n  every unit in the force, aligned to `b`
         x  force centre x, aligned to `b`
         y  force centre y, aligned to `b`
+        as FishBot's own rows only: its whole army's direct-fire strength, counted the way an
+           opponent's is. The `b` arrays cover the commanded brigades only, so the gap between this
+           and the sum of `s` is the force FishBot owns but has not committed to a brigade.
+        an FishBot's own rows only: every unit it owns
 
     FishBot and its opponents are sampled on the same tick, so samples are grouped by time before
     being weighted - otherwise the opponent row would hand the row beside it a zero-length duration.
@@ -525,12 +554,17 @@ def extract_brigade_metrics(events: list[dict]) -> dict | None:
     fielded_samples = []
     dispersion_samples = []
 
+    army_strength_samples = []
+    army_unit_samples = []
+    uncommitted_samples = []
+
     opponent_strength_samples = []
     opponent_unit_samples = []
     strength_ratio_samples = []
     engagement_samples = []
 
     saw_opponent = False
+    saw_army = False
 
     for index, time_ms in enumerate(sample_times):
 
@@ -542,6 +576,24 @@ def extract_brigade_metrics(events: list[dict]) -> dict | None:
 
         own_strength = sum(sum(r["s"]) for r in own_rows)
         own_positions = _fielded_positions(own_rows)
+
+        # Present only from the build that started reporting the whole army. Older logs fall back to
+        # the brigaded total below, which is what they were always compared on.
+        army_strengths = [v for v in (_optional_number(r, "as") for r in own_rows) if v is not None]
+        army_strength = sum(army_strengths) if army_strengths else None
+
+        if army_strength is not None:
+            saw_army = True
+            army_units = [v for v in (_optional_number(r, "an") for r in own_rows) if v is not None]
+            army_strength_samples.append((duration, army_strength))
+            army_unit_samples.append((duration, float(sum(army_units))))
+            # Negative would mean the brigades hold units the army count misses, which cannot happen;
+            # clamped so a transient disagreement between the two reads as "nothing uncommitted".
+            uncommitted_samples.append((duration, max(army_strength - own_strength, 0.0)))
+
+        # The figure an opponent is compared against: army-wide when the log carries it, so both
+        # sides are counted the same way, and the brigaded total otherwise.
+        own_comparable_strength = army_strength if army_strength is not None else own_strength
 
         own_strength_samples.append((duration, float(own_strength)))
         own_unit_samples.append((duration, float(sum(sum(r["n"]) for r in own_rows))))
@@ -563,7 +615,7 @@ def extract_brigade_metrics(events: list[dict]) -> dict | None:
         # Skipped rather than clamped when the opposition is wiped out: a ratio against nothing is
         # infinite, and averaging in a made-up number would flatter whatever came before it.
         if opponent_strength > 0:
-            strength_ratio_samples.append((duration, own_strength / opponent_strength))
+            strength_ratio_samples.append((duration, own_comparable_strength / opponent_strength))
 
         if own_positions and opponent_positions:
             own_center = _centroid(own_positions)
@@ -582,6 +634,17 @@ def extract_brigade_metrics(events: list[dict]) -> dict | None:
         "mean_brigade_dispersion": _time_weighted_mean(dispersion_samples),
         "peak_total_strength": max(own_strength_values) if own_strength_values else 0.0,
     }
+
+    # Only present from the build that reports the whole army, so an older log keeps exactly the keys
+    # it always had.
+    if saw_army:
+        army_strength_values = [value for _, value in army_strength_samples]
+        metrics.update({
+            "mean_army_strength": _time_weighted_mean(army_strength_samples),
+            "mean_army_units": _time_weighted_mean(army_unit_samples),
+            "peak_army_strength": max(army_strength_values) if army_strength_values else 0.0,
+            "mean_uncommitted_strength": _time_weighted_mean(uncommitted_samples),
+        })
 
     # Only present when the bot under test had opponent instrumentation switched on, so a run without
     # it reports exactly the keys it always did.
@@ -826,6 +889,16 @@ def print_mode_summary(mode_name: str, tests: list[dict]) -> None:
             f"brigades  {fielded:>5.1f}   "
             f"spread {dispersion:.1f} tiles"
         )
+
+        # Only present from the build that reports the whole army, not just the brigaded part.
+        if any("mean_army_strength" in test for test in tests):
+            print(
+                f"     "
+                f"           "
+                f"army      {_mean(tests, 'mean_army_strength'):>5.1f}   "
+                f"peak {_mean(tests, 'peak_army_strength'):.1f}"
+                f"   {_mean(tests, 'mean_uncommitted_strength'):.1f} uncommitted"
+            )
 
         # Only present when the bot under test also instrumented its opponents.
         if any("mean_strength_ratio" in test for test in tests):

@@ -143,6 +143,14 @@ def print_metrics(label: str, events: list[dict], metrics: dict) -> None:
         print(f"  brigades fielded {metrics['mean_brigades_fielded']:>5.1f}"
               f"   spread {metrics['mean_brigade_dispersion']:.1f} tiles between force centres")
 
+        # Only present from the build that reports the whole army, not just the brigaded part.
+        if "mean_army_strength" in metrics:
+            print(f"  whole army       {metrics['mean_army_strength']:>5.1f}"
+                  f"   peak {metrics['peak_army_strength']:.1f}"
+                  f", {metrics['mean_army_units']:.1f} units total")
+            print(f"  uncommitted      {metrics['mean_uncommitted_strength']:>5.1f}"
+                  f"   direct-fire units owned but not in a commanded brigade")
+
         # Opponent telemetry is only present when the bot ran with TEL_INSTRUMENT_OPPONENTS on.
         if "mean_strength_ratio" in metrics:
             ratio = metrics["mean_strength_ratio"]

@@ -45,6 +45,10 @@
  * `OILRES` how that commitment ended | `OILLOST` a derrick destroyed |
  * `BRIG` periodic force strength and position, per player | `END` game finished.
  *
+ * A `BRIG` line for FishBot itself also carries `as`/`an`: its whole army, counted the way an
+ * opponent's is. The per-brigade arrays cover the commanded brigades only, so the gap between `as`
+ * and the sum of `s` is the force FishBot owns but has not committed to a brigade.
+ *
  * --- DESIGN INVARIANTS ---
  *
  * These exist so richer telemetry (map control, group locations, eventually full world state
@@ -158,6 +162,8 @@ class Telemetry {
 			return;		// this function does real work (a group lookup per brigade), so check first
 		}
 
+		const ownUnits = enumDroid(me);
+
 		this.#emit('BRIG', {
 			't': gameTime,
 			'p': me,
@@ -169,6 +175,12 @@ class Telemetry {
 			'n': brigadeIDs.map(id => state.g.enumGroup(id).length),
 			'x': brigadeIDs.map(id => Math.round(state.brigades[id].location.x)),
 			'y': brigadeIDs.map(id => Math.round(state.brigades[id].location.y)),
+			// FishBot's whole army, counted the way an opponent's is, so the two are comparable. The
+			// brigade arrays above cover only the commanded brigades, so anything sitting in the
+			// reserve or not yet grouped is missing from them - the gap between `as` and the sum of
+			// `s` is exactly the force FishBot owns but has not committed.
+			'as': this.#directFireCount(ownUnits),
+			'an': ownUnits.length,
 		});
 
 		if (!TEL_INSTRUMENT_OPPONENTS) {
@@ -195,7 +207,7 @@ class Telemetry {
 	 */
 	#opponentSample(playerID) {
 		const units = enumDroid(playerID);
-		const directFireUnits = units.filter(droid => !droid.hasIndirect);
+		const directFireUnits = units.filter(droid => this.#isDirectFireCombatUnit(droid));
 		const center = this.#armyCenter(directFireUnits);
 
 		this.#emit('BRIG', {
@@ -208,6 +220,28 @@ class Telemetry {
 			'x': [center.x],
 			'y': [center.y],
 		});
+	}
+
+	/**
+	 * Whether a droid counts towards direct-fire strength.
+	 *
+	 * `weapons` is empty on trucks, sensors and repair units, so testing it excludes them without
+	 * having to enumerate droid types - which matters because an army's truck count says nothing
+	 * about how hard it hits, and counting it would flatter whichever side built more of them.
+	 * @param {DroidObject} droid
+	 * @returns {boolean}
+	 */
+	#isDirectFireCombatUnit(droid) {
+		return droid.weapons.length > 0 && !droid.hasIndirect;
+	}
+
+	/**
+	 * How many of `units` count towards direct-fire strength.
+	 * @param {DroidObject[]} units
+	 * @returns {number}
+	 */
+	#directFireCount(units) {
+		return units.filter(droid => this.#isDirectFireCombatUnit(droid)).length;
 	}
 
 	/**
