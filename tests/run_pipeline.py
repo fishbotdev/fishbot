@@ -146,9 +146,11 @@ if __name__ == "__main__":
 
     #################################### USER CONFIG START ####################################
 
+    DEVELOPMENT = True
+
     # Which test set to run: a key of TEST_CONFIGS below.
-    # TEST_CONFIG = "duel"
-    TEST_CONFIG = "release"
+    TEST_CONFIG = "duel"
+    # TEST_CONFIG = "release"
     # TEST_CONFIG = "ffa"
 
     # Each entry is one named test set. Its manifest is `base_manifest_<test_set_name>.json` and its
@@ -159,9 +161,9 @@ if __name__ == "__main__":
         "duel": {
             "test_set_name": "duel",
             "test_types": (C.DUEL, ),
-            "opponent_ai": C.COBRA_AI,
+            "opponent_ai": C.PEACEMAKER_AI,
             "base_maps_path": Path.cwd() / r'custom_test_map_packager\\v4.7.0_duel_maps',
-            "runs_per_test": 3,
+            "runs_per_test": 5,
         },
 
         # The release gate: the full matrix, both test types
@@ -189,10 +191,14 @@ if __name__ == "__main__":
     # or the selected TEST_CONFIG have changed - the generated tests are reused between runs otherwise.
     REGENERATE_TESTS = True
 
-    # Where the generated maps & tests are written (only used when REGENERATE_TESTS is set).
-    BASE_PRODUCTION_DIRECTORY = r"..\Warzone 2100\PRODCONFIG"
-    MAPS_OUTPUT_PATH = Path(rf"{BASE_PRODUCTION_DIRECTORY}\maps")
-    TESTS_OUTPUT_PATH = Path(rf"{BASE_PRODUCTION_DIRECTORY}\tests")
+    if DEVELOPMENT:
+        # Where the generated maps & tests are written (only used when REGENERATE_TESTS is set).
+        BASE_DIRECTORY = generator.get_documents_path() / "wz2100_config_dir"
+    else:
+        BASE_DIRECTORY = r"..\Warzone 2100\PRODCONFIG"
+
+    MAPS_OUTPUT_PATH = Path(rf"{BASE_DIRECTORY}\maps")
+    TESTS_OUTPUT_PATH = Path(rf"{BASE_DIRECTORY}\tests")
 
     #################################### USER CONFIG END ####################################
 
