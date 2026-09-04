@@ -146,8 +146,6 @@ if __name__ == "__main__":
 
     #################################### USER CONFIG START ####################################
 
-    DEVELOPMENT = True
-
     # Which test set to run: a key of TEST_CONFIGS below.
     TEST_CONFIG = "duel"
     # TEST_CONFIG = "release"
@@ -191,12 +189,7 @@ if __name__ == "__main__":
     # or the selected TEST_CONFIG have changed - the generated tests are reused between runs otherwise.
     REGENERATE_TESTS = True
 
-    if DEVELOPMENT:
-        # Where the generated maps & tests are written (only used when REGENERATE_TESTS is set).
-        BASE_DIRECTORY = generator.get_documents_path() / "wz2100_config_dir"
-    else:
-        BASE_DIRECTORY = r"..\Warzone 2100\PRODCONFIG"
-
+    BASE_DIRECTORY = r"..\Warzone 2100\PRODCONFIG"
     MAPS_OUTPUT_PATH = Path(rf"{BASE_DIRECTORY}\maps")
     TESTS_OUTPUT_PATH = Path(rf"{BASE_DIRECTORY}\tests")
 
