@@ -30,50 +30,6 @@ function buildDroidWrapper(factory, droidName, bodies, propulsions, weapon) {
 }
 
 /**
- * Filters out all unavailable bodies, then selects the most technologically advanced body (within the capability of the factory) from the provided `bodies` array.
- * @returns {any | undefined}
- */
-function chooseVehicleBody({bodies=[], factory=undefined, maxFactoryModules=undefined}) {
-	// TODO: add typing
-	const DEBUG_MODE = false;
-	
-	if (!defined(bodies) || !defined(factory) || !defined(maxFactoryModules)) {
-		debug("chooseVehicleBody(): either 'bodies' and/or 'factory' and/or maxFactoryModules is missing.");
-		return undefined;		
-	}
-
-	const FACTORY_TYPES = [FACTORY, VTOL_FACTORY];
-	if (!FACTORY_TYPES.includes(factory.stattype) || !defined(factory.modules)) {
-		debug("chooseVehicleBody(): 'factory' is not a WZ FACTORY/VTOL_FACTORY and/or 'factory.modules' is not defined.");
-		return undefined;
-	}
-
-	const availableBodies = FISHBOT_BODIES.filter((body) => componentAvailable(body.Id)).reverse();		// reversing goes from highest tech to lowest tech
-
-	if (DEBUG_MODE) {
-		debug("available bodies");
-		availableBodies.forEach(body => debug(`	${body.name}`));
-	}
-
-	const maximumBodyWeight = Math.min(maxFactoryModules, factory.modules);		// weight = number of modules -> LIGHT = 0 modules ; MEDIUM = 1 module ; HEAVY = 2 modules
-
-	for (let w=maximumBodyWeight; w>=0; --w) {
-		// Tries to pick the highest-weight, most-technologically-advanced body first, then decreases the body weight (modules required) towards 0 if there are none available
-		const sortedBodies = availableBodies.filter((body) => body.Size === w);
-		if (sortedBodies.length === 0) {
-			continue;
-		}
-
-		if (DEBUG_MODE) {
-			debug(`chooseVehicleBody(): selected ${sortedBodies[0].name}, maxWeight = ${maximumBodyWeight}`);
-		}
-		return sortedBodies[0];
-	}
-
-	return undefined;
-}
-
-/**
  * Selects the most technologically advanced weapon from the provided `weaponList`.
  * Assumption: the list is pre-sorted in order of priority before it enters this function
  * @param {any[]} weaponList
@@ -152,51 +108,10 @@ function chooseVehicleBody2(factory, requestedBodyWeight) {
 
 /**
  * Attempts to produce a unit (to the provided specification) at the specified factory.
- * No longer selects the body based on factory type (leaves this to the overarching wrapper function).
- * @returns {boolean} whether or not the unit is now in production in the specified factory.
+ * Caller must order `weaponList` and `propulsionList` in preferential order (highest preference = first).
+ * @returns {boolean} whether the unit is now in production in the specified factory.
  */
 function produceVehicle2(factory, body, weaponList, propulsionList) {
-
-	// Select most up-to-date weapon
-	const weapon = chooseWeapon(weaponList);
-
-	// Select available (ground) propulsion
-	const propulsion = choosePropulsion(propulsionList);
-	
-	if (body == null || weapon == null || propulsion == null) {
-		debug("produceVehicle(): Either 'body' or 'weapon' or 'propulsion' were undefined.")
-		return false;
-	}
-		
-	const tankName = weapon.name + ", " + body.name + ", " + propulsion.name +  ` (FishBot v${FISHBOT_VERSION})`;
-
-	const productionInProgress = buildDroidWrapper(factory, tankName, body.id, propulsion.id, weapon.id);
-	return productionInProgress;
-}
-
-
-/**
- * Attempts to produce a unit (to the provided specification) at the specified factory.
- * @returns {boolean} whether or not the unit is now in production in the specified factory.
- */
-function produceVehicle({factory, weaponList, propulsionList, maxBodyWeight=BODY_WEIGHT.HEAVY}) {
-
-	let maxRequiredModules;
-	switch (maxBodyWeight) {
-		case BODY_WEIGHT.LIGHT:
-			maxRequiredModules = 0;
-			break;
-		case BODY_WEIGHT.MEDIUM:
-			maxRequiredModules = 1;
-			break;
-		case BODY_WEIGHT.HEAVY:
-			maxRequiredModules = 2;
-			break;
-		default:
-			maxRequiredModules = 0;
-	}
-		
-	const body = chooseVehicleBody({bodies: FISHBOT_BODIES, factory: factory, maxFactoryModules: maxRequiredModules});		
 
 	// Select most up-to-date weapon
 	const weapon = chooseWeapon(weaponList);
@@ -223,29 +138,29 @@ function produceVehicle({factory, weaponList, propulsionList, maxBodyWeight=BODY
  * Produces a truck. FishBot will only produce 'Truck Viper Wheels' when units are not designable (to follow human player rules).
  * @param {StructureObject} factory 
  * @param {boolean} CAN_DESIGN_UNITS  this flag is here to prevent FishBot from producing Hover Trucks before a command center is built
- * @returns {boolean} whether or not the unit is now in production
+ * @returns {boolean} whether the unit is now in production
  */
 function produceTruck(factory, CAN_DESIGN_UNITS) {
 	
-	const truckBodies = CAN_DESIGN_UNITS ?
+	const truckBody = CAN_DESIGN_UNITS ?
 		chooseVehicleBody2(factory, BODY_WEIGHT.LIGHT) :
 		FISHBOT_BODIES2["Viper"];
+		
+	const truckTurrets = [
+		WEAPONS["Truck"]
+	];
 
 	const truckPropulsions = CAN_DESIGN_UNITS ? 
 		[PROPULSIONS["Hover"], PROPULSIONS["Wheels"]] : 
 		[PROPULSIONS["Wheels"]];
 
-	const truckTurrets = [
-		WEAPONS["Truck"]
-	];
-
-	return produceVehicle2(factory, truckBodies, truckTurrets, truckPropulsions);
+	return produceVehicle2(factory, truckBody, truckTurrets, truckPropulsions);
 }
 
 /**
  * Produces a cyborg constructor (Combat Engineer) unit.
  * @param {StructureObject} factory 
- * @returns 
+ * @returns {boolean} whether the unit is now in production
  */
 function produceCombatEngineer(factory) {
 	const combatEngineer = { 
@@ -261,10 +176,12 @@ function produceCombatEngineer(factory) {
 }
 
 /*
-	AIR COMBAT UNIT PRODUCTION
+	AIR UNIT PRODUCTION
 */
 
 function produceCloseAirSupport(factory) {
+
+	const body = chooseVehicleBody2(factory, BODY_WEIGHT.MEDIUM);
 
 	const fishBotCASWeapons = [
 		WEAPONS["VTOL Hyper Velocity Cannon"],
@@ -275,17 +192,14 @@ function produceCloseAirSupport(factory) {
 
 	const vtolPropulsions = [
 		PROPULSIONS["VTOL"]
-	].reverse();
+	];
 
-	return produceVehicle({
-		factory: factory, 
-		weaponList: fishBotCASWeapons, 
-		propulsionList: vtolPropulsions, 
-		maxBodyWeight: BODY_WEIGHT.MEDIUM
-	});
+	return produceVehicle2(factory, body, fishBotCASWeapons, vtolPropulsions);
 }
 
 function produceDeepAirSupport(factory) {
+
+	const body = chooseVehicleBody2(factory, BODY_WEIGHT.MEDIUM);
 
 	const fishBotDASWeapons = [
 		WEAPONS["Cluster Bomb"],
@@ -297,21 +211,20 @@ function produceDeepAirSupport(factory) {
 
 	const vtolPropulsions = [
 		PROPULSIONS["VTOL"],
-	].reverse();
+	];
 
-	return produceVehicle({
-		factory: factory, 
-		weaponList: fishBotDASWeapons, 
-		propulsionList: vtolPropulsions, 
-		maxBodyWeight: BODY_WEIGHT.MEDIUM
-	});
+	return produceVehicle2(factory, body, fishBotDASWeapons, vtolPropulsions);
 }
 
 /*
 	GROUND COMBAT UNIT PRODUCTION
 */
+
+/**
+ * Light cavalry is mobile, lightly armoured, medium armament.
+ */
 function produceLightCavalry(factory) {
-	// Light cavalry is mobile, lightly armoured, medium armament
+	const body = chooseVehicleBody2(factory, BODY_WEIGHT.HEAVY);
 
 	// Order these by tech level if you want the most technologically advanced weapon to be used
 	const lightCavalryWeapons = [
@@ -328,17 +241,16 @@ function produceLightCavalry(factory) {
 		PROPULSIONS["Tracks"]
 	].reverse();
 
-	return produceVehicle({
-		factory: factory, 
-		weaponList: lightCavalryWeapons, 
-		propulsionList: lightCavalryPropulsions,
-		maxBodyWeight: BODY_WEIGHT.HEAVY
-	});
+	return produceVehicle2(factory, body, lightCavalryWeapons, lightCavalryPropulsions);
 }
 
+/**
+ * Heavy cavalry has heavy armour, heavy armament but has slow speed. Requires combined arms to be truly effective.
+ * @param {*} factory 
+ * @returns 
+ */
 function produceHeavyCavalry(factory) {
-	// Heavy cavalry has heavy armour, heavy armament but has slow speed
-	// Requires combined arms to be truly effective
+	const body = chooseVehicleBody2(factory, BODY_WEIGHT.HEAVY);
 
 	// Order these by tech level if you want the most technologically advanced body to be used
 	const heavyCavalryWeapons = [
@@ -359,20 +271,18 @@ function produceHeavyCavalry(factory) {
 		PROPULSIONS["Tracks"]
 	].reverse();
 
-	return produceVehicle({
-		factory: factory, 
-		weaponList: heavyCavalryWeapons, 
-		propulsionList: heavyCavalryPropulsions,
-		maxBodyWeight: BODY_WEIGHT.HEAVY
-	});
+	return produceVehicle2(factory, body, heavyCavalryWeapons, heavyCavalryPropulsions);
 }
 
+/**
+ * A cool idea from the 'Peacemaker' bot (by duckfood). With enough nearby repair turrets, it is possible to greatly to extend the lifespan of a frontline unit.
+ */
 function produceHeavyRepair(factory) {
-	// A cool idea from the 'Peacemaker' bot (by 'duckfood'). 
-	// With enough nearby repair turrets, it is possible to greatly to extend the lifespan of a frontline unit.
+	const body = chooseVehicleBody2(factory, BODY_WEIGHT.HEAVY);
+
 	const repairTurrets = [
 		WEAPONS['Heavy Repair Turret']
-	].reverse();
+	];
 	
 	const heavyRepairPropulsion = [
 		PROPULSIONS["Wheels"], 
@@ -380,16 +290,13 @@ function produceHeavyRepair(factory) {
 		PROPULSIONS["Tracks"]
 	].reverse();
 
-	return produceVehicle({
-		factory: factory, 
-		weaponList: repairTurrets, 
-		propulsionList: heavyRepairPropulsion,
-		maxBodyWeight: BODY_WEIGHT.HEAVY
-	});
+	return produceVehicle2(factory, body, repairTurrets, heavyRepairPropulsion);
 }
 
 
 function produceLandAPFireSupport(factory) {
+	const body = chooseVehicleBody2(factory, BODY_WEIGHT.LIGHT);
+
 	// Order these by tech level if you want the most technologically advanced weapon to be used
 	const fireSupportWeapons = [
 		WEAPONS["Mortar"],
@@ -405,16 +312,11 @@ function produceLandAPFireSupport(factory) {
 		PROPULSIONS["Tracks"]
 	].reverse();
 
-	return produceVehicle({
-		factory: factory, 
-		weaponList: fireSupportWeapons, 
-		propulsionList: fireSupportPropulsions, 
-		maxBodyWeight: BODY_WEIGHT.LIGHT
-	});
+	return produceVehicle2(factory, body, fireSupportWeapons, fireSupportPropulsions);
 }
 
 function produceLandFireSupportGeneric(factory) {
-	// Part of the combined arms strategy
+	const body = chooseVehicleBody2(factory, BODY_WEIGHT.HEAVY);
 
 	// Order these by tech level if you want the most technologically advanced weapon to be used
 	const fireSupportWeapons = [
@@ -429,15 +331,11 @@ function produceLandFireSupportGeneric(factory) {
 		PROPULSIONS["Half-tracks"],
 	].reverse();
 
-	return produceVehicle({
-		factory: factory, 
-		weaponList: fireSupportWeapons, 
-		propulsionList: fireSupportPropulsions, 
-		maxBodyWeight: BODY_WEIGHT.LIGHT
-	});
+	return produceVehicle2(factory, body, fireSupportWeapons, fireSupportPropulsions);
 }
 
 function produceHighVolumeAAUnit(factory) {
+	const body = chooseVehicleBody2(factory, BODY_WEIGHT.HEAVY);
 
 	// Order these by tech level if you want the most technologically advanced weapon to be used
 	const shortRangeAAWeapons = [
@@ -445,21 +343,17 @@ function produceHighVolumeAAUnit(factory) {
 		WEAPONS["Whirlwind AA Turret"]
 	].reverse();
 	
-	const airDefenceArtilleryPropulsions = [
+	const propulsions = [
 		PROPULSIONS["Wheels"], 
 		PROPULSIONS["Half-tracks"],
 		PROPULSIONS["Tracks"]
 	].reverse();
 
-	return produceVehicle({
-		factory: factory, 
-		weaponList: shortRangeAAWeapons, 
-		propulsionList: airDefenceArtilleryPropulsions, 
-		maxBodyWeight: BODY_WEIGHT.HEAVY
-	});
+	return produceVehicle2(factory, body, shortRangeAAWeapons, propulsions);
 }
 
 function produceAAFlakUnit(factory) {
+	const body = chooseVehicleBody2(factory, BODY_WEIGHT.HEAVY);
 
 	// Order these by tech level if you want the most technologically advanced weapon to be used
 	const airDefenceArtilleryWeapons = [
@@ -473,15 +367,12 @@ function produceAAFlakUnit(factory) {
 		PROPULSIONS["Tracks"]
 	].reverse();
 
-	return produceVehicle({
-		factory: factory, 
-		weaponList: airDefenceArtilleryWeapons, 
-		propulsionList: airDefenceArtilleryPropulsions, 
-		maxBodyWeight: BODY_WEIGHT.HEAVY
-	});
+	return produceVehicle2(factory, body, airDefenceArtilleryWeapons, airDefenceArtilleryPropulsions);
 }
 
 function produceLandRecon(factory) {
+	const body = chooseVehicleBody2(factory, BODY_WEIGHT.MEDIUM);
+
 	// Order these by tech level if you want the most technologically advanced weapon to be used
 	const sensors = [
 		WEAPONS["Sensor Turret"],
@@ -494,18 +385,12 @@ function produceLandRecon(factory) {
 		PROPULSIONS["Half-tracks"]
 	].reverse();
 
-	return produceVehicle({
-		factory: factory, 
-		weaponList: sensors, 
-		propulsionList: sensorPropulsions, 
-		maxBodyWeight: BODY_WEIGHT.MEDIUM
-	});
+	return produceVehicle2(factory, body, sensors, sensorPropulsions);
 }
 
 /**
  * Produces a combat cyborg (infantry) unit.
  * @param {StructureObject} factory 
- * @returns 
  */
 function produceInfantry(factory) {
 
