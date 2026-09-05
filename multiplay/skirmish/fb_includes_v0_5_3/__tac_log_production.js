@@ -81,7 +81,7 @@ function choosePropulsion(propulsionList) {
 
 /**
  * Filters out unavailable bodies & bodies bigger than the requested size. Returns a single `Body` object.
- * This function assumes FISHBOT_BODIES2 is already ordered from low-tech to high tech.
+ * This function assumes FISHBOT_BODIES is already ordered from high tech to low-tech.
  * @returns {any | undefined}
  */
 function chooseVehicleBody2(factory, requestedBodyWeight) {
@@ -95,14 +95,22 @@ function chooseVehicleBody2(factory, requestedBodyWeight) {
 	const availableBodies = [];
 	for (const body of Object.values(FISHBOT_BODIES)) {		
 		const BODY_AVAILABLE = componentAvailable(body.id);
-		const SIZE_WITHIN_SPEC_AND_FACTORY_CAPABILITY = body.Size <= maxBodyWeight;
+		if (!BODY_AVAILABLE) {
+			continue;
+		}
 
-		if (BODY_AVAILABLE && SIZE_WITHIN_SPEC_AND_FACTORY_CAPABILITY) {
+		const BODY_SIZE_WITHIN_SPEC_AND_FACTORY_CAPABILITY = body.Size === maxBodyWeight;
+		if (BODY_SIZE_WITHIN_SPEC_AND_FACTORY_CAPABILITY) {
+			return body;
+		}
+
+		const ACCEPTABLE_SIZE = body.Size < maxBodyWeight;
+		if (ACCEPTABLE_SIZE) {
 			availableBodies.push(body);
 		}
 	}
 
-	return availableBodies[availableBodies.length - 1];		// last element of array. 'undefined' if list is empty
+	return availableBodies[0];		// the highest tech body with the best size available
 }
 
 
