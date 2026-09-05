@@ -152,13 +152,25 @@ def print_metrics(label: str, events: list[dict], metrics: dict) -> None:
                   f"   direct-fire units owned but not in a commanded brigade")
 
         # Opponent telemetry is only present when the bot ran with TEL_INSTRUMENT_OPPONENTS on.
-        if "mean_strength_ratio" in metrics:
-            ratio = metrics["mean_strength_ratio"]
+        if "mean_comparable_strength" in metrics:
+            ratio = tp.strength_ratio(metrics["mean_comparable_strength"],
+                                      metrics["mean_opponent_strength"])
             print(f"  enemy strength   {metrics['mean_opponent_strength']:>5.1f}"
                   f"   peak {metrics['peak_opponent_strength']:.1f}"
                   f", {metrics['mean_opponent_units']:.1f} units total")
-            print(f"  strength ratio   {ratio:>5.2f}  [{make_bar(min(ratio / 2.0, 1.0))}]"
-                  f"   (above 1.00 means FishBot out-massed the opposition)")
+
+            if ratio is None:
+                print(f"  strength ratio     n/a   (the opposition never fielded a direct-fire unit)")
+            else:
+                print(f"  strength ratio   {ratio:>5.2f}  [{make_bar(min(ratio / 2.0, 1.0))}]"
+                      f"   {metrics['mean_comparable_strength']:.1f} vs"
+                      f" {metrics['mean_opponent_strength']:.1f} direct-fire")
+
+            if "mean_opponent_indirect" in metrics:
+                print(f"  indirect fire    {metrics['mean_own_indirect']:>5.1f} own"
+                      f" vs {metrics['mean_opponent_indirect']:.1f} enemy"
+                      f"   (counted apart from strength)")
+
             print(f"  forces apart     {metrics['mean_engagement_distance']:>5.1f} tiles"
                   f" between force centres")
 

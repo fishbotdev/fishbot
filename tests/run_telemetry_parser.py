@@ -85,12 +85,22 @@ the game can be read as a contest:
         and never committed it, which looks identical to never building one if only the brigades are
         measured.
 
-  `mean_strength_ratio`
-        Time-weighted mean of (own army strength / opposition strength). `1.00` means the two sides
-        were evenly matched; below it FishBot was fighting outnumbered. Both sides count armed
-        direct-fire units only - trucks, sensors and repair units are excluded, so the ratio measures
-        fighting power rather than how many trucks somebody built. Samples where the opposition held
-        nothing are skipped rather than counted as an infinite ratio.
+  `mean_comparable_strength` / `mean_opponent_strength`  (reported as "vs enemy")
+        The two sides' direct-fire strength, time-weighted over the same samples, with the ratio of
+        the two shown beside them. Both count armed direct-fire units only - trucks, sensors and
+        repair units are excluded, so this measures fighting power rather than how many trucks
+        somebody built.
+
+        The ratio is derived where it is displayed rather than stored, because a division does not
+        survive averaging: a mean of per-sample ratios is dominated by the early game, where the
+        opposition holds one or two units and every ratio against it is enormous. Deriving it keeps
+        the ratio equal to the two figures printed beside it at every level of aggregation.
+
+  `mean_own_indirect` / `mean_opponent_indirect`
+        Mortars and artillery, counted apart from strength rather than added to it, because an
+        indirect army fights nothing like a direct-fire one of the same size. Without these, an
+        opponent that builds mortars reads as having almost no army, and the ratio flatters whoever
+        is losing to it.
 
   `mean_engagement_distance`
         Time-weighted mean distance, in tiles, between the two sides' force centres. Read it with the
@@ -483,6 +493,19 @@ def _optional_number(event: dict, key: str) -> float | None:
     return float(value)
 
 
+def _optional_list(event: dict, key: str) -> list | None:
+    """
+    An array field that only some events carry, or None.
+
+    Absent array keys read back as None or as a NaN float (not an empty list), depending on whether
+    any row in the file has them, so the type is checked rather than the value.
+    """
+
+    value = event.get(key)
+
+    return value if isinstance(value, (list, tuple)) else None
+
+
 def _centroid(positions: list[tuple[float, float]]) -> tuple[float, float]:
     return (
         sum(x for x, _ in positions) / len(positions),
@@ -519,9 +542,11 @@ def extract_brigade_metrics(events: list[dict]) -> dict | None:
         n  every unit in the force, aligned to `b`
         x  force centre x, aligned to `b`
         y  force centre y, aligned to `b`
+        i  armed indirect-fire units (mortars, artillery), aligned to `b`
         as FishBot's own rows only: its whole army's direct-fire strength, counted the way an
            opponent's is. The `b` arrays cover the commanded brigades only, so the gap between this
            and the sum of `s` is the force FishBot owns but has not committed to a brigade.
+        ai FishBot's own rows only: its whole army's armed indirect-fire units
         an FishBot's own rows only: every unit it owns
 
     FishBot and its opponents are sampled on the same tick, so samples are grouped by time before
@@ -560,8 +585,15 @@ def extract_brigade_metrics(events: list[dict]) -> dict | None:
 
     opponent_strength_samples = []
     opponent_unit_samples = []
-    strength_ratio_samples = []
     engagement_samples = []
+
+    # The two series the strength ratio is taken from, accumulated over exactly the same samples so
+    # that the reported ratio is the reported figures divided - see the note where it is computed.
+    comparable_strength_samples = []
+
+    own_indirect_samples = []
+    opponent_indirect_samples = []
+    saw_indirect = False
 
     saw_opponent = False
     saw_army = False
@@ -581,6 +613,11 @@ def extract_brigade_metrics(events: list[dict]) -> dict | None:
         # the brigaded total below, which is what they were always compared on.
         army_strengths = [v for v in (_optional_number(r, "as") for r in own_rows) if v is not None]
         army_strength = sum(army_strengths) if army_strengths else None
+
+        own_indirect = [v for v in (_optional_number(r, "ai") for r in own_rows) if v is not None]
+        if own_indirect:
+            saw_indirect = True
+            own_indirect_samples.append((duration, float(sum(own_indirect))))
 
         if army_strength is not None:
             saw_army = True
@@ -611,11 +648,12 @@ def extract_brigade_metrics(events: list[dict]) -> dict | None:
 
         opponent_strength_samples.append((duration, float(opponent_strength)))
         opponent_unit_samples.append((duration, float(sum(sum(r["n"]) for r in opponent_rows))))
+        comparable_strength_samples.append((duration, float(own_comparable_strength)))
 
-        # Skipped rather than clamped when the opposition is wiped out: a ratio against nothing is
-        # infinite, and averaging in a made-up number would flatter whatever came before it.
-        if opponent_strength > 0:
-            strength_ratio_samples.append((duration, own_comparable_strength / opponent_strength))
+        opponent_indirect = [sum(v) for v in (_optional_list(r, "i") for r in opponent_rows) if v is not None]
+        if opponent_indirect:
+            saw_indirect = True
+            opponent_indirect_samples.append((duration, float(sum(opponent_indirect))))
 
         if own_positions and opponent_positions:
             own_center = _centroid(own_positions)
@@ -650,12 +688,27 @@ def extract_brigade_metrics(events: list[dict]) -> dict | None:
     # it reports exactly the keys it always did.
     if saw_opponent:
         opponent_strength_values = [value for _, value in opponent_strength_samples]
+
+        # The strength ratio is deliberately NOT stored. It is a division of the two figures below,
+        # and a division does not survive averaging: averaging per-sample ratios is dominated by the
+        # early game, where the opposition holds one or two combat units and every ratio against it
+        # is enormous, and averaging per-match ratios across a test does the same thing one level up.
+        # `strength_ratio()` derives it from whatever pair of means is being shown, so the ratio and
+        # the figures beside it always agree, at every level of aggregation.
         metrics.update({
+            "mean_comparable_strength": _time_weighted_mean(comparable_strength_samples),
             "mean_opponent_strength": _time_weighted_mean(opponent_strength_samples),
             "mean_opponent_units": _time_weighted_mean(opponent_unit_samples),
             "peak_opponent_strength": max(opponent_strength_values) if opponent_strength_values else 0.0,
-            "mean_strength_ratio": _time_weighted_mean(strength_ratio_samples),
             "mean_engagement_distance": _time_weighted_mean(engagement_samples),
+        })
+
+    # Indirect fire is counted apart from strength, so an opponent that builds mortars is visible
+    # instead of reading as no army at all. Only present from the build that reports it.
+    if saw_indirect:
+        metrics.update({
+            "mean_own_indirect": _time_weighted_mean(own_indirect_samples),
+            "mean_opponent_indirect": _time_weighted_mean(opponent_indirect_samples),
         })
 
     return metrics
@@ -793,6 +846,17 @@ def group_tests_by_map(parsed_tests: list[dict]) -> dict:
     return dict(grouped)
 
 
+def strength_ratio(own: float, opponent: float) -> float | None:
+    """
+    Own strength divided by the opposition's, or None when the opposition never fielded one.
+
+    None rather than 0: the ratio is undefined there, and 0 would read as "hopelessly outmatched",
+    which is the opposite of what an empty denominator means.
+    """
+
+    return (own / opponent) if opponent else None
+
+
 def _mean(tests: list[dict], key: str) -> float:
     values = [t[key] for t in tests if t.get(key) is not None]
     return sum(values) / len(values) if values else 0.0
@@ -901,18 +965,30 @@ def print_mode_summary(mode_name: str, tests: list[dict]) -> None:
             )
 
         # Only present when the bot under test also instrumented its opponents.
-        if any("mean_strength_ratio" in test for test in tests):
+        if any("mean_comparable_strength" in test for test in tests):
 
-            ratio = _mean(tests, "mean_strength_ratio")
+            own = _mean(tests, "mean_comparable_strength")
+            foe = _mean(tests, "mean_opponent_strength")
+            ratio = strength_ratio(own, foe)
+            shown = f"{ratio:>5.2f}   [{make_bar(min(ratio / 2.0, 1.0))}]" if ratio is not None else                     f"  n/a   [{make_bar(0.0)}]"
 
             print(
                 f"     "
                 f"           "
-                f"vs enemy  {ratio:>5.2f}   "
-                f"[{make_bar(min(ratio / 2.0, 1.0))}]"
-                f"   {strength:.1f} vs {_mean(tests, 'mean_opponent_strength'):.1f}"
+                f"vs enemy  {shown}"
+                f"   {own:.1f} vs {foe:.1f} direct"
                 f"   {_mean(tests, 'mean_engagement_distance'):.0f} tiles apart"
             )
+
+            # Only present from the build that counts indirect fire separately.
+            if any("mean_opponent_indirect" in test for test in tests):
+                print(
+                    f"     "
+                    f"           "
+                    f"indirect  {_mean(tests, 'mean_own_indirect'):>5.1f}   "
+                    f"vs {_mean(tests, 'mean_opponent_indirect'):.1f} enemy"
+                    f"   (mortars and artillery, counted apart from strength)"
+                )
 
     worst = min(tests, key=lambda t: t["mean_fair_share_contested"] or 0.0)
     worst_fair_share = worst["mean_fair_share_contested"] or 0.0

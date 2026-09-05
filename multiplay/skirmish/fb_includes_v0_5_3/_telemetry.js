@@ -45,9 +45,11 @@
  * `OILRES` how that commitment ended | `OILLOST` a derrick destroyed |
  * `BRIG` periodic force strength and position, per player | `END` game finished.
  *
- * A `BRIG` line for FishBot itself also carries `as`/`an`: its whole army, counted the way an
+ * A `BRIG` line for FishBot itself also carries `as`/`ai`/`an`: its whole army, counted the way an
  * opponent's is. The per-brigade arrays cover the commanded brigades only, so the gap between `as`
- * and the sum of `s` is the force FishBot owns but has not committed to a brigade.
+ * and the sum of `s` is the force FishBot owns but has not committed to a brigade. Indirect-fire
+ * units are counted separately (`ai`, and `i` for an opponent) rather than added to strength, so
+ * that a mortar army is visible instead of reading as no army at all.
  *
  * --- DESIGN INVARIANTS ---
  *
@@ -180,6 +182,7 @@ class Telemetry {
 			// reserve or not yet grouped is missing from them - the gap between `as` and the sum of
 			// `s` is exactly the force FishBot owns but has not committed.
 			'as': this.#directFireCount(ownUnits),
+			'ai': this.#indirectCount(ownUnits),
 			'an': ownUnits.length,
 		});
 
@@ -216,6 +219,7 @@ class Telemetry {
 			'o': playerID,
 			'b': [TEL_WHOLE_ARMY],
 			's': [directFireUnits.length],
+			'i': [this.#indirectCount(units)],
 			'n': [units.length],
 			'x': [center.x],
 			'y': [center.y],
@@ -242,6 +246,19 @@ class Telemetry {
 	 */
 	#directFireCount(units) {
 		return units.filter(droid => this.#isDirectFireCombatUnit(droid)).length;
+	}
+
+	/**
+	 * How many of `units` are armed indirect-fire (mortars, artillery).
+	 *
+	 * Reported separately rather than folded into strength, because an indirect army fights nothing
+	 * like a direct-fire one of the same size. Without it, an opponent that builds mortars reads as
+	 * having almost no army at all, and the strength ratio flatters whoever is losing to it.
+	 * @param {DroidObject[]} units
+	 * @returns {number}
+	 */
+	#indirectCount(units) {
+		return units.filter(droid => droid.weapons.length > 0 && droid.hasIndirect).length;
 	}
 
 	/**
