@@ -332,13 +332,11 @@ class CommandCenter {
 			debug(`  HIT_AIR_UNIT_LIMIT: ${MY_VTOL_COUNT} >= ${VTOL_UNIT_HARD_LIMIT}?`);
 		}
 		
-		// Get unit deficits
 		// Decide on whether or not to produce combat units
-		// Note: FishBot will not build combat vehicles before it can design them, on any difficulty.	
+		// Note: FishBot will not build combat vehicles, combat cyborgs or VTOLs before it can design them, on any difficulty (in line with human player rules).	
 		const CAN_DESIGN_UNITS = HQ_IS_CONSTRUCTED;
-
 		const SHOULD_PRODUCE_LAND_VEHICLES = CAN_DESIGN_UNITS && !HIT_LAND_VEHICLE_LIMIT;
-		const SHOULD_PRODUCE_INFANTRY = !HIT_INFANTRY_LIMIT;
+		const SHOULD_PRODUCE_INFANTRY = CAN_DESIGN_UNITS && !HIT_INFANTRY_LIMIT;
 		const SHOULD_PRODUCE_VTOLS = CAN_DESIGN_UNITS && !HIT_AIR_UNIT_LIMIT;
 
 		// Decide on whether or not to produce trucks

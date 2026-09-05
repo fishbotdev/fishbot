@@ -33,7 +33,7 @@ function buildDroidWrapper(factory, droidName, bodies, propulsions, weapon) {
  * Filters out all unavailable bodies, then selects the most technologically advanced body (within the capability of the factory) from the provided `bodies` array.
  * @returns {any | undefined}
  */
-function chooseVehicleBody({bodies=[], factory=undefined, maxFactoryModules=undefined, unitsDesignable=true}) {
+function chooseVehicleBody({bodies=[], factory=undefined, maxFactoryModules=undefined}) {
 	// TODO: add typing
 	const DEBUG_MODE = false;
 	
@@ -46,10 +46,6 @@ function chooseVehicleBody({bodies=[], factory=undefined, maxFactoryModules=unde
 	if (!FACTORY_TYPES.includes(factory.stattype) || !defined(factory.modules)) {
 		debug("chooseVehicleBody(): 'factory' is not a WZ FACTORY/VTOL_FACTORY and/or 'factory.modules' is not defined.");
 		return undefined;
-	}
-
-	if (!unitsDesignable) {
-		return FISHBOT_BODIES[0];		// First body in the bodies list will be selected (should be Viper)
 	}
 
 	const availableBodies = FISHBOT_BODIES.filter((body) => componentAvailable(body.Id)).reverse();		// reversing goes from highest tech to lowest tech
@@ -109,17 +105,12 @@ function chooseWeapon(weaponList) {
 /**
  * Chooses the most technologically advanced propulsion from the provided `propulsionList`.
  * @param {any[]} propulsionList 		
- * @param {boolean} unitsDesignable used to prevent FishBot from building any other units other than `Truck Viper Wheels` before the Command Center is built
  * @returns {any | undefined} TODO: add typing
  */
-function choosePropulsion(propulsionList, unitsDesignable=true) {
+function choosePropulsion(propulsionList) {
 	if (propulsionList == null) {
 		debug("choosePropulsion(): Input parameter 'propulsionList' is missing.")
 		return undefined;
-	}
-
-	if (!unitsDesignable) {
-		return PROPULSIONS["Wheels"];
 	}
 
 	// propulsionList.forEach(p => debug(`		testing: ${p.name}, ${p.id}, ${p.Id}`));
@@ -136,7 +127,7 @@ function choosePropulsion(propulsionList, unitsDesignable=true) {
  * Attempts to produce a unit (to the provided specification) at the specified factory.
  * @returns {boolean} whether or not the unit is now in production in the specified factory.
  */
-function produceVehicle({factory, weaponList, propulsionList, maxBodyWeight=BODY_WEIGHT.HEAVY, unitsDesignable=true}) {
+function produceVehicle({factory, weaponList, propulsionList, maxBodyWeight=BODY_WEIGHT.HEAVY}) {
 
 	let maxRequiredModules;
 	switch (maxBodyWeight) {
@@ -153,15 +144,15 @@ function produceVehicle({factory, weaponList, propulsionList, maxBodyWeight=BODY
 			maxRequiredModules = 0;
 	}
 		
-	const body = chooseVehicleBody({bodies: FISHBOT_BODIES, factory: factory, maxFactoryModules: maxRequiredModules, unitsDesignable: unitsDesignable});		
+	const body = chooseVehicleBody({bodies: FISHBOT_BODIES, factory: factory, maxFactoryModules: maxRequiredModules});		
 
 	// Select most up-to-date weapon
 	const weapon = chooseWeapon(weaponList);
 
 	// Select available (ground) propulsion
-	const propulsion = choosePropulsion(propulsionList, unitsDesignable);
+	const propulsion = choosePropulsion(propulsionList);
 	
-	if (!defined(body) || !defined(weapon) || !defined(propulsion)) {
+	if (body == null || weapon == null || propulsion == null) {
 		debug("produceVehicle(): Either 'body' or 'weapon' or 'propulsion' were undefined.")
 		return false;
 	}
@@ -179,26 +170,26 @@ function produceVehicle({factory, weaponList, propulsionList, maxBodyWeight=BODY
 /**
  * Produces a truck. FishBot will only produce 'Truck Viper Wheels' when units are not designable (to follow human player rules).
  * @param {StructureObject} factory 
- * @param {boolean} unitsDesignable 
+ * @param {boolean} unitsDesignable  this flag is here to prevent FishBot from producing Hover Trucks before a command center is built
  * @returns {boolean} whether or not the unit is now in production
  */
 function produceTruck(factory, unitsDesignable) {
+	
+	const truckPropulsions = [PROPULSIONS["Wheels"]];
+
+	if (unitsDesignable) {
+		truckPropulsions.unshift(PROPULSIONS["Hover"]);
+	}
 
 	const truckTurrets = [
 		WEAPONS["Truck"]
 	];
 
-	const truckPropulsions = [
-		PROPULSIONS["Wheels"],
-		PROPULSIONS["Hover"]
-	].reverse();
-
 	return produceVehicle({
 		factory: factory, 
 		weaponList: truckTurrets, 
 		propulsionList: truckPropulsions, 
-		maxBodyWeight: BODY_WEIGHT.LIGHT,
-		unitsDesignable: unitsDesignable		// this flag is here to prevent FishBot from producing Hover Trucks before a command center is built
+		maxBodyWeight: BODY_WEIGHT.LIGHT
 	});
 }
 
