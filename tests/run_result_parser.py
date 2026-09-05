@@ -344,28 +344,36 @@ def format_win_rate(summary: dict | None) -> str:
 
 
 def print_readme_table(grouped_results: dict[str, dict]) -> None:
-    """Prints the results as a markdown table, ready to paste into README.md."""
+    """Prints one markdown table per player count, ready to paste into README.md."""
 
-    rows = []
+    rows_by_players = defaultdict(list)
 
     for map_name, modes in grouped_results.items():
 
         players, display_name = split_map_name(map_name)
 
-        rows.append((
+        rows_by_players[players].append((
             display_name,
-            players,
             format_win_rate(summarise_tests(modes["duel"])),
             format_win_rate(summarise_tests(modes["ffa"])),
         ))
 
-    rows.sort(key=lambda row: row[0].lower())
+    for players in sorted(rows_by_players):
 
-    print("| Map | Players | Duel | FFA |")
-    print("| --- | :---: | :---: | :---: |")
+        print(f"### {players} player (T2-NoScav)")
 
-    for display_name, players, duel_rate, ffa_rate in rows:
-        print(f"| `{display_name}` | {players} | {duel_rate} | {ffa_rate} |")
+        print("| Map | Duel | FFA |")
+        print("| --- | :---: | :---: |")
+
+        rows = sorted(
+            rows_by_players[players],
+            key=lambda row: row[0].lower(),
+        )
+
+        for display_name, duel_rate, ffa_rate in rows:
+            print(f"| `{display_name}` | {duel_rate} | {ffa_rate} |")
+
+        print()
 
 
 
