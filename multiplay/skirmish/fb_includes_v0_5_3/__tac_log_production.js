@@ -224,7 +224,7 @@ function produceDeepAirSupport(factory) {
  * Light cavalry is mobile, lightly armoured, medium armament.
  */
 function produceLightCavalry(factory) {
-	const body = chooseVehicleBody2(factory, BODY_WEIGHT.HEAVY);
+	const body = chooseVehicleBody2(factory, BODY_WEIGHT.MEDIUM);
 
 	// Order these by tech level if you want the most technologically advanced weapon to be used
 	const lightCavalryWeapons = [
