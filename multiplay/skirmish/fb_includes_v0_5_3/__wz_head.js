@@ -387,7 +387,7 @@ const v462_DEFENCES_NAMES = [
 /*
     VEHICLE BODY INFORMATION
 */
-let FISHBOT_BODIES = [];            // want this to be an array of objects because this will be regularly iterated through
+const FISHBOT_BODIES = {};
 
 /* 
 For each body e.g. FISHBOT_BODIES["Python"], the parameters are:
@@ -410,9 +410,10 @@ For each body e.g. FISHBOT_BODIES["Python"], the parameters are:
 */
 
 const FISHBOT_BODY_LIST_ORDERED = ["Viper", "Cobra", "Python", "Mantis", "Leopard", "Panther", "Tiger", "Retaliation", "Retribution", "Vengeance"];       // this is ordered in order of technological sophistication (used in production)
+
 FISHBOT_BODY_LIST_ORDERED.forEach((bodyName) => {
     const bodyObj = {...Stats.Body[bodyName], ...{'name': bodyName, 'id': Stats.Body[bodyName].Id}};       // adds user-friendly 'name' & id
-    FISHBOT_BODIES.push(bodyObj);
+    FISHBOT_BODIES[bodyName] = bodyObj;        
 });
 // FISHBOT_BODIES.forEach((body) => debug( `${body.name}: ${body.Id}, ${body.Size}`));
 

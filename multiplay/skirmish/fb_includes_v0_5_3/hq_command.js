@@ -146,7 +146,7 @@ class CommandCenter {
 
 			SHOULD_PRODUCE_TRUCKS: true,
 			MAX_TRUCKS_THIS_TICK: 1,
-			CYBORG_CONSTRUCTOR_AVAILABLE: false,
+			SHOULD_PRODUCE_CYBORG_ENGINEERS: false,
 			MAX_TRUCKS: 8,
 			
 			BRIGADE_WEIGHTS: DEFAULT_BRIGADE_WEIGHTS,
@@ -332,13 +332,11 @@ class CommandCenter {
 			debug(`  HIT_AIR_UNIT_LIMIT: ${MY_VTOL_COUNT} >= ${VTOL_UNIT_HARD_LIMIT}?`);
 		}
 		
-		// Get unit deficits
 		// Decide on whether or not to produce combat units
-		// Note: FishBot will not build combat vehicles before it can design them, on any difficulty.	
+		// Note: FishBot will not build combat vehicles, combat cyborgs or VTOLs before it can design them, on any difficulty (in line with human player rules).	
 		const CAN_DESIGN_UNITS = HQ_IS_CONSTRUCTED;
-
 		const SHOULD_PRODUCE_LAND_VEHICLES = CAN_DESIGN_UNITS && !HIT_LAND_VEHICLE_LIMIT;
-		const SHOULD_PRODUCE_INFANTRY = !HIT_INFANTRY_LIMIT;
+		const SHOULD_PRODUCE_INFANTRY = CAN_DESIGN_UNITS && !HIT_INFANTRY_LIMIT;
 		const SHOULD_PRODUCE_VTOLS = CAN_DESIGN_UNITS && !HIT_AIR_UNIT_LIMIT;
 
 		// Decide on whether or not to produce trucks
@@ -374,7 +372,7 @@ class CommandCenter {
 
 		this.PRODUCTION_RESUPPLY_PARAMETERS.SHOULD_PRODUCE_TRUCKS = SHOULD_PRODUCE_TRUCKS;
 		this.PRODUCTION_RESUPPLY_PARAMETERS.MAX_TRUCKS_THIS_TICK = MAX_TRUCKS_THIS_TICK;
-		this.PRODUCTION_RESUPPLY_PARAMETERS.CYBORG_CONSTRUCTOR_AVAILABLE = CYBORG_CONSTRUCTOR_AVAILABLE;
+		this.PRODUCTION_RESUPPLY_PARAMETERS.SHOULD_PRODUCE_CYBORG_ENGINEERS = CYBORG_CONSTRUCTOR_AVAILABLE;
 
 		this.PRODUCTION_RESUPPLY_PARAMETERS.SHOULD_PRODUCE_INFANTRY = SHOULD_PRODUCE_INFANTRY;
 		this.PRODUCTION_RESUPPLY_PARAMETERS.SHOULD_PRODUCE_VTOLS = SHOULD_PRODUCE_VTOLS;
@@ -1340,7 +1338,7 @@ class CommandCenter {
 		const SHOULD_PRODUCE_TRUCKS = this.PRODUCTION_RESUPPLY_PARAMETERS.SHOULD_PRODUCE_TRUCKS;
 		const MAX_TRUCKS_THIS_TICK = this.PRODUCTION_RESUPPLY_PARAMETERS.MAX_TRUCKS_THIS_TICK;
 
-		const CYBORG_CONSTRUCTOR_AVAILABLE = this.PRODUCTION_RESUPPLY_PARAMETERS.CYBORG_CONSTRUCTOR_AVAILABLE;
+		const SHOULD_PRODUCE_CYBORG_ENGINEERS = this.PRODUCTION_RESUPPLY_PARAMETERS.SHOULD_PRODUCE_CYBORG_ENGINEERS;
 		const SHOULD_PRODUCE_INFANTRY = this.PRODUCTION_RESUPPLY_PARAMETERS.SHOULD_PRODUCE_INFANTRY;
 		const SHOULD_PRODUCE_VTOLS = this.PRODUCTION_RESUPPLY_PARAMETERS.SHOULD_PRODUCE_VTOLS;
 		const CAN_DESIGN_UNITS = this.PRODUCTION_RESUPPLY_PARAMETERS.CAN_DESIGN_UNITS;
@@ -1408,7 +1406,7 @@ class CommandCenter {
 		for (let i=0; i<idleCyborgFactories.length; i++) {
 			const f = idleCyborgFactories[i];
 
-			if (SHOULD_PRODUCE_TRUCKS && CYBORG_CONSTRUCTOR_AVAILABLE && trucksThisTick < MAX_TRUCKS_THIS_TICK) {
+			if (SHOULD_PRODUCE_TRUCKS && SHOULD_PRODUCE_CYBORG_ENGINEERS && trucksThisTick < MAX_TRUCKS_THIS_TICK) {
 				if (DEBUG_PRODUCTION) debug(`	${gameTime}: produced Combat Engineer`);
 				const productionStarted = produceCombatEngineer(f);
 				if (productionStarted) {
@@ -1444,7 +1442,7 @@ class CommandCenter {
 		for (let i=0; i<idleFactories.length; i++) {
 			const factory = idleFactories[i];
 
-			if (SHOULD_PRODUCE_TRUCKS && !CYBORG_CONSTRUCTOR_AVAILABLE && trucksThisTick < MAX_TRUCKS_THIS_TICK) {
+			if (SHOULD_PRODUCE_TRUCKS && !SHOULD_PRODUCE_CYBORG_ENGINEERS && trucksThisTick < MAX_TRUCKS_THIS_TICK) {
 				if (DEBUG_PRODUCTION) debug(`	${gameTime}: produced Truck`);
 				// Note: CAN_DESIGN_UNITS prevents FishBot from producing any other trucks other than `Truck Viper Wheels` until the command center is built
 				const productionStarted = produceTruck(factory, CAN_DESIGN_UNITS);
