@@ -344,9 +344,9 @@
  * @typedef {Object} ProductionParameters
  * @property {boolean} CAN_DESIGN_UNITS
  * 
- * @property {boolean} SHOULD_PRODUCE_TRUCKS
+ * @property {boolean} SHOULD_PRODUCE_TRUCK_VEHICLES
  * @property {number} MAX_TRUCKS_THIS_TICK
- * @property {boolean} SHOULD_PRODUCE_CYBORG_ENGINEERS
+ * @property {boolean} SHOULD_PRODUCE_TRUCK_CYBORGS
  * @property {number} MAX_TRUCKS	Unit limit
  * 
  * @property {Map<number, number>} BRIGADE_WEIGHTS
