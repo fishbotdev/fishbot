@@ -124,6 +124,58 @@ function choosePropulsion(propulsionList) {
 }
 
 /**
+ * Filters out unavailable bodies & bodies bigger than the requested size. Returns a single `Body` object.
+ * This function assumes FISHBOT_BODIES2 is already ordered from low-tech to high tech.
+ * @returns {any | undefined}
+ */
+function chooseVehicleBody2(factory, requestedBodyWeight) {
+
+	// Note: BODY_WEIGHT.MEDIUM is set to 1 (enum construction). 
+	// That corresponds to the required factory.modules = 1 required for production, hence the equality in the following line.
+	const maxRequiredModules = requestedBodyWeight;		
+	// Set the upper-bound of body weight (limited by caller request, or by factory capability)
+	const maxBodyWeight = Math.min(maxRequiredModules, factory.modules);		
+
+	const availableBodies = [];
+	for (const body of Object.values(FISHBOT_BODIES2)) {		
+		const BODY_AVAILABLE = componentAvailable(body.id);
+		const SIZE_WITHIN_SPEC_AND_FACTORY_CAPABILITY = body.Size <= maxBodyWeight;
+
+		if (BODY_AVAILABLE && SIZE_WITHIN_SPEC_AND_FACTORY_CAPABILITY) {
+			availableBodies.push(body);
+		}
+	}
+
+	return availableBodies[availableBodies.length - 1];		// last element of array. 'undefined' if list is empty
+}
+
+
+/**
+ * Attempts to produce a unit (to the provided specification) at the specified factory.
+ * No longer selects the body based on factory type (leaves this to the overarching wrapper function).
+ * @returns {boolean} whether or not the unit is now in production in the specified factory.
+ */
+function produceVehicle2(factory, body, weaponList, propulsionList) {
+
+	// Select most up-to-date weapon
+	const weapon = chooseWeapon(weaponList);
+
+	// Select available (ground) propulsion
+	const propulsion = choosePropulsion(propulsionList);
+	
+	if (body == null || weapon == null || propulsion == null) {
+		debug("produceVehicle(): Either 'body' or 'weapon' or 'propulsion' were undefined.")
+		return false;
+	}
+		
+	const tankName = weapon.name + ", " + body.name + ", " + propulsion.name +  ` (FishBot v${FISHBOT_VERSION})`;
+
+	const productionInProgress = buildDroidWrapper(factory, tankName, body.id, propulsion.id, weapon.id);
+	return productionInProgress;
+}
+
+
+/**
  * Attempts to produce a unit (to the provided specification) at the specified factory.
  * @returns {boolean} whether or not the unit is now in production in the specified factory.
  */
@@ -170,27 +222,24 @@ function produceVehicle({factory, weaponList, propulsionList, maxBodyWeight=BODY
 /**
  * Produces a truck. FishBot will only produce 'Truck Viper Wheels' when units are not designable (to follow human player rules).
  * @param {StructureObject} factory 
- * @param {boolean} unitsDesignable  this flag is here to prevent FishBot from producing Hover Trucks before a command center is built
+ * @param {boolean} CAN_DESIGN_UNITS  this flag is here to prevent FishBot from producing Hover Trucks before a command center is built
  * @returns {boolean} whether or not the unit is now in production
  */
-function produceTruck(factory, unitsDesignable) {
+function produceTruck(factory, CAN_DESIGN_UNITS) {
 	
-	const truckPropulsions = [PROPULSIONS["Wheels"]];
+	const truckBodies = CAN_DESIGN_UNITS ?
+		chooseVehicleBody2(factory, BODY_WEIGHT.LIGHT) :
+		FISHBOT_BODIES2["Viper"];
 
-	if (unitsDesignable) {
-		truckPropulsions.unshift(PROPULSIONS["Hover"]);
-	}
+	const truckPropulsions = CAN_DESIGN_UNITS ? 
+		[PROPULSIONS["Hover"], PROPULSIONS["Wheels"]] : 
+		[PROPULSIONS["Wheels"]];
 
 	const truckTurrets = [
 		WEAPONS["Truck"]
 	];
 
-	return produceVehicle({
-		factory: factory, 
-		weaponList: truckTurrets, 
-		propulsionList: truckPropulsions, 
-		maxBodyWeight: BODY_WEIGHT.LIGHT
-	});
+	return produceVehicle2(factory, truckBodies, truckTurrets, truckPropulsions);
 }
 
 /**
