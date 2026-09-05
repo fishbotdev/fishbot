@@ -438,7 +438,7 @@ function produceLandUnitCategory(category, factory) {
 			productionStarted = productionStarted || produceLightCavalry(factory);
 			break;
 		case DIVISION.SHORT_RANGE_FIRE_SUPPORT_RESERVE:
-			productionStarted = productionStarted || produceLandFireSupportGeneric(factory);
+			productionStarted = productionStarted || produceLandAPFireSupport(factory);
 			break;
 		case DIVISION.AIR_DEFENCE_RESERVE:
 			productionStarted = productionStarted || produceHighVolumeAAUnit(factory);
