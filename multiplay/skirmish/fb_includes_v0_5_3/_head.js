@@ -346,7 +346,7 @@
  * 
  * @property {boolean} SHOULD_PRODUCE_TRUCKS
  * @property {number} MAX_TRUCKS_THIS_TICK
- * @property {boolean} CYBORG_CONSTRUCTOR_AVAILABLE
+ * @property {boolean} SHOULD_PRODUCE_CYBORG_ENGINEERS
  * @property {number} MAX_TRUCKS	Unit limit
  * 
  * @property {Map<number, number>} BRIGADE_WEIGHTS
