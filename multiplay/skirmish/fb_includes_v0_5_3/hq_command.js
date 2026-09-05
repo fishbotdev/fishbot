@@ -80,9 +80,9 @@ class CommandCenter {
 			KNOCKOUT_WEIGHT: 0.56,					// promotes targets which the brigade has already damaged
 			LOW_HEALTH_THRESHOLD: 50,				// a target below this health percentage is considered worth finishing off
 
-			EFFECTIVE_FIRE_SUPPORT_RADIUS: 10,		// todo: this should be adaptive - when the brigade has a sensor, this is better, without, it is restricted by sight range of the front units
+			EFFECTIVE_FIRE_SUPPORT_RADIUS: 12,		// todo: this should be adaptive - when the brigade has a sensor, this is better, without, it is restricted by sight range of the front units
 			EFFECTIVE_ADA_RADIUS: 12,
-			MEDIAN_CENTER_STRENGTH_THRESHOLD: Math.ceil(0.50 * MAX_DIRECT_FIRE_UNITS),		// at/above this brigade strength, the brigade position estimator switches from average to median which changes the aggression of the brigade
+			MEDIAN_CENTER_STRENGTH_THRESHOLD: Math.ceil(0.35 * MAX_DIRECT_FIRE_UNITS),		// at/above this brigade strength, the brigade position estimator switches from average to median which changes the aggression of the brigade
 		};
 
 		// Aviation parameters
@@ -244,10 +244,10 @@ class CommandCenter {
 			const LARGEST_OIL_SHARE = oilShare.get(largestOilSharePlayer);
 			const MY_OIL_SHARE = oilShare.get(me);
 
-			const BIG_OIL_SHARE = (MY_OIL_SHARE > DOMINANT_OIL_SHARE) || (MY_DERRICK_COUNT >= Math.ceil(0.85 * TOTAL_DERRICKS));
+			const MINIMUM_OILS_CLAIMED = MY_DERRICK_COUNT >= Math.ceil(TOTAL_DERRICKS / (livingPlayers.length + 1));	// 2p -> bigger than 1/3, 3p -> bigger than 1/4 and so on
 			const BIGGEST_OIL_SHARE = MY_OIL_SHARE >= LARGEST_OIL_SHARE;
 
-			oilDominance = BIG_OIL_SHARE && BIGGEST_OIL_SHARE;
+			oilDominance = MINIMUM_OILS_CLAIMED && BIGGEST_OIL_SHARE;
 		}
 
 		if (this.isOilDominant != oilDominance) {

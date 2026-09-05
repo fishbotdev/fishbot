@@ -409,13 +409,13 @@ For each body e.g. FISHBOT_BODIES["Python"], the parameters are:
 -   id              | "Body11ABT"           | (int) same as Id (added by FishBot)  
 */
 
-const FISHBOT_BODY_LIST_ORDERED = ["Viper", "Cobra", "Python", "Mantis", "Leopard", "Panther", "Tiger", "Retaliation", "Retribution", "Vengeance"];       // this is ordered in order of technological sophistication (used in production)
-
+// this is ordered in order of technological sophistication (used in production)
+const FISHBOT_BODY_LIST_ORDERED = ["Viper", "Cobra", "Python", "Mantis", "Leopard", "Panther", "Tiger", "Retaliation", "Retribution", "Vengeance"];       
+FISHBOT_BODY_LIST_ORDERED.reverse();        // body selection driver expects this in highest tech to lowest tech order
 FISHBOT_BODY_LIST_ORDERED.forEach((bodyName) => {
     const bodyObj = {...Stats.Body[bodyName], ...{'name': bodyName, 'id': Stats.Body[bodyName].Id}};       // adds user-friendly 'name' & id
     FISHBOT_BODIES[bodyName] = bodyObj;        
 });
-// FISHBOT_BODIES.forEach((body) => debug( `${body.name}: ${body.Id}, ${body.Size}`));
 
 const BODY_WEIGHT = {
     LIGHT: 0,
