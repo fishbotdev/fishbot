@@ -244,10 +244,10 @@ class CommandCenter {
 			const LARGEST_OIL_SHARE = oilShare.get(largestOilSharePlayer);
 			const MY_OIL_SHARE = oilShare.get(me);
 
-			const BIG_OIL_SHARE = (MY_OIL_SHARE > DOMINANT_OIL_SHARE) || (MY_DERRICK_COUNT >= Math.ceil(0.85 * TOTAL_DERRICKS));
+			const MINIMUM_OILS_CLAIMED = MY_DERRICK_COUNT >= Math.ceil(TOTAL_DERRICKS / (livingPlayers.length + 1));	// 2p -> bigger than 1/3, 3p -> bigger than 1/4 and so on
 			const BIGGEST_OIL_SHARE = MY_OIL_SHARE >= LARGEST_OIL_SHARE;
 
-			oilDominance = BIG_OIL_SHARE && BIGGEST_OIL_SHARE;
+			oilDominance = MINIMUM_OILS_CLAIMED && BIGGEST_OIL_SHARE;
 		}
 
 		if (this.isOilDominant != oilDominance) {
