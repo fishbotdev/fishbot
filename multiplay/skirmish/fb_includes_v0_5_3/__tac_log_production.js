@@ -93,7 +93,7 @@ function chooseVehicleBody2(factory, requestedBodyWeight) {
 	const maxBodyWeight = Math.min(maxRequiredModules, factory.modules);		
 
 	const availableBodies = [];
-	for (const body of Object.values(FISHBOT_BODIES2)) {		
+	for (const body of Object.values(FISHBOT_BODIES)) {		
 		const BODY_AVAILABLE = componentAvailable(body.id);
 		const SIZE_WITHIN_SPEC_AND_FACTORY_CAPABILITY = body.Size <= maxBodyWeight;
 
@@ -144,7 +144,7 @@ function produceTruck(factory, CAN_DESIGN_UNITS) {
 	
 	const truckBody = CAN_DESIGN_UNITS ?
 		chooseVehicleBody2(factory, BODY_WEIGHT.LIGHT) :
-		FISHBOT_BODIES2["Viper"];
+		FISHBOT_BODIES["Viper"];
 		
 	const truckTurrets = [
 		WEAPONS["Truck"]
