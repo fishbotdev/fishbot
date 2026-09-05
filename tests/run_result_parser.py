@@ -16,9 +16,63 @@
 """
 
 import pandas as pd
+import re
 from pathlib import Path
 import json
 from collections import defaultdict
+
+
+#
+# Test map folders are named "<players>c-<base name>", where <players> is one
+# more than the real player count (the packager adds a spectator slot).
+# The base name is the map folder, not the name the game shows in its map list.
+#
+MAP_DISPLAY_NAMES = {
+    "DustyMaze": "DustyMaze (2P)",
+    "DustyMaze-2v2": "DustyMaze-2v2",
+    "DustyMaze-FFA": "DustyMaze-FFA",
+    "Entropy": "Entropy",
+    "Gamma": "Gamma",
+    "Melting": "Melting",
+    "Monocot_i": "Monocot",
+    "Roughness": "Roughness",
+    "Thales": "Thales",
+    "Vision": "Vision",
+    "WindFury": "Sk-WindFury",
+    "bananas": "Sk-Bananas",
+    "basingstoke": "Sk-Basingstoke",
+    "beggarskanyon": "Sk-BeggarsKanyon",
+    "bloat": "Bloat",
+    "clover": "Sk-Clover",
+    "cockate": "Sk-Cockate",
+    "cockpit": "Sk-Cockpit",
+    "concreteplayground": "Sk-Concrete",
+    "fishnet": "Sk-FishNets",
+    "greatrift": "Sk-GreatRift",
+    "gridlock": "Sk-Gridlock",
+    "hidensneak": "Sk-HideNSneak",
+    "highground": "Sk-HighGround",
+    "littleegypt": "Sk-LittleEgypt",
+    "manhattan": "Sk-Manhattan",
+    "mizamaze": "Sk-MizaMaze",
+    "mountain": "Sk-Mountain",
+    "pyramidal": "Sk-Pyramidal",
+    "rollinghills": "Sk-RollingHills",
+    "rush": "Sk-Rush",
+    "rush2": "Sk-Rush2",
+    "sandcastles": "Sk-SandCastles",
+    "startup": "Sk-Startup",
+    "thepit": "Sk-ThePit",
+    "urban-chaos": "Sk-Urban-Chaos",
+    "urbanchasm": "Sk-UrbanChasm",
+    "urbanduel": "Sk-UrbanDuel",
+    "valleyofdeath": "Sk-Valley",
+    "wheeloffortune": "Sk-Wheel",
+    "yinyang": "Sk-YinYang",
+    "ziggurat": "Sk-Ziggurat",
+}
+
+NO_RESULT = "-"
 
 
 def read_json(path: Path) -> dict:
@@ -264,12 +318,71 @@ def print_map_summary(grouped_results: dict[str, dict]) -> None:
         print()
 
 
+def split_map_name(map_name: str) -> tuple[int, str]:
+    """Splits a test map name into its real player count and its README display name."""
+
+    match = re.fullmatch(r"(\d+)c-(.+)", map_name)
+
+    if not match:
+        return 0, map_name
+
+    test_map_players = int(match.group(1))
+    base_name = match.group(2)
+
+    return (
+        test_map_players - 1,
+        MAP_DISPLAY_NAMES.get(base_name, base_name),
+    )
+
+
+def format_win_rate(summary: dict | None) -> str:
+
+    if not summary:
+        return NO_RESULT
+
+    return f"{summary['win_rate'] * 100:.0f}%"
+
+
+def print_readme_table(grouped_results: dict[str, dict]) -> None:
+    """Prints one markdown table per player count, ready to paste into README.md."""
+
+    rows_by_players = defaultdict(list)
+
+    for map_name, modes in grouped_results.items():
+
+        players, display_name = split_map_name(map_name)
+
+        rows_by_players[players].append((
+            display_name,
+            format_win_rate(summarise_tests(modes["duel"])),
+            format_win_rate(summarise_tests(modes["ffa"])),
+        ))
+
+    for players in sorted(rows_by_players):
+
+        print(f"### {players} player (T2-NoScav)")
+
+        print("| Map | Duel | FFA |")
+        print("| --- | :---: | :---: |")
+
+        rows = sorted(
+            rows_by_players[players],
+            key=lambda row: row[0].lower(),
+        )
+
+        for display_name, duel_rate, ffa_rate in rows:
+            print(f"| `{display_name}` | {duel_rate} | {ffa_rate} |")
+
+        print()
+
+
+
 if __name__ == "__main__":
 
     BASE_MANIFEST_PATH = Path.cwd() / "base_manifest.json"
     base_manifest = read_json(BASE_MANIFEST_PATH)
 
-    COMMIT_SHA = "b155be21ee55cffe7240ab54bd39e5a2ced12ab2"
+    COMMIT_SHA = "46a948a9b0fd42c22c641063a860faf72664a90e"
     SHORT_SHA = COMMIT_SHA[:7]
 
     TEST_RESULTS_PATH = Path.cwd() / "results" / SHORT_SHA
@@ -282,3 +395,9 @@ if __name__ == "__main__":
     grouped_results = group_tests_by_map(parsed_tests)
 
     print_map_summary(grouped_results)
+
+    print("-" * 60)
+    print("README.md table")
+    print()
+
+    print_readme_table(grouped_results)
