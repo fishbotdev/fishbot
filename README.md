@@ -99,7 +99,15 @@ For a map to be compatible, FishBot must have an absence of breaking issues, and
 * Greater than 75% win rate in duels across all pairs of positions against Cobra @ Medium difficulty (i.e. 1v1 with all other player slots being spectators).
 
 ## Recent updates
-* **v0.5.2** - *released **1 Sep 2026***
+* **v0.5.3** - *released **xx Sep 2026***
+    * Combat fixes:
+        * Improved group cohesion during heavy fighting.
+        * Improved VTOL utilisation when the match is neck-and-neck.
+        * Unit designs tweaked.
+    * Improved the construction planner to reduce trucks oscillating back and forth doing nothing.
+    * Excluding 10-player maps and sea maps, all other Warzone 2100 maps are now covered by automated E2E testing.
+
+* **v0.5.2** - *released **01 Sep 2026***
     * Combat improvements, including a complete overhaul of group movement and targeting. 
         * This should result in smoother and seemingly more intentional group behaviour, with better handling of chokepoints.
     * Performance improvements, resulting in a smoother player experience on all base maps shipped with the game.
