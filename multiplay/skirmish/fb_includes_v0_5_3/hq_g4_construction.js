@@ -579,11 +579,21 @@ class armyEngineering {
 			if (structCount >= state.getMaxStructureCount(STRUCTURE_NAME)) {
 				continue;
 			}
-			// 1. Adapt power generators to number of derricks
+			// 1. Adapt base structures to oil situation
 			if (["Power Generator", "Power Module"].includes(STRUCTURE_NAME)) {
-				if (structCount >= parameters.MAX_GENERATORS_AND_POWER_MODULES) {
+				if (structCount >= parameters.DYNAMIC_POWER_GENERATOR_CAP) {
 					continue;
 				}	
+			}
+			if (["Factory", "Cyborg Factory", "VTOL Factory"].includes(STRUCTURE_NAME)) {
+				if (structCount >= parameters.DYNAMIC_FACTORY_CAP) {
+					continue;
+				}
+			}
+			if (["Research Facility", "Research Module"].includes(STRUCTURE_NAME)) {
+				if (structCount >= parameters.DYNAMIC_RESEARCH_LAB_CAP) {
+					continue;
+				}
 			}
 			// 2. Remove VTOLs if unused
 			if (["VTOL Factory", "VTOL Rearming Pad"].includes(STRUCTURE_NAME)) {
@@ -591,7 +601,7 @@ class armyEngineering {
 					continue;
 				}
 			}
-			// 3. Remove extra factory modules (e.g. as a result of VTOL Factory removal).
+			// 3.0 Remove extra factory modules (e.g. as a result of VTOL Factory removal).
 			if (["Factory Module"].includes(STRUCTURE_NAME)) {
 				if (!parameters.SHOULD_USE_FACTORY_MODULES) {
 					continue;
@@ -605,6 +615,17 @@ class armyEngineering {
 					continue;
 				}
 			}
+			// 3.1 Repeat for research modules
+			if (["Research Module"].includes(STRUCTURE_NAME)) {
+				const labCount = structureCounts.get(STRUCTURES["Research Facility"])['count'];
+				const researchModuleCount = structureCounts.get(STRUCTURES["Research Module"])['count'];
+
+				const MAXIMUM_RESEARCH_MODULES_REACHED = (researchModuleCount >= labCount);
+				if (MAXIMUM_RESEARCH_MODULES_REACHED) {
+					continue;
+				}
+			}
+
 			// 4. Match rearming pads to the number of VTOLs
 			if (["VTOL Rearming Pad"].includes(STRUCTURE_NAME)) {
 				if (structCount >= parameters.MAX_VTOL_REARMING_PADS) {

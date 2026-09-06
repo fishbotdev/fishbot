@@ -111,7 +111,9 @@ class CommandCenter {
 			ABORTED_SECTOR_COOLDOWN_MS: 30000,		// how long a sector aborted as dangerous stays off the option list
 
 			// Structure limits
-			MAX_GENERATORS_AND_POWER_MODULES: 2,
+			DYNAMIC_POWER_GENERATOR_CAP: 2,
+			DYNAMIC_FACTORY_CAP: 2,
+			DYNAMIC_RESEARCH_LAB_CAP: 1,
 			MAX_VTOL_REARMING_PADS: 2, 
 			SHOULD_BUILD_VTOLS: false,
 			SHOULD_USE_FACTORY_MODULES: false,
@@ -266,6 +268,8 @@ class CommandCenter {
 			this.isOilDominant = oilDominance;
 		}
 
+		const IS_ENERGY_DEFICIENT = !this.isOilDominant;
+
 		/*
 			CONSTRUCTION PARAMETERS
 		*/
@@ -282,16 +286,40 @@ class CommandCenter {
 		this.CONSTRUCTION_PARAMETERS.MAX_PARALLEL_REPAIR_CENTER_BUILD_TASKS = MAX_PARALLEL_REPAIR_CENTER_BUILD_TASKS;
 
 		// Structure limit adaptation
-		const generatorsRequired = Math.ceil((MY_DERRICK_COUNT + 1) / 4);		// + 1 is here to provide extra capacity
-		const MIN_GENERATORS = 2;
+		const getDynamicPowerGeneratorCap = (myDerrickCount, minGeneratorCounts, maxGeneratorCounts) => {
+			const generatorsRequired = Math.ceil(myDerrickCount / 4);
+			return clampValue(generatorsRequired, minGeneratorCounts, maxGeneratorCounts);
+		};
+		const TYPICAL_MIN_GENERATORS = 2;
+		const MIN_GENERATORS = Math.min(TYPICAL_MIN_GENERATORS, Math.ceil(FAIR_SHARE_DERRICK_COUNT / 4));
+		const MAX_GENERATORS = state.getMaxStructureCount("Power Generator");
+		const DYNAMIC_POWER_GENERATOR_CAP = getDynamicPowerGeneratorCap(MY_DERRICK_COUNT, MIN_GENERATORS, MAX_GENERATORS);
 
-		const MAX_GENERATORS_AND_POWER_MODULES = clampValue(generatorsRequired, MIN_GENERATORS, state.getMaxStructureCount("Power Generator"));
 
-		const USE_VTOL = (MY_DERRICK_COUNT >= 8);
-		const USE_FACTORY_MODULES = (MY_DERRICK_COUNT >= 6);
+		const getDynamicFactoryCap = (isEnergyDeficient, minFactoryCount, maxFactoryCount) => {
+			const DYNAMIC_FACTORY_CAP = isEnergyDeficient ? minFactoryCount : maxFactoryCount;
+			return DYNAMIC_FACTORY_CAP;
+		}
+		const MIN_FACTORIES = 1;
+		const MAX_FACTORIES = state.getMaxStructureCount("Factory");
+		const DYNAMIC_FACTORY_CAP = getDynamicFactoryCap(IS_ENERGY_DEFICIENT, MIN_FACTORIES, MAX_FACTORIES);
+
+
+		const getDynamicResearchLabCap = (isEnergyDeficient, minLabCount, maxLabCount) => {
+			const DYNAMIC_RESEARCH_LAB_CAP = isEnergyDeficient ? minLabCount : maxLabCount;
+			return DYNAMIC_RESEARCH_LAB_CAP;
+		}
+		const MIN_RESEARCH_LABS = 1;
+		const MAX_RESEARCH_LABS = state.getMaxStructureCount("Research Facility");
+		const DYNAMIC_RESEARCH_LAB_CAP = getDynamicResearchLabCap(IS_ENERGY_DEFICIENT, MIN_RESEARCH_LABS, MAX_RESEARCH_LABS);
+
+		const USE_VTOL = !IS_ENERGY_DEFICIENT;							// todo: add measure of 'map openness'
+		const USE_FACTORY_MODULES = !IS_ENERGY_DEFICIENT;					
 		const MY_VTOL_COUNT = state.playerInfo[me]['numAirUnits'];
 
-		this.CONSTRUCTION_PARAMETERS.MAX_GENERATORS_AND_POWER_MODULES = MAX_GENERATORS_AND_POWER_MODULES;
+		this.CONSTRUCTION_PARAMETERS.DYNAMIC_POWER_GENERATOR_CAP = DYNAMIC_POWER_GENERATOR_CAP;
+		this.CONSTRUCTION_PARAMETERS.DYNAMIC_FACTORY_CAP = DYNAMIC_FACTORY_CAP;
+		this.CONSTRUCTION_PARAMETERS.DYNAMIC_RESEARCH_LAB_CAP = DYNAMIC_RESEARCH_LAB_CAP;
 		this.CONSTRUCTION_PARAMETERS.MAX_VTOL_REARMING_PADS = MY_VTOL_COUNT;
 		this.CONSTRUCTION_PARAMETERS.SHOULD_BUILD_VTOLS = USE_VTOL;
 		this.CONSTRUCTION_PARAMETERS.SHOULD_USE_FACTORY_MODULES = USE_FACTORY_MODULES;
