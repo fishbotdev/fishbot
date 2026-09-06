@@ -209,6 +209,8 @@ class CommandCenter {
 	 */
 	updateStrategicParameters(state) {
 
+		this.toc.updateOilEconomy(state);		// refreshes the oil supply & demand estimate this decision is based on
+
 		// Gather information from state
 		const playerInfo = state.playerInfo;
 		const TOTAL_DERRICKS = state.poi.derricks.length;
@@ -267,7 +269,31 @@ class CommandCenter {
 			this.isOilDominant = oilDominance;
 		}
 
-		const IS_ENERGY_DEFICIENT = !MINIMUM_OILS_CLAIMED;
+		/*
+			Oil sufficiency: a continuous (0 - 1) measure of how much base FishBot's oil can actually support.
+			0 means "build the bare minimum & go take more oil"; 1 means "build everything the structure limits allow".
+
+			It is the product of a strategic term and an operational term, because both have to hold:
+			1. `OIL_SHARE_SCORE` asks how much of a player's expected share of the map's oil FishBot is *earning* from.
+			   Derricks which no generator has capacity for are excluded, because they earn nothing.
+			2. `POWER_BUDGET_SCORE` asks whether income covers what the base has already committed. The game engine
+			   queues up a job whose cost it cannot pay, so `unmetDemand` is oil FishBot has promised and does not
+			   have; against a minute of income, it measures how far the base is over-built for its oil. It is a
+			   smoothed figure, so it reports a base which is *persistently* stalled rather than one job waiting.
+
+			A persistent surplus adds a bounded bonus on top of the share: banking oil means FishBot is under-using
+			what it has, which justifies a bigger base than its share of derricks alone would.
+		*/
+		const oilEconomy = state.oilEconomy;
+		const INCOME_PER_MIN = Math.max(oilEconomy.incomePerMin, 1);		// guards the ratios below before the first derrick is connected
+
+		const MAX_SURPLUS_BONUS = 0.25;			// how far a surplus alone may push the base past FishBot's share of the oil
+
+		const OIL_SHARE_SCORE = clampValue(oilEconomy.connectedDerricks / Math.max(FAIR_SHARE_DERRICK_COUNT, 1), 0, 1);
+		const SURPLUS_BONUS = MAX_SURPLUS_BONUS * clampValue(oilEconomy.netFlowPerMin / INCOME_PER_MIN, 0, 1);
+		const POWER_BUDGET_SCORE = clampValue(1 - oilEconomy.unmetDemand / INCOME_PER_MIN, 0, 1);
+
+		const OIL_SUFFICIENCY = clampValue((OIL_SHARE_SCORE + SURPLUS_BONUS) * POWER_BUDGET_SCORE, 0, 1);
 
 		/*
 			CONSTRUCTION PARAMETERS
@@ -286,34 +312,43 @@ class CommandCenter {
 
 		// Structure limit adaptation
 		const getDynamicPowerGeneratorCap = (myDerrickCount, minGeneratorCounts, maxGeneratorCounts) => {
-			const generatorsRequired = Math.ceil(myDerrickCount / 4);
+			const generatorsRequired = Math.ceil(myDerrickCount / DERRICKS_PER_POWER_GENERATOR);
 			return clampValue(generatorsRequired, minGeneratorCounts, maxGeneratorCounts);
 		};
 		const TYPICAL_MIN_GENERATORS = 2;
-		const MIN_GENERATORS = Math.min(TYPICAL_MIN_GENERATORS, Math.ceil(FAIR_SHARE_DERRICK_COUNT / 4));
+		const MIN_GENERATORS = Math.min(TYPICAL_MIN_GENERATORS, Math.ceil(FAIR_SHARE_DERRICK_COUNT / DERRICKS_PER_POWER_GENERATOR));
 		const MAX_GENERATORS = state.getMaxStructureCount("Power Generator");
 		const DYNAMIC_POWER_GENERATOR_CAP = getDynamicPowerGeneratorCap(MY_DERRICK_COUNT, MIN_GENERATORS, MAX_GENERATORS);
 
 
-		const getDynamicFactoryCap = (isEnergyDeficient, minFactoryCount, maxFactoryCount) => {
-			const DYNAMIC_FACTORY_CAP = isEnergyDeficient ? minFactoryCount : maxFactoryCount;
-			return DYNAMIC_FACTORY_CAP;
-		}
+		// Power-hungry structures scale with `OIL_SUFFICIENCY` rather than flipping at a single threshold, so that
+		// FishBot grows its base in step with its oil instead of jumping between a minimal & a maximal base.
+		const getOilScaledCap = (oilSufficiency, minCount, maxCount) => {
+			return Math.round(minCount + oilSufficiency * (maxCount - minCount));
+		};
+
 		const MIN_FACTORIES = 1;
 		const MAX_FACTORIES = state.getMaxStructureCount("Factory");
-		const DYNAMIC_FACTORY_CAP = getDynamicFactoryCap(IS_ENERGY_DEFICIENT, MIN_FACTORIES, MAX_FACTORIES);
+		const DYNAMIC_FACTORY_CAP = getOilScaledCap(OIL_SUFFICIENCY, MIN_FACTORIES, MAX_FACTORIES);
 
-
-		const getDynamicResearchLabCap = (isEnergyDeficient, minLabCount, maxLabCount) => {
-			const DYNAMIC_RESEARCH_LAB_CAP = isEnergyDeficient ? minLabCount : maxLabCount;
-			return DYNAMIC_RESEARCH_LAB_CAP;
-		}
 		const MIN_RESEARCH_LABS = 1;
 		const MAX_RESEARCH_LABS = state.getMaxStructureCount("Research Facility");
-		const DYNAMIC_RESEARCH_LAB_CAP = getDynamicResearchLabCap(IS_ENERGY_DEFICIENT, MIN_RESEARCH_LABS, MAX_RESEARCH_LABS);
+		const DYNAMIC_RESEARCH_LAB_CAP = getOilScaledCap(OIL_SUFFICIENCY, MIN_RESEARCH_LABS, MAX_RESEARCH_LABS);
 
-		const USE_VTOL = !IS_ENERGY_DEFICIENT;							// todo: add measure of 'map openness'		
+		// VTOLs (and the pads & factories behind them) are the most expensive thing FishBot can commit to, so unlike
+		// the caps above they stay an all-or-nothing decision. The threshold sits where the `MINIMUM_OILS_CLAIMED`
+		// test it replaces used to: that test fired between 0.67 (2 players) and 0.8 (4 players) of a fair share.
+		const VTOL_OIL_SUFFICIENCY_THRESHOLD = 0.75;
+		const USE_VTOL = OIL_SUFFICIENCY >= VTOL_OIL_SUFFICIENCY_THRESHOLD;			// todo: add measure of 'map openness'
 		const MY_VTOL_COUNT = state.playerInfo[me]['numAirUnits'];
+
+		const BASE_SIZE_CHANGED = (this.CONSTRUCTION_PARAMETERS.DYNAMIC_FACTORY_CAP !== DYNAMIC_FACTORY_CAP) ||
+								  (this.CONSTRUCTION_PARAMETERS.DYNAMIC_RESEARCH_LAB_CAP !== DYNAMIC_RESEARCH_LAB_CAP);
+		if (BASE_SIZE_CHANGED) {
+			const derricks = `${oilEconomy.connectedDerricks} connected + ${oilEconomy.idleDerricks} idle derricks`;
+			const oilRates = `income ${Math.round(oilEconomy.incomePerMin)}/min, spend ${Math.round(oilEconomy.expenditurePerMin)}/min, unmet ${Math.round(oilEconomy.unmetDemand)}`;
+			deb(`oil sufficiency ${OIL_SUFFICIENCY.toFixed(2)} (${derricks}; ${oilRates}) -> ${DYNAMIC_FACTORY_CAP} factories, ${DYNAMIC_RESEARCH_LAB_CAP} labs`);
+		}
 
 		this.CONSTRUCTION_PARAMETERS.DYNAMIC_POWER_GENERATOR_CAP = DYNAMIC_POWER_GENERATOR_CAP;
 		this.CONSTRUCTION_PARAMETERS.DYNAMIC_FACTORY_CAP = DYNAMIC_FACTORY_CAP;

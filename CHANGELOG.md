@@ -12,6 +12,7 @@ This file is used to record the changes to FishBot between each version.
     - Fixed some uncommon construction planning issues causing trucks to oscillate back and forth doing nothing.
     - Unit designs tweaked. 
     - Added adaptation to truck production & base structure construction (based on FishBot's oil situation).
+    - FishBot now estimates its oil income & expenditure, and grows its base on a sliding scale from that estimate. Previously, the number of factories and research labs flipped between a minimum and a maximum at a single oil threshold; it now scales with the oil FishBot is actually earning, and stops growing when the base is already outspending its income.
 - Technical changes
     - Fixed a latent issue where combat cyborgs could potentially be produced before the Command Center was built; this means that FishBot continues to respect human player rules even if only cyborg factories are allowed.
     - Improved E2E test coverage of most base maps shipped with the game (*excluding 10 player maps and sea maps*), as script-generated maps are now testable.

@@ -112,6 +112,38 @@ declare const Stats: Object;
  */
 declare const playerData: any;
 
+/**
+* ```Upgrades``` A special array containing per-player rules information for game entity types, which can be
+written to in order to implement upgrades and other dynamic rules changes. Each item in the array contains a
+subset of the sparse array of rules information in the ```Stats``` global.
+
+FishBot note: `Upgrades[player].Building[structureName]` is keyed by the same human-readable structure name as
+`Stats.Building`, and reports the *current* (researched) value, e.g. `Upgrades[me].Building["Power Generator"].PowerPoints`.
+ */
+declare const Upgrades: any;
+
+/**
+ * ```powerType``` The power level set for this game (0 = low, 1 = medium, 2 = high).
+ */
+declare const powerType: number;
+
+/**
+ * ```difficulty``` The currently set campaign difficulty, or the current AI's difficulty setting.
+ * It will be one of ```SUPEREASY``` (campaign only), ```EASY```, ```MEDIUM```, ```HARD``` or ```INSANE```.
+ */
+declare const difficulty: DifficultyType;
+
+
+/* ---------- difficulty ---------- */
+
+declare const SUPEREASY: DifficultyType;
+declare const EASY: DifficultyType;
+declare const MEDIUM: DifficultyType;
+declare const HARD: DifficultyType;
+declare const INSANE: DifficultyType;
+
+type DifficultyType = number;
+
 
 /* ---------- playerFilter ---------- */
 

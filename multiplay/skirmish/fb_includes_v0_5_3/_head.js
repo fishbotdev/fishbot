@@ -177,6 +177,9 @@
  * @property {number} numStructs
  * @property {number} numFactories
  * @property {number} numDerricks
+ * @property {number} numBuiltDerricks only built derricks extract oil
+ * @property {number} numBuiltPowerGenerators only built generators convert oil into power
+ * @property {number} numBuiltPowerModules power modules across the built generators
  * @property {number} numConstructedHQs
  * @property {number} numRepairFacilities
  * 
@@ -187,6 +190,19 @@
  * @property {FbObject[]} researchFacilityFbObjects
  * @property {FbObject[]} repairFacilityFbObjects
  * 
+ */
+
+/**
+ * Type definition for `worldState.oilEconomy`. All power quantities are in power points; all rates are per minute.
+ * @typedef {Object} OilEconomyObject
+ * @property {number} sampledAt `gameTime` of the last sample; `-1` before the first one
+ * @property {number} bankedPower power in hand at the last sample (`playerPower`)
+ * @property {number} unmetDemand smoothed power committed to jobs FishBot cannot pay for yet (`queuedPower`)
+ * @property {number} connectedDerricks built derricks which a built power generator has capacity for
+ * @property {number} idleDerricks built derricks earning nothing because no generator has capacity for them
+ * @property {number} incomePerMin forecast oil income
+ * @property {number} expenditurePerMin smoothed spend on production, construction & research
+ * @property {number} netFlowPerMin smoothed rate at which banked power is growing (negative while drawing down)
  */
 
 /**

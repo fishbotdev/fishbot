@@ -25,6 +25,49 @@ const baseLocation = startPositions[me];
 const WZ2100_TILERANGE_SCALING_FACTOR = 1 / 128;
 
 /*
+    POWER (OIL) INFORMATION
+
+    These constants describe how the game engine turns oil derricks into power points. They mirror
+    `src/power.cpp` & `rules/setup/powermodifier.js` in Warzone 2100 (verified against v4.7.0), and let FishBot
+    forecast its oil income rather than guess at it. The engine's income rule is:
+
+        power per second = (connected derricks) * EXTRACT_POINTS * (power modifier %) * (generator power points %)
+
+    where a derrick is "connected" only while it is built *and* attached to a built power generator, and each
+    generator accepts at most `DERRICKS_PER_POWER_GENERATOR` derricks.
+*/
+
+const EXTRACT_POINTS_PER_DERRICK_PER_SEC = 1;       // `EXTRACT_POINTS` in `src/power.cpp`
+const DERRICKS_PER_POWER_GENERATOR = 4;             // `NUM_POWER_MODULES` in `src/structuredef.h`
+
+/**
+ * Returns the percentage which the game applies to every derrick's output, for this player.
+ * This mirrors `setupPowerModifier()` in the game's own rules scripts: the skirmish power level sets the base
+ * value, which the AI difficulty setting then overrides (Medium difficulty keeps the base value).
+ * @returns {number} percentage, where 100 means "unmodified"
+ */
+function getPowerModifierPct() {
+    let modifier = 100;                                 // powerType 1: "Medium Power Levels"
+    if (powerType === 0) {
+        modifier = 85;                                  // "Low Power Levels"
+    } else if (powerType === 2) {
+        modifier = 125;                                 // "High Power Levels"
+    }
+
+    if (difficulty === INSANE) {
+        modifier = 200 + 15 * powerType;
+    } else if (difficulty === HARD) {
+        modifier = 150 + 10 * powerType;
+    } else if (difficulty === EASY) {
+        modifier = 70 + 5 * powerType;
+    }
+
+    return modifier;
+}
+
+const POWER_MODIFIER_PCT = getPowerModifierPct();       // fixed for the whole game, so it is only read once
+
+/*
     RESEARCH INFORMATION
 */
 const RESEARCHES = {};

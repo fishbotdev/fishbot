@@ -224,6 +224,9 @@ function createPlayerInfoEntry(playerID) {
         'numStructs': 0,
         'numFactories': 0,
         'numDerricks': 0, 
+        'numBuiltDerricks': 0,              // only built derricks extract oil
+        'numBuiltPowerGenerators': 0,       // only built generators convert oil into power
+        'numBuiltPowerModules': 0,          // power modules across the built generators
         'numConstructedHQs': 0,
         'numRepairFacilities': 0,
 
