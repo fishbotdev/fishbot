@@ -43,19 +43,19 @@ ID_MAP = {
 }
 
 FISHBOT_BRIGADE_COMPOSITION = {
-    'MAX_HEAVY_CAVALRY': 3,
-    'MAX_LIGHT_CAVALRY': 3,
-    'MAX_MORTAR': 4,
+    'MAX_HEAVY_CAVALRY': 4,
+    'MAX_LIGHT_CAVALRY': 4,
+    'MAX_MORTAR': 5,
     'MAX_ADA': 2,
     'MAX_SENSOR': 1,
     'MAX_REPAIR': 1,
 }
 
 WEIGHTS = {
-    'MAX_HEAVY_CAVALRY': 0.95,
-    'MAX_LIGHT_CAVALRY': 1.0,
-    'MAX_MORTAR': 0.7,
-    'MAX_ADA': 0.65,
+    'MAX_HEAVY_CAVALRY': 0.9,
+    'MAX_LIGHT_CAVALRY': 0.95,
+    'MAX_MORTAR': 0.75,
+    'MAX_ADA': 0.6,
     'MAX_SENSOR': 0.25,
     'MAX_REPAIR': 0.5,
 }

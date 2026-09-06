@@ -53,9 +53,9 @@ class CommandCenter {
 		this.BRIGADE_DESIGNATIONS = BRIGADE_IDS.slice(0, this.NUMBER_OF_BRIGADES);
 
 		const DEFAULT_FISHBOT_BRIGADE_COMPOSITION = {
-			'MAX_HEAVY_CAVALRY': 3,
-			'MAX_LIGHT_CAVALRY': 3,
-			'MAX_MORTAR': 4,
+			'MAX_HEAVY_CAVALRY': 4,
+			'MAX_LIGHT_CAVALRY': 4,
+			'MAX_MORTAR': 5,
 			'MAX_ADA': 2,
 			'MAX_SENSOR': 1,
 			'MAX_INFANTRY': 6,
@@ -82,7 +82,7 @@ class CommandCenter {
 
 			EFFECTIVE_FIRE_SUPPORT_RADIUS: 12,		// todo: this should be adaptive - when the brigade has a sensor, this is better, without, it is restricted by sight range of the front units
 			EFFECTIVE_ADA_RADIUS: 12,
-			MEDIAN_CENTER_STRENGTH_THRESHOLD: Math.ceil(0.35 * MAX_DIRECT_FIRE_UNITS),		// at/above this brigade strength, the brigade position estimator switches from average to median which changes the aggression of the brigade
+			MEDIAN_CENTER_STRENGTH_THRESHOLD: Math.ceil(0.25 * MAX_DIRECT_FIRE_UNITS),		// at/above this brigade strength, the brigade position estimator switches from average to median which changes the aggression of the brigade
 		};
 
 		// Aviation parameters
@@ -134,10 +134,10 @@ class CommandCenter {
 		const DEFAULT_UNIT_WEIGHTS = new Map([
 			// Production weights (which influences production order) are tuned using `python_helper_scripts / production_scheduling.py`.
 			// Must be rebalanced each time the brigade composition is changed.	
-			[DIVISION.HEAVY_CAV_RESERVE, 0.95],
-			[DIVISION.LIGHT_CAV_RESERVE, 1.0],
-			[DIVISION.SHORT_RANGE_FIRE_SUPPORT_RESERVE, 0.7],
-			[DIVISION.AIR_DEFENCE_RESERVE, 0.65],
+			[DIVISION.HEAVY_CAV_RESERVE, 0.9],
+			[DIVISION.LIGHT_CAV_RESERVE, 0.95],
+			[DIVISION.SHORT_RANGE_FIRE_SUPPORT_RESERVE, 0.75],
+			[DIVISION.AIR_DEFENCE_RESERVE, 0.6],
 			[DIVISION.SENSOR_RESERVE, 0.25],
 			[DIVISION.MAINTENANCE_RESERVE, 0.5],
 		]);
