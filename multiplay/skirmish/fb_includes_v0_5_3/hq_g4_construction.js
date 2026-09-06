@@ -601,7 +601,7 @@ class armyEngineering {
 					continue;
 				}
 			}
-			// 3.0 Remove extra factory modules (e.g. as a result of VTOL Factory removal).
+			// 3.0 Remove extra factory modules 
 			if (["Factory Module"].includes(STRUCTURE_NAME)) {
 				const factoryCount = structureCounts.get(STRUCTURES["Factory"])['count'];
 				const vtolFactoryCount = structureCounts.get(STRUCTURES["VTOL Factory"])['count'];
