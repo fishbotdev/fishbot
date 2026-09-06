@@ -310,6 +310,22 @@ class worldState {
          */
         this.playerInfo;
 
+        /**
+         * FishBot's own oil (power) supply & demand, in power points. This is an *observation* of the economy,
+         * not a decision about it - the strategic response lives in `hq_command.js`.
+         * @type {OilEconomyObject}
+         */
+        this.oilEconomy = {
+            'sampledAt': -1,
+            'bankedPower': 0,
+            'unmetDemand': 0,
+            'connectedDerricks': 0,
+            'idleDerricks': 0,
+            'incomePerMin': 0,
+            'expenditurePerMin': 0,
+            'netFlowPerMin': 0,
+        };
+
         ////////////////////////// FISHBOT METADATA (CONSIDER MOVING THIS TO HQ_COMMAND) //////////////////////////
 
         // Combat targeting

@@ -665,6 +665,82 @@ class TacticalOperationsCenter {
 	}
 
 	/**
+	 * Estimates FishBot's oil supply & demand and writes the result to `state.oilEconomy`.
+	 *
+	 * Supply is forecast from the game engine's own income rule (see `__wz_head.js`): each derrick which is
+	 * built *and* connected to a built power generator earns power every second, scaled by the game's power
+	 * modifier and by the generator's power points (which power modules & research upgrades increase).
+	 * Derricks beyond the generators' capacity are idle and earn nothing.
+	 *
+	 * Demand cannot be read from the engine, so it is inferred from the change in banked power:
+	 * 		expenditure = income - (change in banked power).
+	 * This holds because banked power only moves through income and spending. Spending arrives in lumps (the
+	 * engine deducts the whole cost of a droid, structure or research topic when that job starts), so the
+	 * result is smoothed over `SMOOTHING_WINDOW_MIN` to give a usable rate.
+	 *
+	 * `unmetDemand` complements it: the engine holds a job whose cost it cannot pay in a queue, so a non-empty
+	 * queue means FishBot is *already* being held up by a lack of oil, whatever the smoothed rates say. It is
+	 * smoothed too, so that one job briefly waiting its turn does not read as a starved economy.
+	 *
+	 * @param {worldState} state
+	 * @returns {void}
+	 */
+	updateOilEconomy(state) {
+
+		const SMOOTHING_WINDOW_MIN = 0.5;		// estimates follow a change in spending over roughly this long
+
+		const economy = state.oilEconomy;
+		const p = state.playerInfo[me];
+
+		if (gameTime === economy['sampledAt']) {
+			return;		// already sampled this tick; there is no new interval to measure over
+		}
+
+		// 1. Forecast income
+		const GENERATOR_COUNT = p['numBuiltPowerGenerators'];
+		const CONNECTED_DERRICKS = Math.min(p['numBuiltDerricks'], DERRICKS_PER_POWER_GENERATOR * GENERATOR_COUNT);
+
+		// Generators can carry different numbers of power modules, and the engine spreads derricks across them
+		// in an order FishBot cannot see, so the mean is used.
+		const generatorUpgrades = Upgrades[me].Building["Power Generator"];
+		const MEAN_MODULES_PER_GENERATOR = (GENERATOR_COUNT > 0) ? (p['numBuiltPowerModules'] / GENERATOR_COUNT) : 0;
+		const GENERATOR_POWER_POINTS_PCT = generatorUpgrades["PowerPoints"] + generatorUpgrades["ModulePowerPoints"] * MEAN_MODULES_PER_GENERATOR;
+
+		const POWER_PER_DERRICK_PER_MIN = 60 * EXTRACT_POINTS_PER_DERRICK_PER_SEC * (POWER_MODIFIER_PCT / 100) * (GENERATOR_POWER_POINTS_PCT / 100);
+		const INCOME_PER_MIN = CONNECTED_DERRICKS * POWER_PER_DERRICK_PER_MIN;
+
+		economy['connectedDerricks'] = CONNECTED_DERRICKS;
+		economy['idleDerricks'] = p['numBuiltDerricks'] - CONNECTED_DERRICKS;
+		economy['incomePerMin'] = INCOME_PER_MIN;
+
+		// 2. Read the stocks
+		const BANKED_POWER = playerPower(me);
+		const UNMET_DEMAND = queuedPower(me);
+
+		if (economy['sampledAt'] < 0) {
+			// First sample of the game: there is no previous reading to measure a rate against.
+			economy['unmetDemand'] = UNMET_DEMAND;
+			economy['bankedPower'] = BANKED_POWER;
+			economy['sampledAt'] = gameTime;
+			return;
+		}
+
+		// 3. Infer expenditure from the change in banked power
+		const ELAPSED_MIN = (gameTime - economy['sampledAt']) / 60000;
+
+		const NET_FLOW_PER_MIN = (BANKED_POWER - economy['bankedPower']) / ELAPSED_MIN;
+		const EXPENDITURE_PER_MIN = Math.max(INCOME_PER_MIN - NET_FLOW_PER_MIN, 0);
+
+		const SMOOTHING = clampValue(ELAPSED_MIN / SMOOTHING_WINDOW_MIN, 0, 1);
+		economy['netFlowPerMin'] += SMOOTHING * (NET_FLOW_PER_MIN - economy['netFlowPerMin']);
+		economy['expenditurePerMin'] += SMOOTHING * (EXPENDITURE_PER_MIN - economy['expenditurePerMin']);
+		economy['unmetDemand'] += SMOOTHING * (UNMET_DEMAND - economy['unmetDemand']);
+
+		economy['bankedPower'] = BANKED_POWER;
+		economy['sampledAt'] = gameTime;
+	}
+
+	/**
 	 * 	This function:
 	 * 	1. Gets all droids & structures on the map (like taking a satellite image of the whole map).
 	 * 	2. Classifies all droids & structures, writing a new `state.playerInfo` as well as `state.grid.grid`. 
@@ -818,9 +894,17 @@ class TacticalOperationsCenter {
 
 				if (flags & OBJ_FLAGS.RESOURCE_EXTRACTOR) {
 					p['numDerricks']++;
+					if (flags & OBJ_FLAGS.IS_BUILT) {
+						p['numBuiltDerricks']++;
+					}
 					TEMP_GRID[gx][gy]['claimedDerricks'].push(createNewClaimedDerrick(obj.x, obj.y, obj.player));			
 				}
 
+				// Only built generators are connected to derricks by the game engine, so only they contribute to oil income.
+				if ((flags & OBJ_FLAGS.POWER_GENERATOR) && (flags & OBJ_FLAGS.IS_BUILT)) {
+					p['numBuiltPowerGenerators']++;
+					p['numBuiltPowerModules'] += obj.modules;
+				}
 
 				if (flags & OBJ_FLAGS.PRODUCTION) {
 					p['numFactories']++;
