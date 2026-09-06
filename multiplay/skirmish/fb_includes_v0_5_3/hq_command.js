@@ -53,9 +53,9 @@ class CommandCenter {
 		this.BRIGADE_DESIGNATIONS = BRIGADE_IDS.slice(0, this.NUMBER_OF_BRIGADES);
 
 		const DEFAULT_FISHBOT_BRIGADE_COMPOSITION = {
-			'MAX_HEAVY_CAVALRY': 3,
-			'MAX_LIGHT_CAVALRY': 3,
-			'MAX_MORTAR': 4,
+			'MAX_HEAVY_CAVALRY': 4,
+			'MAX_LIGHT_CAVALRY': 4,
+			'MAX_MORTAR': 5,
 			'MAX_ADA': 2,
 			'MAX_SENSOR': 1,
 			'MAX_INFANTRY': 6,
@@ -82,7 +82,7 @@ class CommandCenter {
 
 			EFFECTIVE_FIRE_SUPPORT_RADIUS: 12,		// todo: this should be adaptive - when the brigade has a sensor, this is better, without, it is restricted by sight range of the front units
 			EFFECTIVE_ADA_RADIUS: 12,
-			MEDIAN_CENTER_STRENGTH_THRESHOLD: Math.ceil(0.35 * MAX_DIRECT_FIRE_UNITS),		// at/above this brigade strength, the brigade position estimator switches from average to median which changes the aggression of the brigade
+			MEDIAN_CENTER_STRENGTH_THRESHOLD: Math.ceil(0.25 * MAX_DIRECT_FIRE_UNITS),		// at/above this brigade strength, the brigade position estimator switches from average to median which changes the aggression of the brigade
 		};
 
 		// Aviation parameters
@@ -111,10 +111,11 @@ class CommandCenter {
 			ABORTED_SECTOR_COOLDOWN_MS: 30000,		// how long a sector aborted as dangerous stays off the option list
 
 			// Structure limits
-			MAX_GENERATORS_AND_POWER_MODULES: 2,
+			DYNAMIC_POWER_GENERATOR_CAP: 2,
+			DYNAMIC_FACTORY_CAP: 2,
+			DYNAMIC_RESEARCH_LAB_CAP: 1,
 			MAX_VTOL_REARMING_PADS: 2, 
 			SHOULD_BUILD_VTOLS: false,
-			SHOULD_USE_FACTORY_MODULES: false,
 		};
 
 		// Production parameters
@@ -132,10 +133,10 @@ class CommandCenter {
 		const DEFAULT_UNIT_WEIGHTS = new Map([
 			// Production weights (which influences production order) are tuned using `python_helper_scripts / production_scheduling.py`.
 			// Must be rebalanced each time the brigade composition is changed.	
-			[DIVISION.HEAVY_CAV_RESERVE, 0.95],
-			[DIVISION.LIGHT_CAV_RESERVE, 1.0],
-			[DIVISION.SHORT_RANGE_FIRE_SUPPORT_RESERVE, 0.7],
-			[DIVISION.AIR_DEFENCE_RESERVE, 0.65],
+			[DIVISION.HEAVY_CAV_RESERVE, 0.9],
+			[DIVISION.LIGHT_CAV_RESERVE, 0.95],
+			[DIVISION.SHORT_RANGE_FIRE_SUPPORT_RESERVE, 0.75],
+			[DIVISION.AIR_DEFENCE_RESERVE, 0.6],
 			[DIVISION.SENSOR_RESERVE, 0.25],
 			[DIVISION.MAINTENANCE_RESERVE, 0.5],
 		]);
@@ -216,10 +217,12 @@ class CommandCenter {
 		const livingPlayers = state.enumLivingPlayers();
 		const ALIVE_PLAYER_COUNT = Math.max(livingPlayers.length, 1);
 
-		const getDynamicTruckCap = (totalDerrickCount, livingPlayerCount, minBaseBuilderTrucks, maxFishbotTruckCount) => {
+		const FAIR_SHARE_DERRICK_COUNT = Math.floor(TOTAL_DERRICKS / ALIVE_PLAYER_COUNT);
+		const MINIMUM_OILS_CLAIMED = MY_DERRICK_COUNT >= Math.ceil(TOTAL_DERRICKS / (ALIVE_PLAYER_COUNT + 1));	// 2p -> bigger than 1/3, 3p -> bigger than 1/4 and so on
+
+		const getDynamicTruckCap = (fairShareDerrickCount, minBaseBuilderTrucks, maxFishbotTruckCount) => {
 			// TODO: make this depend the construction state of the base (e.g. `CAMP_CLEAN`)
-			const FAIR_SHARE_DERRICK_COUNT = Math.floor(totalDerrickCount / livingPlayerCount);
-			const NOMINAL_TRUCKS = Math.floor(FAIR_SHARE_DERRICK_COUNT / 2) + minBaseBuilderTrucks;
+			const NOMINAL_TRUCKS = Math.floor(fairShareDerrickCount / 2) + minBaseBuilderTrucks;
 			const DYNAMIC_TRUCK_LIMIT = clampValue(NOMINAL_TRUCKS, 1, maxFishbotTruckCount);
 			return DYNAMIC_TRUCK_LIMIT;
 		};
@@ -227,7 +230,7 @@ class CommandCenter {
 		const BASE_BUILDER_TRUCK_COUNT = 2;
 		const FISHBOT_TRUCK_SOFT_CAP = 10;
 		
-		this.PRODUCTION_RESUPPLY_PARAMETERS.DYNAMIC_TRUCK_CAP = getDynamicTruckCap(TOTAL_DERRICKS, ALIVE_PLAYER_COUNT, BASE_BUILDER_TRUCK_COUNT, FISHBOT_TRUCK_SOFT_CAP);
+		this.PRODUCTION_RESUPPLY_PARAMETERS.DYNAMIC_TRUCK_CAP = getDynamicTruckCap(FAIR_SHARE_DERRICK_COUNT, BASE_BUILDER_TRUCK_COUNT, FISHBOT_TRUCK_SOFT_CAP);
 
 		/*
 			Oil parameters (the most important strategic resource)
@@ -253,7 +256,6 @@ class CommandCenter {
 			const LARGEST_OIL_SHARE = oilShare.get(largestOilSharePlayer);
 			const MY_OIL_SHARE = oilShare.get(me);
 
-			const MINIMUM_OILS_CLAIMED = MY_DERRICK_COUNT >= Math.ceil(TOTAL_DERRICKS / (livingPlayers.length + 1));	// 2p -> bigger than 1/3, 3p -> bigger than 1/4 and so on
 			const BIGGEST_OIL_SHARE = MY_OIL_SHARE >= LARGEST_OIL_SHARE;
 
 			oilDominance = MINIMUM_OILS_CLAIMED && BIGGEST_OIL_SHARE;
@@ -264,6 +266,8 @@ class CommandCenter {
 			deb(`oil dominance changed to: ${oilDominance} (${derrickCount})`);
 			this.isOilDominant = oilDominance;
 		}
+
+		const IS_ENERGY_DEFICIENT = !this.isOilDominant;
 
 		/*
 			CONSTRUCTION PARAMETERS
@@ -281,19 +285,41 @@ class CommandCenter {
 		this.CONSTRUCTION_PARAMETERS.MAX_PARALLEL_REPAIR_CENTER_BUILD_TASKS = MAX_PARALLEL_REPAIR_CENTER_BUILD_TASKS;
 
 		// Structure limit adaptation
-		const generatorsRequired = Math.ceil((MY_DERRICK_COUNT + 1) / 4);		// + 1 is here to provide extra capacity
-		const MIN_GENERATORS = 2;
+		const getDynamicPowerGeneratorCap = (myDerrickCount, minGeneratorCounts, maxGeneratorCounts) => {
+			const generatorsRequired = Math.ceil(myDerrickCount / 4);
+			return clampValue(generatorsRequired, minGeneratorCounts, maxGeneratorCounts);
+		};
+		const TYPICAL_MIN_GENERATORS = 2;
+		const MIN_GENERATORS = Math.min(TYPICAL_MIN_GENERATORS, Math.ceil(FAIR_SHARE_DERRICK_COUNT / 4));
+		const MAX_GENERATORS = state.getMaxStructureCount("Power Generator");
+		const DYNAMIC_POWER_GENERATOR_CAP = getDynamicPowerGeneratorCap(MY_DERRICK_COUNT, MIN_GENERATORS, MAX_GENERATORS);
 
-		const MAX_GENERATORS_AND_POWER_MODULES = clampValue(generatorsRequired, MIN_GENERATORS, state.getMaxStructureCount("Power Generator"));
 
-		const USE_VTOL = (MY_DERRICK_COUNT >= 8);
-		const USE_FACTORY_MODULES = (MY_DERRICK_COUNT >= 6);
+		const getDynamicFactoryCap = (isEnergyDeficient, minFactoryCount, maxFactoryCount) => {
+			const DYNAMIC_FACTORY_CAP = isEnergyDeficient ? minFactoryCount : maxFactoryCount;
+			return DYNAMIC_FACTORY_CAP;
+		}
+		const MIN_FACTORIES = 1;
+		const MAX_FACTORIES = state.getMaxStructureCount("Factory");
+		const DYNAMIC_FACTORY_CAP = getDynamicFactoryCap(IS_ENERGY_DEFICIENT, MIN_FACTORIES, MAX_FACTORIES);
+
+
+		const getDynamicResearchLabCap = (isEnergyDeficient, minLabCount, maxLabCount) => {
+			const DYNAMIC_RESEARCH_LAB_CAP = isEnergyDeficient ? minLabCount : maxLabCount;
+			return DYNAMIC_RESEARCH_LAB_CAP;
+		}
+		const MIN_RESEARCH_LABS = 1;
+		const MAX_RESEARCH_LABS = state.getMaxStructureCount("Research Facility");
+		const DYNAMIC_RESEARCH_LAB_CAP = getDynamicResearchLabCap(IS_ENERGY_DEFICIENT, MIN_RESEARCH_LABS, MAX_RESEARCH_LABS);
+
+		const USE_VTOL = !IS_ENERGY_DEFICIENT;							// todo: add measure of 'map openness'		
 		const MY_VTOL_COUNT = state.playerInfo[me]['numAirUnits'];
 
-		this.CONSTRUCTION_PARAMETERS.MAX_GENERATORS_AND_POWER_MODULES = MAX_GENERATORS_AND_POWER_MODULES;
+		this.CONSTRUCTION_PARAMETERS.DYNAMIC_POWER_GENERATOR_CAP = DYNAMIC_POWER_GENERATOR_CAP;
+		this.CONSTRUCTION_PARAMETERS.DYNAMIC_FACTORY_CAP = DYNAMIC_FACTORY_CAP;
+		this.CONSTRUCTION_PARAMETERS.DYNAMIC_RESEARCH_LAB_CAP = DYNAMIC_RESEARCH_LAB_CAP;
 		this.CONSTRUCTION_PARAMETERS.MAX_VTOL_REARMING_PADS = MY_VTOL_COUNT;
 		this.CONSTRUCTION_PARAMETERS.SHOULD_BUILD_VTOLS = USE_VTOL;
-		this.CONSTRUCTION_PARAMETERS.SHOULD_USE_FACTORY_MODULES = USE_FACTORY_MODULES;
 
 		/*
 			PRODUCTION

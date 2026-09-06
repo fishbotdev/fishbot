@@ -323,10 +323,11 @@
  * @property {number} MAX_PARALLEL_REPAIR_CENTER_BUILD_TASKS
  * @property {number} ABORTED_SECTOR_COOLDOWN_MS
  * 
- * @property {number} MAX_GENERATORS_AND_POWER_MODULES 
+ * @property {number} DYNAMIC_POWER_GENERATOR_CAP 
+ * @property {number} DYNAMIC_FACTORY_CAP
+ * @property {number} DYNAMIC_RESEARCH_LAB_CAP
  * @property {number} MAX_VTOL_REARMING_PADS 
  * @property {boolean} SHOULD_BUILD_VTOLS 
- * @property {boolean} SHOULD_USE_FACTORY_MODULES 
  */
 
 /** 
