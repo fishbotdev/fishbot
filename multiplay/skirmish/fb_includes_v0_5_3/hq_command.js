@@ -53,9 +53,9 @@ class CommandCenter {
 		this.BRIGADE_DESIGNATIONS = BRIGADE_IDS.slice(0, this.NUMBER_OF_BRIGADES);
 
 		const DEFAULT_FISHBOT_BRIGADE_COMPOSITION = {
-			'MAX_HEAVY_CAVALRY': 3,
-			'MAX_LIGHT_CAVALRY': 3,
-			'MAX_MORTAR': 4,
+			'MAX_HEAVY_CAVALRY': 4,
+			'MAX_LIGHT_CAVALRY': 4,
+			'MAX_MORTAR': 5,
 			'MAX_ADA': 2,
 			'MAX_SENSOR': 1,
 			'MAX_INFANTRY': 6,
@@ -80,9 +80,9 @@ class CommandCenter {
 			KNOCKOUT_WEIGHT: 0.56,					// promotes targets which the brigade has already damaged
 			LOW_HEALTH_THRESHOLD: 50,				// a target below this health percentage is considered worth finishing off
 
-			EFFECTIVE_FIRE_SUPPORT_RADIUS: 10,		// todo: this should be adaptive - when the brigade has a sensor, this is better, without, it is restricted by sight range of the front units
+			EFFECTIVE_FIRE_SUPPORT_RADIUS: 12,		// todo: this should be adaptive - when the brigade has a sensor, this is better, without, it is restricted by sight range of the front units
 			EFFECTIVE_ADA_RADIUS: 12,
-			MEDIAN_CENTER_STRENGTH_THRESHOLD: Math.ceil(0.50 * MAX_DIRECT_FIRE_UNITS),		// at/above this brigade strength, the brigade position estimator switches from average to median which changes the aggression of the brigade
+			MEDIAN_CENTER_STRENGTH_THRESHOLD: Math.ceil(0.25 * MAX_DIRECT_FIRE_UNITS),		// at/above this brigade strength, the brigade position estimator switches from average to median which changes the aggression of the brigade
 		};
 
 		// Aviation parameters
@@ -111,10 +111,11 @@ class CommandCenter {
 			ABORTED_SECTOR_COOLDOWN_MS: 30000,		// how long a sector aborted as dangerous stays off the option list
 
 			// Structure limits
-			MAX_GENERATORS_AND_POWER_MODULES: 2,
+			DYNAMIC_POWER_GENERATOR_CAP: 2,
+			DYNAMIC_FACTORY_CAP: 2,
+			DYNAMIC_RESEARCH_LAB_CAP: 1,
 			MAX_VTOL_REARMING_PADS: 2, 
 			SHOULD_BUILD_VTOLS: false,
-			SHOULD_USE_FACTORY_MODULES: false,
 		};
 
 		// Production parameters
@@ -132,10 +133,10 @@ class CommandCenter {
 		const DEFAULT_UNIT_WEIGHTS = new Map([
 			// Production weights (which influences production order) are tuned using `python_helper_scripts / production_scheduling.py`.
 			// Must be rebalanced each time the brigade composition is changed.	
-			[DIVISION.HEAVY_CAV_RESERVE, 0.95],
-			[DIVISION.LIGHT_CAV_RESERVE, 1.0],
-			[DIVISION.SHORT_RANGE_FIRE_SUPPORT_RESERVE, 0.7],
-			[DIVISION.AIR_DEFENCE_RESERVE, 0.65],
+			[DIVISION.HEAVY_CAV_RESERVE, 0.9],
+			[DIVISION.LIGHT_CAV_RESERVE, 0.95],
+			[DIVISION.SHORT_RANGE_FIRE_SUPPORT_RESERVE, 0.75],
+			[DIVISION.AIR_DEFENCE_RESERVE, 0.6],
 			[DIVISION.SENSOR_RESERVE, 0.25],
 			[DIVISION.MAINTENANCE_RESERVE, 0.5],
 		]);
@@ -144,10 +145,10 @@ class CommandCenter {
 		this.PRODUCTION_RESUPPLY_PARAMETERS = {
 			CAN_DESIGN_UNITS: false,
 
-			SHOULD_PRODUCE_TRUCKS: true,
+			SHOULD_PRODUCE_TRUCK_VEHICLES: true,
 			MAX_TRUCKS_THIS_TICK: 1,
-			CYBORG_CONSTRUCTOR_AVAILABLE: false,
-			MAX_TRUCKS: 8,
+			SHOULD_PRODUCE_TRUCK_CYBORGS: false,
+			DYNAMIC_TRUCK_CAP: 8,
 			
 			BRIGADE_WEIGHTS: DEFAULT_BRIGADE_WEIGHTS,
 			BRIGADE_COMPOSITION: DEFAULT_FISHBOT_BRIGADE_COMPOSITION,
@@ -178,7 +179,6 @@ class CommandCenter {
 		// Update `_run.js` if any of the below task names change.
 		this.TASK_SCHEDULE = {
 			'combat_runC2': {"requestsPerMin": 60},
-			'combat_runAviationOperations': {"requestsPerMin": 60},
 			'global_missionManager': {"requestsPerMin": 60},
 			'logistics_runConstruction': {"requestsPerMin": 60},
 			'logistics_runResupplyLogistics': {"requestsPerMin": 30},
@@ -202,7 +202,7 @@ class CommandCenter {
 	///////////////////////////////////////////////////     STRATEGY     ///////////////////////////////////////////////////
 
 	/**
-	 * Updates FishBot's strategic parameters with evolution of the game state.
+	 * Updates FishBot's strategic parameters dynamically with the evolution of the game state.
 	 * The intent is `_world_state.js` stores the objective world, while `hq_command.js` stores the decisions based on observations of that state.
 	 * @param {worldState} state 
 	 * @returns {void} Writes directly to `this`.
@@ -217,9 +217,20 @@ class CommandCenter {
 		const livingPlayers = state.enumLivingPlayers();
 		const ALIVE_PLAYER_COUNT = Math.max(livingPlayers.length, 1);
 
-		const DOMINANT_OIL_SHARE = 1.2;
+		const FAIR_SHARE_DERRICK_COUNT = Math.floor(TOTAL_DERRICKS / ALIVE_PLAYER_COUNT);
+		const MINIMUM_OILS_CLAIMED = MY_DERRICK_COUNT >= Math.ceil(TOTAL_DERRICKS / (ALIVE_PLAYER_COUNT + 1));	// 2p -> bigger than 1/3, 3p -> bigger than 1/4 and so on
 
-		// The following code sets the current FishBot strategic parameters
+		const getDynamicTruckCap = (fairShareDerrickCount, minBaseBuilderTrucks, maxFishbotTruckCount) => {
+			// TODO: make this depend the construction state of the base (e.g. `CAMP_CLEAN`)
+			const NOMINAL_TRUCKS = Math.floor(fairShareDerrickCount / 2) + minBaseBuilderTrucks;
+			const DYNAMIC_TRUCK_LIMIT = clampValue(NOMINAL_TRUCKS, 1, maxFishbotTruckCount);
+			return DYNAMIC_TRUCK_LIMIT;
+		};
+
+		const BASE_BUILDER_TRUCK_COUNT = 2;
+		const FISHBOT_TRUCK_SOFT_CAP = 10;
+		
+		this.PRODUCTION_RESUPPLY_PARAMETERS.DYNAMIC_TRUCK_CAP = getDynamicTruckCap(FAIR_SHARE_DERRICK_COUNT, BASE_BUILDER_TRUCK_COUNT, FISHBOT_TRUCK_SOFT_CAP);
 
 		/*
 			Oil parameters (the most important strategic resource)
@@ -245,10 +256,9 @@ class CommandCenter {
 			const LARGEST_OIL_SHARE = oilShare.get(largestOilSharePlayer);
 			const MY_OIL_SHARE = oilShare.get(me);
 
-			const BIG_OIL_SHARE = (MY_OIL_SHARE > DOMINANT_OIL_SHARE) || (MY_DERRICK_COUNT >= Math.ceil(0.85 * TOTAL_DERRICKS));
 			const BIGGEST_OIL_SHARE = MY_OIL_SHARE >= LARGEST_OIL_SHARE;
 
-			oilDominance = BIG_OIL_SHARE && BIGGEST_OIL_SHARE;
+			oilDominance = MINIMUM_OILS_CLAIMED && BIGGEST_OIL_SHARE;
 		}
 
 		if (this.isOilDominant != oilDominance) {
@@ -256,6 +266,8 @@ class CommandCenter {
 			deb(`oil dominance changed to: ${oilDominance} (${derrickCount})`);
 			this.isOilDominant = oilDominance;
 		}
+
+		const IS_ENERGY_DEFICIENT = !MINIMUM_OILS_CLAIMED;
 
 		/*
 			CONSTRUCTION PARAMETERS
@@ -273,19 +285,41 @@ class CommandCenter {
 		this.CONSTRUCTION_PARAMETERS.MAX_PARALLEL_REPAIR_CENTER_BUILD_TASKS = MAX_PARALLEL_REPAIR_CENTER_BUILD_TASKS;
 
 		// Structure limit adaptation
-		const generatorsRequired = Math.ceil((MY_DERRICK_COUNT + 1) / 4);		// + 1 is here to provide extra capacity
-		const MIN_GENERATORS = 2;
+		const getDynamicPowerGeneratorCap = (myDerrickCount, minGeneratorCounts, maxGeneratorCounts) => {
+			const generatorsRequired = Math.ceil(myDerrickCount / 4);
+			return clampValue(generatorsRequired, minGeneratorCounts, maxGeneratorCounts);
+		};
+		const TYPICAL_MIN_GENERATORS = 2;
+		const MIN_GENERATORS = Math.min(TYPICAL_MIN_GENERATORS, Math.ceil(FAIR_SHARE_DERRICK_COUNT / 4));
+		const MAX_GENERATORS = state.getMaxStructureCount("Power Generator");
+		const DYNAMIC_POWER_GENERATOR_CAP = getDynamicPowerGeneratorCap(MY_DERRICK_COUNT, MIN_GENERATORS, MAX_GENERATORS);
 
-		const MAX_GENERATORS_AND_POWER_MODULES = clampValue(generatorsRequired, MIN_GENERATORS, state.getMaxStructureCount("Power Generator"));
 
-		const USE_VTOL = (MY_DERRICK_COUNT >= 8);
-		const USE_FACTORY_MODULES = (MY_DERRICK_COUNT >= 6);
+		const getDynamicFactoryCap = (isEnergyDeficient, minFactoryCount, maxFactoryCount) => {
+			const DYNAMIC_FACTORY_CAP = isEnergyDeficient ? minFactoryCount : maxFactoryCount;
+			return DYNAMIC_FACTORY_CAP;
+		}
+		const MIN_FACTORIES = 1;
+		const MAX_FACTORIES = state.getMaxStructureCount("Factory");
+		const DYNAMIC_FACTORY_CAP = getDynamicFactoryCap(IS_ENERGY_DEFICIENT, MIN_FACTORIES, MAX_FACTORIES);
+
+
+		const getDynamicResearchLabCap = (isEnergyDeficient, minLabCount, maxLabCount) => {
+			const DYNAMIC_RESEARCH_LAB_CAP = isEnergyDeficient ? minLabCount : maxLabCount;
+			return DYNAMIC_RESEARCH_LAB_CAP;
+		}
+		const MIN_RESEARCH_LABS = 1;
+		const MAX_RESEARCH_LABS = state.getMaxStructureCount("Research Facility");
+		const DYNAMIC_RESEARCH_LAB_CAP = getDynamicResearchLabCap(IS_ENERGY_DEFICIENT, MIN_RESEARCH_LABS, MAX_RESEARCH_LABS);
+
+		const USE_VTOL = !IS_ENERGY_DEFICIENT;							// todo: add measure of 'map openness'		
 		const MY_VTOL_COUNT = state.playerInfo[me]['numAirUnits'];
 
-		this.CONSTRUCTION_PARAMETERS.MAX_GENERATORS_AND_POWER_MODULES = MAX_GENERATORS_AND_POWER_MODULES;
+		this.CONSTRUCTION_PARAMETERS.DYNAMIC_POWER_GENERATOR_CAP = DYNAMIC_POWER_GENERATOR_CAP;
+		this.CONSTRUCTION_PARAMETERS.DYNAMIC_FACTORY_CAP = DYNAMIC_FACTORY_CAP;
+		this.CONSTRUCTION_PARAMETERS.DYNAMIC_RESEARCH_LAB_CAP = DYNAMIC_RESEARCH_LAB_CAP;
 		this.CONSTRUCTION_PARAMETERS.MAX_VTOL_REARMING_PADS = MY_VTOL_COUNT;
 		this.CONSTRUCTION_PARAMETERS.SHOULD_BUILD_VTOLS = USE_VTOL;
-		this.CONSTRUCTION_PARAMETERS.SHOULD_USE_FACTORY_MODULES = USE_FACTORY_MODULES;
 
 		/*
 			PRODUCTION
@@ -294,12 +328,12 @@ class CommandCenter {
 		const NUMBER_OF_BRIGADES = this.NUMBER_OF_BRIGADES;
 
 		// Define unit limits
-		const MAX_TRUCKS = this.PRODUCTION_RESUPPLY_PARAMETERS.MAX_TRUCKS;
+
 		const MAX_INFANTRY = BRIGADE_COMPOSITION['MAX_INFANTRY'];
 		const TOTAL_UNITS_PER_BRIGADE = this.PRODUCTION_RESUPPLY_PARAMETERS.TOTAL_UNITS_PER_BRIGADE;
 		
 		const TRUCK_HARD_LIMIT = state.getMaxUnitCount("DROID_CONSTRUCT");
-		const TRUCK_SOFT_LIMIT = Math.min(TRUCK_HARD_LIMIT, MAX_TRUCKS);
+		const TRUCK_SOFT_LIMIT = Math.min(TRUCK_HARD_LIMIT, this.PRODUCTION_RESUPPLY_PARAMETERS.DYNAMIC_TRUCK_CAP);
 
 		const COMBAT_UNIT_HARD_LIMIT = state.getMaxUnitCount("DROID_WEAPON") - TRUCK_SOFT_LIMIT;
 		const INFANTRY_UNIT_SOFT_LIMIT = MAX_INFANTRY * (NUMBER_OF_BRIGADES + 1);		// "+1" includes reserve
@@ -333,18 +367,21 @@ class CommandCenter {
 			debug(`  HIT_AIR_UNIT_LIMIT: ${MY_VTOL_COUNT} >= ${VTOL_UNIT_HARD_LIMIT}?`);
 		}
 		
-		// Get unit deficits
 		// Decide on whether or not to produce combat units
-		// Note: FishBot will not build combat vehicles before it can design them, on any difficulty.	
+		// Note: FishBot will not build combat vehicles, combat cyborgs or VTOLs before it can design them, on any difficulty (in line with human player rules).	
 		const CAN_DESIGN_UNITS = HQ_IS_CONSTRUCTED;
-
 		const SHOULD_PRODUCE_LAND_VEHICLES = CAN_DESIGN_UNITS && !HIT_LAND_VEHICLE_LIMIT;
-		const SHOULD_PRODUCE_INFANTRY = !HIT_INFANTRY_LIMIT;
+		const SHOULD_PRODUCE_INFANTRY = CAN_DESIGN_UNITS && !HIT_INFANTRY_LIMIT;
 		const SHOULD_PRODUCE_VTOLS = CAN_DESIGN_UNITS && !HIT_AIR_UNIT_LIMIT;
 
 		// Decide on whether or not to produce trucks
-		const SHOULD_PRODUCE_TRUCKS = !HIT_TRUCK_LIMIT;
-		const MAX_TRUCKS_THIS_TICK = 1;
+		const MAX_TRUCKS_THIS_TICK = TRUCK_SOFT_LIMIT - MY_TRUCK_COUNT;
+
+		const INITIAL_TRUCK_RUSH_PERIOD = gameTime < 60000;
+
+		// TODO: wire this to deficits in both types of units.
+		const SHOULD_PRODUCE_TRUCK_VEHICLES = !HIT_TRUCK_LIMIT && (!CYBORG_CONSTRUCTOR_AVAILABLE || INITIAL_TRUCK_RUSH_PERIOD);
+		const SHOULD_PRODUCE_TRUCK_CYBORGS = !HIT_TRUCK_LIMIT && (CYBORG_CONSTRUCTOR_AVAILABLE || INITIAL_TRUCK_RUSH_PERIOD);
 
 		// Brigade production priorities
 		/** @type {Map<number, number>} */
@@ -373,9 +410,9 @@ class CommandCenter {
 
 		this.PRODUCTION_RESUPPLY_PARAMETERS.CAN_DESIGN_UNITS = CAN_DESIGN_UNITS;
 
-		this.PRODUCTION_RESUPPLY_PARAMETERS.SHOULD_PRODUCE_TRUCKS = SHOULD_PRODUCE_TRUCKS;
 		this.PRODUCTION_RESUPPLY_PARAMETERS.MAX_TRUCKS_THIS_TICK = MAX_TRUCKS_THIS_TICK;
-		this.PRODUCTION_RESUPPLY_PARAMETERS.CYBORG_CONSTRUCTOR_AVAILABLE = CYBORG_CONSTRUCTOR_AVAILABLE;
+		this.PRODUCTION_RESUPPLY_PARAMETERS.SHOULD_PRODUCE_TRUCK_VEHICLES = SHOULD_PRODUCE_TRUCK_VEHICLES;
+		this.PRODUCTION_RESUPPLY_PARAMETERS.SHOULD_PRODUCE_TRUCK_CYBORGS = SHOULD_PRODUCE_TRUCK_CYBORGS;
 
 		this.PRODUCTION_RESUPPLY_PARAMETERS.SHOULD_PRODUCE_INFANTRY = SHOULD_PRODUCE_INFANTRY;
 		this.PRODUCTION_RESUPPLY_PARAMETERS.SHOULD_PRODUCE_VTOLS = SHOULD_PRODUCE_VTOLS;
@@ -967,9 +1004,9 @@ class CommandCenter {
 	/////////////////////////////////////////////////// G4: LOGISTICS ///////////////////////////////////////////////////
 	/**
 	 * This function aborts active construction missions where conditions at the build site have become too dangerous.
-	 * @param {worldState} state 
+	 * @param {worldState} state
 	 * @param {Array} activeRemoteMissions
-	 * @returns {(number | string)[]} the oil-capture sectorIDs aborted
+	 * @returns {{abortedOilSectorIDs: (number | string)[], abortedDefenceSectorIDs: (number | string)[]}} the sectorIDs aborted, split by task type
 	 */
 	#abortDangerousConstructionTasks(state, activeRemoteMissions) {
 		const cellSize = state.grid.cellSize;
@@ -977,7 +1014,10 @@ class CommandCenter {
 		const enemyUnitThreat = state.fields.enemyUnitThreat;
 		const enemyStaticDefenceThreat = state.fields.enemyStaticDefenceThreat;
 
+		/** @type {(number | string)[]} */
 		const abortedOilSectorIDs = [];
+		/** @type {(number | string)[]} */
+		const abortedDefenceSectorIDs = [];
 
 		// New mission planning system has implemented .gx, .gy grid references for all missions
 		// This allows the following algorithm:
@@ -1007,16 +1047,17 @@ class CommandCenter {
 				// debug(`aborted (${md.id}) @ (~ tileco ${md.gx * cellSize} ${md.gy * cellSize}); high threat`);
 				md.missionStatus = MISSION_STATUS.ABORT;
 
-				// Only oil capture cools down. Defence missions reuse the derrick's ID as their sectorID,
-				// so reporting those here would block *capturing* the derrick they were meant to protect.
+				// Todo: combine these into a unified concept of 'denied region' rather than keying by sectorID (resolves to derrickID)
 				if (md.missionType === MISSION_TYPE.CONSTRUCT_OIL_DERRICK ||
 					md.missionType === MISSION_TYPE.CONSTRUCT_ALL_DERRICKS_IN_SECTOR) {
 					abortedOilSectorIDs.push(md.sectorID);
+				} else if (md.missionType === MISSION_TYPE.CONSTRUCT_NEARBY_DEFENCE) {
+					abortedDefenceSectorIDs.push(md.sectorID);
 				}
 			}
 		});
 
-		return abortedOilSectorIDs;
+		return {abortedOilSectorIDs: abortedOilSectorIDs, abortedDefenceSectorIDs: abortedDefenceSectorIDs};
 	}
 
 	/**
@@ -1055,24 +1096,20 @@ class CommandCenter {
 			}
 		});
 		
-		const abortedOilSectorIDs = this.#abortDangerousConstructionTasks(state, activeRemoteMissions);
+		const abortedSectors = this.#abortDangerousConstructionTasks(state, activeRemoteMissions);
 
 		// Command then terminates, if there are no available trucks this tick (avoids expensive planning tasks)
 		const trucksUnavailable = (state.g.enumGroup(ENGINEERING.ENGINEERING_RESERVE).length === 0) && 
 								  (state.g.enumGroup(ENGINEERING.BASE_BUILDER).length === 0);
 
-		// Oil capture is re-planned only once per intelligence refresh: the inputs cannot have changed in
-		// between, so planning again re-issues the same missions against a world state up to 5 seconds stale.
-		const oilCapDeficit = this.CONSTRUCTION_PARAMETERS.MAX_PARALLEL_OIL_CAP_TASKS - activeOilCapTaskIDs.length;
-		const WORLD_UNCHANGED_SINCE_LAST_PLAN = (state.grid.lastUpdatedAt === state.oilCapPlannedAt);
-		const SHOULD_PLAN_OIL_CAPTURE = !trucksUnavailable && (oilCapDeficit > 0) && !WORLD_UNCHANGED_SINCE_LAST_PLAN;
+		// `state.fields` / `state.grid` is updated slowly by intel (nominally once every 5 seconds). 
+		// To avoid redundant work, construction should be planned only once per intel update.
+		const WORLD_UNCHANGED_SINCE_LAST_PLAN = (state.grid.lastUpdatedAt === state.constructionPlannedAt);
+		const SHOULD_PLAN_REMOTE_CONSTRUCTION = !trucksUnavailable && !WORLD_UNCHANGED_SINCE_LAST_PLAN;
 
-		this.toc.updateOilCapturePlanningRecord(state, abortedOilSectorIDs, SHOULD_PLAN_OIL_CAPTURE,
-												this.CONSTRUCTION_PARAMETERS.ABORTED_SECTOR_COOLDOWN_MS);
+		this.toc.updateConstructionPlanningRecord(state, abortedSectors, SHOULD_PLAN_REMOTE_CONSTRUCTION, this.CONSTRUCTION_PARAMETERS.ABORTED_SECTOR_COOLDOWN_MS);
 
 		if (trucksUnavailable) {
-			// warn(`No trucks to execute construction actions.`);
-			// deb(`Active construction missions | oilcap: ${activeOilCapTaskIDs.length} |  basebuild: ${activeBaseBuildTasks.length}  | defencebuild: ${activeDefenceBuildTaskIDs.length}  | repairCenter: ${activeRepairCenterBuildTaskIDs.length}`);
 			return;
 		}
 
@@ -1085,8 +1122,14 @@ class CommandCenter {
 			approvedConstructionTasks.push(...requestedBaseBuildTasks.slice(0, baseBuildDeficit));
 		}
 
+		if (!SHOULD_PLAN_REMOTE_CONSTRUCTION) {
+			this.toc.assignConstructionTasks(state, approvedConstructionTasks);
+			return;
+		}
+
 		// OIL CAP
-		if (SHOULD_PLAN_OIL_CAPTURE) {
+		const oilCapDeficit = this.CONSTRUCTION_PARAMETERS.MAX_PARALLEL_OIL_CAP_TASKS - activeOilCapTaskIDs.length;
+		if (oilCapDeficit > 0) {
 			// The record was pruned above, so everything left in it is still cooling down.
 			const excludedSectorIDs = [];
 			excludedSectorIDs.push(...activeOilCapTaskIDs, ...state.abortedOilSectors.keys());
@@ -1097,7 +1140,12 @@ class CommandCenter {
 		// DERRICK DEFENCES
 		const fortificationDeficit = this.CONSTRUCTION_PARAMETERS.MAX_PARALLEL_DEFENCE_BUILD_TASKS - activeDefenceBuildTaskIDs.length;
 		if (fortificationDeficit > 0) {
-			const sectorDefenceTasks = engineering.generateOilDefenceConstructionOptions(state, activeDefenceBuildTaskIDs);
+			// As with oil capture: a site called off as too dangerous stays off the option list until its
+			// cooldown expires, so the trucks are not sent straight back into the threat which turned them away.
+			// The record was pruned above, so everything left in it is still cooling down.
+			const excludedDerrickIDs = [];
+			excludedDerrickIDs.push(...activeDefenceBuildTaskIDs, ...state.abortedDefenceSectors.keys());
+			const sectorDefenceTasks = engineering.generateOilDefenceConstructionOptions(state, excludedDerrickIDs);
 			approvedConstructionTasks.push(...sectorDefenceTasks.slice(0, fortificationDeficit));
 		}
 
@@ -1327,15 +1375,16 @@ class CommandCenter {
 		}
 
 		// Extract parameters
-		const SHOULD_PRODUCE_TRUCKS = this.PRODUCTION_RESUPPLY_PARAMETERS.SHOULD_PRODUCE_TRUCKS;
+		
 		const MAX_TRUCKS_THIS_TICK = this.PRODUCTION_RESUPPLY_PARAMETERS.MAX_TRUCKS_THIS_TICK;
-
-		const CYBORG_CONSTRUCTOR_AVAILABLE = this.PRODUCTION_RESUPPLY_PARAMETERS.CYBORG_CONSTRUCTOR_AVAILABLE;
+		const SHOULD_PRODUCE_TRUCK_VEHICLES = this.PRODUCTION_RESUPPLY_PARAMETERS.SHOULD_PRODUCE_TRUCK_VEHICLES;
+		const SHOULD_PRODUCE_TRUCK_CYBORGS = this.PRODUCTION_RESUPPLY_PARAMETERS.SHOULD_PRODUCE_TRUCK_CYBORGS;
+		
+		const CAN_DESIGN_UNITS = this.PRODUCTION_RESUPPLY_PARAMETERS.CAN_DESIGN_UNITS;
+		
+		const SHOULD_PRODUCE_LAND_VEHICLES = this.PRODUCTION_RESUPPLY_PARAMETERS.SHOULD_PRODUCE_LAND_VEHICLES;
 		const SHOULD_PRODUCE_INFANTRY = this.PRODUCTION_RESUPPLY_PARAMETERS.SHOULD_PRODUCE_INFANTRY;
 		const SHOULD_PRODUCE_VTOLS = this.PRODUCTION_RESUPPLY_PARAMETERS.SHOULD_PRODUCE_VTOLS;
-		const CAN_DESIGN_UNITS = this.PRODUCTION_RESUPPLY_PARAMETERS.CAN_DESIGN_UNITS;
-
-		const SHOULD_PRODUCE_LAND_VEHICLES = this.PRODUCTION_RESUPPLY_PARAMETERS.SHOULD_PRODUCE_LAND_VEHICLES;
 
 		const landUnitQueue = [];
 
@@ -1398,7 +1447,7 @@ class CommandCenter {
 		for (let i=0; i<idleCyborgFactories.length; i++) {
 			const f = idleCyborgFactories[i];
 
-			if (SHOULD_PRODUCE_TRUCKS && CYBORG_CONSTRUCTOR_AVAILABLE && trucksThisTick < MAX_TRUCKS_THIS_TICK) {
+			if (SHOULD_PRODUCE_TRUCK_CYBORGS && trucksThisTick < MAX_TRUCKS_THIS_TICK) {
 				if (DEBUG_PRODUCTION) debug(`	${gameTime}: produced Combat Engineer`);
 				const productionStarted = produceCombatEngineer(f);
 				if (productionStarted) {
@@ -1434,7 +1483,7 @@ class CommandCenter {
 		for (let i=0; i<idleFactories.length; i++) {
 			const factory = idleFactories[i];
 
-			if (SHOULD_PRODUCE_TRUCKS && !CYBORG_CONSTRUCTOR_AVAILABLE && trucksThisTick < MAX_TRUCKS_THIS_TICK) {
+			if (SHOULD_PRODUCE_TRUCK_VEHICLES && trucksThisTick < MAX_TRUCKS_THIS_TICK) {
 				if (DEBUG_PRODUCTION) debug(`	${gameTime}: produced Truck`);
 				// Note: CAN_DESIGN_UNITS prevents FishBot from producing any other trucks other than `Truck Viper Wheels` until the command center is built
 				const productionStarted = produceTruck(factory, CAN_DESIGN_UNITS);

@@ -241,26 +241,41 @@ class TacticalOperationsCenter {
 	}
 
 	/**
-	 * Writes back what a construction tick learned about oil-capture planning: sectors called off as too
-	 * dangerous, and whether a planning pass ran. Cooldown entries which have expired are pruned here, so
-	 * everything left in `state.abortedOilSectors` afterwards is still cooling down.
-	 * @param {worldState} state 
+	 * Prunes expired entries from an aborted-sector record, then records the sectors called off this tick.
+	 * Everything left in the record afterwards is still cooling down.
+	 * @param {Map<number | string, number>} record Map from `sectorID` to the `gameTime` it was called off.
 	 * @param {(number | string)[]} abortedSectorIDs Sectors called off as dangerous this tick.
-	 * @param {boolean} planningPassRan Whether oil-capture options were regenerated this tick.
 	 * @param {number} cooldownMs How long an aborted sector stays off the option list.
 	 * @returns {void}
 	 */
-	updateOilCapturePlanningRecord(state, abortedSectorIDs, planningPassRan, cooldownMs) {
-		state.abortedOilSectors.forEach((abortedAt, sectorID) => {
+	#updateAbortedSectorRecord(record, abortedSectorIDs, cooldownMs) {
+		record.forEach((abortedAt, sectorID) => {
 			if (gameTime - abortedAt >= cooldownMs) {
-				state.abortedOilSectors.delete(sectorID);
+				record.delete(sectorID);
 			}
 		});
 
-		abortedSectorIDs.forEach(sectorID => state.abortedOilSectors.set(sectorID, gameTime));
+		abortedSectorIDs.forEach(sectorID => record.set(sectorID, gameTime));
+	}
+
+	/**
+	 * Writes back what a construction tick learned about remote construction planning: the sectors called off
+	 * as too dangerous (oil capture and derrick defences are recorded separately, as a defence mission reuses
+	 * the derrick's ID as its sectorID), and whether a planning pass ran.
+	 * @param {worldState} state
+	 * @param {Object} abortedSectors Sectors called off as dangerous this tick.
+	 * @param {(number | string)[]} abortedSectors.abortedOilSectorIDs
+	 * @param {(number | string)[]} abortedSectors.abortedDefenceSectorIDs
+	 * @param {boolean} planningPassRan Whether construction options were regenerated this tick.
+	 * @param {number} cooldownMs How long an aborted sector stays off the option list.
+	 * @returns {void}
+	 */
+	updateConstructionPlanningRecord(state, {abortedOilSectorIDs, abortedDefenceSectorIDs}, planningPassRan, cooldownMs) {
+		this.#updateAbortedSectorRecord(state.abortedOilSectors, abortedOilSectorIDs, cooldownMs);
+		this.#updateAbortedSectorRecord(state.abortedDefenceSectors, abortedDefenceSectorIDs, cooldownMs);
 
 		if (planningPassRan) {
-			state.oilCapPlannedAt = state.grid.lastUpdatedAt;
+			state.constructionPlannedAt = state.grid.lastUpdatedAt;
 		}
 	}
 

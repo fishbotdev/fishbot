@@ -2,9 +2,11 @@
 ![Badge](https://hitscounter.dev/api/hit?url=https%3A%2F%2Fgithub.com%2Ffishbotdev%2Ffishbot&label=Hits&icon=github&color=%23198754&message=&style=flat&tz=UTC)
 ![GitHub downloads (all releases)](https://img.shields.io/github/downloads/fishbotdev/fishbot/total)
 
-FishBot is a Warzone 2100 AI bot compatible with Warzone 2100 **v4.6.1+**.
+FishBot is a Warzone 2100 AI bot compatible with Warzone 2100 **v4.6.1+**. 
 
 It is designed for Tech Level 2 (No Scavenger) skirmish games on the supported maps below. Starts at other tech levels are currently not supported.
+
+The current iteration of FishBot is a "fair-play" bot. Unlike most other bots, FishBot does not produce custom designs (e.g. Hover Trucks) nor combat units (including combat cyborgs) until the Command Center is built, keeping in line with human player rules. However, unlike a human player, FishBot is able to 'see' the whole map, ignoring the fog-of-war. The current iteration of FishBot does not make very good use of this information, so I believe this advantage is largely nullified, but future versions will address how to respect the FOW without creating excessive lag.
 
 ![FishBot using two unit groups to attack two bases simultaneously.](docs/images/fishbot-v0.5.1.png)
 *Figure 1: FishBot **v0.5.1** using two unit groups to attack two bases simultaneously.*
@@ -99,7 +101,15 @@ For a map to be compatible, FishBot must have an absence of breaking issues, and
 * Greater than 75% win rate in duels across all pairs of positions against Cobra @ Medium difficulty (i.e. 1v1 with all other player slots being spectators).
 
 ## Recent updates
-* **v0.5.2** - *released **1 Sep 2026***
+* **v0.5.3** - *released **xx Sep 2026***
+    * Combat fixes:
+        * Improved group cohesion during heavy fighting.
+        * Improved VTOL utilisation when the match is neck-and-neck.
+    * Improved the construction planner to reduce the chance that trucks oscillate back and forth doing nothing.
+    * Unit designs & base construction tweaked.
+    * Excluding 10-player maps and sea maps, all other Warzone 2100 maps are now covered by automated E2E testing.
+
+* **v0.5.2** - *released **01 Sep 2026***
     * Combat improvements, including a complete overhaul of group movement and targeting. 
         * This should result in smoother and seemingly more intentional group behaviour, with better handling of chokepoints.
     * Performance improvements, resulting in a smoother player experience on all base maps shipped with the game.

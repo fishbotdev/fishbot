@@ -340,16 +340,19 @@ class worldState {
         /** @type {ProductionJob[]} */
         this.activeProductionJobs = [];
 
-        // Oil-capture planning 
-        /** @type {number} `gameTime` at the last oil-capture planning tick */
-        this.oilCapPlannedAt = -1;   
-        /** @type {Map<number | string, number>} Map from `sectorID` to the `gameTime` when a construction task was called off as dangerous */
-        this.abortedOilSectors = new Map();         
+        // Construction planning
+        /** @type {number} `gameTime` when the previous construction planning pass ran */
+        this.constructionPlannedAt = -1;
+        /** @type {Map<number | string, number>} Map from `sectorID` to the `gameTime` when an oil-capture task was called off as dangerous */
+        this.abortedOilSectors = new Map();
+        /** @type {Map<number | string, number>} Map from `sectorID` (a derrick ID) to the `gameTime` when a defence-build task was called off as dangerous */
+        this.abortedDefenceSectors = new Map();
         
         // Load balancing parameters
         this.botIsActive = true;
         this.TIME_BLOCK_MS = 200;
         this.BLOCKS_PER_MIN = Math.floor(60000 / this.TIME_BLOCK_MS);
+		/** @type {Object<string, number[]>} Task name -> time block ID; a block is skipped when the entry is -1 */
 		this.WORKER_IDS = {};
     }
 

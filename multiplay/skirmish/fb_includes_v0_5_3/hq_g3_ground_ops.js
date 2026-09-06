@@ -137,19 +137,18 @@ class armyGroundOperations {
 		const baseZ = heightMap[baseX][baseY];
 		const basePosition = {'x': baseX, 'y': baseY, 'z': baseZ};
 
-		const directFireUnits = brigadeUnits.filter((droid) => !droid.hasIndirect);
-		if (directFireUnits.length === 0) {
+		if (brigadeUnits.length === 0) {
 			return basePosition;
 		}
 
 		const brigadeStrength = state.brigades[brigadeID].strength;
 		const BRIGADE_CAN_TAKE_RISKS = brigadeStrength >= parameters.MEDIAN_CENTER_STRENGTH_THRESHOLD;
-		const centerEstimate = BRIGADE_CAN_TAKE_RISKS ? this.#getMedianLoc(directFireUnits) : this.#getAverageLoc(directFireUnits);
+		const centerEstimate = BRIGADE_CAN_TAKE_RISKS ? this.#getMedianLoc(brigadeUnits) : this.#getAverageLoc(brigadeUnits);
 
 		// Snap the estimate to the nearest direct-fire unit
-		let nearestUnit = directFireUnits[0];
+		let nearestUnit = brigadeUnits[0];
 		let nearestDistSq = Infinity;
-		directFireUnits.forEach((droid) => {
+		brigadeUnits.forEach((droid) => {
 			const currDistSq = distSq(droid.x, centerEstimate.x, droid.y, centerEstimate.y);
 			if (currDistSq < nearestDistSq) {
 				nearestDistSq = currDistSq;
