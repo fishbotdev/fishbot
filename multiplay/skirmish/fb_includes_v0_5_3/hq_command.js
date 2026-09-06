@@ -216,10 +216,12 @@ class CommandCenter {
 		const livingPlayers = state.enumLivingPlayers();
 		const ALIVE_PLAYER_COUNT = Math.max(livingPlayers.length, 1);
 
-		const getDynamicTruckCap = (totalDerrickCount, livingPlayerCount, minBaseBuilderTrucks, maxFishbotTruckCount) => {
+		const FAIR_SHARE_DERRICK_COUNT = Math.floor(TOTAL_DERRICKS / ALIVE_PLAYER_COUNT);
+		const MINIMUM_OILS_CLAIMED = MY_DERRICK_COUNT >= Math.ceil(TOTAL_DERRICKS / (ALIVE_PLAYER_COUNT + 1));	// 2p -> bigger than 1/3, 3p -> bigger than 1/4 and so on
+
+		const getDynamicTruckCap = (fairShareDerrickCount, minBaseBuilderTrucks, maxFishbotTruckCount) => {
 			// TODO: make this depend the construction state of the base (e.g. `CAMP_CLEAN`)
-			const FAIR_SHARE_DERRICK_COUNT = Math.floor(totalDerrickCount / livingPlayerCount);
-			const NOMINAL_TRUCKS = Math.floor(FAIR_SHARE_DERRICK_COUNT / 2) + minBaseBuilderTrucks;
+			const NOMINAL_TRUCKS = Math.floor(fairShareDerrickCount / 2) + minBaseBuilderTrucks;
 			const DYNAMIC_TRUCK_LIMIT = clampValue(NOMINAL_TRUCKS, 1, maxFishbotTruckCount);
 			return DYNAMIC_TRUCK_LIMIT;
 		};
@@ -227,7 +229,7 @@ class CommandCenter {
 		const BASE_BUILDER_TRUCK_COUNT = 2;
 		const FISHBOT_TRUCK_SOFT_CAP = 10;
 		
-		this.PRODUCTION_RESUPPLY_PARAMETERS.DYNAMIC_TRUCK_CAP = getDynamicTruckCap(TOTAL_DERRICKS, ALIVE_PLAYER_COUNT, BASE_BUILDER_TRUCK_COUNT, FISHBOT_TRUCK_SOFT_CAP);
+		this.PRODUCTION_RESUPPLY_PARAMETERS.DYNAMIC_TRUCK_CAP = getDynamicTruckCap(FAIR_SHARE_DERRICK_COUNT, BASE_BUILDER_TRUCK_COUNT, FISHBOT_TRUCK_SOFT_CAP);
 
 		/*
 			Oil parameters (the most important strategic resource)
@@ -253,7 +255,6 @@ class CommandCenter {
 			const LARGEST_OIL_SHARE = oilShare.get(largestOilSharePlayer);
 			const MY_OIL_SHARE = oilShare.get(me);
 
-			const MINIMUM_OILS_CLAIMED = MY_DERRICK_COUNT >= Math.ceil(TOTAL_DERRICKS / (livingPlayers.length + 1));	// 2p -> bigger than 1/3, 3p -> bigger than 1/4 and so on
 			const BIGGEST_OIL_SHARE = MY_OIL_SHARE >= LARGEST_OIL_SHARE;
 
 			oilDominance = MINIMUM_OILS_CLAIMED && BIGGEST_OIL_SHARE;
