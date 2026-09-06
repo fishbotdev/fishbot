@@ -328,7 +328,6 @@
  * @property {number} DYNAMIC_RESEARCH_LAB_CAP
  * @property {number} MAX_VTOL_REARMING_PADS 
  * @property {boolean} SHOULD_BUILD_VTOLS 
- * @property {boolean} SHOULD_USE_FACTORY_MODULES 
  */
 
 /** 

@@ -116,7 +116,6 @@ class CommandCenter {
 			DYNAMIC_RESEARCH_LAB_CAP: 1,
 			MAX_VTOL_REARMING_PADS: 2, 
 			SHOULD_BUILD_VTOLS: false,
-			SHOULD_USE_FACTORY_MODULES: false,
 		};
 
 		// Production parameters
@@ -313,8 +312,7 @@ class CommandCenter {
 		const MAX_RESEARCH_LABS = state.getMaxStructureCount("Research Facility");
 		const DYNAMIC_RESEARCH_LAB_CAP = getDynamicResearchLabCap(IS_ENERGY_DEFICIENT, MIN_RESEARCH_LABS, MAX_RESEARCH_LABS);
 
-		const USE_VTOL = !IS_ENERGY_DEFICIENT;							// todo: add measure of 'map openness'
-		const USE_FACTORY_MODULES = !IS_ENERGY_DEFICIENT;					
+		const USE_VTOL = !IS_ENERGY_DEFICIENT;							// todo: add measure of 'map openness'		
 		const MY_VTOL_COUNT = state.playerInfo[me]['numAirUnits'];
 
 		this.CONSTRUCTION_PARAMETERS.DYNAMIC_POWER_GENERATOR_CAP = DYNAMIC_POWER_GENERATOR_CAP;
@@ -322,7 +320,6 @@ class CommandCenter {
 		this.CONSTRUCTION_PARAMETERS.DYNAMIC_RESEARCH_LAB_CAP = DYNAMIC_RESEARCH_LAB_CAP;
 		this.CONSTRUCTION_PARAMETERS.MAX_VTOL_REARMING_PADS = MY_VTOL_COUNT;
 		this.CONSTRUCTION_PARAMETERS.SHOULD_BUILD_VTOLS = USE_VTOL;
-		this.CONSTRUCTION_PARAMETERS.SHOULD_USE_FACTORY_MODULES = USE_FACTORY_MODULES;
 
 		/*
 			PRODUCTION
