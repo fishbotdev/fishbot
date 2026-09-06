@@ -52,6 +52,11 @@ class CommandCenter {
 		this.NUMBER_OF_BRIGADES = 4;
 		this.BRIGADE_DESIGNATIONS = BRIGADE_IDS.slice(0, this.NUMBER_OF_BRIGADES);
 
+		// The divisional main effort: the one place every brigade works towards when it has nothing to fight
+		// where it stands. A decision rather than an observation, so it is held here and not in `state`.
+		/** @type {PositionInfo | null} */
+		this.divisionObjective = null;
+
 		const DEFAULT_FISHBOT_BRIGADE_COMPOSITION = {
 			'MAX_HEAVY_CAVALRY': 4,
 			'MAX_LIGHT_CAVALRY': 4,
@@ -83,6 +88,8 @@ class CommandCenter {
 			EFFECTIVE_FIRE_SUPPORT_RADIUS: 12,		// todo: this should be adaptive - when the brigade has a sensor, this is better, without, it is restricted by sight range of the front units
 			EFFECTIVE_ADA_RADIUS: 12,
 			MEDIAN_CENTER_STRENGTH_THRESHOLD: Math.ceil(0.25 * MAX_DIRECT_FIRE_UNITS),		// at/above this brigade strength, the brigade position estimator switches from average to median which changes the aggression of the brigade
+
+			OBJECTIVE_CLEARED_RADIUS: 10,			// the divisional objective is retired once a brigade is this close to it and can see nothing left to fight
 		};
 
 		// Aviation parameters
@@ -540,6 +547,90 @@ class CommandCenter {
 	}
 
 	/**
+	 * Approximates where the division as a whole is, by averaging the brigade locations. Used to choose the
+	 * divisional objective, so that the objective picked is the one the division collectively is nearest to,
+	 * rather than the one whichever brigade happened to ask for it first is nearest to.
+	 * @param {worldState} state
+	 * @returns {{x: number, y: number}}
+	 */
+	#getDivisionCenter(state) {
+		let sumX = 0;
+		let sumY = 0;
+		this.BRIGADE_DESIGNATIONS.forEach(brigadeID => {
+			const location = state.brigades[brigadeID].location;
+			sumX += location.x;
+			sumY += location.y;
+		});
+		return {'x': Math.floor(sumX / this.BRIGADE_DESIGNATIONS.length), 'y': Math.floor(sumY / this.BRIGADE_DESIGNATIONS.length)};
+	}
+
+	/**
+	 * Returns `true` once the division has closed on its objective and found nothing left there.
+	 *
+	 * A brigade inside `OBJECTIVE_CLEARED_RADIUS` scans `TARGET_SEARCH_RADIUS` around itself, so an empty scan
+	 * from that range means the objective is genuinely spent - whether it was taken, destroyed by someone else,
+	 * or (if it was a unit) simply drove off. That makes this the single retirement condition for an objective:
+	 * no separate liveness check is needed, and an objective which is merely out of sight is not thrown away.
+	 * @param {worldState} state
+	 * @param {PositionInfo} objective
+	 * @param {GroundForceParameters} parameters
+	 * @returns {boolean}
+	 */
+	#isObjectiveCleared(state, objective, parameters) {
+		const CLEARED_RADIUS_SQ = parameters.OBJECTIVE_CLEARED_RADIUS ** 2;
+
+		return this.BRIGADE_DESIGNATIONS.some(brigadeID => {
+			const location = state.brigades[brigadeID].location;
+			const CLOSED_ON_OBJECTIVE = distSq(location.x, objective.x, location.y, objective.y) <= CLEARED_RADIUS_SQ;
+			return CLOSED_ON_OBJECTIVE && this.#noTargetsAvailable(state.brigades[brigadeID].nearbyTargets);
+		});
+	}
+
+	/**
+	 * Chooses the divisional main effort. The selection rule is the one each brigade used to apply for itself
+	 * (`findClosestTarget`), evaluated once from the division's centre instead of once per idle brigade, so the
+	 * division's behaviour is unchanged in character - it still works the nearest target first - but the four
+	 * brigades now agree on which one that is.
+	 *
+	 * The choice is sticky: it is held until `#isObjectiveCleared()` retires it. Re-deciding every tick would
+	 * make brigades oscillate as the division's centre of mass shifts, which is the opposite of coherent.
+	 *
+	 * @param {worldState} state
+	 * @param {GroundForceParameters} parameters
+	 * @returns {PositionInfo | null} `null` when nothing is known to be worth attacking anywhere.
+	 */
+	#selectDivisionObjective(state, parameters) {
+
+		const CURRENT_OBJECTIVE = this.divisionObjective;
+		const OBJECTIVE_STILL_VALID = (CURRENT_OBJECTIVE != null) && !this.#isObjectiveCleared(state, CURRENT_OBJECTIVE, parameters);
+		if (OBJECTIVE_STILL_VALID) {
+			return CURRENT_OBJECTIVE;
+		}
+
+		// Only reached when the division needs a new objective, so the BFS below runs once per objective rather
+		// than once per idle brigade per tick, as it did previously.
+		const divisionCenter = this.#getDivisionCenter(state);
+		const heightMap = state.mapData.heightMap;
+
+		const CLOSEST_TARGET = intelligence.findClosestTarget(state, divisionCenter.x, divisionCenter.y);
+		if (CLOSEST_TARGET != undefined) {
+			this.divisionObjective = {'x': CLOSEST_TARGET.x, 'y': CLOSEST_TARGET.y, 'z': heightMap[CLOSEST_TARGET.x][CLOSEST_TARGET.y]};
+			return this.divisionObjective;
+		}
+
+		// Nothing is visible to attack. Fall back to advancing on a known enemy base, so the division probes
+		// forward as one rather than sitting still waiting for the enemy to appear.
+		const CLOSEST_ENEMY_BASE = intelligence.findClosestEnemyBase(state, divisionCenter.x, divisionCenter.y);
+		if (CLOSEST_ENEMY_BASE != null && CLOSEST_ENEMY_BASE.isEnemy) {
+			this.divisionObjective = {'x': CLOSEST_ENEMY_BASE.x, 'y': CLOSEST_ENEMY_BASE.y, 'z': heightMap[CLOSEST_ENEMY_BASE.x][CLOSEST_ENEMY_BASE.y]};
+			return this.divisionObjective;
+		}
+
+		this.divisionObjective = null;
+		return this.divisionObjective;
+	}
+
+	/**
 	 * This function returns a list of prioritised Droid / Structure Objects (fresh data) which can be directly used in the `__tac` functions.
 	 * @param {worldState} state 
 	 * @param {number} brigadeID 
@@ -958,6 +1049,11 @@ class CommandCenter {
 
 	/**
 	 * Directs brigades to maneuver to and attack land targets, as well as directing aircraft to support land efforts.
+	 *
+	 * Brigades fight independently but converge: a brigade with targets in reach handles its own fight with no
+	 * reference to the others, and only a brigade with nothing to fight falls back on the divisional objective.
+	 * Because each brigade breaks off the march the moment its own scan finds something, the division arrives
+	 * at one place as several separate forces rather than as one formation.
 	 * @param {worldState} state 
 	 */
 	runCombatOperations(state) {
@@ -966,6 +1062,8 @@ class CommandCenter {
 		if (!READY_TO_ATTACK) {
 			return;
 		}
+
+		const DIVISION_OBJECTIVE = this.#selectDivisionObjective(state, this.GROUND_FORCE_PARAMETERS);
 
 		clearAllTileHighlights();
 		this.BRIGADE_DESIGNATIONS.forEach(brigadeID => {
@@ -981,12 +1079,14 @@ class CommandCenter {
 			this.toc.setBrigadeDirectFireTargets(state, brigadeID, groundTargets['directFireTargetRefs']);
 
 			if (this.#noTargetsAvailable(groundTargets)) {
-				const CLOSEST_TARGET = intelligence.findClosestTarget(state, brigadeLocation.x, brigadeLocation.y); 
-				if (CLOSEST_TARGET == undefined) {
-					moveBrigadeToLocation(state, brigadeID, brigadeLocation.x, brigadeLocation.y);
+				// Nothing in reach: march on the divisional objective. No formation is imposed on the way there -
+				// each brigade is simply given the same destination and the engine's pathing takes it in from
+				// wherever it currently stands.
+				if (DIVISION_OBJECTIVE == null) {
+					moveBrigadeToLocation(state, brigadeID, brigadeLocation.x, brigadeLocation.y);		// nothing known to be worth attacking; hold
 					return;
-				} 
-				moveBrigadeToLocation(state, brigadeID, CLOSEST_TARGET.x, CLOSEST_TARGET.y);
+				}
+				moveBrigadeToLocation(state, brigadeID, DIVISION_OBJECTIVE.x, DIVISION_OBJECTIVE.y);
 				return;
 			}
 			

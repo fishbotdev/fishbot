@@ -313,6 +313,7 @@
  * @property {number} EFFECTIVE_FIRE_SUPPORT_RADIUS
  * @property {number} EFFECTIVE_ADA_RADIUS
  * @property {number} MEDIAN_CENTER_STRENGTH_THRESHOLD
+ * @property {number} OBJECTIVE_CLEARED_RADIUS
  */
 
 /**
