@@ -347,7 +347,7 @@
  * @property {boolean} SHOULD_PRODUCE_TRUCK_VEHICLES
  * @property {number} MAX_TRUCKS_THIS_TICK
  * @property {boolean} SHOULD_PRODUCE_TRUCK_CYBORGS
- * @property {number} MAX_TRUCKS	Unit limit
+ * @property {number} DYNAMIC_TRUCK_CAP	
  * 
  * @property {Map<number, number>} BRIGADE_WEIGHTS
  * @property {Object} BRIGADE_COMPOSITION

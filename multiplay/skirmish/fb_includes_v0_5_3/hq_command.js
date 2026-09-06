@@ -147,7 +147,7 @@ class CommandCenter {
 			SHOULD_PRODUCE_TRUCK_VEHICLES: true,
 			MAX_TRUCKS_THIS_TICK: 1,
 			SHOULD_PRODUCE_TRUCK_CYBORGS: false,
-			MAX_TRUCKS: 8,
+			DYNAMIC_TRUCK_CAP: 8,
 			
 			BRIGADE_WEIGHTS: DEFAULT_BRIGADE_WEIGHTS,
 			BRIGADE_COMPOSITION: DEFAULT_FISHBOT_BRIGADE_COMPOSITION,
@@ -201,7 +201,7 @@ class CommandCenter {
 	///////////////////////////////////////////////////     STRATEGY     ///////////////////////////////////////////////////
 
 	/**
-	 * Updates FishBot's strategic parameters with evolution of the game state.
+	 * Updates FishBot's strategic parameters dynamically with the evolution of the game state.
 	 * The intent is `_world_state.js` stores the objective world, while `hq_command.js` stores the decisions based on observations of that state.
 	 * @param {worldState} state 
 	 * @returns {void} Writes directly to `this`.
@@ -216,9 +216,18 @@ class CommandCenter {
 		const livingPlayers = state.enumLivingPlayers();
 		const ALIVE_PLAYER_COUNT = Math.max(livingPlayers.length, 1);
 
-		const DOMINANT_OIL_SHARE = 1.2;
+		const getDynamicTruckCap = (totalDerrickCount, livingPlayerCount, minBaseBuilderTrucks, maxFishbotTruckCount) => {
+			// TODO: make this depend the construction state of the base (e.g. `CAMP_CLEAN`)
+			const FAIR_SHARE_DERRICK_COUNT = Math.floor(totalDerrickCount / livingPlayerCount);
+			const NOMINAL_TRUCKS = Math.floor(FAIR_SHARE_DERRICK_COUNT / 2) + minBaseBuilderTrucks;
+			const DYNAMIC_TRUCK_LIMIT = clampValue(NOMINAL_TRUCKS, 1, maxFishbotTruckCount);
+			return DYNAMIC_TRUCK_LIMIT;
+		};
 
-		// The following code sets the current FishBot strategic parameters
+		const BASE_BUILDER_TRUCK_COUNT = 2;
+		const FISHBOT_TRUCK_SOFT_CAP = 10;
+		
+		this.PRODUCTION_RESUPPLY_PARAMETERS.DYNAMIC_TRUCK_CAP = getDynamicTruckCap(TOTAL_DERRICKS, ALIVE_PLAYER_COUNT, BASE_BUILDER_TRUCK_COUNT, FISHBOT_TRUCK_SOFT_CAP);
 
 		/*
 			Oil parameters (the most important strategic resource)
@@ -293,12 +302,12 @@ class CommandCenter {
 		const NUMBER_OF_BRIGADES = this.NUMBER_OF_BRIGADES;
 
 		// Define unit limits
-		const MAX_TRUCKS = this.PRODUCTION_RESUPPLY_PARAMETERS.MAX_TRUCKS;
+
 		const MAX_INFANTRY = BRIGADE_COMPOSITION['MAX_INFANTRY'];
 		const TOTAL_UNITS_PER_BRIGADE = this.PRODUCTION_RESUPPLY_PARAMETERS.TOTAL_UNITS_PER_BRIGADE;
 		
 		const TRUCK_HARD_LIMIT = state.getMaxUnitCount("DROID_CONSTRUCT");
-		const TRUCK_SOFT_LIMIT = Math.min(TRUCK_HARD_LIMIT, MAX_TRUCKS);
+		const TRUCK_SOFT_LIMIT = Math.min(TRUCK_HARD_LIMIT, this.PRODUCTION_RESUPPLY_PARAMETERS.DYNAMIC_TRUCK_CAP);
 
 		const COMBAT_UNIT_HARD_LIMIT = state.getMaxUnitCount("DROID_WEAPON") - TRUCK_SOFT_LIMIT;
 		const INFANTRY_UNIT_SOFT_LIMIT = MAX_INFANTRY * (NUMBER_OF_BRIGADES + 1);		// "+1" includes reserve
