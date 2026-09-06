@@ -267,7 +267,7 @@ class CommandCenter {
 			this.isOilDominant = oilDominance;
 		}
 
-		const IS_ENERGY_DEFICIENT = !this.isOilDominant;
+		const IS_ENERGY_DEFICIENT = !MINIMUM_OILS_CLAIMED;
 
 		/*
 			CONSTRUCTION PARAMETERS
