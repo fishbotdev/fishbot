@@ -313,7 +313,7 @@ class CommandCenter {
 		const MAX_RESEARCH_LABS = state.getMaxStructureCount("Research Facility");
 		const DYNAMIC_RESEARCH_LAB_CAP = getDynamicResearchLabCap(IS_ENERGY_DEFICIENT, MIN_RESEARCH_LABS, MAX_RESEARCH_LABS);
 
-		const USE_VTOL = !IS_ENERGY_DEFICIENT;							// todo: add measure of 'map openness'		
+		const USE_VTOL = true;							// todo: find a situation in which you don't want to use VTOL
 		const MY_VTOL_COUNT = state.playerInfo[me]['numAirUnits'];
 
 		this.CONSTRUCTION_PARAMETERS.DYNAMIC_POWER_GENERATOR_CAP = DYNAMIC_POWER_GENERATOR_CAP;
