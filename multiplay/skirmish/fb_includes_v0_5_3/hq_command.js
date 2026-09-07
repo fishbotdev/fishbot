@@ -49,7 +49,7 @@ class CommandCenter {
 		this.TARGET_SEARCH_RADIUS = 25;				// how many tiles away from the brigadeLocation to look for enemies (impacts computational performance)
 
 		// Ground targeting
-		this.NUMBER_OF_BRIGADES = 4;
+		this.NUMBER_OF_BRIGADES = 3;
 		this.BRIGADE_DESIGNATIONS = BRIGADE_IDS.slice(0, this.NUMBER_OF_BRIGADES);
 
 		const DEFAULT_FISHBOT_BRIGADE_COMPOSITION = {
@@ -63,8 +63,6 @@ class CommandCenter {
 		};
 
 		const TOTAL_UNITS_PER_BRIGADE = Object.values(DEFAULT_FISHBOT_BRIGADE_COMPOSITION).reduce((a, b) => a + b, 0);
-
-		const MAX_DIRECT_FIRE_UNITS = DEFAULT_FISHBOT_BRIGADE_COMPOSITION.MAX_HEAVY_CAVALRY + DEFAULT_FISHBOT_BRIGADE_COMPOSITION.MAX_LIGHT_CAVALRY + DEFAULT_FISHBOT_BRIGADE_COMPOSITION.MAX_INFANTRY;
 
 		/** @type {GroundForceParameters} */
 		this.GROUND_FORCE_PARAMETERS = {
@@ -120,10 +118,10 @@ class CommandCenter {
 		// Production parameters
 		/** @type {Map<number, number>} */
 		const DEFAULT_BRIGADE_WEIGHTS = new Map([
-			[DIVISION.FIRST_BCT, 16], 
-			[DIVISION.SECOND_BCT, 8], 
-			[DIVISION.THIRD_BCT, 4], 
-			[DIVISION.FOURTH_BCT, 2], 
+			[DIVISION.FIRST_BCT, 1000], 
+			[DIVISION.SECOND_BCT, 100], 
+			[DIVISION.THIRD_BCT, 10], 
+			[DIVISION.FOURTH_BCT, 0], 
 			[DIVISION.FIFTH_BCT, 0],
 			[DIVISION.BCT_RESERVE, 1],
 		]);
@@ -386,10 +384,10 @@ class CommandCenter {
 		// Brigade production priorities
 		/** @type {Map<number, number>} */
 		const brigadeWeights = new Map([
-			[DIVISION.FIRST_BCT, 16], 
-			[DIVISION.SECOND_BCT, 8], 
-			[DIVISION.THIRD_BCT, 4], 
-			[DIVISION.FOURTH_BCT, 2], 
+			[DIVISION.FIRST_BCT, 1000], 
+			[DIVISION.SECOND_BCT, 100], 
+			[DIVISION.THIRD_BCT, 10], 
+			[DIVISION.FOURTH_BCT, 0], 
 			[DIVISION.FIFTH_BCT, 0],
 			[DIVISION.BCT_RESERVE, 1],
 		]);
