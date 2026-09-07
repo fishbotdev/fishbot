@@ -130,12 +130,12 @@ class CommandCenter {
 		const DEFAULT_UNIT_WEIGHTS = new Map([
 			// Production weights (which influences production order) are tuned using `python_helper_scripts / production_scheduling.py`.
 			// Must be rebalanced each time the brigade composition is changed.	
-			[DIVISION.HEAVY_CAV_RESERVE, 0.9],
+			[DIVISION.HEAVY_CAV_RESERVE, 0.55],
 			[DIVISION.LIGHT_CAV_RESERVE, 0.95],
-			[DIVISION.SHORT_RANGE_FIRE_SUPPORT_RESERVE, 0.75],
-			[DIVISION.AIR_DEFENCE_RESERVE, 0.6],
-			[DIVISION.SENSOR_RESERVE, 0.25],
-			[DIVISION.MAINTENANCE_RESERVE, 0.5],
+			[DIVISION.SHORT_RANGE_FIRE_SUPPORT_RESERVE, 0.6],
+			[DIVISION.AIR_DEFENCE_RESERVE, 0.35],
+			[DIVISION.SENSOR_RESERVE, 0.2],
+			[DIVISION.MAINTENANCE_RESERVE, 0.1],
 		]);
 
 		/** @type {ProductionParameters} */
@@ -393,15 +393,15 @@ class CommandCenter {
 		]);
 		
 		/** @type {Map<number, number>} */
-		const unitWeights = new Map([
+		const UNIT_WEIGHTS = new Map([
 			// Production weights (which influences production order) are tuned using `python_helper_scripts / production_scheduling.py`.
 			// Must be rebalanced each time the brigade composition is changed.	
-			[DIVISION.HEAVY_CAV_RESERVE, 0.95],
-			[DIVISION.LIGHT_CAV_RESERVE, 1.0],
-			[DIVISION.SHORT_RANGE_FIRE_SUPPORT_RESERVE, 0.7],
-			[DIVISION.AIR_DEFENCE_RESERVE, 0.65],
-			[DIVISION.SENSOR_RESERVE, 0.25],
-			[DIVISION.MAINTENANCE_RESERVE, 0.5],
+			[DIVISION.HEAVY_CAV_RESERVE, 0.55],
+			[DIVISION.LIGHT_CAV_RESERVE, 0.95],
+			[DIVISION.SHORT_RANGE_FIRE_SUPPORT_RESERVE, 0.6],
+			[DIVISION.AIR_DEFENCE_RESERVE, 0.35],
+			[DIVISION.SENSOR_RESERVE, 0.2],
+			[DIVISION.MAINTENANCE_RESERVE, 0.1],
 		]);
 
 		const DEFAULT_LAND_UNIT_CATEGORY = DIVISION.LIGHT_CAV_RESERVE;
@@ -416,7 +416,7 @@ class CommandCenter {
 		this.PRODUCTION_RESUPPLY_PARAMETERS.SHOULD_PRODUCE_VTOLS = SHOULD_PRODUCE_VTOLS;
 		this.PRODUCTION_RESUPPLY_PARAMETERS.SHOULD_PRODUCE_LAND_VEHICLES = SHOULD_PRODUCE_LAND_VEHICLES;
 		this.PRODUCTION_RESUPPLY_PARAMETERS.BRIGADE_WEIGHTS = brigadeWeights;
-		this.PRODUCTION_RESUPPLY_PARAMETERS.UNIT_WEIGHTS = unitWeights;
+		this.PRODUCTION_RESUPPLY_PARAMETERS.UNIT_WEIGHTS = UNIT_WEIGHTS;
 		this.PRODUCTION_RESUPPLY_PARAMETERS.DEFAULT_LAND_UNIT_CATEGORY = DEFAULT_LAND_UNIT_CATEGORY;
 
 		/*
