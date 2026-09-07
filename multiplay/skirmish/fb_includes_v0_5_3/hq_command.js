@@ -474,7 +474,7 @@ class CommandCenter {
 			RESEARCH
 		*/
 		const LIVING_ENEMY_COUNT = livingPlayers.filter(isEnemy).length;
-		const FIGHTING_LAST_OPPONENT = LIVING_ENEMY_COUNT === 1;
+		const FIGHTING_LAST_OPPONENT = LIVING_ENEMY_COUNT <= 1;
 		const path = FIGHTING_LAST_OPPONENT ? this.FOCUSED_COMBAT_RESEARCH_PATH : this.DEFAULT_RESEARCH_PATH;
 
 		if (this.RESEARCH_PARAMETERS.path !== path) {
