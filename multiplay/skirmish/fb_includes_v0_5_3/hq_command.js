@@ -59,7 +59,7 @@ class CommandCenter {
 			'MAX_ADA': 2,
 			'MAX_SENSOR': 1,
 			'MAX_REPAIR': 1,
-			'MAX_INFANTRY': 5,
+			'MAX_INFANTRY': 3,
 		};
 
 		const TOTAL_UNITS_PER_BRIGADE = Object.values(DEFAULT_FISHBOT_BRIGADE_COMPOSITION).reduce((a, b) => a + b, 0);
