@@ -167,11 +167,12 @@ class CommandCenter {
 		};
 		
 		// Research parameters
-		const defaultResearchPath = rnd.researchOrders.getT2CannonResearchPath();
+		this.DEFAULT_RESEARCH_PATH = rnd.researchOrders.getT2CannonResearchPath();
+		this.FOCUSED_COMBAT_RESEARCH_PATH = rnd.researchOrders.getFocusedT2CannonResearchPath();
 
 		/** @type {ResearchParameters} */
 		this.RESEARCH_PARAMETERS = {
-			path: defaultResearchPath,
+			path: this.DEFAULT_RESEARCH_PATH,
 		};
 
 		// Task scheduling parameters
@@ -468,6 +469,18 @@ class CommandCenter {
 		this.AVIATION_PARAMETERS.SATURATION_THREAT_THRESHOLD = SATURATION_THREAT_THRESHOLD;
 		this.AVIATION_PARAMETERS.CAS_SUPPORT_RADIUS = 25;
 		this.AVIATION_PARAMETERS.UNITS_FOR_ADA_STRIKE = 3;
+
+		/*
+			RESEARCH
+		*/
+		const LIVING_ENEMY_COUNT = livingPlayers.filter(isEnemy).length;
+		const FIGHTING_LAST_OPPONENT = LIVING_ENEMY_COUNT === 1;
+		const path = FIGHTING_LAST_OPPONENT ? this.FOCUSED_COMBAT_RESEARCH_PATH : this.DEFAULT_RESEARCH_PATH;
+
+		if (this.RESEARCH_PARAMETERS.path !== path) {
+			deb(`research weights changed to: ${FIGHTING_LAST_OPPONENT ? "focused combat" : "default"} (${LIVING_ENEMY_COUNT} enemies remaining)`);
+			this.RESEARCH_PARAMETERS.path = path;
+		}
 	}
 	
 	/////////////////////////////////////////////////// G2: INTELLIGENCE ///////////////////////////////////////////////////
@@ -1530,7 +1543,7 @@ class CommandCenter {
 				const researchStarted = pursueResearch(idleLabs[i], researchOrder[j].id);
 				if (researchStarted) {		// This check avoids conflicts with allies (shared-research mode)
 					positionInResearchOrder++;
-					// debug(`${me}:\t${getCurrGameTimeMinSec()}\t${researchOrder[j].name}`);		
+					deb(`${researchOrder[j].name}`);		
 					break;
 				}
 			}
