@@ -5,6 +5,7 @@ This file is used to record the changes to FishBot between each version.
 *Released **xx Sep 2026***
 ### Changes in v0.5.3
 - Combat improvements
+    - Reworked how the division decides to split into more combat teams: units are now held in reserve until every team already in the field is at full strength, the reserve holds a full team's worth to hand over, and no team is facing heavy fighting. This keeps a replacement pool behind the front instead of forming a new team as soon as the first one is topped up.
     - Fixed VTOLs being too passive when the match is neck-and-neck.
     - Adjusted threshold for 'safe' vs 'aggressive' play on unit groups, resolving group cohesion problems during heavy fighting.
 - Construction & production fixes

@@ -49,7 +49,7 @@ class CommandCenter {
 		this.TARGET_SEARCH_RADIUS = 25;				// how many tiles away from the brigadeLocation to look for enemies (impacts computational performance)
 
 		// Ground targeting
-		this.MAX_BRIGADES = 1;								// ceiling on how many BCTs the division may put in the field
+		this.MAX_BRIGADES = 3;								// ceiling on how many BCTs the division may put in the field
 		this.BRIGADE_DESIGNATIONS = [DIVISION.FIRST_BCT];	// the BCTs which currently exist; grows and shrinks as the division can man them
 
 		/** @type {ForceStructureParameters} */
@@ -60,10 +60,13 @@ class CommandCenter {
 			releaseDwell: 0,
 		};
 
-		// Total ground force budget, counted in brigades' worth of units (active BCTs + reserve).
-		// Kept separate from NUMBER_OF_BRIGADES so that changing how the force is split into BCTs
-		// does not also change how big the army is (or, via the leftover, the VTOL budget).
-		this.FORCE_BUDGET_BRIGADES = 2;
+		// Total ground force budget, counted in brigades' worth of units (BCTs in the field + reserve).
+		// Kept separate from MAX_BRIGADES so that changing how the force is split into BCTs does not also
+		// change how big the army is (or, via the leftover, the VTOL budget). It is also what decides how
+		// far the division can actually grow: forming a BCT needs every BCT *and* the reserve at full
+		// establishment, so the division settles at (FORCE_BUDGET_BRIGADES - 1) BCTs or MAX_BRIGADES,
+		// whichever is smaller.
+		this.FORCE_BUDGET_BRIGADES = 4;
 
 		const DEFAULT_FISHBOT_BRIGADE_COMPOSITION = {
 			'MAX_HEAVY_CAVALRY': 6,
