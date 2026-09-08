@@ -761,24 +761,46 @@ class CommandCenter {
 			}
 		}
 
-		// Fire Support Targeting
-		// Intent: Suppress enemy infantry then destroy defences, indirect fires & ADA.
+		/*
+			Fire Support Targeting
+			Intent: Suppress enemy infantry then destroy defences, indirect fires & ADA.
+
+			Indirect fire units cannot engage a target FishBot cannot currently see. Ordering one onto an unseen target makes
+			the engine drive that unit forward to acquire the target itself, which walks the mortars out in front of the armour
+			they are meant to be supporting. `state.grid` cannot answer this: `hq_toc.updateCoreIntel` enumerates every player's
+			objects without a visibility filter (deliberately - the strategic layer wants full map knowledge), so the candidate
+			lists above include targets nothing of ours can see. `enumRange` with the `seen` flag set asks the engine directly,
+			which gives exact visibility (the union of every friendly unit's & sensor's vision) for one call per brigade.
+		*/
+		/** @type {Map<number, number>} object ID -> owning player, for every enemy object the brigade can currently see */
+		const visibleEnemies = new Map();
+		enumRange(x, y, parameters.EFFECTIVE_FIRE_SUPPORT_RADIUS, ENEMIES, true).forEach(obj => visibleEnemies.set(obj.id, obj.player));
+
+		/** @param {DroidObject | StructureObject | FeatureObject} obj */
+		const isVisibleToBrigade = (obj) => visibleEnemies.get(obj.id) === obj.player;
+
+		/** @param {DroidObject | StructureObject | FeatureObject} obj */
+		const addFireSupportTarget = (obj) => {
+			if (outsideOfRadius(obj, parameters.EFFECTIVE_FIRE_SUPPORT_RADIUS)) 	return;
+			if (!isVisibleToBrigade(obj)) {
+				hackMarkTiles(obj.x, obj.y);		// TEMP INSTRUMENTATION: marks every target dropped by the visibility gate. Delete before PR.
+				return;
+			}
+			brigadeTargets["fireSupportTargets"].push(obj);
+		};
+
 		const primaryIndirectFireTargets = [...enemyInfantry, ...enemyDefenses, ...enemyIndirectFire, ...enemyADA, ...enemyIndustrial, ...enemyArmor];
 		const secondaryIndirectFireTargets = [...enemyConstructor, ...enemyUtility];
 
-		primaryIndirectFireTargets.forEach(c => {
-			if (outsideOfRadius(c.targetObj, parameters.EFFECTIVE_FIRE_SUPPORT_RADIUS)) 	return;
-			brigadeTargets["fireSupportTargets"].push(c.targetObj);
-		});
+		primaryIndirectFireTargets.forEach(c => addFireSupportTarget(c.targetObj));
 
-		secondaryIndirectFireTargets.forEach(c => {
-			if (outsideOfRadius(c.targetObj, parameters.EFFECTIVE_FIRE_SUPPORT_RADIUS)) 	return;
-			brigadeTargets["fireSupportTargets"].push(c.targetObj);
-		});
+		secondaryIndirectFireTargets.forEach(c => addFireSupportTarget(c.targetObj));
 
+		// The fallback goes through the same gate: a direct fire target the brigade cannot see is no more shootable by the
+		// fire support units than any other, and one beyond `EFFECTIVE_FIRE_SUPPORT_RADIUS` was already out of their reach.
 		const FALLBACK_TO_DIRECT_FIRE_TARGETS = (brigadeTargets["fireSupportTargets"].length === 0);
 		if (FALLBACK_TO_DIRECT_FIRE_TARGETS) {
-			brigadeTargets["fireSupportTargets"].push(...brigadeTargets['directFireTargets']);
+			brigadeTargets['directFireTargets'].forEach(addFireSupportTarget);
 		}		
 
 		// CAS Targeting (Close Air Support)
@@ -994,6 +1016,7 @@ class CommandCenter {
 		}
 
 		clearAllTileHighlights();
+		hackMarkTiles();		// TEMP INSTRUMENTATION: `clearAllTileHighlights` is gated on `DEBUG_MODE_ON`; this keeps the visibility-gate marks to one cycle either way. Delete before PR.
 		this.BRIGADE_DESIGNATIONS.forEach(brigadeID => {
 
 			const brigadeLocation = state.brigades[brigadeID]['location'];
