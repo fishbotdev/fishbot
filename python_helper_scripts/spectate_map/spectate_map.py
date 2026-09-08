@@ -326,6 +326,29 @@ def update_filter(*args):
         ]
 
     refresh_tests_list()
+
+    #
+    # `refresh_tests_list` wipes the highlight, so re-apply it to the cached
+    # selection. A selection the search has hidden is dropped instead: running
+    # it would launch a test that is no longer anywhere in the list.
+    #
+
+    if state["selected"] is not None:
+
+        if state["selected"] in state["filtered_tests"]:
+
+            if tests_listbox is not None:
+                index = state["filtered_tests"].index(state["selected"])
+                tests_listbox.selection_set(index)
+                tests_listbox.see(index)
+
+        else:
+
+            select_filename(None)
+
+            if recent_listbox is not None:
+                recent_listbox.selection_clear(0, tk.END)
+
     set_status(f"{len(state['filtered_tests'])} matching tests")
 
 
@@ -376,6 +399,20 @@ def on_test_selected(event=None):
 
     select_filename(filename)
 
+    #
+    # `on_recent_selected` mirrors its pick into this list, so only drop the
+    # recent highlight once the two lists actually disagree.
+    #
+
+    recent_selection = recent_listbox.curselection()
+
+    if recent_selection:
+
+        recent_filename = state["settings"]["recent"][recent_selection[0]]
+
+        if recent_filename != filename:
+            recent_listbox.selection_clear(0, tk.END)
+
 
 def on_recent_selected(event=None):
 
@@ -386,19 +423,33 @@ def on_recent_selected(event=None):
 
     filename = state["settings"]["recent"][selection[0]]
 
-    if filename in state["all_tests"]:
+    if filename not in state["all_tests"]:
 
-        select_filename(filename)
+        #
+        # The file has gone from the tests folder. Drop the selection rather
+        # than leaving the previous pick cached, which would quietly run that
+        # earlier test instead.
+        #
 
-        search_var.set("")
+        select_filename(None)
 
-        try:
-            index = state["filtered_tests"].index(filename)
-            tests_listbox.selection_clear(0, tk.END)
-            tests_listbox.selection_set(index)
-            tests_listbox.see(index)
-        except ValueError:
-            pass
+        tests_listbox.selection_clear(0, tk.END)
+
+        set_status(f"{filename} is no longer in the tests folder")
+
+        return
+
+    select_filename(filename)
+
+    search_var.set("")
+
+    try:
+        index = state["filtered_tests"].index(filename)
+        tests_listbox.selection_clear(0, tk.END)
+        tests_listbox.selection_set(index)
+        tests_listbox.see(index)
+    except ValueError:
+        pass
 
 
 # =============================================================================
@@ -545,6 +596,11 @@ def create_gui():
 
     scrollbar.pack(side="right", fill="y")
     tests_listbox.pack(side="left", fill="both", expand=True)
+
+    tests_listbox.bind(
+        "<<ListboxSelect>>",
+        on_test_selected,
+    )
 
     #
     # Recent
