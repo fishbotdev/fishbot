@@ -75,6 +75,21 @@
 
 For any test that warrants further investigation, you can use `spectate_map.exe` to select and run the test in spectator mode.
 
+### Plotting FishBot's Oil Economy
+While `DEBUG_MODE_ON` is set, FishBot prints one `OIL_TELEMETRY` line to the console per strategy update (6 per game minute), reporting its oil income, expenditure, reserves and the structure caps it derived from them:
+
+```
+F0:  05:30:   OIL_TELEMETRY t=330000 connected=8 idle=2 banked=146 income=396.0 spend=380.3 net=-15.8 unmet=0.0 share=0.800 surplus=0.000 budget=1.000 sufficiency=0.800 factories=4 labs=4
+```
+
+The game's script `debug()` writes to `stderr`, so these lines show up live in the console and can be captured by redirecting `stderr` to a file:
+
+```
+"Warzone 2100\bin\warzone2100.exe" --configdir="Warzone 2100\PRODCONFIG" --skirmish="GAMMA_HARD_COBRA_T2.json" --enableconsole --headless --autogame --nosound  2> oil_telemetry.log
+```
+
+Drop the captured log next to `python_helper_scripts/process_results/plot_oil_economy.py` and run that script to plot income vs expenditure, banked power vs unmet demand, and oil sufficiency vs the caps it sets, over the whole game. It needs `pandas` & `matplotlib` (`pip install pandas matplotlib`).
+
 ### Build the Map-Selector GUI to observe FishBot in Spectator Mode
 To spectate FishBot in real time, there is a handy map-selector GUI `spectate_map.exe` to configure a game in single-player spectator mode. This allows you to:
 * observe how FishBot is performing in real time (with the statistics panel and free movement of the camera), and
