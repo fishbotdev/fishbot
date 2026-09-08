@@ -339,19 +339,33 @@ def on_recent_selected(event=None):
 
     filename = state["settings"]["recent"][selection[0]]
 
-    if filename in state["all_tests"]:
+    if filename not in state["all_tests"]:
 
-        select_filename(filename)
+        #
+        # The file has gone from the tests folder. Drop the selection rather
+        # than leaving the previous pick cached, which would quietly run that
+        # earlier test instead.
+        #
 
-        search_var.set("")
+        select_filename(None)
 
-        try:
-            index = state["filtered_tests"].index(filename)
-            tests_listbox.selection_clear(0, tk.END)
-            tests_listbox.selection_set(index)
-            tests_listbox.see(index)
-        except ValueError:
-            pass
+        tests_listbox.selection_clear(0, tk.END)
+
+        set_status(f"{filename} is no longer in the tests folder")
+
+        return
+
+    select_filename(filename)
+
+    search_var.set("")
+
+    try:
+        index = state["filtered_tests"].index(filename)
+        tests_listbox.selection_clear(0, tk.END)
+        tests_listbox.selection_set(index)
+        tests_listbox.see(index)
+    except ValueError:
+        pass
 
 
 # =============================================================================
