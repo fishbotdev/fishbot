@@ -795,7 +795,6 @@ class CommandCenter {
 				visibleFireSupportTargets.push(obj);
 				return;
 			}
-			hackMarkTiles(obj.x, obj.y);		// TEMP INSTRUMENTATION: marks every target demoted by the visibility check. Delete before PR.
 			hiddenFireSupportTargets.push(obj);
 		};
 
@@ -805,6 +804,12 @@ class CommandCenter {
 		primaryIndirectFireTargets.forEach(c => addFireSupportTarget(c.targetObj));
 
 		secondaryIndirectFireTargets.forEach(c => addFireSupportTarget(c.targetObj));
+
+		// TEMP INSTRUMENTATION: reports the targets the visibility check demoted. Silent when it demoted nothing. Delete before PR.
+		if (hiddenFireSupportTargets.length > 0) {
+			const demotedTargets = hiddenFireSupportTargets.map(obj => `${obj.name} (${obj.x}, ${obj.y})`).join(", ");
+			deb(`brigade ${brigadeID} fire support: ${visibleFireSupportTargets.length} in sight, ${hiddenFireSupportTargets.length} demoted -> ${demotedTargets}`);
+		}
 
 		// Within each tier the primary/secondary ordering above is preserved.
 		brigadeTargets["fireSupportTargets"].push(...visibleFireSupportTargets, ...hiddenFireSupportTargets);
@@ -1027,7 +1032,6 @@ class CommandCenter {
 		}
 
 		clearAllTileHighlights();
-		hackMarkTiles();		// TEMP INSTRUMENTATION: `clearAllTileHighlights` is gated on `DEBUG_MODE_ON`; this keeps the visibility-gate marks to one cycle either way. Delete before PR.
 		this.BRIGADE_DESIGNATIONS.forEach(brigadeID => {
 
 			const brigadeLocation = state.brigades[brigadeID]['location'];
