@@ -315,6 +315,12 @@
  */
 
 /**
+ * @typedef {Object} ForceStructureParameters
+ * @property {number} RELEASE_DWELL_TICKS
+ * @property {number} releaseDwell
+ */
+
+/**
  * @typedef {Object} ConstructionParameters
  * @property {number} MAX_PARALLEL_BASE_BUILD_TASKS
  * @property {number} MAX_PARALLEL_OIL_CAP_TASKS
