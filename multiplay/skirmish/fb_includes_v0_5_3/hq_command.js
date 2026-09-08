@@ -49,8 +49,13 @@ class CommandCenter {
 		this.TARGET_SEARCH_RADIUS = 25;				// how many tiles away from the brigadeLocation to look for enemies (impacts computational performance)
 
 		// Ground targeting
-		this.NUMBER_OF_BRIGADES = 3;
+		this.NUMBER_OF_BRIGADES = 1;
 		this.BRIGADE_DESIGNATIONS = BRIGADE_IDS.slice(0, this.NUMBER_OF_BRIGADES);
+
+		// Total ground force budget, counted in brigades' worth of units (active BCTs + reserve).
+		// Kept separate from NUMBER_OF_BRIGADES so that changing how the force is split into BCTs
+		// does not also change how big the army is (or, via the leftover, the VTOL budget).
+		this.FORCE_BUDGET_BRIGADES = 2;
 
 		const DEFAULT_FISHBOT_BRIGADE_COMPOSITION = {
 			'MAX_HEAVY_CAVALRY': 6,
@@ -323,7 +328,7 @@ class CommandCenter {
 			PRODUCTION
 		*/
 		const BRIGADE_COMPOSITION = this.PRODUCTION_RESUPPLY_PARAMETERS.BRIGADE_COMPOSITION;
-		const NUMBER_OF_BRIGADES = this.NUMBER_OF_BRIGADES;
+		const FORCE_BUDGET_BRIGADES = this.FORCE_BUDGET_BRIGADES;
 
 		// Define unit limits
 
@@ -334,8 +339,8 @@ class CommandCenter {
 		const TRUCK_SOFT_LIMIT = Math.min(TRUCK_HARD_LIMIT, this.PRODUCTION_RESUPPLY_PARAMETERS.DYNAMIC_TRUCK_CAP);
 
 		const COMBAT_UNIT_HARD_LIMIT = state.getMaxUnitCount("DROID_WEAPON") - TRUCK_SOFT_LIMIT;
-		const INFANTRY_UNIT_SOFT_LIMIT = MAX_INFANTRY * (NUMBER_OF_BRIGADES + 1);		// "+1" includes reserve
-		const LAND_VEHICLE_SOFT_LIMIT = (TOTAL_UNITS_PER_BRIGADE - MAX_INFANTRY) * (NUMBER_OF_BRIGADES + 1);
+		const INFANTRY_UNIT_SOFT_LIMIT = MAX_INFANTRY * FORCE_BUDGET_BRIGADES;
+		const LAND_VEHICLE_SOFT_LIMIT = (TOTAL_UNITS_PER_BRIGADE - MAX_INFANTRY) * FORCE_BUDGET_BRIGADES;
 		const VTOL_UNIT_HARD_LIMIT = COMBAT_UNIT_HARD_LIMIT - LAND_VEHICLE_SOFT_LIMIT - INFANTRY_UNIT_SOFT_LIMIT;
 
 		// Get player data
