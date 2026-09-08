@@ -1024,6 +1024,7 @@ class TacticalOperationsCenter {
         // decays gradually, so it does not jitter when single units die and are replaced.
         const directFireUnitCount = brigadeUnits.filter(unit => !unit.hasIndirect).length;
         const currBrigade = state.brigades[brigadeID];
+        currBrigade["directFireCount"] = directFireUnitCount;
         currBrigade["strength"] = Math.max(directFireUnitCount, currBrigade["strength"] - parameters.STRENGTH_DECAY_RATE);
 
         if (false) {

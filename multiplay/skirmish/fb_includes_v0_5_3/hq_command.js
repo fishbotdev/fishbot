@@ -55,6 +55,8 @@ class CommandCenter {
 		/** @type {ForceStructureParameters} */
 		this.FORCE_STRUCTURE_PARAMETERS = {
 			RELEASE_DWELL_TICKS: 15,	// consecutive resupply ticks the formation conditions must hold before a new BCT is formed (~30s)
+			MAX_THREAT_RATIO: 0.4,		// nearby ground threats per combat unit, above which a BCT is judged to be expecting heavy combat
+			MAX_UNREPLACED_LOSSES: 2,	// direct-fire units a BCT may be down on its recent peak before it counts as bleeding
 			releaseDwell: 0,
 		};
 
@@ -1252,6 +1254,50 @@ class CommandCenter {
 	}
 
 	/**
+	 * Reports whether a BCT is facing enough nearby enemies to expect heavy combat.
+	 *
+	 * Only the classes which shoot back at ground forces are counted. ADA cannot engage them, and constructors,
+	 * industry and utility structures are the opposite signal - finding those means the front is soft, which is
+	 * exactly when splitting the division is safe. The count is taken relative to the BCT's own strength, since
+	 * a dozen targets mean something different to a full BCT than to a half-dead one.
+	 * @param {worldState} state
+	 * @param {number} brigadeID
+	 * @param {number} combatUnitCount
+	 * @returns {boolean}
+	 */
+	#isExpectingHeavyCombat(state, brigadeID, combatUnitCount) {
+		const THREATENING_TARGET_CLASSES = ['enemyArmor', 'enemyInfantry', 'enemyIndirectFire', 'enemyDefenses'];
+		const nearbyTargets = state.brigades[brigadeID]['nearbyTargets'];
+
+		let threatCount = 0;
+		THREATENING_TARGET_CLASSES.forEach(targetClass => threatCount += nearbyTargets[targetClass].length);
+
+		if (combatUnitCount === 0) {
+			return threatCount > 0;
+		}
+		return threatCount > combatUnitCount * this.FORCE_STRUCTURE_PARAMETERS.MAX_THREAT_RATIO;
+	}
+
+	/**
+	 * Reports whether a BCT is losing units faster than resupply is replacing them.
+	 *
+	 * `strength` is a high-water mark which decays by `STRENGTH_DECAY_RATE` per update but snaps straight back up
+	 * to the real count when the BCT is reinforced, so the gap between the two is what the BCT is down on its
+	 * recent peak *and* has not had made good. Losses which the reserve is deep enough to keep replacing do not
+	 * register, which is the intent: it is the replacement rate being outrun that should stop the division
+	 * splitting, not casualties as such.
+	 * @param {worldState} state
+	 * @param {number} brigadeID
+	 * @returns {boolean}
+	 */
+	#isTakingUnreplacedLosses(state, brigadeID) {
+		const brigade = state.brigades[brigadeID];
+		const unreplacedLosses = brigade['strength'] - brigade['directFireCount'];
+
+		return unreplacedLosses > this.FORCE_STRUCTURE_PARAMETERS.MAX_UNREPLACED_LOSSES;
+	}
+
+	/**
 	 * Decides the division's force structure for this tick: which of the existing BCTs are manned well enough
 	 * to fight, and whether the division can afford to form another one.
 	 *
@@ -1287,7 +1333,16 @@ class CommandCenter {
 		const FORCE_IS_SUFFICIENT = this.BRIGADE_DESIGNATIONS.every(brigadeID => this.#isFullyManned(state, brigadeID))
 			&& this.#isFullyManned(state, DIVISION.BCT_RESERVE);
 
-		if (AT_BRIGADE_CEILING || !FORCE_IS_SUFFICIENT) {
+		// Splitting the division is only safe if nothing already in the field is about to need the reserve
+		let expectingHeavyCombat = false;
+		for (const [brigadeID, unitCount] of brigadeUnitCount) {
+			if (this.#isExpectingHeavyCombat(state, brigadeID, unitCount) || this.#isTakingUnreplacedLosses(state, brigadeID)) {
+				expectingHeavyCombat = true;
+				break;
+			}
+		}
+
+		if (AT_BRIGADE_CEILING || !FORCE_IS_SUFFICIENT || expectingHeavyCombat) {
 			forceStructure.releaseDwell = 0;
 			return activeBrigade;
 		}
