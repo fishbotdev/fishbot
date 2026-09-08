@@ -35,6 +35,7 @@ from tkinter import filedialog, messagebox
 import subprocess
 import ctypes
 import sys
+import time
 
 # =============================================================================
 # Constants
@@ -49,6 +50,11 @@ SETTINGS_FILE = APP_DIR / "__spectate_map_settings.json"
 BATCH_FILE = APP_DIR / "__spectate_map.bat"
 
 MACRO_SCRIPT_NAME = "run_debug_gamespeed_up.ahk"
+
+# The macro checkbox is remembered for the rest of the current Windows boot,
+# then starts unticked again. Boot time is derived from the system uptime, so
+# allow some slack for clock adjustments between runs.
+BOOT_MATCH_TOLERANCE_SECONDS = 120
 
 
 DEFAULT_TESTS_DIR = os.path.join(
@@ -103,6 +109,46 @@ launch_macro_var = None
 
 
 # =============================================================================
+# Boot Session
+# =============================================================================
+
+def get_boot_time():
+    """
+    Approximate epoch time of the current Windows boot, from the system uptime.
+    Returns None when that cannot be determined (any non-Windows platform), in
+    which case the macro checkbox simply always starts unticked.
+    """
+
+    try:
+        uptime_ms = ctypes.windll.kernel32.GetTickCount64()
+    except Exception:
+        return None
+
+    return time.time() - (uptime_ms / 1000.0)
+
+
+def launch_macro_is_current_boot():
+    """
+    True when the saved macro checkbox state belongs to the boot we are in now,
+    so it survives repeated runs of this app but not a restart of the computer.
+    """
+
+    if not state["settings"].get("launch_macro"):
+        return False
+
+    saved_boot = state["settings"].get("launch_macro_boot")
+    current_boot = get_boot_time()
+
+    if saved_boot is None or current_boot is None:
+        return False
+
+    try:
+        return abs(float(saved_boot) - current_boot) < BOOT_MATCH_TOLERANCE_SECONDS
+    except (TypeError, ValueError):
+        return False
+
+
+# =============================================================================
 # Settings
 # =============================================================================
 
@@ -120,8 +166,9 @@ def load_settings():
     if "recent" not in state["settings"]:
         state["settings"]["recent"] = []
 
-    if "launch_macro" not in state["settings"]:
+    if not launch_macro_is_current_boot():
         state["settings"]["launch_macro"] = False
+        state["settings"]["launch_macro_boot"] = None
 
 
 def save_settings():
@@ -406,7 +453,11 @@ def launch_macro():
 def on_launch_macro_toggled(*args):
 
     try:
-        state["settings"]["launch_macro"] = bool(launch_macro_var.get())
+        enabled = bool(launch_macro_var.get())
+
+        state["settings"]["launch_macro"] = enabled
+        state["settings"]["launch_macro_boot"] = get_boot_time() if enabled else None
+
         save_settings()
     except Exception:
         pass
