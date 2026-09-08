@@ -747,7 +747,7 @@ class CommandCenter {
 
 		/*
 			Fire Support Targeting
-			Intent: Suppress enemy infantry then destroy defences, indirect fires & ADA.
+			Intent: Suppress enemy infantry then destroy defences, indirect fires & ADA, preferring what the brigade can see.
 
 			Indirect fire units cannot engage a target FishBot cannot currently see. Ordering one onto an unseen target makes
 			the engine drive that unit forward to acquire the target itself, which walks the mortars out in front of the armour
@@ -755,6 +755,10 @@ class CommandCenter {
 			objects without a visibility filter (deliberately - the strategic layer wants full map knowledge), so the candidate
 			lists above include targets nothing of ours can see. `enumRange` with the `seen` flag set asks the engine directly,
 			which gives exact visibility (the union of every friendly unit's & sensor's vision) for one call per brigade.
+
+			Out of sight targets are demoted rather than dropped: `__tac_com_ground` walks the list in order and takes the first
+			target within weapon range, so putting the visible ones first means an unseen target is only ever engaged when
+			nothing visible is available.
 		*/
 		/** @type {Map<number, number>} object ID -> owning player, for every enemy object the brigade can currently see */
 		const visibleEnemies = new Map();
@@ -763,14 +767,20 @@ class CommandCenter {
 		/** @param {DroidObject | StructureObject | FeatureObject} obj */
 		const isVisibleToBrigade = (obj) => visibleEnemies.get(obj.id) === obj.player;
 
+		/** @type {(DroidObject | StructureObject | FeatureObject)[]} */
+		const visibleFireSupportTargets = [];
+		/** @type {(DroidObject | StructureObject | FeatureObject)[]} */
+		const hiddenFireSupportTargets = [];
+
 		/** @param {DroidObject | StructureObject | FeatureObject} obj */
 		const addFireSupportTarget = (obj) => {
 			if (outsideOfRadius(obj, parameters.EFFECTIVE_FIRE_SUPPORT_RADIUS)) 	return;
-			if (!isVisibleToBrigade(obj)) {
-				hackMarkTiles(obj.x, obj.y);		// TEMP INSTRUMENTATION: marks every target dropped by the visibility gate. Delete before PR.
+			if (isVisibleToBrigade(obj)) {
+				visibleFireSupportTargets.push(obj);
 				return;
 			}
-			brigadeTargets["fireSupportTargets"].push(obj);
+			hackMarkTiles(obj.x, obj.y);		// TEMP INSTRUMENTATION: marks every target demoted by the visibility check. Delete before PR.
+			hiddenFireSupportTargets.push(obj);
 		};
 
 		const primaryIndirectFireTargets = [...enemyInfantry, ...enemyDefenses, ...enemyIndirectFire, ...enemyADA, ...enemyIndustrial, ...enemyArmor];
@@ -780,11 +790,12 @@ class CommandCenter {
 
 		secondaryIndirectFireTargets.forEach(c => addFireSupportTarget(c.targetObj));
 
-		// The fallback goes through the same gate: a direct fire target the brigade cannot see is no more shootable by the
-		// fire support units than any other, and one beyond `EFFECTIVE_FIRE_SUPPORT_RADIUS` was already out of their reach.
+		// Within each tier the primary/secondary ordering above is preserved.
+		brigadeTargets["fireSupportTargets"].push(...visibleFireSupportTargets, ...hiddenFireSupportTargets);
+
 		const FALLBACK_TO_DIRECT_FIRE_TARGETS = (brigadeTargets["fireSupportTargets"].length === 0);
 		if (FALLBACK_TO_DIRECT_FIRE_TARGETS) {
-			brigadeTargets['directFireTargets'].forEach(addFireSupportTarget);
+			brigadeTargets["fireSupportTargets"].push(...brigadeTargets['directFireTargets']);
 		}		
 
 		// CAS Targeting (Close Air Support)
