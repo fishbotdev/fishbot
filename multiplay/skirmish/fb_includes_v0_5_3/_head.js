@@ -471,6 +471,18 @@ Object.freeze(DIVISION);
 
 const BRIGADE_IDS = [DIVISION.FIRST_BCT, DIVISION.SECOND_BCT, DIVISION.THIRD_BCT, DIVISION.FOURTH_BCT, DIVISION.FIFTH_BCT];
 
+// The reserve force is not a group of its own: reserve units sit in these category groups (which is also where
+// newly manufactured units are placed) until resupply assigns them to a BCT.
+const RESERVE_CATEGORY_GROUP_IDS = [
+	DIVISION.HEAVY_CAV_RESERVE,
+	DIVISION.LIGHT_CAV_RESERVE,
+	DIVISION.INFANTRY_RESERVE,
+	DIVISION.SHORT_RANGE_FIRE_SUPPORT_RESERVE,
+	DIVISION.AIR_DEFENCE_RESERVE,
+	DIVISION.SENSOR_RESERVE,
+	DIVISION.MAINTENANCE_RESERVE,
+];
+
 /*
     LOGISTICS CONSTANTS
 */

@@ -1010,10 +1010,9 @@ class CommandCenter {
 		});
 
 		// Manage reserves: temporary: Move reserves to pre-emptively reinforce BCT0
-		const reserveGroupIDs = [DIVISION.HEAVY_CAV_RESERVE, DIVISION.LIGHT_CAV_RESERVE, DIVISION.INFANTRY_RESERVE, DIVISION.SHORT_RANGE_FIRE_SUPPORT_RESERVE, DIVISION.SENSOR_RESERVE, DIVISION.AIR_DEFENCE_RESERVE, DIVISION.MAINTENANCE_RESERVE];
 		const x = state.brigades[DIVISION.FIRST_BCT]['location'].x;
 		const y = state.brigades[DIVISION.FIRST_BCT]['location'].y;
-		moveReservesToShadow(reserveGroupIDs, x, y);
+		moveReservesToShadow(RESERVE_CATEGORY_GROUP_IDS, x, y);
 	}
 
 	/////////////////////////////////////////////////// G4: LOGISTICS ///////////////////////////////////////////////////
@@ -1254,19 +1253,9 @@ class CommandCenter {
 		const REPAIR_FACILITY_AVAILABLE = state.playerInfo[me]["repairFacilityFbObjects"].length > 0;		// this has the potential to be stale, but it is not critical that it is up-to-date
 
 		// Get reserve force units
-		const RESERVE_GROUP_IDS = [
-			DIVISION.HEAVY_CAV_RESERVE, 
-			DIVISION.LIGHT_CAV_RESERVE, 
-			DIVISION.INFANTRY_RESERVE, 
-			DIVISION.SHORT_RANGE_FIRE_SUPPORT_RESERVE, 
-			DIVISION.AIR_DEFENCE_RESERVE, 
-			DIVISION.SENSOR_RESERVE,
-			DIVISION.MAINTENANCE_RESERVE
-		];
-
 		/** @type {Map<number, DroidObject[]>} */
 		const reserveUnits = new Map();
-		RESERVE_GROUP_IDS.forEach(id => {reserveUnits.set(id, state.g.enumGroup(id))});
+		RESERVE_CATEGORY_GROUP_IDS.forEach(id => {reserveUnits.set(id, state.g.enumGroup(id))});
 
 		if (REPAIR_FACILITY_AVAILABLE) {
 			const RESERVE_REPAIR_THRESHOLD = 70;
