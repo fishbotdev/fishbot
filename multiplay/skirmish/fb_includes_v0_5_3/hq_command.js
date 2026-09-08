@@ -200,6 +200,45 @@ class CommandCenter {
 	///////////////////////////////////////////////////     STRATEGY     ///////////////////////////////////////////////////
 
 	/**
+	 * Writes one line of oil economy telemetry per strategy update, so that FishBot's oil income & expenditure can
+	 * be watched during a match and plotted afterwards.
+	 *
+	 * The game's script `debug()` writes straight to `stderr`, so these lines appear in the game console as the match
+	 * runs, and can be captured by redirecting `stderr` to a file:
+	 * 		`warzone2100.exe <the usual flags> 2> oil_telemetry.log`
+	 * `python_helper_scripts/process_results/plot_oil_economy.py` parses & plots the captured file.
+	 *
+	 * The `OIL_TELEMETRY` tag & the `key=value` fields are the format that script expects; keep them in step.
+	 * @param {OilEconomyObject} economy the current oil supply & demand observations
+	 * @param {{share: number, surplus: number, budget: number, sufficiency: number, factoryCap: number, labCap: number}} decision what FishBot concluded from `economy` this update
+	 * @returns {void}
+	 */
+	#logOilTelemetry(economy, decision) {
+		if (!DEBUG_MODE_ON) {
+			return;			// released builds should not log every strategy update
+		}
+
+		const fields = [
+			`t=${gameTime}`,
+			`connected=${economy.connectedDerricks}`,
+			`idle=${economy.idleDerricks}`,
+			`banked=${Math.round(economy.bankedPower)}`,
+			`income=${economy.incomePerMin.toFixed(1)}`,
+			`spend=${economy.expenditurePerMin.toFixed(1)}`,
+			`net=${economy.netFlowPerMin.toFixed(1)}`,
+			`unmet=${economy.unmetDemand.toFixed(1)}`,
+			`share=${decision.share.toFixed(3)}`,
+			`surplus=${decision.surplus.toFixed(3)}`,
+			`budget=${decision.budget.toFixed(3)}`,
+			`sufficiency=${decision.sufficiency.toFixed(3)}`,
+			`factories=${decision.factoryCap}`,
+			`labs=${decision.labCap}`,
+		];
+
+		deb(`OIL_TELEMETRY ${fields.join(' ')}`);
+	}
+
+	/**
 	 * Updates FishBot's strategic parameters dynamically with the evolution of the game state.
 	 * The intent is `_world_state.js` stores the objective world, while `hq_command.js` stores the decisions based on observations of that state.
 	 * @param {worldState} state 
@@ -343,6 +382,15 @@ class CommandCenter {
 			const oilRates = `income ${Math.round(oilEconomy.incomePerMin)}/min, spend ${Math.round(oilEconomy.expenditurePerMin)}/min, unmet ${Math.round(oilEconomy.unmetDemand)}`;
 			deb(`oil sufficiency ${OIL_SUFFICIENCY.toFixed(2)} (${derricks}; ${oilRates}) -> ${DYNAMIC_FACTORY_CAP} factories, ${DYNAMIC_RESEARCH_LAB_CAP} labs`);
 		}
+
+		this.#logOilTelemetry(oilEconomy, {
+			'share': OIL_SHARE_SCORE,
+			'surplus': SURPLUS_BONUS,
+			'budget': POWER_BUDGET_SCORE,
+			'sufficiency': OIL_SUFFICIENCY,
+			'factoryCap': DYNAMIC_FACTORY_CAP,
+			'labCap': DYNAMIC_RESEARCH_LAB_CAP,
+		});
 
 		this.CONSTRUCTION_PARAMETERS.DYNAMIC_POWER_GENERATOR_CAP = DYNAMIC_POWER_GENERATOR_CAP;
 		this.CONSTRUCTION_PARAMETERS.DYNAMIC_FACTORY_CAP = DYNAMIC_FACTORY_CAP;

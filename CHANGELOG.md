@@ -16,6 +16,7 @@ This file is used to record the changes to FishBot between each version.
 - Technical changes
     - Fixed a latent issue where combat cyborgs could potentially be produced before the Command Center was built; this means that FishBot continues to respect human player rules even if only cyborg factories are allowed.
     - Improved E2E test coverage of most base maps shipped with the game (*excluding 10 player maps and sea maps*), as script-generated maps are now testable.
+    - In debug builds, FishBot now reports its oil economy to the console as the match runs. `python_helper_scripts/process_results/plot_oil_economy.py` plots a captured game log (see `docs/DEVELOPMENT.md`).
 
 ## Fishbot v0.5.2
 *Released **01 Sep 2026***
