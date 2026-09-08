@@ -265,6 +265,29 @@ def update_filter(*args):
         ]
 
     refresh_tests_list()
+
+    #
+    # `refresh_tests_list` wipes the highlight, so re-apply it to the cached
+    # selection. A selection the search has hidden is dropped instead: running
+    # it would launch a test that is no longer anywhere in the list.
+    #
+
+    if state["selected"] is not None:
+
+        if state["selected"] in state["filtered_tests"]:
+
+            if tests_listbox is not None:
+                index = state["filtered_tests"].index(state["selected"])
+                tests_listbox.selection_set(index)
+                tests_listbox.see(index)
+
+        else:
+
+            select_filename(None)
+
+            if recent_listbox is not None:
+                recent_listbox.selection_clear(0, tk.END)
+
     set_status(f"{len(state['filtered_tests'])} matching tests")
 
 
