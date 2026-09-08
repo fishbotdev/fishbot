@@ -49,22 +49,20 @@ class CommandCenter {
 		this.TARGET_SEARCH_RADIUS = 25;				// how many tiles away from the brigadeLocation to look for enemies (impacts computational performance)
 
 		// Ground targeting
-		this.NUMBER_OF_BRIGADES = 4;
+		this.NUMBER_OF_BRIGADES = 3;
 		this.BRIGADE_DESIGNATIONS = BRIGADE_IDS.slice(0, this.NUMBER_OF_BRIGADES);
 
 		const DEFAULT_FISHBOT_BRIGADE_COMPOSITION = {
-			'MAX_HEAVY_CAVALRY': 4,
-			'MAX_LIGHT_CAVALRY': 4,
+			'MAX_HEAVY_CAVALRY': 6,
+			'MAX_LIGHT_CAVALRY': 2,
 			'MAX_MORTAR': 5,
 			'MAX_ADA': 2,
 			'MAX_SENSOR': 1,
-			'MAX_INFANTRY': 6,
 			'MAX_REPAIR': 1,
+			'MAX_INFANTRY': 3,
 		};
 
 		const TOTAL_UNITS_PER_BRIGADE = Object.values(DEFAULT_FISHBOT_BRIGADE_COMPOSITION).reduce((a, b) => a + b, 0);
-
-		const MAX_DIRECT_FIRE_UNITS = DEFAULT_FISHBOT_BRIGADE_COMPOSITION.MAX_HEAVY_CAVALRY + DEFAULT_FISHBOT_BRIGADE_COMPOSITION.MAX_LIGHT_CAVALRY + DEFAULT_FISHBOT_BRIGADE_COMPOSITION.MAX_INFANTRY;
 
 		/** @type {GroundForceParameters} */
 		this.GROUND_FORCE_PARAMETERS = {
@@ -82,7 +80,6 @@ class CommandCenter {
 
 			EFFECTIVE_FIRE_SUPPORT_RADIUS: 12,		// todo: this should be adaptive - when the brigade has a sensor, this is better, without, it is restricted by sight range of the front units
 			EFFECTIVE_ADA_RADIUS: 12,
-			MEDIAN_CENTER_STRENGTH_THRESHOLD: Math.ceil(0.25 * MAX_DIRECT_FIRE_UNITS),		// at/above this brigade strength, the brigade position estimator switches from average to median which changes the aggression of the brigade
 		};
 
 		// Aviation parameters
@@ -121,10 +118,10 @@ class CommandCenter {
 		// Production parameters
 		/** @type {Map<number, number>} */
 		const DEFAULT_BRIGADE_WEIGHTS = new Map([
-			[DIVISION.FIRST_BCT, 16], 
-			[DIVISION.SECOND_BCT, 8], 
-			[DIVISION.THIRD_BCT, 4], 
-			[DIVISION.FOURTH_BCT, 2], 
+			[DIVISION.FIRST_BCT, 1000], 
+			[DIVISION.SECOND_BCT, 100], 
+			[DIVISION.THIRD_BCT, 10], 
+			[DIVISION.FOURTH_BCT, 0], 
 			[DIVISION.FIFTH_BCT, 0],
 			[DIVISION.BCT_RESERVE, 1],
 		]);
@@ -133,12 +130,12 @@ class CommandCenter {
 		const DEFAULT_UNIT_WEIGHTS = new Map([
 			// Production weights (which influences production order) are tuned using `python_helper_scripts / production_scheduling.py`.
 			// Must be rebalanced each time the brigade composition is changed.	
-			[DIVISION.HEAVY_CAV_RESERVE, 0.9],
+			[DIVISION.HEAVY_CAV_RESERVE, 0.55],
 			[DIVISION.LIGHT_CAV_RESERVE, 0.95],
-			[DIVISION.SHORT_RANGE_FIRE_SUPPORT_RESERVE, 0.75],
-			[DIVISION.AIR_DEFENCE_RESERVE, 0.6],
-			[DIVISION.SENSOR_RESERVE, 0.25],
-			[DIVISION.MAINTENANCE_RESERVE, 0.5],
+			[DIVISION.SHORT_RANGE_FIRE_SUPPORT_RESERVE, 0.6],
+			[DIVISION.AIR_DEFENCE_RESERVE, 0.35],
+			[DIVISION.SENSOR_RESERVE, 0.2],
+			[DIVISION.MAINTENANCE_RESERVE, 0.1],
 		]);
 
 		/** @type {ProductionParameters} */
@@ -167,11 +164,12 @@ class CommandCenter {
 		};
 		
 		// Research parameters
-		const defaultResearchPath = rnd.researchOrders.getT2CannonResearchPath();
+		this.DEFAULT_RESEARCH_PATH = rnd.researchOrders.getT2CannonResearchPath();
+		this.FOCUSED_COMBAT_RESEARCH_PATH = rnd.researchOrders.getFocusedT2CannonResearchPath();
 
 		/** @type {ResearchParameters} */
 		this.RESEARCH_PARAMETERS = {
-			path: defaultResearchPath,
+			path: this.DEFAULT_RESEARCH_PATH,
 		};
 
 		// Task scheduling parameters
@@ -312,7 +310,7 @@ class CommandCenter {
 		const MAX_RESEARCH_LABS = state.getMaxStructureCount("Research Facility");
 		const DYNAMIC_RESEARCH_LAB_CAP = getDynamicResearchLabCap(IS_ENERGY_DEFICIENT, MIN_RESEARCH_LABS, MAX_RESEARCH_LABS);
 
-		const USE_VTOL = !IS_ENERGY_DEFICIENT;							// todo: add measure of 'map openness'		
+		const USE_VTOL = true;							// todo: find a situation in which you don't want to use VTOL
 		const MY_VTOL_COUNT = state.playerInfo[me]['numAirUnits'];
 
 		this.CONSTRUCTION_PARAMETERS.DYNAMIC_POWER_GENERATOR_CAP = DYNAMIC_POWER_GENERATOR_CAP;
@@ -386,24 +384,24 @@ class CommandCenter {
 		// Brigade production priorities
 		/** @type {Map<number, number>} */
 		const brigadeWeights = new Map([
-			[DIVISION.FIRST_BCT, 16], 
-			[DIVISION.SECOND_BCT, 8], 
-			[DIVISION.THIRD_BCT, 4], 
-			[DIVISION.FOURTH_BCT, 2], 
+			[DIVISION.FIRST_BCT, 1000], 
+			[DIVISION.SECOND_BCT, 100], 
+			[DIVISION.THIRD_BCT, 10], 
+			[DIVISION.FOURTH_BCT, 0], 
 			[DIVISION.FIFTH_BCT, 0],
 			[DIVISION.BCT_RESERVE, 1],
 		]);
 		
 		/** @type {Map<number, number>} */
-		const unitWeights = new Map([
+		const UNIT_WEIGHTS = new Map([
 			// Production weights (which influences production order) are tuned using `python_helper_scripts / production_scheduling.py`.
 			// Must be rebalanced each time the brigade composition is changed.	
-			[DIVISION.HEAVY_CAV_RESERVE, 0.95],
-			[DIVISION.LIGHT_CAV_RESERVE, 1.0],
-			[DIVISION.SHORT_RANGE_FIRE_SUPPORT_RESERVE, 0.7],
-			[DIVISION.AIR_DEFENCE_RESERVE, 0.65],
-			[DIVISION.SENSOR_RESERVE, 0.25],
-			[DIVISION.MAINTENANCE_RESERVE, 0.5],
+			[DIVISION.HEAVY_CAV_RESERVE, 0.55],
+			[DIVISION.LIGHT_CAV_RESERVE, 0.95],
+			[DIVISION.SHORT_RANGE_FIRE_SUPPORT_RESERVE, 0.6],
+			[DIVISION.AIR_DEFENCE_RESERVE, 0.35],
+			[DIVISION.SENSOR_RESERVE, 0.2],
+			[DIVISION.MAINTENANCE_RESERVE, 0.1],
 		]);
 
 		const DEFAULT_LAND_UNIT_CATEGORY = DIVISION.LIGHT_CAV_RESERVE;
@@ -418,7 +416,7 @@ class CommandCenter {
 		this.PRODUCTION_RESUPPLY_PARAMETERS.SHOULD_PRODUCE_VTOLS = SHOULD_PRODUCE_VTOLS;
 		this.PRODUCTION_RESUPPLY_PARAMETERS.SHOULD_PRODUCE_LAND_VEHICLES = SHOULD_PRODUCE_LAND_VEHICLES;
 		this.PRODUCTION_RESUPPLY_PARAMETERS.BRIGADE_WEIGHTS = brigadeWeights;
-		this.PRODUCTION_RESUPPLY_PARAMETERS.UNIT_WEIGHTS = unitWeights;
+		this.PRODUCTION_RESUPPLY_PARAMETERS.UNIT_WEIGHTS = UNIT_WEIGHTS;
 		this.PRODUCTION_RESUPPLY_PARAMETERS.DEFAULT_LAND_UNIT_CATEGORY = DEFAULT_LAND_UNIT_CATEGORY;
 
 		/*
@@ -468,6 +466,18 @@ class CommandCenter {
 		this.AVIATION_PARAMETERS.SATURATION_THREAT_THRESHOLD = SATURATION_THREAT_THRESHOLD;
 		this.AVIATION_PARAMETERS.CAS_SUPPORT_RADIUS = 25;
 		this.AVIATION_PARAMETERS.UNITS_FOR_ADA_STRIKE = 3;
+
+		/*
+			RESEARCH
+		*/
+		const LIVING_ENEMY_COUNT = livingPlayers.filter(isEnemy).length;
+		const FIGHTING_LAST_OPPONENT = LIVING_ENEMY_COUNT <= 1;
+		const path = FIGHTING_LAST_OPPONENT ? this.FOCUSED_COMBAT_RESEARCH_PATH : this.DEFAULT_RESEARCH_PATH;
+
+		if (this.RESEARCH_PARAMETERS.path !== path) {
+			deb(`research weights changed to: ${FIGHTING_LAST_OPPONENT ? "focused combat" : "default"} (${LIVING_ENEMY_COUNT} enemies remaining)`);
+			this.RESEARCH_PARAMETERS.path = path;
+		}
 	}
 	
 	/////////////////////////////////////////////////// G2: INTELLIGENCE ///////////////////////////////////////////////////
@@ -1530,7 +1540,7 @@ class CommandCenter {
 				const researchStarted = pursueResearch(idleLabs[i], researchOrder[j].id);
 				if (researchStarted) {		// This check avoids conflicts with allies (shared-research mode)
 					positionInResearchOrder++;
-					// debug(`${me}:\t${getCurrGameTimeMinSec()}\t${researchOrder[j].name}`);		
+					deb(`${researchOrder[j].name}`);		
 					break;
 				}
 			}

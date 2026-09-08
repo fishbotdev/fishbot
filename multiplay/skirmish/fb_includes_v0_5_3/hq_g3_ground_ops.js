@@ -109,19 +109,8 @@ class armyGroundOperations {
 	}
 
 	/**
-	 * Approximates where the group currently is, using whichever estimator suits the brigade's strength:
-	 * a weak brigade is centred by average (which plays it safe), an established one by median (which
-	 * presses the attack). `strength` is smoothed by `updateBrigadeSupplyStatus()`, so the brigade does
-	 * not switch estimator every time a single unit dies and is replaced.
-	 *
-	 * Mortar units are excluded because their long attack range means they can sit far from the
-	 * rest of the group, which would skew the estimate of where the group actually is.
-	 *
-	 * The result is snapped to the direct-fire unit nearest the estimate. This is required: a per-axis
-	 * median is not a true 2D median, so it can land on a tile that no unit occupies and which may not
-	 * even be walkable.
-	 *
-	 * Returns `baseLocation` if no units are found.
+	 * Approximates where a combat group is. Returns `baseLocation` if no units are found.
+	 * The average estimator produces 'timid' behaviour (appears 'defensive') because it's sensitive to positional outliers. The median appears more 'aggressive'.
 	 * @param {worldState} state
 	 * @param {number} brigadeID
 	 * @param {GroundForceParameters} parameters
@@ -131,24 +120,38 @@ class armyGroundOperations {
 		const heightMap = state.mapData.heightMap;
 
 		const brigadeUnits = state.g.enumGroup(brigadeID);
+		const directFireUnits = [], indirectFireUnits = [], supportUnits = [];
+		brigadeUnits.forEach(droid => {
+			const category = getDroidFbGroupClassification(droid);
+			if ([DIVISION.HEAVY_CAV_RESERVE, DIVISION.LIGHT_CAV_RESERVE, DIVISION.INFANTRY_RESERVE].includes(category)) {
+				directFireUnits.push(droid);
+			} else if ([DIVISION.SHORT_RANGE_FIRE_SUPPORT_RESERVE, DIVISION.LONG_RANGE_FIRE_SUPPORT_RESERVE].includes(category)) {
+				indirectFireUnits.push(droid);
+			} else {
+				supportUnits.push(droid);
+			}
+		});
 
 		const baseX = baseLocation.x;
 		const baseY = baseLocation.y;
 		const baseZ = heightMap[baseX][baseY];
 		const basePosition = {'x': baseX, 'y': baseY, 'z': baseZ};
 
-		if (brigadeUnits.length === 0) {
+		if (directFireUnits.length === 0) {
 			return basePosition;
 		}
 
-		const brigadeStrength = state.brigades[brigadeID].strength;
-		const BRIGADE_CAN_TAKE_RISKS = brigadeStrength >= parameters.MEDIAN_CENTER_STRENGTH_THRESHOLD;
-		const centerEstimate = BRIGADE_CAN_TAKE_RISKS ? this.#getMedianLoc(brigadeUnits) : this.#getAverageLoc(brigadeUnits);
+		const fireSupportUnitCount = indirectFireUnits.length;
+		const enoughDirectFireUnits = directFireUnits.length >= 4 && directFireUnits.length >= fireSupportUnitCount;
+		const BRIGADE_CAN_TAKE_RISKS = enoughDirectFireUnits && fireSupportUnitCount >= 3;		// todo: make this depend on actual unit composition, move to strategic parameters
+
+		// Note: median on direct fire units pulls the center very forward (reducing 'false retreats'), while average on all units pulls the center backwards.
+		const centerEstimate = BRIGADE_CAN_TAKE_RISKS ? this.#getMedianLoc(directFireUnits) : this.#getAverageLoc(brigadeUnits);	
 
 		// Snap the estimate to the nearest direct-fire unit
-		let nearestUnit = brigadeUnits[0];
+		let nearestUnit = directFireUnits[0];
 		let nearestDistSq = Infinity;
-		brigadeUnits.forEach((droid) => {
+		directFireUnits.forEach((droid) => {
 			const currDistSq = distSq(droid.x, centerEstimate.x, droid.y, centerEstimate.y);
 			if (currDistSq < nearestDistSq) {
 				nearestDistSq = currDistSq;
