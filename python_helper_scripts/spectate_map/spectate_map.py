@@ -315,6 +315,20 @@ def on_test_selected(event=None):
 
     select_filename(filename)
 
+    #
+    # `on_recent_selected` mirrors its pick into this list, so only drop the
+    # recent highlight once the two lists actually disagree.
+    #
+
+    recent_selection = recent_listbox.curselection()
+
+    if recent_selection:
+
+        recent_filename = state["settings"]["recent"][recent_selection[0]]
+
+        if recent_filename != filename:
+            recent_listbox.selection_clear(0, tk.END)
+
 
 def on_recent_selected(event=None):
 
@@ -431,6 +445,11 @@ def create_gui():
 
     scrollbar.pack(side="right", fill="y")
     tests_listbox.pack(side="left", fill="both", expand=True)
+
+    tests_listbox.bind(
+        "<<ListboxSelect>>",
+        on_test_selected,
+    )
 
     #
     # Recent
