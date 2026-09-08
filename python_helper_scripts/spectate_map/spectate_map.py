@@ -48,6 +48,8 @@ else:
 SETTINGS_FILE = APP_DIR / "__spectate_map_settings.json"
 BATCH_FILE = APP_DIR / "__spectate_map.bat"
 
+MACRO_SCRIPT_NAME = "run_debug_gamespeed_up.ahk"
+
 
 DEFAULT_TESTS_DIR = os.path.join(
     os.path.expanduser("~"),
@@ -97,6 +99,8 @@ status_label = None
 
 run_button = None
 
+launch_macro_var = None
+
 
 # =============================================================================
 # Settings
@@ -115,6 +119,9 @@ def load_settings():
 
     if "recent" not in state["settings"]:
         state["settings"]["recent"] = []
+
+    if "launch_macro" not in state["settings"]:
+        state["settings"]["launch_macro"] = False
 
 
 def save_settings():
@@ -351,6 +358,61 @@ def on_escape(event=None):
 
 
 # =============================================================================
+# Game Speed Up Macro
+# =============================================================================
+
+def find_macro_script():
+    """
+    Locate `run_debug_gamespeed_up.ahk`. It lives in the root `fishbot` folder,
+    which is where the built .exe is run from, but also look a couple of levels
+    up so this still works when running from source.
+    """
+
+    candidates = [
+        APP_DIR,
+        APP_DIR.parent,
+        APP_DIR.parent.parent,
+    ]
+
+    for folder in candidates:
+
+        path = folder / MACRO_SCRIPT_NAME
+
+        if path.is_file():
+            return path
+
+    return None
+
+
+def launch_macro():
+    """
+    Best effort launch of the game speed up macro. AutoHotkey may not be
+    installed, the script may be missing, or we may not be on Windows at all -
+    in every case we silently carry on, the macro is only a convenience.
+    """
+
+    try:
+        path = find_macro_script()
+
+        if path is None:
+            return
+
+        os.startfile(str(path))
+
+    except Exception:
+        pass
+
+
+def on_launch_macro_toggled(*args):
+
+    try:
+        state["settings"]["launch_macro"] = bool(launch_macro_var.get())
+        save_settings()
+    except Exception:
+        pass
+
+
+# =============================================================================
 # GUI
 # =============================================================================
 
@@ -367,6 +429,8 @@ def create_gui():
     global status_label
 
     global run_button
+
+    global launch_macro_var
 
     # Fix the blurry text by enabling DPI awareness
     try:
@@ -508,6 +572,21 @@ def create_gui():
         side="right",
     )
 
+    launch_macro_var = tk.BooleanVar(
+        value=bool(state["settings"].get("launch_macro", False)),
+    )
+
+    launch_macro_var.trace_add("write", on_launch_macro_toggled)
+
+    tk.Checkbutton(
+        button_frame,
+        text="Launch gamespeed up macro",
+        variable=launch_macro_var,
+    ).pack(
+        side="right",
+        padx=(0, 10),
+    )
+
     #
     # Status
     #
@@ -567,6 +646,9 @@ def run_selected(event=None):
 
     with open(BATCH_FILE, "w", newline="\r\n") as f:
         f.write(batch_contents)
+
+    if launch_macro_var is not None and launch_macro_var.get():
+        launch_macro()
 
     root.destroy()
 
