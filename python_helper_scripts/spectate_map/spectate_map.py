@@ -51,9 +51,10 @@ BATCH_FILE = APP_DIR / "__spectate_map.bat"
 
 MACRO_SCRIPT_NAME = "run_debug_gamespeed_up.ahk"
 
-# The macro checkbox is remembered for the rest of the current Windows boot,
-# then starts unticked again. Boot time is derived from the system uptime, so
-# allow some slack for clock adjustments between runs.
+# The macro only needs to run once per computer restart, so the checkbox starts
+# ticked for the first run after a boot and unticked afterwards. Boot time is
+# derived from the system uptime, so allow some slack for clock adjustments
+# between runs.
 BOOT_MATCH_TOLERANCE_SECONDS = 120
 
 
@@ -116,7 +117,7 @@ def get_boot_time():
     """
     Approximate epoch time of the current Windows boot, from the system uptime.
     Returns None when that cannot be determined (any non-Windows platform), in
-    which case the macro checkbox simply always starts unticked.
+    which case the macro checkbox simply starts ticked every time.
     """
 
     try:
@@ -127,16 +128,14 @@ def get_boot_time():
     return time.time() - (uptime_ms / 1000.0)
 
 
-def launch_macro_is_current_boot():
+def macro_already_launched():
     """
-    True when the saved macro checkbox state belongs to the boot we are in now,
-    so it survives repeated runs of this app but not a restart of the computer.
+    True when we have already launched the macro during the boot we are in now.
+    The macro stays resident once started, so there is nothing to gain from
+    launching it again until the computer is restarted.
     """
 
-    if not state["settings"].get("launch_macro"):
-        return False
-
-    saved_boot = state["settings"].get("launch_macro_boot")
+    saved_boot = state["settings"].get("macro_launched_boot")
     current_boot = get_boot_time()
 
     if saved_boot is None or current_boot is None:
@@ -146,6 +145,15 @@ def launch_macro_is_current_boot():
         return abs(float(saved_boot) - current_boot) < BOOT_MATCH_TOLERANCE_SECONDS
     except (TypeError, ValueError):
         return False
+
+
+def remember_macro_launched():
+
+    try:
+        state["settings"]["macro_launched_boot"] = get_boot_time()
+        save_settings()
+    except Exception:
+        pass
 
 
 # =============================================================================
@@ -166,9 +174,8 @@ def load_settings():
     if "recent" not in state["settings"]:
         state["settings"]["recent"] = []
 
-    if not launch_macro_is_current_boot():
-        state["settings"]["launch_macro"] = False
-        state["settings"]["launch_macro_boot"] = None
+    state["settings"].pop("launch_macro", None)
+    state["settings"].pop("launch_macro_boot", None)
 
 
 def save_settings():
@@ -436,31 +443,23 @@ def launch_macro():
     Best effort launch of the game speed up macro. AutoHotkey may not be
     installed, the script may be missing, or we may not be on Windows at all -
     in every case we silently carry on, the macro is only a convenience.
+
+    Returns True when the script was handed to the shell, so that a failed
+    launch is retried on the next run rather than assumed done for this boot.
     """
 
     try:
         path = find_macro_script()
 
         if path is None:
-            return
+            return False
 
         os.startfile(str(path))
 
+        return True
+
     except Exception:
-        pass
-
-
-def on_launch_macro_toggled(*args):
-
-    try:
-        enabled = bool(launch_macro_var.get())
-
-        state["settings"]["launch_macro"] = enabled
-        state["settings"]["launch_macro_boot"] = get_boot_time() if enabled else None
-
-        save_settings()
-    except Exception:
-        pass
+        return False
 
 
 # =============================================================================
@@ -624,10 +623,8 @@ def create_gui():
     )
 
     launch_macro_var = tk.BooleanVar(
-        value=bool(state["settings"].get("launch_macro", False)),
+        value=not macro_already_launched(),
     )
-
-    launch_macro_var.trace_add("write", on_launch_macro_toggled)
 
     tk.Checkbutton(
         button_frame,
@@ -699,7 +696,8 @@ def run_selected(event=None):
         f.write(batch_contents)
 
     if launch_macro_var is not None and launch_macro_var.get():
-        launch_macro()
+        if launch_macro():
+            remember_macro_launched()
 
     root.destroy()
 
