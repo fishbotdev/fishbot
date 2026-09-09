@@ -917,6 +917,7 @@ class worldStateBuilder {
                 'currentDirectFireTargets': createCurrentDirectFireTargets(),
                 'casStrikeRequests': createCASStrikeRequests(),
                 'strength': 0,
+                'directFireCount': 0,
                 'composition': createBrigadeComposition()
             };
         };

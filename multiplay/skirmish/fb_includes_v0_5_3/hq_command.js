@@ -49,8 +49,24 @@ class CommandCenter {
 		this.TARGET_SEARCH_RADIUS = 25;				// how many tiles away from the brigadeLocation to look for enemies (impacts computational performance)
 
 		// Ground targeting
-		this.NUMBER_OF_BRIGADES = 3;
-		this.BRIGADE_DESIGNATIONS = BRIGADE_IDS.slice(0, this.NUMBER_OF_BRIGADES);
+		this.MAX_BRIGADES = 3;								// ceiling on how many BCTs the division may put in the field
+		this.BRIGADE_DESIGNATIONS = [DIVISION.FIRST_BCT];	// the BCTs which currently exist; grows and shrinks as the division can man them
+
+		/** @type {ForceStructureParameters} */
+		this.FORCE_STRUCTURE_PARAMETERS = {
+			RELEASE_DWELL_TICKS: 15,	// consecutive resupply ticks the formation conditions must hold before a new BCT is formed (~30s)
+			MAX_THREAT_RATIO: 0.4,		// nearby ground threats per combat unit, above which a BCT is judged to be expecting heavy combat
+			MAX_UNREPLACED_LOSSES: 2,	// direct-fire units a BCT may be down on its recent peak before it counts as bleeding
+			releaseDwell: 0,
+		};
+
+		// Total ground force budget, counted in brigades' worth of units (BCTs in the field + reserve).
+		// Kept separate from MAX_BRIGADES so that changing how the force is split into BCTs does not also
+		// change how big the army is (or, via the leftover, the VTOL budget). It is also what decides how
+		// far the division can actually grow: forming a BCT needs every BCT *and* the reserve at full
+		// establishment, so the division settles at (FORCE_BUDGET_BRIGADES - 1) BCTs or MAX_BRIGADES,
+		// whichever is smaller.
+		this.FORCE_BUDGET_BRIGADES = 4;
 
 		const DEFAULT_FISHBOT_BRIGADE_COMPOSITION = {
 			'MAX_HEAVY_CAVALRY': 6,
@@ -323,7 +339,7 @@ class CommandCenter {
 			PRODUCTION
 		*/
 		const BRIGADE_COMPOSITION = this.PRODUCTION_RESUPPLY_PARAMETERS.BRIGADE_COMPOSITION;
-		const NUMBER_OF_BRIGADES = this.NUMBER_OF_BRIGADES;
+		const FORCE_BUDGET_BRIGADES = this.FORCE_BUDGET_BRIGADES;
 
 		// Define unit limits
 
@@ -334,8 +350,8 @@ class CommandCenter {
 		const TRUCK_SOFT_LIMIT = Math.min(TRUCK_HARD_LIMIT, this.PRODUCTION_RESUPPLY_PARAMETERS.DYNAMIC_TRUCK_CAP);
 
 		const COMBAT_UNIT_HARD_LIMIT = state.getMaxUnitCount("DROID_WEAPON") - TRUCK_SOFT_LIMIT;
-		const INFANTRY_UNIT_SOFT_LIMIT = MAX_INFANTRY * (NUMBER_OF_BRIGADES + 1);		// "+1" includes reserve
-		const LAND_VEHICLE_SOFT_LIMIT = (TOTAL_UNITS_PER_BRIGADE - MAX_INFANTRY) * (NUMBER_OF_BRIGADES + 1);
+		const INFANTRY_UNIT_SOFT_LIMIT = MAX_INFANTRY * FORCE_BUDGET_BRIGADES;
+		const LAND_VEHICLE_SOFT_LIMIT = (TOTAL_UNITS_PER_BRIGADE - MAX_INFANTRY) * FORCE_BUDGET_BRIGADES;
 		const VTOL_UNIT_HARD_LIMIT = COMBAT_UNIT_HARD_LIMIT - LAND_VEHICLE_SOFT_LIMIT - INFANTRY_UNIT_SOFT_LIMIT;
 
 		// Get player data
@@ -1005,10 +1021,9 @@ class CommandCenter {
 		});
 
 		// Manage reserves: temporary: Move reserves to pre-emptively reinforce BCT0
-		const reserveGroupIDs = [DIVISION.HEAVY_CAV_RESERVE, DIVISION.LIGHT_CAV_RESERVE, DIVISION.INFANTRY_RESERVE, DIVISION.SHORT_RANGE_FIRE_SUPPORT_RESERVE, DIVISION.SENSOR_RESERVE, DIVISION.AIR_DEFENCE_RESERVE, DIVISION.MAINTENANCE_RESERVE];
 		const x = state.brigades[DIVISION.FIRST_BCT]['location'].x;
 		const y = state.brigades[DIVISION.FIRST_BCT]['location'].y;
-		moveReservesToShadow(reserveGroupIDs, x, y);
+		moveReservesToShadow(RESERVE_CATEGORY_GROUP_IDS, x, y);
 	}
 
 	/////////////////////////////////////////////////// G4: LOGISTICS ///////////////////////////////////////////////////
@@ -1225,6 +1240,141 @@ class CommandCenter {
 	}
 
 	/**
+	 * Reports whether every battalion in a brigade is at its full establishment. Also valid for the reserve,
+	 * which is measured against the same brigade composition.
+	 * @param {worldState} state
+	 * @param {number} brigadeID
+	 * @returns {boolean}
+	 */
+	#isFullyManned(state, brigadeID) {
+		const brigadeComposition = state.brigades[brigadeID]["composition"];
+		for (const [category, btnComposition] of brigadeComposition) {
+			if (btnComposition["deficit"] > 0) {
+				return false;
+			}
+		}
+		return true;
+	}
+
+	/**
+	 * Reports whether a BCT is facing enough nearby enemies to expect heavy combat.
+	 *
+	 * Only the classes which shoot back at ground forces are counted. ADA cannot engage them, and constructors,
+	 * industry and utility structures are the opposite signal - finding those means the front is soft, which is
+	 * exactly when splitting the division is safe. The count is taken relative to the BCT's own strength, since
+	 * a dozen targets mean something different to a full BCT than to a half-dead one.
+	 * @param {worldState} state
+	 * @param {number} brigadeID
+	 * @param {number} combatUnitCount
+	 * @returns {boolean}
+	 */
+	#isExpectingHeavyCombat(state, brigadeID, combatUnitCount) {
+		const THREATENING_TARGET_CLASSES = ['enemyArmor', 'enemyInfantry', 'enemyIndirectFire', 'enemyDefenses'];
+		const nearbyTargets = state.brigades[brigadeID]['nearbyTargets'];
+
+		let threatCount = 0;
+		THREATENING_TARGET_CLASSES.forEach(targetClass => threatCount += nearbyTargets[targetClass].length);
+
+		if (combatUnitCount === 0) {
+			return threatCount > 0;
+		}
+		return threatCount > combatUnitCount * this.FORCE_STRUCTURE_PARAMETERS.MAX_THREAT_RATIO;
+	}
+
+	/**
+	 * Reports whether a BCT is losing units faster than resupply is replacing them.
+	 *
+	 * `strength` is a high-water mark which decays by `STRENGTH_DECAY_RATE` per update but snaps straight back up
+	 * to the real count when the BCT is reinforced, so the gap between the two is what the BCT is down on its
+	 * recent peak *and* has not had made good. Losses which the reserve is deep enough to keep replacing do not
+	 * register, which is the intent: it is the replacement rate being outrun that should stop the division
+	 * splitting, not casualties as such.
+	 * @param {worldState} state
+	 * @param {number} brigadeID
+	 * @returns {boolean}
+	 */
+	#isTakingUnreplacedLosses(state, brigadeID) {
+		const brigade = state.brigades[brigadeID];
+		const unreplacedLosses = brigade['strength'] - brigade['directFireCount'];
+
+		return unreplacedLosses > this.FORCE_STRUCTURE_PARAMETERS.MAX_UNREPLACED_LOSSES;
+	}
+
+	/**
+	 * Decides the division's force structure for this tick: which of the existing BCTs are manned well enough
+	 * to fight, and whether the division can afford to form another one.
+	 *
+	 * Units are held in the reserve by default. A new BCT is only formed once every BCT already in the field
+	 * *and* the reserve are at full establishment, sustained for `RELEASE_DWELL_TICKS`. Forming is deliberately
+	 * slow while folding is immediate, because a new BCT is empty and so drains a full brigade's worth out of
+	 * the reserve in a single resupply tick - that is the replacement depth the rest of the division gives up.
+	 * @param {worldState} state
+	 * @param {Map<number, number>} brigadeUnitCount combat unit count per existing BCT; a newly formed BCT is added to it
+	 * @returns {Map<number, boolean>} whether each existing BCT is manned well enough to fight
+	 */
+	#updateForceStructure(state, brigadeUnitCount) {
+		const parameters = this.PRODUCTION_RESUPPLY_PARAMETERS;
+		const forceStructure = this.FORCE_STRUCTURE_PARAMETERS;
+
+		/** @type {Map<number, boolean>} */
+		const activeBrigade = new Map();
+
+		let weakBCTCount = 0;
+		for (const [brigadeID, unitCount] of brigadeUnitCount) {
+			if (unitCount > parameters.TOTAL_UNITS_PER_BRIGADE * 1 / 2) {
+				activeBrigade.set(brigadeID, true);
+				continue;
+			}
+
+			// One under-strength BCT is tolerated; any others are folded back into the reserve
+			weakBCTCount += 1;
+			// if (weakBCTCount > 1 && unitCount > 0) 	debug(`${gameTime}: Brigade "${brigadeID}" recombined (only ${unitCount} units).`);
+			activeBrigade.set(brigadeID, weakBCTCount <= 1);
+		}
+
+		const AT_BRIGADE_CEILING = this.BRIGADE_DESIGNATIONS.length >= this.MAX_BRIGADES;
+		const FORCE_IS_SUFFICIENT = this.BRIGADE_DESIGNATIONS.every(brigadeID => this.#isFullyManned(state, brigadeID))
+			&& this.#isFullyManned(state, DIVISION.BCT_RESERVE);
+
+		// Splitting the division is only safe if nothing already in the field is about to need the reserve
+		let expectingHeavyCombat = false;
+		for (const [brigadeID, unitCount] of brigadeUnitCount) {
+			if (this.#isExpectingHeavyCombat(state, brigadeID, unitCount) || this.#isTakingUnreplacedLosses(state, brigadeID)) {
+				expectingHeavyCombat = true;
+				break;
+			}
+		}
+
+		if (AT_BRIGADE_CEILING || !FORCE_IS_SUFFICIENT || expectingHeavyCombat) {
+			forceStructure.releaseDwell = 0;
+			return activeBrigade;
+		}
+
+		forceStructure.releaseDwell += 1;
+		if (forceStructure.releaseDwell < forceStructure.RELEASE_DWELL_TICKS) {
+			return activeBrigade;
+		}
+		forceStructure.releaseDwell = 0;
+
+		// Form the next BCT. It is empty, so the reinforcement loop below hands it a whole brigade's worth of
+		// units from the reserve this tick, and the next formation waits on production refilling the reserve.
+		// Designations are not necessarily a prefix of BRIGADE_IDS: a middle BCT can be folded back into the
+		// reserve, leaving a gap for the next formation to take.
+		const newBrigadeID = BRIGADE_IDS.find(brigadeID => !this.BRIGADE_DESIGNATIONS.includes(brigadeID));
+		if (newBrigadeID == null) {
+			return activeBrigade;
+		}
+
+		this.BRIGADE_DESIGNATIONS.push(newBrigadeID);
+		this.toc.updateBrigadeSupplyStatus(state, newBrigadeID, parameters);
+		brigadeUnitCount.set(newBrigadeID, this.#getBctCombatUnitCount(state, newBrigadeID));
+		activeBrigade.set(newBrigadeID, true);
+		// debug(`${gameTime}: Brigade "${newBrigadeID}" formed (${this.BRIGADE_DESIGNATIONS.length} of ${this.MAX_BRIGADES}).`);
+
+		return activeBrigade;
+	}
+
+	/**
 	 * This function:
 	 * - returns repaired units to active duty 
 	 * - assigns reserve units to active brigade combat teams
@@ -1244,24 +1394,13 @@ class CommandCenter {
 			this.toc.updateBrigadeSupplyStatus(state, brigadeID, this.PRODUCTION_RESUPPLY_PARAMETERS);
 			brigadeUnitCount.set(brigadeID, this.#getBctCombatUnitCount(state, brigadeID));
 		});
-		this.toc.updateBrigadeSupplyStatus(state, DIVISION.BCT_RESERVE, this.PRODUCTION_RESUPPLY_PARAMETERS);
 
 		const REPAIR_FACILITY_AVAILABLE = state.playerInfo[me]["repairFacilityFbObjects"].length > 0;		// this has the potential to be stale, but it is not critical that it is up-to-date
 
 		// Get reserve force units
-		const RESERVE_GROUP_IDS = [
-			DIVISION.HEAVY_CAV_RESERVE, 
-			DIVISION.LIGHT_CAV_RESERVE, 
-			DIVISION.INFANTRY_RESERVE, 
-			DIVISION.SHORT_RANGE_FIRE_SUPPORT_RESERVE, 
-			DIVISION.AIR_DEFENCE_RESERVE, 
-			DIVISION.SENSOR_RESERVE,
-			DIVISION.MAINTENANCE_RESERVE
-		];
-
 		/** @type {Map<number, DroidObject[]>} */
 		const reserveUnits = new Map();
-		RESERVE_GROUP_IDS.forEach(id => {reserveUnits.set(id, state.g.enumGroup(id))});
+		RESERVE_CATEGORY_GROUP_IDS.forEach(id => {reserveUnits.set(id, state.g.enumGroup(id))});
 
 		if (REPAIR_FACILITY_AVAILABLE) {
 			const RESERVE_REPAIR_THRESHOLD = 70;
@@ -1282,33 +1421,18 @@ class CommandCenter {
 				
 				this.toc.assignUnitsToBrigade(state, unitsToBeRepaired, category, DIVISION.RETURNING_FOR_REPAIR);
 			}
+
+			// Units sent for repair have left their category group, but the lists read above still hold them.
+			// Re-read, so that resupply cannot hand a repair-bound unit straight back to a BCT.
+			RESERVE_CATEGORY_GROUP_IDS.forEach(id => {reserveUnits.set(id, state.g.enumGroup(id))});
 		}
 
-		// Decide how many BCTs should be made with the available units
-		const activeBrigade = new Map([
-			[DIVISION.FIRST_BCT, false], 
-			[DIVISION.SECOND_BCT, false],
-			[DIVISION.THIRD_BCT, false],
-			[DIVISION.FOURTH_BCT, false],
-			[DIVISION.FIFTH_BCT, false]
-		]);
+		// Count the reserve only once its damaged units have been sent away, so that the force structure
+		// decision below sees the units resupply can actually hand out.
+		this.toc.updateBrigadeSupplyStatus(state, DIVISION.BCT_RESERVE, this.PRODUCTION_RESUPPLY_PARAMETERS);
 
-		let weakBCTCount = 0;
-		for (const [brigadeID, unitCount] of brigadeUnitCount) {
-			if (unitCount > this.PRODUCTION_RESUPPLY_PARAMETERS.TOTAL_UNITS_PER_BRIGADE * 1 / 2) {
-				activeBrigade.set(brigadeID, true);
-				continue;
-			}
-
-			weakBCTCount += 1;
-			if (weakBCTCount > 1) {
-				// if (unitCount > 0) 	debug(`${gameTime}: Brigade "${brigadeID}" recombined (only ${unitCount} units).`);
-				activeBrigade.set(brigadeID, false);	// deactivate the brigade for recombination
-			} else {
-				activeBrigade.set(brigadeID, true);
-			}
-			continue;	
-		}
+		// Decide which BCTs can be manned, and whether the division can afford to form another
+		const activeBrigade = this.#updateForceStructure(state, brigadeUnitCount);
 
 		// Reinforce & replace damaged units for existing brigades, recombining where appropriate
 		for (const [brigadeID, unitCount] of brigadeUnitCount) {
@@ -1346,6 +1470,13 @@ class CommandCenter {
 				}
 			}
 		}
+
+		// Retire the BCTs which were folded back into the reserve above. This is done last so that the loop
+		// still visits them: a BCT is only struck off once it has handed its units back.
+		// BCT0 is the division's last formation and is never retired, however weak it becomes.
+		this.BRIGADE_DESIGNATIONS = this.BRIGADE_DESIGNATIONS.filter(brigadeID => {
+			return brigadeID === DIVISION.FIRST_BCT || activeBrigade.get(brigadeID) !== false;
+		});
 	}
 
 	/**

@@ -925,6 +925,26 @@ class TacticalOperationsCenter {
 	}
 
 	/**
+	 * Returns the units belonging to a brigade.
+	 *
+	 * The reserve is the exception: it owns no group of its own, so its units are gathered from the category
+	 * reserve groups. Units away for repair sit in `RETURNING_FOR_REPAIR` and are deliberately not counted,
+	 * so the reserve's strength reflects only what resupply could hand out right now.
+	 * @param {worldState} state
+	 * @param {number} brigadeID
+	 * @returns {DroidObject[]}
+	 */
+	#getBrigadeUnits(state, brigadeID) {
+		if (brigadeID !== DIVISION.BCT_RESERVE) {
+			return state.g.enumGroup(brigadeID);
+		}
+
+		const reserveUnits = [];
+		RESERVE_CATEGORY_GROUP_IDS.forEach(groupID => reserveUnits.push(...state.g.enumGroup(groupID)));
+		return reserveUnits;
+	}
+
+	/**
 	 * Updates unit lists for each battalion in a brigade, and the brigade's overall strength.
 	 * @param {worldState} state
 	 * @param {number} brigadeID
@@ -969,7 +989,7 @@ class TacticalOperationsCenter {
         }
 
         // Reclassify as damaged / healthy
-        const brigadeUnits = state.g.enumGroup(brigadeID);      
+        const brigadeUnits = this.#getBrigadeUnits(state, brigadeID);
         brigadeUnits.forEach(unit => {
             const category = getDroidFbGroupClassification(unit);
 
@@ -1004,6 +1024,7 @@ class TacticalOperationsCenter {
         // decays gradually, so it does not jitter when single units die and are replaced.
         const directFireUnitCount = brigadeUnits.filter(unit => !unit.hasIndirect).length;
         const currBrigade = state.brigades[brigadeID];
+        currBrigade["directFireCount"] = directFireUnitCount;
         currBrigade["strength"] = Math.max(directFireUnitCount, currBrigade["strength"] - parameters.STRENGTH_DECAY_RATE);
 
         if (false) {

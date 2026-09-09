@@ -255,6 +255,7 @@
  * @property {number} id This is the brigade ID (duplicate of the key).
  * @property {PositionInfo} location  
  * @property {number} strength Smoothed count of direct-fire units in the brigade (mortars excluded).
+ * @property {number} directFireCount Raw count of direct-fire units this update. `strength - directFireCount` is what the brigade is down on its recent peak.
  * @property {NearbyTargets} nearbyTargets
  * @property {FbObject[]} currentDirectFireTargets Previous cycle's ranked target list. Only `[0]` is read today; the rest is stored to be stepped through later.
  * @property {AirStrikeMissionRequest[]} casStrikeRequests
@@ -312,6 +313,14 @@
  * @property {number} LOW_HEALTH_THRESHOLD
  * @property {number} EFFECTIVE_FIRE_SUPPORT_RADIUS
  * @property {number} EFFECTIVE_ADA_RADIUS
+ */
+
+/**
+ * @typedef {Object} ForceStructureParameters
+ * @property {number} RELEASE_DWELL_TICKS
+ * @property {number} MAX_THREAT_RATIO
+ * @property {number} MAX_UNREPLACED_LOSSES
+ * @property {number} releaseDwell
  */
 
 /**
@@ -470,6 +479,18 @@ const DIVISION = {
 Object.freeze(DIVISION);
 
 const BRIGADE_IDS = [DIVISION.FIRST_BCT, DIVISION.SECOND_BCT, DIVISION.THIRD_BCT, DIVISION.FOURTH_BCT, DIVISION.FIFTH_BCT];
+
+// The reserve force is not a group of its own: reserve units sit in these category groups (which is also where
+// newly manufactured units are placed) until resupply assigns them to a BCT.
+const RESERVE_CATEGORY_GROUP_IDS = [
+	DIVISION.HEAVY_CAV_RESERVE,
+	DIVISION.LIGHT_CAV_RESERVE,
+	DIVISION.INFANTRY_RESERVE,
+	DIVISION.SHORT_RANGE_FIRE_SUPPORT_RESERVE,
+	DIVISION.AIR_DEFENCE_RESERVE,
+	DIVISION.SENSOR_RESERVE,
+	DIVISION.MAINTENANCE_RESERVE,
+];
 
 /*
     LOGISTICS CONSTANTS
