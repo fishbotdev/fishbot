@@ -67,8 +67,11 @@ const DEBUG_MODE_ON = true;
 		The primary purpose of these files is to gather information from the WZ2100 game engine.
 	*/
 	include(FB_INCLUDES + "__wz_head.js");
-	include(FB_INCLUDES + "_head.js");	
+	include(FB_INCLUDES + "_head.js");
 	include(FB_INCLUDES + "_utils.js");
+
+	// Every tunable number FishBot behaves from. Must be loaded before `hq_command.js`, which reads it.
+	include(FB_INCLUDES + "_weights.js");
 
 	/*
 		TACTICAL-LEVEL

@@ -453,7 +453,8 @@ class armyEngineering {
 	 */
 	requestBaseConstruction(state, parameters) {
 
-		const MODULES_PER_FACTORY = 2;
+		const MODULES_PER_FACTORY = parameters.MODULES_PER_FACTORY;
+		const MODULES_PER_RESEARCH_LAB = parameters.MODULES_PER_RESEARCH_LAB;
 				
 		const baseBuildOrder_T2NoBase = [
 			STRUCTURES["Factory"],
@@ -618,7 +619,7 @@ class armyEngineering {
 				const labCount = structureCounts.get(STRUCTURES["Research Facility"])['count'];
 				const researchModuleCount = structureCounts.get(STRUCTURES["Research Module"])['count'];
 
-				const MAXIMUM_RESEARCH_MODULES_REACHED = (researchModuleCount >= labCount);
+				const MAXIMUM_RESEARCH_MODULES_REACHED = (researchModuleCount >= labCount * MODULES_PER_RESEARCH_LAB);
 				if (MAXIMUM_RESEARCH_MODULES_REACHED) {
 					continue;
 				}

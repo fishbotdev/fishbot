@@ -40,23 +40,29 @@ class CommandCenter {
 
 		/*
 			This constructor is intended to contain *all* FishBot parameters which change how it behaves.
+
+			Every number below comes from `_weights.js`, so a tuning run can rewrite that one file and
+			leave this logic alone. What lives here is the *shape* of each parameter (which weight feeds
+			which decision); what lives there is the value.
 		*/
 
 		// Oil strategic parameters
 		this.isOilDominant = false;					// reports whether or not FishBot has enough oil (for the time being)
+		this.myOilShare = 0;						// my derricks over an even split of the map's derricks; 1.0 is a fair share
+		this.largestOilShare = 0;					// the same measure for whichever living player holds the most oil
 
 		// Intelligence parameters
-		this.TARGET_SEARCH_RADIUS = 25;				// how many tiles away from the brigadeLocation to look for enemies (impacts computational performance)
+		this.TARGET_SEARCH_RADIUS = FB_WEIGHTS.TARGET_SEARCH_RADIUS;	// how many tiles away from the brigadeLocation to look for enemies (impacts computational performance)
 
 		// Ground targeting
-		this.MAX_BRIGADES = 3;								// ceiling on how many BCTs the division may put in the field
+		this.MAX_BRIGADES = FB_WEIGHTS.MAX_BRIGADES;		// ceiling on how many BCTs the division may put in the field
 		this.BRIGADE_DESIGNATIONS = [DIVISION.FIRST_BCT];	// the BCTs which currently exist; grows and shrinks as the division can man them
 
 		/** @type {ForceStructureParameters} */
 		this.FORCE_STRUCTURE_PARAMETERS = {
-			RELEASE_DWELL_TICKS: 15,	// consecutive resupply ticks the formation conditions must hold before a new BCT is formed (~30s)
-			MAX_THREAT_RATIO: 0.4,		// nearby ground threats per combat unit, above which a BCT is judged to be expecting heavy combat
-			MAX_UNREPLACED_LOSSES: 2,	// direct-fire units a BCT may be down on its recent peak before it counts as bleeding
+			RELEASE_DWELL_TICKS: FB_WEIGHTS.BCT_RELEASE_DWELL_TICKS,		// consecutive resupply ticks the formation conditions must hold before a new BCT is formed (~30s)
+			MAX_THREAT_RATIO: FB_WEIGHTS.BCT_MAX_THREAT_RATIO,			// nearby ground threats per combat unit, above which a BCT is judged to be expecting heavy combat
+			MAX_UNREPLACED_LOSSES: FB_WEIGHTS.BCT_MAX_UNREPLACED_LOSSES,	// direct-fire units a BCT may be down on its recent peak before it counts as bleeding
 			releaseDwell: 0,
 		};
 
@@ -66,37 +72,37 @@ class CommandCenter {
 		// far the division can actually grow: forming a BCT needs every BCT *and* the reserve at full
 		// establishment, so the division settles at (FORCE_BUDGET_BRIGADES - 1) BCTs or MAX_BRIGADES,
 		// whichever is smaller.
-		this.FORCE_BUDGET_BRIGADES = 4;
+		this.FORCE_BUDGET_BRIGADES = FB_WEIGHTS.FORCE_BUDGET_BRIGADES;
 
 		const DEFAULT_FISHBOT_BRIGADE_COMPOSITION = {
-			'MAX_HEAVY_CAVALRY': 6,
-			'MAX_LIGHT_CAVALRY': 2,
-			'MAX_MORTAR': 5,
-			'MAX_ADA': 2,
-			'MAX_SENSOR': 1,
-			'MAX_REPAIR': 1,
-			'MAX_INFANTRY': 3,
+			'MAX_HEAVY_CAVALRY': FB_WEIGHTS.BRIGADE_MAX_HEAVY_CAVALRY,
+			'MAX_LIGHT_CAVALRY': FB_WEIGHTS.BRIGADE_MAX_LIGHT_CAVALRY,
+			'MAX_MORTAR': FB_WEIGHTS.BRIGADE_MAX_MORTAR,
+			'MAX_ADA': FB_WEIGHTS.BRIGADE_MAX_ADA,
+			'MAX_SENSOR': FB_WEIGHTS.BRIGADE_MAX_SENSOR,
+			'MAX_REPAIR': FB_WEIGHTS.BRIGADE_MAX_REPAIR,
+			'MAX_INFANTRY': FB_WEIGHTS.BRIGADE_MAX_INFANTRY,
 		};
 
 		const TOTAL_UNITS_PER_BRIGADE = Object.values(DEFAULT_FISHBOT_BRIGADE_COMPOSITION).reduce((a, b) => a + b, 0);
 
 		/** @type {GroundForceParameters} */
 		this.GROUND_FORCE_PARAMETERS = {
-			IMMEDIATE_DIRECT_FIRE_RADIUS: 10,
-			DIRECT_FIRE_COMMITMENT_RADIUS: 20,		// a committed target is only released once it is further away than this (or dead / unreachable)
+			IMMEDIATE_DIRECT_FIRE_RADIUS: FB_WEIGHTS.IMMEDIATE_DIRECT_FIRE_RADIUS,
+			DIRECT_FIRE_COMMITMENT_RADIUS: FB_WEIGHTS.DIRECT_FIRE_COMMITMENT_RADIUS,	// a committed target is only released once it is further away than this (or dead / unreachable)
 
 			// Direct fire cost weights, applied by `directFireCost()` as multipliers on the *squared* distance to the
 			// target. Below 1.0 promotes a target, above 1.0 demotes it. Squared, so a weight of w lets a promoted target
 			// sit 1/sqrt(w) times further away than a rival and still win: 0.2 => ~2.2x, 0.25 => 2x, 0.56 => ~1.3x.
-			TARGET_ADJACENCY_RADIUS: 8,				// how close a target must be to the current battle to count as "part of the same fight"
-			COMMITMENT_WEIGHT: 0.2,					// the committed target only loses its place to something ~2.2x closer
-			ADJACENCY_WEIGHT: 0.25,					// promotes further-away targets which are part of the same fight (e.g. the rest of an enemy base)
-			KNOCKOUT_WEIGHT: 0.56,					// promotes targets which the brigade has already damaged
-			LOW_HEALTH_THRESHOLD: 50,				// a target below this health percentage is considered worth finishing off
-			BLOCKED_APPROACH_WEIGHT: 2.0,			// demotes targets with terrain in the way; a target with a clear approach wins from ~1.4x further away
+			TARGET_ADJACENCY_RADIUS: FB_WEIGHTS.TARGET_ADJACENCY_RADIUS,				// how close a target must be to the current battle to count as "part of the same fight"
+			COMMITMENT_WEIGHT: FB_WEIGHTS.COMMITMENT_WEIGHT,							// the committed target only loses its place to something ~2.2x closer
+			ADJACENCY_WEIGHT: FB_WEIGHTS.ADJACENCY_WEIGHT,								// promotes further-away targets which are part of the same fight (e.g. the rest of an enemy base)
+			KNOCKOUT_WEIGHT: FB_WEIGHTS.KNOCKOUT_WEIGHT,								// promotes targets which the brigade has already damaged
+			LOW_HEALTH_THRESHOLD: FB_WEIGHTS.LOW_HEALTH_THRESHOLD,						// a target below this health percentage is considered worth finishing off
+			BLOCKED_APPROACH_WEIGHT: FB_WEIGHTS.BLOCKED_APPROACH_WEIGHT,				// demotes targets with terrain in the way; a target with a clear approach wins from ~1.4x further away
 
-			EFFECTIVE_FIRE_SUPPORT_RADIUS: 12,		// todo: this should be adaptive - when the brigade has a sensor, this is better, without, it is restricted by sight range of the front units
-			EFFECTIVE_ADA_RADIUS: 12,
+			EFFECTIVE_FIRE_SUPPORT_RADIUS: FB_WEIGHTS.EFFECTIVE_FIRE_SUPPORT_RADIUS,	// todo: this should be adaptive - when the brigade has a sensor, this is better, without, it is restricted by sight range of the front units
+			EFFECTIVE_ADA_RADIUS: FB_WEIGHTS.EFFECTIVE_ADA_RADIUS,
 		};
 
 		// Aviation parameters
@@ -110,49 +116,56 @@ class CommandCenter {
 			STANDARD_THREAT_THRESHOLD: 0,
 			URGENT_THREAT_THRESHOLD: 0,
 			SATURATION_THREAT_THRESHOLD: 0,
-			CAS_SUPPORT_RADIUS: 25,
-			UNITS_FOR_ADA_STRIKE: 3,
+			CAS_SUPPORT_RADIUS: FB_WEIGHTS.CAS_SUPPORT_RADIUS,
+			UNITS_FOR_ADA_STRIKE: FB_WEIGHTS.UNITS_FOR_ADA_STRIKE,
 		};
 
 		// Construction parameters
+		// Note: every field here is recomputed by `updateStrategicParameters()` before it is first read.
 		/** @type {ConstructionParameters} */
 		this.CONSTRUCTION_PARAMETERS = {
 			// Concurrency
-			MAX_PARALLEL_BASE_BUILD_TASKS: 1,
-			MAX_PARALLEL_OIL_CAP_TASKS: 4,
-			MAX_PARALLEL_DEFENCE_BUILD_TASKS: 1,
-			MAX_PARALLEL_REPAIR_CENTER_BUILD_TASKS: 1,
-			ABORTED_SECTOR_COOLDOWN_MS: 30000,		// how long a sector aborted as dangerous stays off the option list
+			MAX_PARALLEL_BASE_BUILD_TASKS: FB_WEIGHTS.MAX_PARALLEL_BASE_BUILD_TASKS,
+			MAX_PARALLEL_OIL_CAP_TASKS: FB_WEIGHTS.MAX_PARALLEL_OIL_CAP_TASKS,
+			MAX_PARALLEL_DEFENCE_BUILD_TASKS: FB_WEIGHTS.MAX_PARALLEL_DEFENCE_BUILD_TASKS_EARLY,
+			MAX_PARALLEL_REPAIR_CENTER_BUILD_TASKS: FB_WEIGHTS.MAX_PARALLEL_REPAIR_CENTER_BUILD_TASKS,
+			ABORTED_SECTOR_COOLDOWN_MS: FB_WEIGHTS.ABORTED_SECTOR_COOLDOWN_MS,		// how long a sector aborted as dangerous stays off the option list
 
 			// Structure limits
-			DYNAMIC_POWER_GENERATOR_CAP: 2,
+			DYNAMIC_POWER_GENERATOR_CAP: FB_WEIGHTS.TYPICAL_MIN_GENERATORS,
 			DYNAMIC_FACTORY_CAP: 2,
-			DYNAMIC_RESEARCH_LAB_CAP: 1,
-			MAX_VTOL_REARMING_PADS: 2, 
+			DYNAMIC_RESEARCH_LAB_CAP: FB_WEIGHTS.RESEARCH_LAB_CAP_WHEN_DEFICIENT,
+			MAX_VTOL_REARMING_PADS: 2,
 			SHOULD_BUILD_VTOLS: false,
+
+			// Module gating, applied to the base build order in `requestBaseConstruction()`
+			MODULES_PER_FACTORY: FB_WEIGHTS.MODULES_PER_FACTORY,
+			MODULES_PER_RESEARCH_LAB: FB_WEIGHTS.MODULES_PER_RESEARCH_LAB,
 		};
 
 		// Production parameters
+		// These two maps are constant for the whole game and are read (never mutated), so they are built
+		// once here and handed to `PRODUCTION_RESUPPLY_PARAMETERS` on every strategy update.
 		/** @type {Map<number, number>} */
-		const DEFAULT_BRIGADE_WEIGHTS = new Map([
-			[DIVISION.FIRST_BCT, 1000], 
-			[DIVISION.SECOND_BCT, 100], 
-			[DIVISION.THIRD_BCT, 10], 
-			[DIVISION.FOURTH_BCT, 0], 
-			[DIVISION.FIFTH_BCT, 0],
-			[DIVISION.BCT_RESERVE, 1],
+		this.DEFAULT_BRIGADE_WEIGHTS = new Map([
+			[DIVISION.FIRST_BCT, FB_WEIGHTS.BRIGADE_WEIGHT_FIRST_BCT],
+			[DIVISION.SECOND_BCT, FB_WEIGHTS.BRIGADE_WEIGHT_SECOND_BCT],
+			[DIVISION.THIRD_BCT, FB_WEIGHTS.BRIGADE_WEIGHT_THIRD_BCT],
+			[DIVISION.FOURTH_BCT, FB_WEIGHTS.BRIGADE_WEIGHT_FOURTH_BCT],
+			[DIVISION.FIFTH_BCT, FB_WEIGHTS.BRIGADE_WEIGHT_FIFTH_BCT],
+			[DIVISION.BCT_RESERVE, FB_WEIGHTS.BRIGADE_WEIGHT_BCT_RESERVE],
 		]);
-		
+
 		/** @type {Map<number, number>} */
-		const DEFAULT_UNIT_WEIGHTS = new Map([
+		this.DEFAULT_UNIT_WEIGHTS = new Map([
 			// Production weights (which influences production order) are tuned using `python_helper_scripts / production_scheduling.py`.
-			// Must be rebalanced each time the brigade composition is changed.	
-			[DIVISION.HEAVY_CAV_RESERVE, 0.55],
-			[DIVISION.LIGHT_CAV_RESERVE, 0.95],
-			[DIVISION.SHORT_RANGE_FIRE_SUPPORT_RESERVE, 0.6],
-			[DIVISION.AIR_DEFENCE_RESERVE, 0.35],
-			[DIVISION.SENSOR_RESERVE, 0.2],
-			[DIVISION.MAINTENANCE_RESERVE, 0.1],
+			// Must be rebalanced each time the brigade composition is changed.
+			[DIVISION.HEAVY_CAV_RESERVE, FB_WEIGHTS.UNIT_WEIGHT_HEAVY_CAV],
+			[DIVISION.LIGHT_CAV_RESERVE, FB_WEIGHTS.UNIT_WEIGHT_LIGHT_CAV],
+			[DIVISION.SHORT_RANGE_FIRE_SUPPORT_RESERVE, FB_WEIGHTS.UNIT_WEIGHT_SHORT_RANGE_FIRE_SUPPORT],
+			[DIVISION.AIR_DEFENCE_RESERVE, FB_WEIGHTS.UNIT_WEIGHT_AIR_DEFENCE],
+			[DIVISION.SENSOR_RESERVE, FB_WEIGHTS.UNIT_WEIGHT_SENSOR],
+			[DIVISION.MAINTENANCE_RESERVE, FB_WEIGHTS.UNIT_WEIGHT_MAINTENANCE],
 		]);
 
 		/** @type {ProductionParameters} */
@@ -163,21 +176,21 @@ class CommandCenter {
 			MAX_TRUCKS_THIS_TICK: 1,
 			SHOULD_PRODUCE_TRUCK_CYBORGS: false,
 			DYNAMIC_TRUCK_CAP: 8,
-			
-			BRIGADE_WEIGHTS: DEFAULT_BRIGADE_WEIGHTS,
+
+			BRIGADE_WEIGHTS: this.DEFAULT_BRIGADE_WEIGHTS,
 			BRIGADE_COMPOSITION: DEFAULT_FISHBOT_BRIGADE_COMPOSITION,
-			TOTAL_UNITS_PER_BRIGADE: TOTAL_UNITS_PER_BRIGADE,		
-			
-			UNIT_WEIGHTS: DEFAULT_UNIT_WEIGHTS,
+			TOTAL_UNITS_PER_BRIGADE: TOTAL_UNITS_PER_BRIGADE,
+
+			UNIT_WEIGHTS: this.DEFAULT_UNIT_WEIGHTS,
 			DEFAULT_LAND_UNIT_CATEGORY: DIVISION.LIGHT_CAV_RESERVE,
 			SHOULD_PRODUCE_INFANTRY: false,
 			SHOULD_PRODUCE_VTOLS: false,
 			SHOULD_PRODUCE_LAND_VEHICLES: false,
 
-			VEHICLE_REPAIR_THRESHOLD: 30,
-			CYBORG_REPAIR_THRESHOLD: 45,
+			VEHICLE_REPAIR_THRESHOLD: FB_WEIGHTS.VEHICLE_REPAIR_THRESHOLD,
+			CYBORG_REPAIR_THRESHOLD: FB_WEIGHTS.CYBORG_REPAIR_THRESHOLD,
 
-			STRENGTH_DECAY_RATE: 1		// max direct-fire units that a brigade's estimated strength may drop by per update
+			STRENGTH_DECAY_RATE: FB_WEIGHTS.STRENGTH_DECAY_RATE		// max direct-fire units that a brigade's estimated strength may drop by per update
 		};
 		
 		// Research parameters
@@ -209,7 +222,11 @@ class CommandCenter {
 	 * @param {worldState} state 
 	 */
 	initialise(state) {
-		this.toc.setDefaultMissions(state);			
+		// Stamped into the console so a scraped autogame result can be traced back to the weight set that
+		// produced it. Tuning runs rewrite `WEIGHT_SET_ID` in `_weights.js` along with the weights.
+		deb(`weight set: ${FB_WEIGHTS.WEIGHT_SET_ID}`);
+
+		this.toc.setDefaultMissions(state);
 		this.toc.setSchedulerParameters(state, this.TASK_SCHEDULE);
 		this.updateStrategicParameters(state);		// initialises all strategic parameters to realistic values
 	}
@@ -233,19 +250,26 @@ class CommandCenter {
 		const ALIVE_PLAYER_COUNT = Math.max(livingPlayers.length, 1);
 
 		const FAIR_SHARE_DERRICK_COUNT = Math.floor(TOTAL_DERRICKS / ALIVE_PLAYER_COUNT);
-		const MINIMUM_OILS_CLAIMED = MY_DERRICK_COUNT >= Math.ceil(TOTAL_DERRICKS / (ALIVE_PLAYER_COUNT + 1));	// 2p -> bigger than 1/3, 3p -> bigger than 1/4 and so on
 
-		const getDynamicTruckCap = (fairShareDerrickCount, minBaseBuilderTrucks, maxFishbotTruckCount) => {
+		// The bar for "enough oil". The player offset makes it forgiving: at 1, a 2p map asks for more than
+		// a third of the oil rather than half, a 3p map more than a quarter, and so on.
+		const SUFFICIENT_DERRICK_COUNT = Math.ceil(
+			TOTAL_DERRICKS * FB_WEIGHTS.ENERGY_SUFFICIENCY_SHARE / (ALIVE_PLAYER_COUNT + FB_WEIGHTS.ENERGY_SUFFICIENCY_PLAYER_OFFSET)
+		);
+		const MINIMUM_OILS_CLAIMED = MY_DERRICK_COUNT >= SUFFICIENT_DERRICK_COUNT;
+
+		const getDynamicTruckCap = (fairShareDerrickCount, minBaseBuilderTrucks, minFishbotTruckCount, maxFishbotTruckCount) => {
 			// TODO: make this depend the construction state of the base (e.g. `CAMP_CLEAN`)
-			const NOMINAL_TRUCKS = Math.floor(fairShareDerrickCount / 2) + minBaseBuilderTrucks;
-			const DYNAMIC_TRUCK_LIMIT = clampValue(NOMINAL_TRUCKS, 1, maxFishbotTruckCount);
+			const NOMINAL_TRUCKS = Math.floor(fairShareDerrickCount * FB_WEIGHTS.TRUCKS_PER_FAIR_SHARE_DERRICK) + minBaseBuilderTrucks;
+			const DYNAMIC_TRUCK_LIMIT = clampValue(NOMINAL_TRUCKS, minFishbotTruckCount, maxFishbotTruckCount);
 			return DYNAMIC_TRUCK_LIMIT;
 		};
 
-		const BASE_BUILDER_TRUCK_COUNT = 2;
-		const FISHBOT_TRUCK_SOFT_CAP = 10;
-		
-		this.PRODUCTION_RESUPPLY_PARAMETERS.DYNAMIC_TRUCK_CAP = getDynamicTruckCap(FAIR_SHARE_DERRICK_COUNT, BASE_BUILDER_TRUCK_COUNT, FISHBOT_TRUCK_SOFT_CAP);
+		const BASE_BUILDER_TRUCK_COUNT = FB_WEIGHTS.BASE_BUILDER_TRUCK_COUNT;
+		const FISHBOT_TRUCK_HARD_FLOOR = FB_WEIGHTS.TRUCK_HARD_FLOOR;
+		const FISHBOT_TRUCK_SOFT_CAP = FB_WEIGHTS.TRUCK_SOFT_CAP;
+
+		this.PRODUCTION_RESUPPLY_PARAMETERS.DYNAMIC_TRUCK_CAP = getDynamicTruckCap(FAIR_SHARE_DERRICK_COUNT, BASE_BUILDER_TRUCK_COUNT, FISHBOT_TRUCK_HARD_FLOOR, FISHBOT_TRUCK_SOFT_CAP);
 
 		/*
 			Oil parameters (the most important strategic resource)
@@ -264,16 +288,23 @@ class CommandCenter {
 			});
 
 			o.sort((a, b) => b[1] - a[1]);			// largest to smallest oil share
-			
+
 			const oilShare = new Map(o);
 
 			const largestOilSharePlayer = o[0][0];
 			const LARGEST_OIL_SHARE = oilShare.get(largestOilSharePlayer);
 			const MY_OIL_SHARE = oilShare.get(me);
 
-			const BIGGEST_OIL_SHARE = MY_OIL_SHARE >= LARGEST_OIL_SHARE;
+			// A margin above 1.0 demands a clear lead before FishBot commits to a dominant posture;
+			// below 1.0 lets it claim dominance while still behind the leader.
+			const BIGGEST_OIL_SHARE = MY_OIL_SHARE >= LARGEST_OIL_SHARE * FB_WEIGHTS.OIL_DOMINANCE_SHARE_MARGIN;
 
 			oilDominance = MINIMUM_OILS_CLAIMED && BIGGEST_OIL_SHARE;
+
+			// Retained for tuning & telemetry: the continuous read behind the `isOilDominant` boolean.
+			// Nothing decides on these yet, but they are the natural inputs for an oil-aware build order.
+			this.myOilShare = (MY_OIL_SHARE === undefined) ? 0 : MY_OIL_SHARE;
+			this.largestOilShare = LARGEST_OIL_SHARE;
 		}
 
 		if (this.isOilDominant != oilDominance) {
@@ -289,10 +320,16 @@ class CommandCenter {
 		*/
 
 		// Concurrency
-		const MAX_PARALLEL_BASE_BUILD_TASKS = 1;
-		const MAX_PARALLEL_OIL_CAP_TASKS = 4;
-		const MAX_PARALLEL_DEFENCE_BUILD_TASKS = (gameTime < 180000) ? 1 : 2;		// hack; tuned for Gamma
-		const MAX_PARALLEL_REPAIR_CENTER_BUILD_TASKS = 1;
+		const MAX_PARALLEL_BASE_BUILD_TASKS = FB_WEIGHTS.MAX_PARALLEL_BASE_BUILD_TASKS;
+		const MAX_PARALLEL_OIL_CAP_TASKS = FB_WEIGHTS.MAX_PARALLEL_OIL_CAP_TASKS;
+
+		// Derrick defences ramp up once the opening is over. The ramp time was hand-picked on Gamma, so it
+		// is a prime candidate for tuning against map size and oil share rather than a fixed clock.
+		const DEFENCE_BUILD_RAMP_ELAPSED = gameTime >= FB_WEIGHTS.DEFENCE_BUILD_RAMP_TIME_MS;
+		const MAX_PARALLEL_DEFENCE_BUILD_TASKS = DEFENCE_BUILD_RAMP_ELAPSED ?
+			FB_WEIGHTS.MAX_PARALLEL_DEFENCE_BUILD_TASKS_LATE : FB_WEIGHTS.MAX_PARALLEL_DEFENCE_BUILD_TASKS_EARLY;
+
+		const MAX_PARALLEL_REPAIR_CENTER_BUILD_TASKS = FB_WEIGHTS.MAX_PARALLEL_REPAIR_CENTER_BUILD_TASKS;
 
 		this.CONSTRUCTION_PARAMETERS.MAX_PARALLEL_BASE_BUILD_TASKS = MAX_PARALLEL_BASE_BUILD_TASKS;
 		this.CONSTRUCTION_PARAMETERS.MAX_PARALLEL_OIL_CAP_TASKS = MAX_PARALLEL_OIL_CAP_TASKS;
@@ -300,41 +337,48 @@ class CommandCenter {
 		this.CONSTRUCTION_PARAMETERS.MAX_PARALLEL_REPAIR_CENTER_BUILD_TASKS = MAX_PARALLEL_REPAIR_CENTER_BUILD_TASKS;
 
 		// Structure limit adaptation
+		// These three caps are the filters applied to the fixed base build order in
+		// `hq_g4_construction.js / requestBaseConstruction()`. Because that order is walked front-to-back
+		// and stops at the first structure under its cap, lowering a cap does not merely cap that
+		// structure - it moves everything behind it forward. This is the main lever on build order.
 		const getDynamicPowerGeneratorCap = (myDerrickCount, minGeneratorCounts, maxGeneratorCounts) => {
-			const generatorsRequired = Math.ceil(myDerrickCount / 4);
+			const generatorsRequired = Math.ceil(myDerrickCount * FB_WEIGHTS.GENERATORS_PER_DERRICK);
 			return clampValue(generatorsRequired, minGeneratorCounts, maxGeneratorCounts);
 		};
-		const TYPICAL_MIN_GENERATORS = 2;
-		const MIN_GENERATORS = Math.min(TYPICAL_MIN_GENERATORS, Math.ceil(FAIR_SHARE_DERRICK_COUNT / 4));
+		const TYPICAL_MIN_GENERATORS = FB_WEIGHTS.TYPICAL_MIN_GENERATORS;
+		const MIN_GENERATORS = Math.min(TYPICAL_MIN_GENERATORS, Math.ceil(FAIR_SHARE_DERRICK_COUNT * FB_WEIGHTS.GENERATORS_PER_DERRICK));
 		const MAX_GENERATORS = state.getMaxStructureCount("Power Generator");
 		const DYNAMIC_POWER_GENERATOR_CAP = getDynamicPowerGeneratorCap(MY_DERRICK_COUNT, MIN_GENERATORS, MAX_GENERATORS);
 
+		// While energy-deficient, industry is held at a hard floor; once sufficient, it opens up to a
+		// fraction of whatever the skirmish settings allow.
+		const getCapUnderEnergyConstraint = (isEnergyDeficient, deficientCount, sufficientFraction, maxCount) => {
+			if (isEnergyDeficient) {
+				return clampValue(deficientCount, 0, maxCount);
+			}
+			return clampValue(Math.round(maxCount * sufficientFraction), 1, maxCount);
+		};
 
-		const getDynamicFactoryCap = (isEnergyDeficient, minFactoryCount, maxFactoryCount) => {
-			const DYNAMIC_FACTORY_CAP = isEnergyDeficient ? minFactoryCount : maxFactoryCount;
-			return DYNAMIC_FACTORY_CAP;
-		}
-		const MIN_FACTORIES = 1;
 		const MAX_FACTORIES = state.getMaxStructureCount("Factory");
-		const DYNAMIC_FACTORY_CAP = getDynamicFactoryCap(IS_ENERGY_DEFICIENT, MIN_FACTORIES, MAX_FACTORIES);
+		const DYNAMIC_FACTORY_CAP = getCapUnderEnergyConstraint(
+			IS_ENERGY_DEFICIENT, FB_WEIGHTS.FACTORY_CAP_WHEN_DEFICIENT, FB_WEIGHTS.FACTORY_CAP_FRACTION_WHEN_SUFFICIENT, MAX_FACTORIES
+		);
 
-
-		const getDynamicResearchLabCap = (isEnergyDeficient, minLabCount, maxLabCount) => {
-			const DYNAMIC_RESEARCH_LAB_CAP = isEnergyDeficient ? minLabCount : maxLabCount;
-			return DYNAMIC_RESEARCH_LAB_CAP;
-		}
-		const MIN_RESEARCH_LABS = 1;
 		const MAX_RESEARCH_LABS = state.getMaxStructureCount("Research Facility");
-		const DYNAMIC_RESEARCH_LAB_CAP = getDynamicResearchLabCap(IS_ENERGY_DEFICIENT, MIN_RESEARCH_LABS, MAX_RESEARCH_LABS);
+		const DYNAMIC_RESEARCH_LAB_CAP = getCapUnderEnergyConstraint(
+			IS_ENERGY_DEFICIENT, FB_WEIGHTS.RESEARCH_LAB_CAP_WHEN_DEFICIENT, FB_WEIGHTS.RESEARCH_LAB_CAP_FRACTION_WHEN_SUFFICIENT, MAX_RESEARCH_LABS
+		);
 
-		const USE_VTOL = true;							// todo: find a situation in which you don't want to use VTOL
+		const USE_VTOL = FB_WEIGHTS.SHOULD_BUILD_VTOLS;	// todo: find a situation in which you don't want to use VTOL
 		const MY_VTOL_COUNT = state.playerInfo[me]['numAirUnits'];
 
 		this.CONSTRUCTION_PARAMETERS.DYNAMIC_POWER_GENERATOR_CAP = DYNAMIC_POWER_GENERATOR_CAP;
 		this.CONSTRUCTION_PARAMETERS.DYNAMIC_FACTORY_CAP = DYNAMIC_FACTORY_CAP;
 		this.CONSTRUCTION_PARAMETERS.DYNAMIC_RESEARCH_LAB_CAP = DYNAMIC_RESEARCH_LAB_CAP;
-		this.CONSTRUCTION_PARAMETERS.MAX_VTOL_REARMING_PADS = MY_VTOL_COUNT;
+		this.CONSTRUCTION_PARAMETERS.MAX_VTOL_REARMING_PADS = Math.ceil(MY_VTOL_COUNT * FB_WEIGHTS.REARMING_PADS_PER_VTOL);
 		this.CONSTRUCTION_PARAMETERS.SHOULD_BUILD_VTOLS = USE_VTOL;
+		this.CONSTRUCTION_PARAMETERS.MODULES_PER_FACTORY = FB_WEIGHTS.MODULES_PER_FACTORY;
+		this.CONSTRUCTION_PARAMETERS.MODULES_PER_RESEARCH_LAB = FB_WEIGHTS.MODULES_PER_RESEARCH_LAB;
 
 		/*
 			PRODUCTION
@@ -353,7 +397,11 @@ class CommandCenter {
 		const COMBAT_UNIT_HARD_LIMIT = state.getMaxUnitCount("DROID_WEAPON") - TRUCK_SOFT_LIMIT;
 		const INFANTRY_UNIT_SOFT_LIMIT = MAX_INFANTRY * FORCE_BUDGET_BRIGADES;
 		const LAND_VEHICLE_SOFT_LIMIT = (TOTAL_UNITS_PER_BRIGADE - MAX_INFANTRY) * FORCE_BUDGET_BRIGADES;
-		const VTOL_UNIT_HARD_LIMIT = COMBAT_UNIT_HARD_LIMIT - LAND_VEHICLE_SOFT_LIMIT - INFANTRY_UNIT_SOFT_LIMIT;
+
+		// VTOLs get whatever the ground army leaves under the engine's unit limit. Floored at zero: a large
+		// brigade size can claim the whole limit, and a negative ceiling here would read as "limit hit" and
+		// silently switch off air production for the rest of the game.
+		const VTOL_UNIT_HARD_LIMIT = Math.max(COMBAT_UNIT_HARD_LIMIT - LAND_VEHICLE_SOFT_LIMIT - INFANTRY_UNIT_SOFT_LIMIT, 0);
 
 		// Get player data
 		const HQ_IS_CONSTRUCTED = state.playerInfo[me]["numConstructedHQs"] > 0;
@@ -392,34 +440,16 @@ class CommandCenter {
 		// Decide on whether or not to produce trucks
 		const MAX_TRUCKS_THIS_TICK = TRUCK_SOFT_LIMIT - MY_TRUCK_COUNT;
 
-		const INITIAL_TRUCK_RUSH_PERIOD = gameTime < 60000;
+		const INITIAL_TRUCK_RUSH_PERIOD = gameTime < FB_WEIGHTS.INITIAL_TRUCK_RUSH_PERIOD_MS;
 
 		// TODO: wire this to deficits in both types of units.
 		const SHOULD_PRODUCE_TRUCK_VEHICLES = !HIT_TRUCK_LIMIT && (!CYBORG_CONSTRUCTOR_AVAILABLE || INITIAL_TRUCK_RUSH_PERIOD);
 		const SHOULD_PRODUCE_TRUCK_CYBORGS = !HIT_TRUCK_LIMIT && (CYBORG_CONSTRUCTOR_AVAILABLE || INITIAL_TRUCK_RUSH_PERIOD);
 
-		// Brigade production priorities
-		/** @type {Map<number, number>} */
-		const brigadeWeights = new Map([
-			[DIVISION.FIRST_BCT, 1000], 
-			[DIVISION.SECOND_BCT, 100], 
-			[DIVISION.THIRD_BCT, 10], 
-			[DIVISION.FOURTH_BCT, 0], 
-			[DIVISION.FIFTH_BCT, 0],
-			[DIVISION.BCT_RESERVE, 1],
-		]);
-		
-		/** @type {Map<number, number>} */
-		const UNIT_WEIGHTS = new Map([
-			// Production weights (which influences production order) are tuned using `python_helper_scripts / production_scheduling.py`.
-			// Must be rebalanced each time the brigade composition is changed.	
-			[DIVISION.HEAVY_CAV_RESERVE, 0.55],
-			[DIVISION.LIGHT_CAV_RESERVE, 0.95],
-			[DIVISION.SHORT_RANGE_FIRE_SUPPORT_RESERVE, 0.6],
-			[DIVISION.AIR_DEFENCE_RESERVE, 0.35],
-			[DIVISION.SENSOR_RESERVE, 0.2],
-			[DIVISION.MAINTENANCE_RESERVE, 0.1],
-		]);
+		// Brigade production priorities. Both maps are constant for the whole game (built once in the
+		// constructor from `_weights.js`) and are only ever read, so they are handed over by reference.
+		const brigadeWeights = this.DEFAULT_BRIGADE_WEIGHTS;
+		const UNIT_WEIGHTS = this.DEFAULT_UNIT_WEIGHTS;
 
 		const DEFAULT_LAND_UNIT_CATEGORY = DIVISION.LIGHT_CAV_RESERVE;
 
@@ -441,7 +471,7 @@ class CommandCenter {
 		*/
 		const IS_OIL_DOMINANT = this.isOilDominant;
 		const NUM_AIRCRAFT = state.playerInfo[me].numAirUnits;	
-		const AIR_UNIT_DOMINANCE = NUM_AIRCRAFT >= 10;
+		const AIR_UNIT_DOMINANCE = NUM_AIRCRAFT >= FB_WEIGHTS.AIR_DOMINANCE_UNIT_COUNT;
 
 		let maxCasTargets = 0;
 		let numUrgentCasMissions = 0;
@@ -459,7 +489,8 @@ class CommandCenter {
 			});
 		});
 
-		const prioritiseCasTargets = IS_OIL_DOMINANT && (numUrgentCasMissions >= 1 || maxCasTargets >= 4);
+		const prioritiseCasTargets = IS_OIL_DOMINANT &&
+			(numUrgentCasMissions >= FB_WEIGHTS.CAS_URGENT_MISSION_TRIGGER || maxCasTargets >= FB_WEIGHTS.CAS_TARGET_CLUSTER_TRIGGER);
 		const prioritiseRaidTargets = !IS_OIL_DOMINANT;
 		const prioritiseIndustrialTargets = IS_OIL_DOMINANT;
 		const SATURATION_RAID_ACTIVE = prioritiseIndustrialTargets && AIR_UNIT_DOMINANCE;
@@ -468,9 +499,10 @@ class CommandCenter {
 		//	0 => avoids all anti-air defences, 
 		//	0.69 > (0.33 * 2) => allows targeting 1 cell over from a single air defence. 
 		//	2 => allows 2 air defences in one isolated cell (with no cells directly adjacent containing anti-air defences) or adjacent air defences - 1 per cell.
-		const STANDARD_THREAT_THRESHOLD = IS_OIL_DOMINANT ? 0.69 : 0;		
-		const URGENT_THREAT_THRESHOLD = 2;
-		const SATURATION_THREAT_THRESHOLD = 2;	
+		const STANDARD_THREAT_THRESHOLD = IS_OIL_DOMINANT ?
+			FB_WEIGHTS.STANDARD_THREAT_THRESHOLD_WHEN_OIL_DOMINANT : FB_WEIGHTS.STANDARD_THREAT_THRESHOLD_OTHERWISE;
+		const URGENT_THREAT_THRESHOLD = FB_WEIGHTS.URGENT_THREAT_THRESHOLD;
+		const SATURATION_THREAT_THRESHOLD = FB_WEIGHTS.SATURATION_THREAT_THRESHOLD;
 
 		this.AVIATION_PARAMETERS.totalNumAircraft = NUM_AIRCRAFT;
 		this.AVIATION_PARAMETERS.prioritiseCasTargets = prioritiseCasTargets;
@@ -481,14 +513,14 @@ class CommandCenter {
 		this.AVIATION_PARAMETERS.STANDARD_THREAT_THRESHOLD = STANDARD_THREAT_THRESHOLD;
 		this.AVIATION_PARAMETERS.URGENT_THREAT_THRESHOLD = URGENT_THREAT_THRESHOLD;
 		this.AVIATION_PARAMETERS.SATURATION_THREAT_THRESHOLD = SATURATION_THREAT_THRESHOLD;
-		this.AVIATION_PARAMETERS.CAS_SUPPORT_RADIUS = 25;
-		this.AVIATION_PARAMETERS.UNITS_FOR_ADA_STRIKE = 3;
+		this.AVIATION_PARAMETERS.CAS_SUPPORT_RADIUS = FB_WEIGHTS.CAS_SUPPORT_RADIUS;
+		this.AVIATION_PARAMETERS.UNITS_FOR_ADA_STRIKE = FB_WEIGHTS.UNITS_FOR_ADA_STRIKE;
 
 		/*
 			RESEARCH
 		*/
 		const LIVING_ENEMY_COUNT = livingPlayers.filter(isEnemy).length;
-		const FIGHTING_LAST_OPPONENT = LIVING_ENEMY_COUNT <= 1;
+		const FIGHTING_LAST_OPPONENT = LIVING_ENEMY_COUNT <= FB_WEIGHTS.FOCUSED_RESEARCH_ENEMY_COUNT;
 		const path = FIGHTING_LAST_OPPONENT ? this.FOCUSED_COMBAT_RESEARCH_PATH : this.DEFAULT_RESEARCH_PATH;
 
 		if (this.RESEARCH_PARAMETERS.path !== path) {
