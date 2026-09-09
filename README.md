@@ -119,6 +119,7 @@ Ideally, FishBot will also have a good win rate in both duel (1-vs-1, tested in 
         * Improved VTOL utilisation when the match is neck-and-neck.
     * Improved the construction planner to reduce the chance that trucks oscillate back and forth doing nothing.
     * Unit designs & base construction tweaked.
+    * New focused cannon research path added for 1v1 matches.
     * Excluding 10-player maps and sea maps, all other Warzone 2100 maps are now covered by automated E2E testing.
 
 * **v0.5.2** - *released **01 Sep 2026***
