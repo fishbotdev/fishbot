@@ -344,8 +344,11 @@
  * @property {number} DYNAMIC_POWER_GENERATOR_CAP 
  * @property {number} DYNAMIC_FACTORY_CAP
  * @property {number} DYNAMIC_RESEARCH_LAB_CAP
- * @property {number} MAX_VTOL_REARMING_PADS 
- * @property {boolean} SHOULD_BUILD_VTOLS 
+ * @property {number} MAX_VTOL_REARMING_PADS
+ * @property {boolean} SHOULD_BUILD_VTOLS
+ *
+ * @property {number} MODULES_PER_FACTORY
+ * @property {number} MODULES_PER_RESEARCH_LAB
  */
 
 /** 
