@@ -146,9 +146,12 @@ const FB_WEIGHTS = {
 	*/
 	BRIGADE_SIZE: 20,
 
-	// Shares of the combat slots. Only their ratios matter - they are normalised before apportionment.
+	// Shares of the combat slots. Only their ratios matter - they are normalised before apportionment, so
+	// scaling all four leaves the brigade unchanged. Heavy cavalry is therefore held fixed as the
+	// reference and the other three are set relative to it, which is what a tuning run varies. Leaving all
+	// four free would give the optimiser a direction along which nothing whatsoever happens.
 	// The defaults are sixteenths, which is what v0.5.3's 6 / 2 / 5 / 3 mix works out to at size 20.
-	BRIGADE_SHARE_HEAVY_CAVALRY: 0.3750,
+	BRIGADE_SHARE_HEAVY_CAVALRY: 0.3750,		// reference; hold fixed
 	BRIGADE_SHARE_LIGHT_CAVALRY: 0.1250,
 	BRIGADE_SHARE_INDIRECT: 0.3125,				// mortars
 	BRIGADE_SHARE_INFANTRY: 0.1875,
@@ -187,8 +190,23 @@ const FB_WEIGHTS = {
 	/*
 		PRODUCTION: PRIORITY WEIGHTS
 		Brigade weights are order-of-magnitude priorities: the first brigade is reinforced before the
-		second, and so on. Unit weights break ties within a brigade and are tuned together with the
-		composition above using `python_helper_scripts/production_scheduling.py`.
+		second, and so on.
+
+		Unit weights decide the *order* a brigade fills in, where the composition above decides what it
+		fills up to. `prioritiseLandVehicleCategory()` scores each category as
+		`(deficit / composition count) * unit weight` and repeatedly produces the highest, so a category
+		with a larger weight is reached sooner. The two interact: brigade size sets how long a brigade
+		spends part-filled, which is exactly the window in which order matters.
+
+		Three properties of these weights, all worth knowing before tuning them:
+		  - Only ratios matter. Scaling all six leaves the production order completely unchanged, so heavy
+		    cavalry is held fixed as the reference and the rest are set relative to it.
+		  - They must stay strictly positive. At zero or below, a category is never produced at all, no
+		    matter how large its deficit.
+		  - Infantry has no entry. It is built from cyborg factories on a separate path, so its share of a
+		    brigade is tunable but its build order is not.
+
+		`python_helper_scripts/production_scheduling.py` prints the resulting order for a given set.
 	*/
 	BRIGADE_WEIGHT_FIRST_BCT: 1000,
 	BRIGADE_WEIGHT_SECOND_BCT: 100,
@@ -197,9 +215,9 @@ const FB_WEIGHTS = {
 	BRIGADE_WEIGHT_FIFTH_BCT: 0,
 	BRIGADE_WEIGHT_BCT_RESERVE: 1,
 
-	UNIT_WEIGHT_HEAVY_CAV: 0.55,
+	UNIT_WEIGHT_HEAVY_CAV: 0.55,				// reference; hold fixed
 	UNIT_WEIGHT_LIGHT_CAV: 0.95,
-	UNIT_WEIGHT_SHORT_RANGE_FIRE_SUPPORT: 0.6,
+	UNIT_WEIGHT_SHORT_RANGE_FIRE_SUPPORT: 0.6,	// mortars
 	UNIT_WEIGHT_AIR_DEFENCE: 0.35,
 	UNIT_WEIGHT_SENSOR: 0.2,
 	UNIT_WEIGHT_MAINTENANCE: 0.1,

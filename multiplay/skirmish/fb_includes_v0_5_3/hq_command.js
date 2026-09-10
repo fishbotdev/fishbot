@@ -291,6 +291,13 @@ class CommandCenter {
 			  `${c['MAX_HEAVY_CAVALRY']},${c['MAX_LIGHT_CAVALRY']},${c['MAX_MORTAR']},${c['MAX_ADA']},` +
 			  `${c['MAX_SENSOR']},${c['MAX_REPAIR']},${c['MAX_INFANTRY']},${this.MAX_BRIGADES},` +
 			  `${this.FORCE_BUDGET_BRIGADES}`);
+
+		// The production-order weights, so a scraped game record describes both what the brigade was
+		// filling up to and the order it filled in, without having to be joined against the weight file.
+		const u = this.PRODUCTION_RESUPPLY_PARAMETERS.UNIT_WEIGHTS;
+		debug(`FBTUW,${me},${u.get(DIVISION.HEAVY_CAV_RESERVE)},${u.get(DIVISION.LIGHT_CAV_RESERVE)},` +
+			  `${u.get(DIVISION.SHORT_RANGE_FIRE_SUPPORT_RESERVE)},${u.get(DIVISION.AIR_DEFENCE_RESERVE)},` +
+			  `${u.get(DIVISION.SENSOR_RESERVE)},${u.get(DIVISION.MAINTENANCE_RESERVE)}`);
 	}
 
 	/**

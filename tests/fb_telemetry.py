@@ -26,9 +26,14 @@
 #
 #   FBTCFG,<player>,<mapWidth>,<mapHeight>,<walkableTiles>,<totalDerricks>,<maxPlayers>,<droidLimit>
 #   FBTBDE,<player>,<brigadeSize>,<heavyCav>,<lightCav>,<mortar>,<ada>,<sensor>,<repair>,<infantry>,<numBrigades>
+#   FBTUW,<player>,<heavyCav>,<lightCav>,<mortar>,<ada>,<sensor>,<maintenance>
 #   FBT,<player>,<t_sec>,<derricks>,<oilShare>,<livingPlayers>,<power>,<units>,<unitsLost>,<powerLost>,
 #       <enemyDirectFire>,<enemyIndirect>,<enemyAir>,<enemyRepair>
 #   FBTEND,<player>,<t_sec>,<unitsLost>,<structuresLost>,<powerLostToUnits>,<powerLostToStructures>
+#
+# FBTBDE gives the brigade a game was filling up to; FBTUW gives the order it filled in. Both are needed
+# to interpret a result, since brigade size decides how long the bot spends part-filled and therefore how
+# much the order matters.
 #
 # The tag is searched for anywhere in the line rather than anchored at the start, so any prefix the engine
 # puts in front of script output is harmless.
@@ -41,6 +46,8 @@ SCHEMAS: Dict[str, List[str]] = {
                "max_players", "droid_weapon_limit"],
     "FBTBDE": ["player", "brigade_size", "heavy_cav", "light_cav", "mortar", "ada",
                "sensor", "repair", "infantry", "num_brigades"],
+    "FBTUW":  ["player", "w_heavy_cav", "w_light_cav", "w_mortar", "w_ada", "w_sensor",
+               "w_maintenance"],
     "FBT":    ["player", "t_sec", "derricks", "oil_share", "living_players", "power", "units",
                "units_lost", "power_lost", "enemy_direct_fire", "enemy_indirect", "enemy_air",
                "enemy_repair"],
@@ -48,8 +55,9 @@ SCHEMAS: Dict[str, List[str]] = {
                "power_lost_structures"],
 }
 
-# Everything is an integer except the oil share.
-FLOAT_FIELDS = {"oil_share"}
+# Everything is an integer except the oil share and the production-order weights.
+FLOAT_FIELDS = {"oil_share", "w_heavy_cav", "w_light_cav", "w_mortar", "w_ada", "w_sensor",
+                "w_maintenance"}
 
 
 def _parse_line(line: str, tag: str) -> Optional[dict]:
@@ -94,18 +102,19 @@ def parse_console_telemetry(console_history: List[str], player: Optional[int] = 
     -------
     dict
         {
-            "config": dict | None,      # FBTCFG, the last one seen
-            "brigade": dict | None,     # FBTBDE, the last one seen
-            "samples": list[dict],      # FBT, in the order emitted
-            "final": dict | None,       # FBTEND, the last one seen
+            "config": dict | None,          # FBTCFG, the last one seen
+            "brigade": dict | None,         # FBTBDE, the last one seen
+            "unit_weights": dict | None,    # FBTUW, the last one seen
+            "samples": list[dict],          # FBT, in the order emitted
+            "final": dict | None,           # FBTEND, the last one seen
         }
     """
-    result = {"config": None, "brigade": None, "samples": [], "final": None}
+    result = {"config": None, "brigade": None, "unit_weights": None, "samples": [], "final": None}
 
     for line in console_history:
-        # Order matters: "FBT," is a prefix of nothing else, but check the longer tags first so that a
-        # line containing "FBTEND," is not also read as an "FBT," record.
-        for tag, key in (("FBTCFG", "config"), ("FBTBDE", "brigade"),
+        # Order matters: every other tag starts with "FBT", so the longer tags are checked first and a
+        # line holding e.g. "FBTEND," is not also read as an "FBT," record.
+        for tag, key in (("FBTCFG", "config"), ("FBTBDE", "brigade"), ("FBTUW", "unit_weights"),
                          ("FBTEND", "final"), ("FBT", "samples")):
             record = _parse_line(line, tag)
             if record is None:
@@ -140,6 +149,7 @@ def summarise_telemetry(telemetry: dict) -> dict:
     final = telemetry.get("final")
     brigade = telemetry.get("brigade")
     config = telemetry.get("config")
+    unit_weights = telemetry.get("unit_weights")
 
     metrics = {}
 
@@ -162,6 +172,19 @@ def summarise_telemetry(telemetry: dict) -> dict:
             "tlm_brigade_ada": brigade["ada"],
             "tlm_brigade_infantry": brigade["infantry"],
             "tlm_num_brigades": brigade["num_brigades"],
+        })
+
+    if unit_weights:
+        # Ratios to the reference category, which is what actually determines production order: scaling
+        # every weight leaves the order unchanged. Recorded as ratios so a regression sees one number per
+        # category rather than a set carrying a redundant overall scale.
+        reference = unit_weights["w_heavy_cav"] or 1.0
+        metrics.update({
+            "tlm_w_light_cav_ratio": round(unit_weights["w_light_cav"] / reference, 4),
+            "tlm_w_mortar_ratio": round(unit_weights["w_mortar"] / reference, 4),
+            "tlm_w_ada_ratio": round(unit_weights["w_ada"] / reference, 4),
+            "tlm_w_sensor_ratio": round(unit_weights["w_sensor"] / reference, 4),
+            "tlm_w_maintenance_ratio": round(unit_weights["w_maintenance"] / reference, 4),
         })
 
     if samples:
