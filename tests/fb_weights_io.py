@@ -41,21 +41,52 @@ END_MARKER = "/* FB_WEIGHTS_END */"
 # The search space
 # ------------------------------------------------------------------------------------------------------
 #
-# Brigade size and the four combat shares. `hq_command.js` turns these into integer unit counts by
-# largest-remainder apportionment, so the shares need not sum to 1 - only their ratios matter, and any
-# combination yields a valid brigade. That means the optimiser can treat all five as unconstrained within
-# their bounds, with no repair step.
+# Three groups of parameters, covering how big a brigade is, what it is made of, and the order it fills in:
 #
-# Shares are bounded away from 0 so that no category is ever completely absent: a share of exactly 0 would
-# remove a unit type from the army entirely, which is a different experiment from tuning proportions.
+#   BRIGADE_SIZE      total units per brigade
+#   BRIGADE_SHARE_*   how the combat slots divide between categories  -> the brigade's destination
+#   UNIT_WEIGHT_*     production priority per category                -> the order it gets there
+#
+# Size and order interact, which is why they are tuned together: brigade size decides how long a brigade
+# spends part-filled, and that is the only window in which build order has any effect.
+#
+# `hq_command.js` turns size and shares into integer unit counts by largest-remainder apportionment, so
+# shares need not sum to 1 and every point in the box yields a valid brigade. The optimiser needs no
+# constraint handling and no repair step.
+#
+# Heavy cavalry is excluded from both vectors on purpose. Both are scale-invariant - multiplying every
+# share, or every unit weight, leaves behaviour exactly unchanged - so holding one category fixed as the
+# reference removes a direction the optimiser would otherwise search along to no effect. Everything else is
+# expressed relative to it, and pinning one member costs no coverage: any composition or ordering reachable
+# with all of them free is still reachable with one held.
+#
+# Lower bounds sit above 0 for two different reasons. A share of 0 would drop a unit type from the army
+# altogether, which is a different experiment from tuning proportions. A unit weight of 0 is worse than
+# small: at zero or below a category is never produced at all, however large its deficit grows.
+#
+# Infantry has a share but no unit weight: it is built from cyborg factories on a separate path which the
+# production-order scoring does not touch.
 #
 #   name: (low, high, is_integer)
 SEARCH_SPACE: Dict[str, Tuple[float, float, bool]] = {
-    "BRIGADE_SIZE":                 (15, 30, True),
-    "BRIGADE_SHARE_HEAVY_CAVALRY":  (0.05, 1.0, False),
-    "BRIGADE_SHARE_LIGHT_CAVALRY":  (0.05, 1.0, False),
-    "BRIGADE_SHARE_INDIRECT":       (0.05, 1.0, False),
-    "BRIGADE_SHARE_INFANTRY":       (0.05, 1.0, False),
+    # Size
+    "BRIGADE_SIZE":                         (15, 30, True),
+
+    # Composition, relative to BRIGADE_SHARE_HEAVY_CAVALRY = 0.375 (held fixed)
+    "BRIGADE_SHARE_LIGHT_CAVALRY":          (0.02, 1.2, False),
+    "BRIGADE_SHARE_INDIRECT":               (0.02, 1.2, False),
+    "BRIGADE_SHARE_INFANTRY":               (0.02, 1.2, False),
+
+    # Build order, relative to UNIT_WEIGHT_HEAVY_CAV = 0.55 (held fixed)
+    "UNIT_WEIGHT_LIGHT_CAV":                (0.05, 2.0, False),
+    "UNIT_WEIGHT_SHORT_RANGE_FIRE_SUPPORT": (0.05, 2.0, False),
+}
+
+# Held fixed as the reference for each scale-invariant vector. Listed so the reason is discoverable from
+# here, and so a run can assert they were not moved by accident.
+REFERENCE_WEIGHTS: Dict[str, float] = {
+    "BRIGADE_SHARE_HEAVY_CAVALRY": 0.375,
+    "UNIT_WEIGHT_HEAVY_CAV": 0.55,
 }
 
 # Order is fixed so that a parameter vector always means the same thing across runs.
@@ -220,6 +251,27 @@ def incumbent_vector(path: Path = WEIGHTS_PATH) -> List[float]:
     return weights_to_vector(read_weights(path))
 
 
+def check_reference_weights(path: Path = WEIGHTS_PATH) -> None:
+    """
+    Asserts the pinned reference weights still hold their expected values.
+
+    The shares and the unit weights are each scale-invariant, so a reference that has drifted does not
+    break anything visibly - it silently rescales what every other value in that vector means, and results
+    from before and after the drift stop being comparable. Call this before a run.
+    """
+    current = read_weights(path)
+
+    drifted = {
+        name: (expected, current[name])
+        for name, expected in REFERENCE_WEIGHTS.items()
+        if current.get(name) != expected
+    }
+
+    if drifted:
+        detail = ", ".join(f"{n}: expected {e}, found {f}" for n, (e, f) in drifted.items())
+        raise ValueError(f"reference weights have drifted in {path.name} ({detail})")
+
+
 def apply_vector(vector, weight_set_id: str, path: Path = WEIGHTS_PATH) -> dict:
     """
     Writes a parameter vector to the weight file and stamps it with an identifier.
@@ -241,9 +293,22 @@ if __name__ == "__main__":
     current = read_weights()
 
     print(f"{WEIGHTS_PATH.relative_to(REPO_ROOT)}: {len(current)} weights\n")
-    print(f"Weight set id: {current['WEIGHT_SET_ID']}\n")
-    print(f"{'parameter':<32} {'incumbent':>10}   bounds")
+    print(f"Weight set id: {current['WEIGHT_SET_ID']}")
+
+    try:
+        check_reference_weights()
+        print("Reference weights: unchanged\n")
+    except ValueError as exc:
+        print(f"Reference weights: {exc}\n")
+
+    print(f"{'search parameter':<40} {'incumbent':>10}   bounds")
     for name in PARAMETER_NAMES:
         low, high, is_integer = SEARCH_SPACE[name]
         kind = "int" if is_integer else "float"
-        print(f"{name:<32} {current[name]:>10}   [{low}, {high}] {kind}")
+        print(f"{name:<40} {current[name]:>10}   [{low}, {high}] {kind}")
+
+    print(f"\n{'held fixed as reference':<40} {'value':>10}")
+    for name, expected in REFERENCE_WEIGHTS.items():
+        print(f"{name:<40} {current[name]:>10}")
+
+    print(f"\n{len(PARAMETER_NAMES)} dimensions")
