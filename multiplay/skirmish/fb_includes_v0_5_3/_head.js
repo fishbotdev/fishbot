@@ -174,6 +174,7 @@
  * 
  * // Statistics
  * @property {number} numTrucks
+ * @property {number} numRepairUnits mobile repair turrets (not repair facilities)
  * @property {number} numStructs
  * @property {number} numFactories
  * @property {number} numDerricks

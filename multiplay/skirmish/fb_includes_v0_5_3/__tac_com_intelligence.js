@@ -219,6 +219,7 @@ function createPlayerInfoEntry(playerID) {
         'numFlamerUnits': 0,
 
         'numTrucks': 0,
+        'numRepairUnits': 0,    // mobile repair turrets, not repair facilities (see `numRepairFacilities`)
 
         // Structure stats
         'numStructs': 0,

@@ -25,6 +25,7 @@ function runGameEndedWatchdog() {
 
 	if (gameIsFinished && state.botIsActive) {
 		deb(`gameHasEnded, stopping all function`);
+		hq.emitFinalTelemetry(state);				// records game duration; periodic samples stop below
 		state.botIsActive = false;
 		clearAllTileHighlights();
 	}
@@ -90,6 +91,10 @@ function scheduleCoreFunctions() {
 	if (state.WORKER_IDS['runStrategy'][currWorkerID] !== -1) {
 		const runStrategy = () => hq.updateStrategicParameters(state);
 		fprof(runStrategy);
+
+		// Sampled here rather than on its own timer: the strategy update runs 6 times a minute, which is
+		// the resolution the telemetry wants, and it has just refreshed everything the sample reports.
+		hq.emitSampleTelemetry(state);
 	}
 }
 

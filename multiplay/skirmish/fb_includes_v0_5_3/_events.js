@@ -60,7 +60,11 @@ function eventBeaconRemoved(from, to) {
 	// does nothing for now
 }
 
+/**
+ * Invoked when any object is destroyed, for every player.
+ * @param {DroidObject | StructureObject} object
+ */
 function eventDestroyed(object) {
 	// this is regularly called if defined
-	// does nothing for now
+	hq.toc.recordDestroyedObject(state, object);
 }

@@ -280,6 +280,33 @@ class TacticalOperationsCenter {
 	}
 
 	/**
+	 * Adds a destroyed object of FishBot's to the running attrition totals. Objects belonging to anyone
+	 * else are ignored: `eventDestroyed` fires for every player's losses, and the engine does not say who
+	 * landed the killing blow, so only FishBot's own side of the ledger can be counted here.
+	 *
+	 * Telemetry only - nothing reads these totals to make a decision.
+	 * @param {worldState} state
+	 * @param {DroidObject | StructureObject} object the object which was destroyed
+	 * @returns {void}
+	 */
+	recordDestroyedObject(state, object) {
+		if (object == undefined || object.player !== me) {
+			return;
+		}
+
+		// `cost` is the object's build cost. Guard it anyway: features and older engine builds lack it.
+		const COST = (typeof object.cost === 'number') ? object.cost : 0;
+
+		if (object.type === DROID) {
+			state.myUnitsLost++;
+			state.myPowerLostToUnits += COST;
+		} else if (object.type === STRUCTURE) {
+			state.myStructuresLost++;
+			state.myPowerLostToStructures += COST;
+		}
+	}
+
+	/**
 	 * @param {Object} missionData 
 	 * @param {number} missionData.missionType
 	 * @param {number} missionData.priority
@@ -774,6 +801,9 @@ class TacticalOperationsCenter {
 					p['numFlamerUnits']++;
 				} else if (flags & OBJ_FLAGS.CONSTRUCTOR) {
 					p['numTrucks']++;
+				} else if (flags & OBJ_FLAGS.REPAIR) {
+					// Repair droids carry no weapon, so they fall through every branch above.
+					p['numRepairUnits']++;
 				}
 
 				if (PLAYER_IS_ENEMY) {

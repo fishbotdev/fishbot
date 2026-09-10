@@ -144,6 +144,61 @@ function clampValue(value, min, max) {
 }
 
 /**
+ * Splits a whole number of slots between several claimants in proportion to their shares, using the
+ * largest-remainder method: each claimant takes its whole part, then the leftover slots go to whichever
+ * claimants were cut by the most. The returned counts always sum to exactly `totalSlots`, which plain
+ * rounding cannot guarantee.
+ *
+ * Used to turn brigade shares into integer unit counts. Shares need not sum to 1; only their ratios
+ * matter. Ties are broken in `keys` order, so the result is deterministic.
+ *
+ * @param {string[]} keys the claimants, in tie-break priority order
+ * @param {Object<string, number>} shares claimant -> share (non-negative)
+ * @param {number} totalSlots whole number of slots to distribute
+ * @returns {Object<string, number>} claimant -> whole number of slots, summing to `totalSlots`
+ */
+function apportionByLargestRemainder(keys, shares, totalSlots) {
+	const counts = {};
+
+	if (totalSlots <= 0) {
+		keys.forEach(k => counts[k] = 0);
+		return counts;
+	}
+
+	let shareTotal = 0;
+	keys.forEach(k => shareTotal += Math.max(shares[k], 0));
+
+	// With nothing to go on, spread the slots as evenly as the method allows.
+	if (shareTotal <= 0) {
+		const equalShares = {};
+		keys.forEach(k => equalShares[k] = 1);
+		return apportionByLargestRemainder(keys, equalShares, totalSlots);
+	}
+
+	const remainders = [];
+	let allocated = 0;
+
+	keys.forEach(k => {
+		const exact = totalSlots * Math.max(shares[k], 0) / shareTotal;
+		const whole = Math.floor(exact);
+
+		counts[k] = whole;
+		allocated += whole;
+		remainders.push({'key': k, 'remainder': exact - whole});
+	});
+
+	// Hand out what rounding down left over, largest fractional part first.
+	remainders.sort((a, b) => b['remainder'] - a['remainder']);
+
+	for (let i = 0; allocated < totalSlots; i++) {
+		counts[remainders[i % remainders.length]['key']]++;
+		allocated++;
+	}
+
+	return counts;
+}
+
+/**
  * Converts a number `n` to its binary string representation (to 20 bits).
  * @param {number} n integer
  * @returns {string} binary string representation (to 20 bits) e.g. `"00001000010000100001"`
