@@ -25,10 +25,11 @@
 # Line formats (positional, comma separated, one tag per line):
 #
 #   FBTCFG,<player>,<mapWidth>,<mapHeight>,<walkableTiles>,<totalDerricks>,<maxPlayers>,<droidLimit>
-#   FBTBDE,<player>,<brigadeSize>,<heavyCav>,<lightCav>,<mortar>,<ada>,<sensor>,<repair>,<infantry>,<numBrigades>
+#   FBTBDE,<player>,<brigadeSize>,<heavyCav>,<lightCav>,<mortar>,<ada>,<sensor>,<repair>,<infantry>,
+#          <maxBrigades>,<forceBudgetBrigades>
 #   FBTUW,<player>,<heavyCav>,<lightCav>,<mortar>,<ada>,<sensor>,<maintenance>
 #   FBT,<player>,<t_sec>,<derricks>,<oilShare>,<livingPlayers>,<power>,<units>,<unitsLost>,<powerLost>,
-#       <enemyDirectFire>,<enemyIndirect>,<enemyAir>,<enemyRepair>
+#       <enemyDirectFire>,<enemyIndirect>,<enemyAir>,<enemyRepair>,<bctsFielded>
 #   FBTEND,<player>,<t_sec>,<unitsLost>,<structuresLost>,<powerLostToUnits>,<powerLostToStructures>
 #
 # FBTBDE gives the brigade a game was filling up to; FBTUW gives the order it filled in. Both are needed
@@ -45,12 +46,12 @@ SCHEMAS: Dict[str, List[str]] = {
     "FBTCFG": ["player", "map_width", "map_height", "walkable_tiles", "total_derricks",
                "max_players", "droid_weapon_limit"],
     "FBTBDE": ["player", "brigade_size", "heavy_cav", "light_cav", "mortar", "ada",
-               "sensor", "repair", "infantry", "num_brigades"],
+               "sensor", "repair", "infantry", "max_brigades", "force_budget_brigades"],
     "FBTUW":  ["player", "w_heavy_cav", "w_light_cav", "w_mortar", "w_ada", "w_sensor",
                "w_maintenance"],
     "FBT":    ["player", "t_sec", "derricks", "oil_share", "living_players", "power", "units",
                "units_lost", "power_lost", "enemy_direct_fire", "enemy_indirect", "enemy_air",
-               "enemy_repair"],
+               "enemy_repair", "bcts_fielded"],
     "FBTEND": ["player", "t_sec", "units_lost", "structures_lost", "power_lost_units",
                "power_lost_structures"],
 }
@@ -171,7 +172,8 @@ def summarise_telemetry(telemetry: dict) -> dict:
             "tlm_brigade_mortar": brigade["mortar"],
             "tlm_brigade_ada": brigade["ada"],
             "tlm_brigade_infantry": brigade["infantry"],
-            "tlm_num_brigades": brigade["num_brigades"],
+            "tlm_max_brigades": brigade["max_brigades"],
+            "tlm_force_budget_brigades": brigade["force_budget_brigades"],
         })
 
     if unit_weights:
@@ -212,6 +214,11 @@ def summarise_telemetry(telemetry: dict) -> dict:
             "tlm_enemy_air_peak": max(s["enemy_air"] for s in samples),
             "tlm_enemy_repair_peak": max(s["enemy_repair"] for s in samples),
             "tlm_sample_count": len(samples),
+
+            # BCTs are formed on demand, so this is an outcome: it records how brigade size and
+            # composition actually translated into force structure.
+            "tlm_bcts_final": last["bcts_fielded"],
+            "tlm_bcts_peak": max(s["bcts_fielded"] for s in samples),
         })
 
     # `FBTEND` is authoritative for attrition and duration: it is emitted when the game actually ends,
