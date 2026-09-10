@@ -414,6 +414,23 @@ def write_console_dump(path: Path, console_output: str) -> None:
         f.write(console_output)
 
 
+def confirm_console_dump(path: Path) -> bool:
+    """
+    Asks whether the printed report should be saved.
+
+    Only "y" (or "yes") saves; anything else - including a closed stdin, so
+    that piping the report somewhere never blocks - skips the dump.
+    """
+
+    try:
+        answer = input(f"\nSave console output to '{path.name}'? [y/N] ")
+    except (EOFError, KeyboardInterrupt):
+        print()
+        return False
+
+    return answer.strip().lower() in ("y", "yes")
+
+
 def print_report(
     *,
     base_manifest: dict,
@@ -458,7 +475,13 @@ if __name__ == "__main__":
     # Only reached once the console output completed without error, so the
     # dump always matches what the console just showed.
     #
-    write_console_dump(
-        Path.cwd() / f"{SHORT_SHA}.txt",
-        console_recorder.text,
-    )
+    # The prompt itself is printed outside the recording, and so is never part
+    # of the dump. Handy when parsing a test run that is still in progress.
+    #
+    dump_path = Path.cwd() / f"{SHORT_SHA}.txt"
+
+    if confirm_console_dump(dump_path):
+        write_console_dump(dump_path, console_recorder.text)
+        print(f"Saved {dump_path}")
+    else:
+        print("Not saved.")
