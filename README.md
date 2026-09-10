@@ -39,70 +39,70 @@ Ideally, FishBot will also have a good win rate in both duel (1-vs-1, tested in 
 ### 2 player (T2-NoScav)
 | Map | Duel | FFA |
 | --- | :---: | :---: |
-| `DustyMaze (2P)` | 80% | - |
+| `DustyMaze (2P)` | 100% | - |
 | `Roughness` | 100% | - |
 | `Sk-HighGround` | 100% | - |
 | `Sk-Startup` | 100% | - |
-| `Sk-UrbanChasm` | 100% | - |
-| `Vision` | 100% | - |
+| `Sk-UrbanChasm` | 95% | - |
+| `Vision` | 95% | - |
 
 ### 3 player (T2-NoScav)
 | Map | Duel | FFA |
 | --- | :---: | :---: |
-| `Gamma` | 100% | 90% |
-| `Monocot` | 100% | 100% |
+| `Gamma` | 100% | 97% |
+| `Monocot` | 100% | 97% |
 
 ### 4 player (T2-NoScav)
 | Map | Duel | FFA |
 | --- | :---: | :---: |
-| `DustyMaze-2v2` | 94% | 85% |
-| `DustyMaze-FFA` | 92% | 85% |
-| `Sk-Basingstoke` | 80% | 45% |
-| `Sk-Cockpit` | 100% | 82% |
-| `Sk-FishNets` | 95% | 50% |       
-| `Sk-GreatRift` | 98% | 72% |
-| `Sk-LittleEgypt` | 78% | 35% |
-| `Sk-Mountain` | 99% | 82% |
-| `Sk-Pyramidal` | 100% | 82% |
-| `Sk-RollingHills` | 88% | 80% |
-| `Sk-Rush` | 100% | 82% |
-| `Sk-Rush2` | 100% | 90% |
-| `Sk-Urban-Chaos` | 98% | 90% |
+| `DustyMaze-2v2` | 98% | 90% |
+| `DustyMaze-FFA` | 98% | 65% |
+| `Sk-Basingstoke` | 99% | 58% |
+| `Sk-Cockpit` | 100% | 77% |
+| `Sk-FishNets` | 95% | 40% |
+| `Sk-GreatRift` | 100% | 70% |
+| `Sk-LittleEgypt` | 95% | 47% |
+| `Sk-Mountain` | 99% | 72% |
+| `Sk-Pyramidal` | 100% | 85% |
+| `Sk-RollingHills` | 96% | 95% |
+| `Sk-Rush` | 100% | 88% |
+| `Sk-Rush2` | 100% | 95% |
+| `Sk-Urban-Chaos` | 99% | 95% |
 | `Sk-UrbanDuel` | 100% | 100% |
-| `Sk-Valley` | 99% | 95% |
+| `Sk-Valley` | 99% | 98% |
 
 ### 5 player (T2-NoScav)
 | Map | Duel | FFA |
 | --- | :---: | :---: |
-| `Bloat` | - | 76% |
+| `Bloat` | - | 46% |
 
 ### 6 player (T2-NoScav)
 | Map | Duel | FFA |
 | --- | :---: | :---: |
-| `Entropy` | - | 51% |
-| `Melting` | - | 67% |
+| `Entropy` | - | 62% |
+| `Melting` | - | 61% |
 
 ### 7 player (T2-NoScav)
 | Map | Duel | FFA |
 | --- | :---: | :---: |
-| `Thales` | - | 37% |
+| `Thales` | - | 42% |
 
 ### 8 player (T2-NoScav)
 | Map | Duel | FFA |
 | --- | :---: | :---: |
 | `Sk-Bananas` | - | 51% |
-| `Sk-BeggarsKanyon` | - | 72% |
-| `Sk-Clover` | - | 66% |
-| `Sk-Cockate` | - | 44% |
-| `Sk-Concrete` | - | 49% |
-| `Sk-Gridlock` | - | 61% |
-| `Sk-HideNSneak` | - | 30% |
-| `Sk-MizaMaze` | - | 46% |
-| `Sk-SandCastles` | - | 56% |
-| `Sk-ThePit` | - | 62% |
-| `Sk-Wheel` | - | 57% |
-| `Sk-YinYang` | - | 64% |
-| `Sk-Ziggurat` | - | 39% |
+| `Sk-BeggarsKanyon` | - | 70% |
+| `Sk-Clover` | - | 57% |
+| `Sk-Cockate` | - | 47% |
+| `Sk-Concrete` | - | 31% |
+| `Sk-Gridlock` | - | 40% |
+| `Sk-HideNSneak` | - | 23% |
+| `Sk-MizaMaze` | - | 32% |
+| `Sk-SandCastles` | - | 51% |
+| `Sk-ThePit` | - | 46% |
+| `Sk-Wheel` | - | 38% |
+| `Sk-YinYang` | - | 52% |
+| `Sk-Ziggurat` | - | 29% |
 | `Sk-Manhattan` | - | NC |
 
 ### 9 player (T2-NoScav)
