@@ -348,6 +348,22 @@ class worldState {
         /** @type {Map<number | string, number>} Map from `sectorID` (a derrick ID) to the `gameTime` when a defence-build task was called off as dangerous */
         this.abortedDefenceSectors = new Map();
         
+        ////////////////////////// ATTRITION (TELEMETRY ONLY) //////////////////////////
+        /*
+         * Running totals of what FishBot has lost, accumulated by `eventDestroyed`. Nothing decides on
+         * these; they exist because the end-of-game summary table cannot supply them.
+         *
+         * The table reports each player's kill count but never who they killed, so in a free-for-all
+         * (unlike a duel, where the sole opponent's kill count is exactly FishBot's losses) own losses
+         * cannot be recovered afterwards. Counting them as they happen is the only way to get a kill/death
+         * ratio out of an FFA. Power lost is likewise absent from the table, and is exact here because the
+         * engine reports each object's build cost.
+         */
+        this.myUnitsLost = 0;
+        this.myStructuresLost = 0;
+        this.myPowerLostToUnits = 0;
+        this.myPowerLostToStructures = 0;
+
         // Load balancing parameters
         this.botIsActive = true;
         this.TIME_BLOCK_MS = 200;

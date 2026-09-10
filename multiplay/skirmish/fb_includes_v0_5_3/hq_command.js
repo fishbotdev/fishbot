@@ -74,15 +74,7 @@ class CommandCenter {
 		// whichever is smaller.
 		this.FORCE_BUDGET_BRIGADES = FB_WEIGHTS.FORCE_BUDGET_BRIGADES;
 
-		const DEFAULT_FISHBOT_BRIGADE_COMPOSITION = {
-			'MAX_HEAVY_CAVALRY': FB_WEIGHTS.BRIGADE_MAX_HEAVY_CAVALRY,
-			'MAX_LIGHT_CAVALRY': FB_WEIGHTS.BRIGADE_MAX_LIGHT_CAVALRY,
-			'MAX_MORTAR': FB_WEIGHTS.BRIGADE_MAX_MORTAR,
-			'MAX_ADA': FB_WEIGHTS.BRIGADE_MAX_ADA,
-			'MAX_SENSOR': FB_WEIGHTS.BRIGADE_MAX_SENSOR,
-			'MAX_REPAIR': FB_WEIGHTS.BRIGADE_MAX_REPAIR,
-			'MAX_INFANTRY': FB_WEIGHTS.BRIGADE_MAX_INFANTRY,
-		};
+		const DEFAULT_FISHBOT_BRIGADE_COMPOSITION = this.#deriveBrigadeComposition();
 
 		const TOTAL_UNITS_PER_BRIGADE = Object.values(DEFAULT_FISHBOT_BRIGADE_COMPOSITION).reduce((a, b) => a + b, 0);
 
@@ -219,7 +211,134 @@ class CommandCenter {
 	}
 
 	/**
-	 * @param {worldState} state 
+	 * Turns `BRIGADE_SIZE` and the brigade shares in `_weights.js` into the integer unit counts that make
+	 * up one brigade.
+	 *
+	 * Support units are taken off the top: air defence scales with brigade size (a bigger formation is a
+	 * bigger air target), while the sensor and repair slots are fixed. Whatever is left is the combat
+	 * budget, apportioned between the four combat categories by largest remainder so that the counts sum
+	 * to exactly `BRIGADE_SIZE`.
+	 *
+	 * @returns {Object<string, number>} the `BRIGADE_COMPOSITION` object consumed by `hq_g4_production.js`
+	 */
+	#deriveBrigadeComposition() {
+
+		const BRIGADE_SIZE = Math.round(FB_WEIGHTS.BRIGADE_SIZE);
+
+		const MAX_ADA = clampValue(
+			Math.round(BRIGADE_SIZE * FB_WEIGHTS.ADA_PER_BRIGADE_UNIT),
+			FB_WEIGHTS.BRIGADE_MIN_ADA,
+			FB_WEIGHTS.BRIGADE_MAX_ADA
+		);
+		const MAX_SENSOR = FB_WEIGHTS.BRIGADE_SENSOR_COUNT;
+		const MAX_REPAIR = FB_WEIGHTS.BRIGADE_REPAIR_COUNT;
+
+		const SUPPORT_SLOTS = MAX_ADA + MAX_SENSOR + MAX_REPAIR;
+		const COMBAT_SLOTS = Math.max(BRIGADE_SIZE - SUPPORT_SLOTS, 0);
+
+		// Ordered by descending default share, so leftover slots break ties toward the heavier categories.
+		const COMBAT_KEYS = ['MAX_HEAVY_CAVALRY', 'MAX_MORTAR', 'MAX_INFANTRY', 'MAX_LIGHT_CAVALRY'];
+		const shares = {
+			'MAX_HEAVY_CAVALRY': FB_WEIGHTS.BRIGADE_SHARE_HEAVY_CAVALRY,
+			'MAX_MORTAR': FB_WEIGHTS.BRIGADE_SHARE_INDIRECT,
+			'MAX_INFANTRY': FB_WEIGHTS.BRIGADE_SHARE_INFANTRY,
+			'MAX_LIGHT_CAVALRY': FB_WEIGHTS.BRIGADE_SHARE_LIGHT_CAVALRY,
+		};
+
+		const combatCounts = apportionByLargestRemainder(COMBAT_KEYS, shares, COMBAT_SLOTS);
+
+		return {
+			'MAX_HEAVY_CAVALRY': combatCounts['MAX_HEAVY_CAVALRY'],
+			'MAX_LIGHT_CAVALRY': combatCounts['MAX_LIGHT_CAVALRY'],
+			'MAX_MORTAR': combatCounts['MAX_MORTAR'],
+			'MAX_ADA': MAX_ADA,
+			'MAX_SENSOR': MAX_SENSOR,
+			'MAX_REPAIR': MAX_REPAIR,
+			'MAX_INFANTRY': combatCounts['MAX_INFANTRY'],
+		};
+	}
+
+	/*
+		TELEMETRY
+
+		These lines are scraped out of the autogame console by `tests/run_result_parser.py`. The end-of-game
+		summary table gives one row per player at one instant; these give the time series, plus the things
+		the table has no column for (own losses, power lost, brigade composition, map characteristics).
+
+		Two constraints shape the format, both from `windows_scrape_terminal_history()`:
+		  1. It reconstructs lines by slicing the console buffer at the window width, so a line longer than
+		     the console width is split in two and neither half parses. Keep every line short and terse.
+		  2. It reads a fixed-size window of scrollback, so the summary table can be pushed out of view by
+		     chatter. Emit at most one sample per strategy update (6/min).
+
+		Fields are positional, prefixed with a tag, and the tag may appear anywhere in the line so that any
+		prefix the engine adds is harmless.
+	*/
+
+	/**
+	 * Emits the once-per-game context: map characteristics and the brigade composition actually derived
+	 * from the weights. Both are needed to interpret a result, and neither changes during a game.
+	 * @param {worldState} state
+	 * @returns {void}
+	 */
+	emitStaticTelemetry(state) {
+		const c = this.PRODUCTION_RESUPPLY_PARAMETERS.BRIGADE_COMPOSITION;
+
+		debug(`FBTCFG,${me},${mapWidth},${mapHeight},${state.mapData.walkableTiles.length},` +
+			  `${state.poi.derricks.length},${maxPlayers},${state.getMaxUnitCount("DROID_WEAPON")}`);
+
+		debug(`FBTBDE,${me},${this.PRODUCTION_RESUPPLY_PARAMETERS.TOTAL_UNITS_PER_BRIGADE},` +
+			  `${c['MAX_HEAVY_CAVALRY']},${c['MAX_LIGHT_CAVALRY']},${c['MAX_MORTAR']},${c['MAX_ADA']},` +
+			  `${c['MAX_SENSOR']},${c['MAX_REPAIR']},${c['MAX_INFANTRY']},${this.MAX_BRIGADES},` +
+			  `${this.FORCE_BUDGET_BRIGADES}`);
+	}
+
+	/**
+	 * Emits one sample of the game's trajectory. Own losses and power lost are cumulative, so the final
+	 * sample doubles as the attrition total.
+	 * @param {worldState} state
+	 * @returns {void}
+	 */
+	emitSampleTelemetry(state) {
+		const p = state.playerInfo;
+		const livingPlayers = state.enumLivingPlayers();
+
+		// Observed enemy composition. Fog-limited: `enumDroid` only reports what FishBot can see, which is
+		// the same information a human player would have.
+		let enemyDirectFire = 0, enemyIndirect = 0, enemyAir = 0, enemyRepair = 0;
+		livingPlayers.forEach(playerID => {
+			if (!isEnemy(playerID)) {
+				return;
+			}
+			enemyDirectFire += p[playerID].numArmourUnits + p[playerID].numInfantryUnits;
+			enemyIndirect += p[playerID].numShortRangeIndirectUnits + p[playerID].numLongRangeIndirectUnits;
+			enemyAir += p[playerID].numAirUnits;
+			enemyRepair += p[playerID].numRepairUnits;
+		});
+
+		const POWER_LOST = state.myPowerLostToUnits + state.myPowerLostToStructures;
+
+		// `BRIGADE_DESIGNATIONS` grows as the division can man more BCTs, so the count is an outcome rather
+		// than a setting: it is how brigade size and composition translate into actual force structure.
+		debug(`FBT,${me},${Math.floor(gameTime / 1000)},${p[me].numDerricks},${this.myOilShare.toFixed(3)},` +
+			  `${livingPlayers.length},${playerPower(me)},${p[me].numTotalUnits},${state.myUnitsLost},` +
+			  `${POWER_LOST},${enemyDirectFire},${enemyIndirect},${enemyAir},${enemyRepair},` +
+			  `${this.BRIGADE_DESIGNATIONS.length}`);
+	}
+
+	/**
+	 * Emits the final attrition totals when the game ends, so that game duration is recorded even if the
+	 * last periodic sample was some seconds earlier.
+	 * @param {worldState} state
+	 * @returns {void}
+	 */
+	emitFinalTelemetry(state) {
+		debug(`FBTEND,${me},${Math.floor(gameTime / 1000)},${state.myUnitsLost},${state.myStructuresLost},` +
+			  `${state.myPowerLostToUnits},${state.myPowerLostToStructures}`);
+	}
+
+	/**
+	 * @param {worldState} state
 	 */
 	initialise(state) {
 		// Stamped into the console so a scraped autogame result can be traced back to the weight set that
@@ -229,6 +348,8 @@ class CommandCenter {
 		this.toc.setDefaultMissions(state);
 		this.toc.setSchedulerParameters(state, this.TASK_SCHEDULE);
 		this.updateStrategicParameters(state);		// initialises all strategic parameters to realistic values
+
+		this.emitStaticTelemetry(state);
 	}
 
 	///////////////////////////////////////////////////     STRATEGY     ///////////////////////////////////////////////////

@@ -129,17 +129,39 @@ const FB_WEIGHTS = {
 	INITIAL_TRUCK_RUSH_PERIOD_MS: 60000,
 
 	/*
-		PRODUCTION: BRIGADE COMPOSITION
+		PRODUCTION: BRIGADE SIZE & COMPOSITION
 		The unit mix of one brigade. `hq_g4_production.js` fills brigades toward this shape, so it sets
 		both the army's composition and the order units are produced in.
+
+		Composition is expressed as a size plus a set of shares rather than as absolute counts, so that
+		"how big is a brigade" and "what is it made of" can be tuned independently:
+
+			support slots = ADA (scales with size) + sensor + repair
+			combat slots  = BRIGADE_SIZE - support slots
+			counts        = the four shares, normalised, apportioned over the combat slots
+
+		Apportionment uses the largest-remainder method, so the counts always sum to exactly
+		BRIGADE_SIZE regardless of how the shares are set. The defaults reproduce v0.5.3's hand-tuned
+		6 / 2 / 5 / 3 combat mix with 2 ADA, 1 sensor and 1 repair.
 	*/
-	BRIGADE_MAX_HEAVY_CAVALRY: 6,
-	BRIGADE_MAX_LIGHT_CAVALRY: 2,
-	BRIGADE_MAX_MORTAR: 5,
-	BRIGADE_MAX_ADA: 2,
-	BRIGADE_MAX_SENSOR: 1,
-	BRIGADE_MAX_REPAIR: 1,
-	BRIGADE_MAX_INFANTRY: 3,
+	BRIGADE_SIZE: 20,
+
+	// Shares of the combat slots. Only their ratios matter - they are normalised before apportionment.
+	// The defaults are sixteenths, which is what v0.5.3's 6 / 2 / 5 / 3 mix works out to at size 20.
+	BRIGADE_SHARE_HEAVY_CAVALRY: 0.3750,
+	BRIGADE_SHARE_LIGHT_CAVALRY: 0.1250,
+	BRIGADE_SHARE_INDIRECT: 0.3125,				// mortars
+	BRIGADE_SHARE_INFANTRY: 0.1875,
+
+	// Air defence scales with brigade size, since a bigger formation is a bigger air target.
+	// `round(BRIGADE_SIZE * ADA_PER_BRIGADE_UNIT)` clamped: 2 at the default size of 20, 3 at 30.
+	ADA_PER_BRIGADE_UNIT: 0.1,
+	BRIGADE_MIN_ADA: 2,
+	BRIGADE_MAX_ADA: 3,
+
+	// Support units which do not scale with brigade size.
+	BRIGADE_SENSOR_COUNT: 1,
+	BRIGADE_REPAIR_COUNT: 1,
 
 	/*
 		FORCE STRUCTURE
