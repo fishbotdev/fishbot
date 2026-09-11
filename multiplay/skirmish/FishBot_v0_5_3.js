@@ -52,6 +52,7 @@ const FB_INCLUDES = FISHBOT_PATH + "fb_includes_v0_5_3/";
 
 // Enable DEBUG_MODE_ON (global) to:
 //	 - Show some useful debug information in the console
+//	 - Mark on the map every direct fire target passed over because its approach is blocked
 //	 - Automatically colour players 0, 1, 2
 //	 - Transform Player 0 (forced human player slot) to spectator mode (used for automated bot testing)
 const DEBUG_MODE_ON = true;
