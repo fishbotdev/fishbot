@@ -458,10 +458,12 @@ if __name__ == "__main__":
     BASE_MANIFEST_PATH = Path.cwd() / "base_manifest.json"
     base_manifest = read_json(BASE_MANIFEST_PATH)
 
-    COMMIT_SHA = "46a948a9b0fd42c22c641063a860faf72664a90e"
-    SHORT_SHA = COMMIT_SHA[:7]
+    # EXPERIMENTAL (revert before merging): read the folder `run_tests.py` writes for the brigade-tuning
+    # batch. This was a commit SHA, and a *different* SHA to the one the runner used - so the two halves of
+    # the pipeline pointed at different folders and the parser reported nothing. Keep the two in step.
+    RESULTS_LABEL = "incumbent-ffa-baseline"
 
-    TEST_RESULTS_PATH = Path.cwd() / "results" / SHORT_SHA
+    TEST_RESULTS_PATH = Path.cwd() / "results" / RESULTS_LABEL
 
     console_recorder = ConsoleRecorder(sys.stdout)
 
@@ -478,7 +480,7 @@ if __name__ == "__main__":
     # The prompt itself is printed outside the recording, and so is never part
     # of the dump. Handy when parsing a test run that is still in progress.
     #
-    dump_path = Path.cwd() / f"{SHORT_SHA}.txt"
+    dump_path = Path.cwd() / f"{RESULTS_LABEL}.txt"
 
     if confirm_console_dump(dump_path):
         write_console_dump(dump_path, console_recorder.text)

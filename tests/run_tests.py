@@ -231,10 +231,21 @@ def run_batch_test(commit_sha: str) -> Path:
 
     COMMIT_SHA = commit_sha
     SHORT_SHA = COMMIT_SHA[:7]
-    RUNS_PER_TEST = 10
+
+    # EXPERIMENTAL (revert before merging): 40 runs per test instead of 10.
+    # The batch is the incumbent baseline for the brigade-tuning sweep, so it is also the reference every
+    # tuned weight set gets scored against. 8 FFA tests x 40 runs = 320 games, which brings the FFA win
+    # rate to roughly +/-2-3% and measures per-game wall-clock at the same time.
+    RUNS_PER_TEST = 40
+
+    # EXPERIMENTAL (revert before merging): results are keyed on the weight set, not the commit.
+    # What varies between these batches is `_weights.js`, not the code, so a commit SHA would collide
+    # across weight sets. It also removes a live footgun: `filter_completed_tests` skips any test that
+    # already has a non-empty result file, so reusing a folder name silently runs nothing at all.
+    RESULTS_LABEL = "incumbent-ffa-baseline"
 
     BASE_MANIFEST_PATH = Path.cwd() / "base_manifest.json"
-    TEST_RESULTS_PATH = Path.cwd() / "results" / SHORT_SHA
+    TEST_RESULTS_PATH = Path.cwd() / "results" / RESULTS_LABEL
 
     base_manifest = read_json(BASE_MANIFEST_PATH)
     all_test_ids = list(base_manifest["tests"].keys())
