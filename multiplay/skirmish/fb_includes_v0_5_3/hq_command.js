@@ -1046,7 +1046,7 @@ class CommandCenter {
 			}
 			
 			moveBrigadeToAttack(state, brigadeID, groundTargets);	
-			highlightTiles(brigadeLocation.x, brigadeLocation.y);
+			// highlightTiles(brigadeLocation.x, brigadeLocation.y);
 		});
 
 		// Manage reserves: temporary: Move reserves to pre-emptively reinforce BCT0
