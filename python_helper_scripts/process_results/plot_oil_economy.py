@@ -106,15 +106,22 @@ def build_autogame_command(test_file_name: str) -> List[str]:
     """
     Builds the same autogame command `tests/run_tests.py` uses, but with paths resolved from the repo root so that
     this script can be run from any working directory.
+
+    Note: `run_tests.py` writes its paths with quotes inside the argument (`--configdir="..\\Warzone 2100\\..."`).
+    That works there because the path is relative & short, but an absolute path gets quoted a second time by
+    `subprocess`, which leaves the inner quotes in the value. The paths are passed bare here & left for
+    `subprocess` to quote, since they contain a space ("Warzone 2100").
     """
+    install_dir = REPO_ROOT / "Warzone 2100"
+
     return [
-        str(REPO_ROOT / "Warzone 2100" / "bin" / "warzone2100.exe"),
-        rf'--configdir="{REPO_ROOT / "Warzone 2100" / "PRODCONFIG"}"',
-        rf'--skirmish="{test_file_name}"',
-        r"--enableconsole",     # attaches a console -- also what reopens stdout/stderr onto it
-        r"--headless",
-        r"--autogame",
-        r"--nosound",
+        str(install_dir / "bin" / "warzone2100.exe"),
+        f"--configdir={install_dir / 'PRODCONFIG'}",
+        f"--skirmish={test_file_name}",
+        "--enableconsole",      # attaches a console -- also what reopens stdout/stderr onto it
+        "--headless",
+        "--autogame",
+        "--nosound",
     ]
 
 
