@@ -761,20 +761,38 @@ class CommandCenter {
 			}
 		}
 
-		// Fire Support Targeting
-		// Intent: Suppress enemy infantry then destroy defences, indirect fires & ADA.
+		/*
+			Fire Support Targeting
+			Intent: Suppress enemy infantry then destroy defences, indirect fires & ADA, preferring targets that are already in sensor range of the brigade.
+			The visible-targets preference prevents mortar units from driving in front of the direct fire units to reveal the target with its own sight range.
+		*/
+		/** @type {Map<number, number>} object ID -> owning player, for every enemy object the brigade can currently see */
+		const visibleEnemies = new Map();
+		enumRange(x, y, parameters.EFFECTIVE_FIRE_SUPPORT_RADIUS, ENEMIES, true).forEach(obj => visibleEnemies.set(obj.id, obj.player));
+
+		/** @type {(DroidObject | StructureObject | FeatureObject)[]} */
+		const visibleFireSupportTargets = [];
+		/** @type {(DroidObject | StructureObject | FeatureObject)[]} */
+		const hiddenFireSupportTargets = [];
+
+		/** @param {DroidObject | StructureObject | FeatureObject} obj */
+		const addFireSupportTarget = (obj) => {
+			if (outsideOfRadius(obj, parameters.EFFECTIVE_FIRE_SUPPORT_RADIUS)) 	return;
+			const IS_VISIBLE_TO_BRIGADE = (visibleEnemies.get(obj.id) === obj.player);
+			if (IS_VISIBLE_TO_BRIGADE) {
+				visibleFireSupportTargets.push(obj);
+				return;
+			}
+			hiddenFireSupportTargets.push(obj);
+		};
+
 		const primaryIndirectFireTargets = [...enemyInfantry, ...enemyDefenses, ...enemyIndirectFire, ...enemyADA, ...enemyIndustrial, ...enemyArmor];
 		const secondaryIndirectFireTargets = [...enemyConstructor, ...enemyUtility];
 
-		primaryIndirectFireTargets.forEach(c => {
-			if (outsideOfRadius(c.targetObj, parameters.EFFECTIVE_FIRE_SUPPORT_RADIUS)) 	return;
-			brigadeTargets["fireSupportTargets"].push(c.targetObj);
-		});
+		primaryIndirectFireTargets.forEach(c => addFireSupportTarget(c.targetObj));
+		secondaryIndirectFireTargets.forEach(c => addFireSupportTarget(c.targetObj));
 
-		secondaryIndirectFireTargets.forEach(c => {
-			if (outsideOfRadius(c.targetObj, parameters.EFFECTIVE_FIRE_SUPPORT_RADIUS)) 	return;
-			brigadeTargets["fireSupportTargets"].push(c.targetObj);
-		});
+		brigadeTargets["fireSupportTargets"].push(...visibleFireSupportTargets, ...hiddenFireSupportTargets);		// prefers already-visible
 
 		const FALLBACK_TO_DIRECT_FIRE_TARGETS = (brigadeTargets["fireSupportTargets"].length === 0);
 		if (FALLBACK_TO_DIRECT_FIRE_TARGETS) {
