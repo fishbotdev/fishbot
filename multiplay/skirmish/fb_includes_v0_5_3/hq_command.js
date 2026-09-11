@@ -763,25 +763,12 @@ class CommandCenter {
 
 		/*
 			Fire Support Targeting
-			Intent: Suppress enemy infantry then destroy defences, indirect fires & ADA, preferring what the brigade can see.
-
-			Indirect fire units cannot engage a target FishBot cannot currently see. Ordering one onto an unseen target makes
-			the engine drive that unit forward to acquire the target itself, which walks the mortars out in front of the armour
-			they are meant to be supporting. `state.grid` cannot answer this: `hq_toc.updateCoreIntel` enumerates every player's
-			objects without a visibility filter (deliberately - the strategic layer wants full map knowledge), so the candidate
-			lists above include targets nothing of ours can see. `enumRange` with the `seen` flag set asks the engine directly,
-			which gives exact visibility (the union of every friendly unit's & sensor's vision) for one call per brigade.
-
-			Out of sight targets are demoted rather than dropped: `__tac_com_ground` walks the list in order and takes the first
-			target within weapon range, so putting the visible ones first means an unseen target is only ever engaged when
-			nothing visible is available.
+			Intent: Suppress enemy infantry then destroy defences, indirect fires & ADA, preferring targets that are already in sensor range of the brigade.
+			The visible-targets preference prevents mortar units from driving in front of the direct fire units to reveal the target with its own sight range.
 		*/
 		/** @type {Map<number, number>} object ID -> owning player, for every enemy object the brigade can currently see */
 		const visibleEnemies = new Map();
 		enumRange(x, y, parameters.EFFECTIVE_FIRE_SUPPORT_RADIUS, ENEMIES, true).forEach(obj => visibleEnemies.set(obj.id, obj.player));
-
-		/** @param {DroidObject | StructureObject | FeatureObject} obj */
-		const isVisibleToBrigade = (obj) => visibleEnemies.get(obj.id) === obj.player;
 
 		/** @type {(DroidObject | StructureObject | FeatureObject)[]} */
 		const visibleFireSupportTargets = [];
@@ -791,7 +778,8 @@ class CommandCenter {
 		/** @param {DroidObject | StructureObject | FeatureObject} obj */
 		const addFireSupportTarget = (obj) => {
 			if (outsideOfRadius(obj, parameters.EFFECTIVE_FIRE_SUPPORT_RADIUS)) 	return;
-			if (isVisibleToBrigade(obj)) {
+			const IS_VISIBLE_TO_BRIGADE = (visibleEnemies.get(obj.id) === obj.player);
+			if (IS_VISIBLE_TO_BRIGADE) {
 				visibleFireSupportTargets.push(obj);
 				return;
 			}
@@ -802,17 +790,9 @@ class CommandCenter {
 		const secondaryIndirectFireTargets = [...enemyConstructor, ...enemyUtility];
 
 		primaryIndirectFireTargets.forEach(c => addFireSupportTarget(c.targetObj));
-
 		secondaryIndirectFireTargets.forEach(c => addFireSupportTarget(c.targetObj));
 
-		// TEMP INSTRUMENTATION: reports the targets the visibility check demoted. Silent when it demoted nothing. Delete before PR.
-		if (hiddenFireSupportTargets.length > 0) {
-			const demotedTargets = hiddenFireSupportTargets.map(obj => `${obj.name} (${obj.x}, ${obj.y})`).join(", ");
-			deb(`brigade ${brigadeID} fire support: ${visibleFireSupportTargets.length} in sight, ${hiddenFireSupportTargets.length} demoted -> ${demotedTargets}`);
-		}
-
-		// Within each tier the primary/secondary ordering above is preserved.
-		brigadeTargets["fireSupportTargets"].push(...visibleFireSupportTargets, ...hiddenFireSupportTargets);
+		brigadeTargets["fireSupportTargets"].push(...visibleFireSupportTargets, ...hiddenFireSupportTargets);		// prefers already-visible
 
 		const FALLBACK_TO_DIRECT_FIRE_TARGETS = (brigadeTargets["fireSupportTargets"].length === 0);
 		if (FALLBACK_TO_DIRECT_FIRE_TARGETS) {
