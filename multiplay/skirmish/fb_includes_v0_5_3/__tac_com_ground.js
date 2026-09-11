@@ -408,4 +408,15 @@ function moveBrigadeToAttack(state, brigadeID, groundTargets) {
 	});
 
 	REPAIR_UNITS.forEach(fixNearestDamaged);
+
+	// DEBUG
+	if (false) {
+		if (defined(DIRECT_FIRE_TARGET)) {
+			addBeacon(DIRECT_FIRE_TARGET.x, DIRECT_FIRE_TARGET.y, 0);
+		}
+		if (defined(FIRE_SUPPORT_TARGET)) {
+			const RADIUS = 1;		// creates a bounding box with dimension [2*RADIUS + 1 by 2*RADIUS+1]
+			highlightTiles(FIRE_SUPPORT_TARGET.x - RADIUS, FIRE_SUPPORT_TARGET.y - RADIUS, FIRE_SUPPORT_TARGET.x + RADIUS, FIRE_SUPPORT_TARGET.y + RADIUS);
+		}
+	}
 }

@@ -686,9 +686,6 @@ class CommandCenter {
 
 		const ADJACENCY_RADIUS_SQ = parameters.TARGET_ADJACENCY_RADIUS ** 2;
 
-		/** @type {TargetCandidate[]} DEBUG: every candidate demoted by `BLOCKED_APPROACH_WEIGHT` this cycle */
-		const blockedApproachCandidates = [];
-
 		/** @param {TargetCandidate} c */
 		const directFireCost = (c) => {
 			const obj = c.targetObj;
@@ -712,7 +709,6 @@ class CommandCenter {
 				// features), which measures the avenue of approach rather than sight: a clear target is what the brigade can
 				// actually close with.
 				cost *= parameters.BLOCKED_APPROACH_WEIGHT;
-				if (DEBUG_MODE_ON)	blockedApproachCandidates.push(c);
 			}
 			return cost;
 		}
@@ -767,14 +763,13 @@ class CommandCenter {
 			brigadeTargets['directFireTargetRefs'].push(c.target);
 		});
 
-		// DEBUG: marks every target passed over for a blocked approach, so the weight's effect is visible during a test game.
-		// The chosen target is left unmarked even when its own approach is blocked: it was not ignored.
-		if (DEBUG_MODE_ON) {
-			const AXIS_OF_ADVANCE = brigadeTargets['directFireTargets'][0];
-			blockedApproachCandidates.forEach(c => {
-				if (c.targetObj === AXIS_OF_ADVANCE)	return;
-				highlightTiles(c.targetObj.x, c.targetObj.y);
-			});
+		if (false) {
+			// Draw lines to the top 3 targets (to see what the brigade is trying to attack)
+			for (let i=0; i<Math.min(brigadeTargets['directFireTargets'].length, 3); i++) {
+				const target = brigadeTargets['directFireTargets'][i];
+				const lineToTarget = drawLine(x, y, target.x, target.y);
+				lineToTarget.forEach(point => highlightTiles(point[0], point[1]));		
+			}
 		}
 
 		/*
@@ -1051,6 +1046,7 @@ class CommandCenter {
 			}
 			
 			moveBrigadeToAttack(state, brigadeID, groundTargets);	
+			highlightTiles(brigadeLocation.x, brigadeLocation.y);
 		});
 
 		// Manage reserves: temporary: Move reserves to pre-emptively reinforce BCT0

@@ -643,13 +643,14 @@ class worldStateBuilder {
         // Note: `enumFeature` includes oil derrick positions too so `isDerrickPosition` is not required yet.
         const allFeatures = enumFeature(ALL_PLAYERS);   
         
-        const SHOW_FEATURES = false;        // enable this to log every feature the bot found, with its position
+        const SHOW_FEATURES = false;        // enable this to see all features highlighted with red highlight
 
         const setBaseNonWalkableTiles = (x, y, offsets) => {
             offsets.forEach(o => {
                 const ox = x + o[0];
                 const oy = y + o[1];
                 isBaseNonWalkableTile[ox][oy] = true;
+                if (SHOW_FEATURES)  highlightTiles(ox, oy);              
             });
         }
 
@@ -671,6 +672,7 @@ class worldStateBuilder {
                 isBaseNonWalkableTile[feature.x][feature.y] = true;     
             } else {
                 isBaseNonWalkableTile[feature.x][feature.y] = true;
+                if (SHOW_FEATURES)  highlightTiles(feature.x, feature.y);     
             }
         });
 
