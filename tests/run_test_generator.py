@@ -144,6 +144,11 @@ def repackage_maps_and_generate_tests(base_maps_path, production_maps_path, prod
     # Step 4: For each base config, set up both 'FFA' and 'duel' automatic tests.
     final_configs = []
 
+    # EXPERIMENTAL (revert before merging): the brigade-tuning batch is FFA-only, so duels are skipped.
+    # On a 4-player map they would otherwise triple the manifest (4 FFA configs vs 12 duel permutations)
+    # and spend most of the night on games the experiment does not read.
+    GENERATE_DUEL_TESTS = False
+
     for base_config in base_configs:
         player_count = len(base_config) - 1  # challenge entry excluded  # TODO refactor later into metadata
 
@@ -152,7 +157,7 @@ def repackage_maps_and_generate_tests(base_maps_path, production_maps_path, prod
             final_configs.extend(g.generate_ffa_configs(base_config))
 
         # 'Duel' test is only valid up to 4-player maps.
-        if player_count <= 4 + 1:
+        if GENERATE_DUEL_TESTS and player_count <= 4 + 1:
             final_configs.extend(g.generate_duel_configs(base_config))
 
     ## Note: Each entry in `final_configs` looks like this:
