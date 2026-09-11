@@ -203,12 +203,16 @@ class CommandCenter {
 	 * Writes one line of oil economy telemetry per strategy update, so that FishBot's oil income & expenditure can
 	 * be watched during a match and plotted afterwards.
 	 *
-	 * The game's script `debug()` writes straight to `stderr`, so these lines appear in the game console as the match
-	 * runs, and can be captured by redirecting `stderr` to a file:
-	 * 		`warzone2100.exe <the usual flags> 2> oil_telemetry.log`
-	 * `python_helper_scripts/process_results/plot_oil_economy.py` parses & plots the captured file.
+	 * These lines can only be recovered by scraping the console: `--enableconsole` reopens the game's `stdout` &
+	 * `stderr` onto the console device (`freopen_s(... "CONOUT$" ...)` in the game's `clparse.cpp`), which discards
+	 * any redirection the launching process set up. So the game must be launched from Python and the console screen
+	 * buffer read afterwards - `python_helper_scripts/process_results/plot_oil_economy.py` does that & plots the result.
 	 *
-	 * The `OIL_TELEMETRY` tag & the `key=value` fields are the format that script expects; keep them in step.
+	 * That buffer holds the console's fixed-width rows, so a line wider than the console wraps & is scraped as two
+	 * rows. The field names are kept short to make that unlikely (the parser stitches wrapped rows back together
+	 * anyway). Time is not logged: `deb()` already prefixes every line with the game time in `mm:ss`.
+	 *
+	 * The `OIL` tag & the `key=value` fields are the format that script expects; keep them in step.
 	 * @param {OilEconomyObject} economy the current oil supply & demand observations
 	 * @param {{share: number, surplus: number, budget: number, sufficiency: number, factoryCap: number, labCap: number}} decision what FishBot concluded from `economy` this update
 	 * @returns {void}
@@ -218,24 +222,24 @@ class CommandCenter {
 			return;			// released builds should not log every strategy update
 		}
 
+		// Power figures are rounded: they are rates in the hundreds, so a fraction of a power point adds width
+		// without adding meaning. Net flow is not logged because it is `inc - spend`.
 		const fields = [
-			`t=${gameTime}`,
-			`connected=${economy.connectedDerricks}`,
+			`conn=${economy.connectedDerricks}`,
 			`idle=${economy.idleDerricks}`,
-			`banked=${Math.round(economy.bankedPower)}`,
-			`income=${economy.incomePerMin.toFixed(1)}`,
-			`spend=${economy.expenditurePerMin.toFixed(1)}`,
-			`net=${economy.netFlowPerMin.toFixed(1)}`,
-			`unmet=${economy.unmetDemand.toFixed(1)}`,
-			`share=${decision.share.toFixed(3)}`,
-			`surplus=${decision.surplus.toFixed(3)}`,
-			`budget=${decision.budget.toFixed(3)}`,
-			`sufficiency=${decision.sufficiency.toFixed(3)}`,
-			`factories=${decision.factoryCap}`,
+			`bank=${Math.round(economy.bankedPower)}`,
+			`inc=${Math.round(economy.incomePerMin)}`,
+			`spend=${Math.round(economy.expenditurePerMin)}`,
+			`unmet=${Math.round(economy.unmetDemand)}`,
+			`share=${decision.share.toFixed(2)}`,
+			`surp=${decision.surplus.toFixed(2)}`,
+			`budg=${decision.budget.toFixed(2)}`,
+			`suff=${decision.sufficiency.toFixed(2)}`,
+			`fac=${decision.factoryCap}`,
 			`labs=${decision.labCap}`,
 		];
 
-		deb(`OIL_TELEMETRY ${fields.join(' ')}`);
+		deb(`OIL ${fields.join(' ')}`);
 	}
 
 	/**

@@ -18,79 +18,238 @@
 """
 Plots FishBot's oil income & expenditure over the course of a game.
 
-FishBot writes one `OIL_TELEMETRY` line per strategy update (6 per game minute) from
-`CommandCenter.#logOilTelemetry` in `hq_command.js`. Those lines go to `stderr`, so they appear in the game
-console as the match runs, and can be captured to a file by redirecting `stderr`:
+While `DEBUG_MODE_ON` is set, FishBot prints one `OIL` line per strategy update (6 per game minute) from
+`CommandCenter.#logOilTelemetry` in `hq_command.js`:
 
-    "Warzone 2100\\bin\\warzone2100.exe" --configdir="Warzone 2100\\PRODCONFIG" --skirmish="GAMMA_HARD_COBRA_T2.json"
-        --enableconsole --headless --autogame --nosound  2> oil_telemetry.log
+    F0:  05:30:   OIL conn=8 idle=2 bank=146 inc=396 spend=380 unmet=0 share=0.80 surp=0.00 budg=1.00 suff=0.80 fac=4 labs=4
 
-Telemetry is only written while `DEBUG_MODE_ON` is set in `FishBot_vX_Y_Z.js` (it is on during development and
-off in a release build), so check that first if a capture comes back empty.
+~ Why this script runs the game itself ~
+
+The output cannot be captured by redirecting stdout/stderr. `--enableconsole` makes the game call
+`SetStdOutToConsole_Win()`, which reopens both streams onto the console device:
+
+    freopen_s(&fi, "CONOUT$", "w", stderr);      // warzone2100/src/clparse.cpp
+
+That discards whatever redirection the launching process set up, which is why `tests/_run_and_save_autogames.py`
+scrapes the Win32 console screen buffer instead of piping. This script reuses that same scraper, so it has to
+launch the game itself: the scrape reads the console that this Python process owns.
+
+That also caps how much history is recoverable. The game sets the console buffer to 9999 rows
+(`MAX_CONSOLE_LINES` in `clparse.cpp`), and telemetry costs ~6 rows per game minute per FishBot, so a long FFA
+can push the start of the game out of the buffer. `parse_telemetry` warns when that has happened.
 
 Usage:
-    No command-line arguments needed -- drop the captured log next to this script (any `.log` file will do) and
-    run the file (e.g. hit Run/F5 in your IDE). The newest `.log` in this folder is used.
-    Optionally: `python plot_oil_economy.py <logfile> --player 1 --save-dir out`
+    No command-line arguments needed -- set TEST_FILE_NAME in the configuration block at the bottom and run the
+    file (e.g. hit Run/F5 in your IDE). The scraped telemetry is saved next to this script before plotting, so a
+    run is never lost; set RUN_GAME = False to re-plot the newest saved capture without running a game.
 
-One figure is produced per FishBot in the log, so FFA games with several FishBots plot separately.
+Platform & IDE notes (these mirror `tests/run_tests.py`, and apply for the same reasons):
+    - The scraper is Windows-only. On Linux/Mac, plot a capture saved elsewhere (RUN_GAME = False).
+    - In PyCharm, enable "Emulate Terminal in Output Console" in the Run Configuration, or the game's console
+      output never reaches the console this script scrapes. VSCode generally needs no change.
+    - A telemetry line is ~120 characters. If the console is narrower it wraps; wrapped rows are stitched back
+      together by the parser, but widening/undocking the console keeps the live output readable.
 
 Requires `pandas` & `matplotlib` (`pip install pandas matplotlib`).
 
 Authored by Claude.
 """
 
-import argparse
 import re
+import subprocess
 import sys
+from datetime import datetime
 from pathlib import Path
+from typing import Callable, List
 
 import matplotlib.pyplot as plt
 import pandas as pd
 
 SCRIPT_DIR = Path(__file__).resolve().parent
+REPO_ROOT = SCRIPT_DIR.parent.parent
+TESTS_DIR = REPO_ROOT / "tests"
 
-MS_PER_MINUTE = 60000
+# The game sets the console scroll-back to this many rows (`MAX_CONSOLE_LINES` in its `clparse.cpp`), so there is
+# nothing to be gained by asking the scraper for more.
+CONSOLE_SCROLLBACK_ROWS = 9999
 
-# Matches the `deb()` prefix ("F0:  05:30:  ") followed by the telemetry tag. Anything the terminal or the game
-# prepends to the line is skipped, so a scraped console capture parses as well as a clean `stderr` redirect.
-TELEMETRY_LINE = re.compile(r"F(?P<player>\d+):\s+\d+:\d+:\s+OIL_TELEMETRY\s+(?P<fields>.*)$")
+# Matches the `deb()` prefix ("F0:  05:30:  ") followed by the telemetry tag, and takes the game time from it.
+TELEMETRY_ROW = re.compile(r"F(?P<player>\d+):\s+(?P<mins>\d+):(?P<secs>\d{2}):\s+OIL\s+(?P<fields>.*)$")
 FIELD = re.compile(r"(?P<key>[a-z_]+)=(?P<value>-?\d+(?:\.\d+)?)")
+# The tail of a telemetry line that wrapped. The console splits at a fixed column, which can fall in the middle
+# of a field ("surp=0." | "00 budg=...") or leave a tail with no "=" in it at all ("labs=" | "4"), so this only
+# asserts that the row looks like telemetry. It is applied solely to the row following a telemetry line that is
+# still missing fields, and that narrow window is what keeps it from swallowing unrelated output.
+CONTINUATION_ROW = re.compile(r"^[a-z0-9_=.\- ]+$")
 
-# Fields written as whole numbers by `#logOilTelemetry`; every other field is kept as a float.
-INTEGER_FIELDS = {"t", "connected", "idle", "banked", "factories", "labs"}
+# The fields `#logOilTelemetry` writes. Declared here so that a rename on the FishBot side fails loudly instead
+# of silently dropping a column.
+INTEGER_FIELDS = {"conn", "idle", "bank", "inc", "spend", "unmet", "fac", "labs"}
+FLOAT_FIELDS = {"share", "surp", "budg", "suff"}
+EXPECTED_FIELDS = INTEGER_FIELDS | FLOAT_FIELDS
 
 
-def parse_telemetry(filepath: Path) -> pd.DataFrame:
+def load_console_scraper() -> Callable[[int], List[str]]:
     """
-    Reads every `OIL_TELEMETRY` line out of a captured game log.
-
-    Returns a DataFrame with one row per telemetry line: a `player` column, a `t_min` column (game time in
-    minutes) and one column per `key=value` field FishBot wrote. Non-telemetry lines are ignored, so a capture
-    of the whole game console can be passed in as-is.
+    Borrows `windows_scrape_terminal_history` from the test runner rather than duplicating it -- that function is
+    the proven way to get output out of Warzone 2100, and is documented in `tests/_run_and_save_autogames.py`.
     """
-    rows = []
+    sys.path.insert(0, str(TESTS_DIR))
+    try:
+        import _run_and_save_autogames as test_runner
+    except ImportError as exc:
+        raise SystemExit(f"Could not import the console scraper from {TESTS_DIR}: {exc}")
+    return test_runner.windows_scrape_terminal_history
 
-    # `errors="replace"` because a scraped console capture can carry stray bytes from other output.
-    with open(filepath, "r", encoding="utf-8", errors="replace") as f:
-        for line in f:
-            match = TELEMETRY_LINE.search(line)
-            if match is None:
-                continue
 
-            row = {"player": int(match.group("player"))}
-            for field in FIELD.finditer(match.group("fields")):
-                key = field.group("key")
-                row[key] = int(field.group("value")) if key in INTEGER_FIELDS else float(field.group("value"))
+def build_autogame_command(test_file_name: str) -> List[str]:
+    """
+    Builds the same autogame command `tests/run_tests.py` uses, but with paths resolved from the repo root so that
+    this script can be run from any working directory.
+    """
+    return [
+        str(REPO_ROOT / "Warzone 2100" / "bin" / "warzone2100.exe"),
+        rf'--configdir="{REPO_ROOT / "Warzone 2100" / "PRODCONFIG"}"',
+        rf'--skirmish="{test_file_name}"',
+        r"--enableconsole",     # attaches a console -- also what reopens stdout/stderr onto it
+        r"--headless",
+        r"--autogame",
+        r"--nosound",
+    ]
 
-            rows.append(row)
 
-    df = pd.DataFrame(rows)
+def run_autogame_and_scrape(test_file_name: str, timeout_seconds: int = 1200) -> List[str]:
+    """
+    Runs one autogame to completion (letting it write straight to this console), then returns the console rows.
+    """
+    scrape_console = load_console_scraper()
+
+    command = build_autogame_command(test_file_name)
+    print(f"Running {test_file_name} (up to {timeout_seconds // 60} minutes)...")
+    subprocess.run(command, timeout=timeout_seconds)        # blocking; returns once the game exits
+
+    return scrape_console(CONSOLE_SCROLLBACK_ROWS)
+
+
+def _scan_console(console_rows: List[str]):
+    """
+    Walks scraped console rows once, returning `(records, telemetry_rows)`.
+
+    A telemetry line which wrapped is stitched back together here. The console splits a line at a fixed column,
+    which can land in the middle of a field, so the *raw text* of the rows is joined before any field is read --
+    parsing the rows separately would mangle whichever field straddles the split. A row is only considered a
+    continuation while the preceding telemetry line is still missing fields, which is what stops an unrelated
+    `key=value` row from being absorbed.
+    """
+    records = []
+    telemetry_rows = []
+
+    pending_record = None       # the record whose line wrapped, still missing fields
+    pending_text = ""           # its raw field text so far
+
+    for row in console_rows:
+        match = TELEMETRY_ROW.search(row)
+
+        if match is not None:
+            record = {
+                "player": int(match.group("player")),
+                "t_min": int(match.group("mins")) + int(match.group("secs")) / 60,
+            }
+            pending_text = match.group("fields")
+            _read_fields(pending_text, into=record)
+
+            records.append(record)
+            telemetry_rows.append(row)
+            pending_record = None if EXPECTED_FIELDS.issubset(record) else record
+            continue
+
+        if pending_record is not None and CONTINUATION_ROW.match(row):
+            pending_text += row
+            _read_fields(pending_text, into=pending_record)      # re-read the joined text, not the row alone
+            telemetry_rows.append(row)
+            if EXPECTED_FIELDS.issubset(pending_record):
+                pending_record = None
+            continue
+
+        pending_record = None
+
+    return records, telemetry_rows
+
+
+def extract_telemetry_rows(console_history: List[str]) -> List[str]:
+    """Keeps the telemetry rows (and the wrapped tails that belong to them), dropping all other console output."""
+    _, telemetry_rows = _scan_console(console_history)
+    return telemetry_rows
+
+
+def save_capture(rows: List[str], path: Path) -> Path:
+    """Writes the scraped rows out before plotting, so that a game does not have to be re-run to re-plot it."""
+    path.write_text("\n".join(rows) + "\n", encoding="utf-8")
+    print(f"Saved {len(rows)} telemetry rows to {path}")
+    return path
+
+
+def load_capture(path: Path) -> List[str]:
+    return path.read_text(encoding="utf-8", errors="replace").splitlines()
+
+
+def parse_telemetry(console_rows: List[str]) -> pd.DataFrame:
+    """
+    Reads every telemetry line out of scraped console rows.
+
+    Returns a DataFrame with one row per telemetry line: `player`, `t_min` (game time in minutes, taken from the
+    `deb()` prefix) and one column per field FishBot wrote, plus the derived `net` (income less expenditure).
+    Rows that are not telemetry are ignored, so a whole console capture can be passed in as-is.
+
+    A telemetry line which wrapped across console rows is stitched back together (see `_scan_console`).
+    """
+    records, _ = _scan_console(console_rows)
+
+    df = pd.DataFrame(records)
     if df.empty:
         return df
 
-    df["t_min"] = df["t"] / MS_PER_MINUTE
-    return df.sort_values(["player", "t_min"]).reset_index(drop=True)
+    missing = EXPECTED_FIELDS - set(df.columns)
+    if missing:
+        raise SystemExit(
+            f"Telemetry is missing the field(s) {sorted(missing)}.\n"
+            f"`#logOilTelemetry` in hq_command.js and this script have drifted apart -- update EXPECTED_FIELDS."
+        )
+
+    # Dropped from the logged line to keep it inside a console width; it is exactly income less expenditure.
+    df["net"] = df["inc"] - df["spend"]
+
+    df = df.sort_values(["player", "t_min"]).reset_index(drop=True)
+    _warn_if_truncated(df)
+    return df
+
+
+def _read_fields(text: str, into: dict) -> None:
+    """Parses `key=value` pairs out of `text` into `into`, typed by which set the key belongs to."""
+    for field in FIELD.finditer(text):
+        key = field.group("key")
+        if key in INTEGER_FIELDS:
+            into[key] = int(field.group("value"))
+        elif key in FLOAT_FIELDS:
+            into[key] = float(field.group("value"))
+        # An unrecognised key is ignored here; `parse_telemetry` reports missing ones after the whole capture.
+
+
+def _warn_if_truncated(df: pd.DataFrame) -> None:
+    """
+    The console keeps a fixed number of rows, so a long game can push its own opening out of the buffer. FishBot
+    starts logging within the first few strategy updates, so telemetry that only begins minutes in was truncated.
+    """
+    FIRST_SAMPLE_TOLERANCE_MIN = 1.0
+
+    earliest = df["t_min"].min()
+    if earliest > FIRST_SAMPLE_TOLERANCE_MIN:
+        print(
+            f"\nWARNING: the earliest telemetry is at {earliest:.1f} game minutes, so the start of the game has\n"
+            f"         scrolled out of the {CONSOLE_SCROLLBACK_ROWS}-row console buffer. The plot below is only the\n"
+            f"         part that survived -- shorten the game, or plot fewer FishBots, to capture the opening.",
+            file=sys.stderr,
+        )
 
 
 def plot_oil_economy(df: pd.DataFrame, player: int, suptitle: str = ""):
@@ -107,13 +266,13 @@ def plot_oil_economy(df: pd.DataFrame, player: int, suptitle: str = ""):
 
     # ---- 1. Power rates ----
     ax1.grid(**GRID)
-    ax1.plot(df["t_min"], df["income"], label="income", color="tab:green")
+    ax1.plot(df["t_min"], df["inc"], label="income", color="tab:green")
     ax1.plot(df["t_min"], df["spend"], label="expenditure", color="tab:red")
-    ax1.fill_between(df["t_min"], df["income"], df["spend"],
-                     where=df["income"] >= df["spend"], interpolate=True,
+    ax1.fill_between(df["t_min"], df["inc"], df["spend"],
+                     where=df["inc"] >= df["spend"], interpolate=True,
                      color="tab:green", alpha=0.15, label="surplus")
-    ax1.fill_between(df["t_min"], df["income"], df["spend"],
-                     where=df["income"] < df["spend"], interpolate=True,
+    ax1.fill_between(df["t_min"], df["inc"], df["spend"],
+                     where=df["inc"] < df["spend"], interpolate=True,
                      color="tab:red", alpha=0.15, label="drawing down reserves")
     ax1.axhline(0, color="grey", linewidth=0.8)
     ax1.set_title("Oil income vs expenditure")
@@ -122,14 +281,14 @@ def plot_oil_economy(df: pd.DataFrame, player: int, suptitle: str = ""):
 
     # ---- 2. Power stocks & the derricks behind the income ----
     ax2.grid(**GRID)
-    ax2.plot(df["t_min"], df["banked"], label="banked power", color="tab:blue")
+    ax2.plot(df["t_min"], df["bank"], label="banked power", color="tab:blue")
     ax2.plot(df["t_min"], df["unmet"], label="unmet demand", color="tab:orange")
     ax2.set_title("Banked power & unmet demand, against the derricks earning")
     ax2.set_ylabel("power")
     ax2.legend(loc="upper left", fontsize=8)
 
     ax2_derricks = ax2.twinx()
-    ax2_derricks.plot(df["t_min"], df["connected"], label="connected derricks",
+    ax2_derricks.plot(df["t_min"], df["conn"], label="connected derricks",
                       color="tab:purple", linestyle="--", drawstyle="steps-post")
     ax2_derricks.plot(df["t_min"], df["idle"], label="idle derricks",
                       color="tab:brown", linestyle=":", drawstyle="steps-post")
@@ -138,10 +297,10 @@ def plot_oil_economy(df: pd.DataFrame, player: int, suptitle: str = ""):
 
     # ---- 3. Sufficiency & the caps it drives ----
     ax3.grid(**GRID)
-    ax3.plot(df["t_min"], df["sufficiency"], label="oil sufficiency", color="black", linewidth=2)
+    ax3.plot(df["t_min"], df["suff"], label="oil sufficiency", color="black", linewidth=2)
     ax3.plot(df["t_min"], df["share"], label="oil share score", color="tab:green", alpha=0.6)
-    ax3.plot(df["t_min"], df["budget"], label="power budget score", color="tab:red", alpha=0.6)
-    ax3.plot(df["t_min"], df["surplus"], label="surplus bonus", color="tab:blue", alpha=0.6)
+    ax3.plot(df["t_min"], df["budg"], label="power budget score", color="tab:red", alpha=0.6)
+    ax3.plot(df["t_min"], df["surp"], label="surplus bonus", color="tab:blue", alpha=0.6)
     ax3.set_ylim(-0.05, 1.05)
     ax3.set_title("Oil sufficiency (and its terms) vs the structure caps it sets")
     ax3.set_xlabel("game time (minutes)")
@@ -149,7 +308,7 @@ def plot_oil_economy(df: pd.DataFrame, player: int, suptitle: str = ""):
     ax3.legend(loc="upper left", fontsize=8)
 
     ax3_caps = ax3.twinx()
-    ax3_caps.plot(df["t_min"], df["factories"], label="factory cap",
+    ax3_caps.plot(df["t_min"], df["fac"], label="factory cap",
                   color="tab:purple", linestyle="--", drawstyle="steps-post")
     ax3_caps.plot(df["t_min"], df["labs"], label="research lab cap",
                   color="tab:brown", linestyle=":", drawstyle="steps-post")
@@ -163,72 +322,81 @@ def plot_oil_economy(df: pd.DataFrame, player: int, suptitle: str = ""):
 def print_summary(df: pd.DataFrame, player: int) -> None:
     """Prints the headline numbers, for when a plot window is not wanted (or not available)."""
     print(f"\nFishBot {player}: {len(df)} samples over {df['t_min'].max():.1f} game minutes")
-    print(f"  mean income        {df['income'].mean():8.1f} power/min  (peak {df['income'].max():.1f})")
-    print(f"  mean expenditure   {df['spend'].mean():8.1f} power/min  (peak {df['spend'].max():.1f})")
-    print(f"  mean banked power  {df['banked'].mean():8.1f}            (peak {df['banked'].max():.0f})")
-    print(f"  mean sufficiency   {df['sufficiency'].mean():8.3f}            "
-          f"(range {df['sufficiency'].min():.2f} - {df['sufficiency'].max():.2f})")
+    print(f"  mean income        {df['inc'].mean():8.1f} power/min  (peak {df['inc'].max():.0f})")
+    print(f"  mean expenditure   {df['spend'].mean():8.1f} power/min  (peak {df['spend'].max():.0f})")
+    print(f"  mean banked power  {df['bank'].mean():8.1f}            (peak {df['bank'].max():.0f})")
+    print(f"  mean sufficiency   {df['suff'].mean():8.2f}            "
+          f"(range {df['suff'].min():.2f} - {df['suff'].max():.2f})")
 
     # A job waiting on power means the base is outspending its income; an idle derrick means FishBot captured
     # oil it has no generator capacity to earn through, which is a build order problem rather than an oil one.
-    waiting_pct = (df["unmet"] > 0).mean() * 100
-    idle_pct = (df["idle"] > 0).mean() * 100
-    print(f"  samples with jobs waiting on power:      {waiting_pct:.0f}%")
-    print(f"  samples with idle (unconnected) derricks: {idle_pct:.0f}%")
+    print(f"  samples with jobs waiting on power:       {(df['unmet'] > 0).mean() * 100:.0f}%")
+    print(f"  samples with idle (unconnected) derricks: {(df['idle'] > 0).mean() * 100:.0f}%")
 
 
-def find_default_log() -> Path:
-    """Picks the newest `.log` sitting next to this script, so the file can just be run from an IDE."""
-    logs = sorted(SCRIPT_DIR.glob("*.log"), key=lambda p: p.stat().st_mtime, reverse=True)
-    if not logs:
+def find_newest_capture() -> Path:
+    """Picks the newest saved capture next to this script, so a previous run can be re-plotted."""
+    captures = sorted(SCRIPT_DIR.glob("oil_telemetry_*.log"), key=lambda p: p.stat().st_mtime, reverse=True)
+    if not captures:
         raise SystemExit(
-            f"No .log file found in {SCRIPT_DIR}.\n"
-            f"Capture one by redirecting the game's stderr (see the docstring at the top of this file), "
-            f"then drop it in that folder or pass its path as an argument."
+            f"No saved capture (oil_telemetry_*.log) found in {SCRIPT_DIR}.\n"
+            f"Set RUN_GAME = True to run a game and scrape one."
         )
-    return logs[0]
-
-
-def main() -> None:
-    parser = argparse.ArgumentParser(description="Plot FishBot's oil income & expenditure from a captured game log.")
-    parser.add_argument("logfile", nargs="?", type=Path, default=None,
-                        help="captured game log (default: the newest .log next to this script)")
-    parser.add_argument("--player", type=int, default=None,
-                        help="only plot this FishBot's player ID (default: every FishBot in the log)")
-    parser.add_argument("--save-dir", type=Path, default=None,
-                        help="write the figures here as PNGs instead of opening a window")
-    args = parser.parse_args()
-
-    logfile = args.logfile or find_default_log()
-    print(f"Reading {logfile}")
-
-    df = parse_telemetry(logfile)
-    if df.empty:
-        raise SystemExit(
-            f"No OIL_TELEMETRY lines in {logfile}.\n"
-            f"Check that DEBUG_MODE_ON is set in FishBot_vX_Y_Z.js, and that the capture includes stderr."
-        )
-
-    players = [args.player] if args.player is not None else sorted(df["player"].unique())
-
-    for player in players:
-        player_df = df[df["player"] == player]
-        if player_df.empty:
-            print(f"No telemetry for player {player}; skipping.", file=sys.stderr)
-            continue
-
-        print_summary(player_df, player)
-        fig = plot_oil_economy(player_df, player, suptitle=f"FishBot {player}: oil economy ({logfile.name})")
-
-        if args.save_dir is not None:
-            args.save_dir.mkdir(parents=True, exist_ok=True)
-            out = args.save_dir / f"oil_economy_player{player}.png"
-            fig.savefig(out, dpi=130)
-            print(f"  saved {out}")
-
-    if args.save_dir is None:
-        plt.show()
+    return captures[0]
 
 
 if __name__ == "__main__":
-    main()
+
+    ######## PROGRAM CONFIGURATION ########
+
+    RUN_GAME = True                 # False re-plots the newest saved capture instead of running a game
+
+    # Make sure this json file exists in `%Warzone Configuration Directory%/tests`.
+    TEST_FILE_NAME = "GAMMA_1_2_COBRA_HARD_T2.json"
+
+    PLAYER = None                   # a player ID to plot only that FishBot, or None for every FishBot in the capture
+    SAVE_FIGURES_TO = None          # a Path to write PNGs to instead of opening plot windows
+
+    ######## END PROGRAM CONFIGURATION ########
+
+    if RUN_GAME:
+        console_history = run_autogame_and_scrape(TEST_FILE_NAME)
+        telemetry_rows = extract_telemetry_rows(console_history)
+
+        if not telemetry_rows:
+            raise SystemExit(
+                "No telemetry found in the console.\n"
+                "Check that DEBUG_MODE_ON is set in FishBot_vX_Y_Z.js, that the mod under test is the one in\n"
+                "PRODCONFIG, and (in PyCharm) that 'Emulate Terminal in Output Console' is enabled."
+            )
+
+        capture_name = f"oil_telemetry_{datetime.now():%Y%m%d_%H%M%S}_{Path(TEST_FILE_NAME).stem}.log"
+        capture_path = save_capture(telemetry_rows, SCRIPT_DIR / capture_name)
+    else:
+        capture_path = find_newest_capture()
+        telemetry_rows = load_capture(capture_path)
+        print(f"Re-plotting {capture_path}")
+
+    df = parse_telemetry(telemetry_rows)
+    if df.empty:
+        raise SystemExit(f"No telemetry lines could be parsed out of {capture_path}.")
+
+    players = [PLAYER] if PLAYER is not None else sorted(df["player"].unique())
+
+    for fishbot in players:
+        player_df = df[df["player"] == fishbot]
+        if player_df.empty:
+            print(f"No telemetry for player {fishbot}; skipping.", file=sys.stderr)
+            continue
+
+        print_summary(player_df, fishbot)
+        figure = plot_oil_economy(player_df, fishbot, suptitle=f"FishBot {fishbot}: oil economy ({capture_path.name})")
+
+        if SAVE_FIGURES_TO is not None:
+            SAVE_FIGURES_TO.mkdir(parents=True, exist_ok=True)
+            output_path = SAVE_FIGURES_TO / f"oil_economy_player{fishbot}.png"
+            figure.savefig(output_path, dpi=130)
+            print(f"  saved {output_path}")
+
+    if SAVE_FIGURES_TO is None:
+        plt.show()

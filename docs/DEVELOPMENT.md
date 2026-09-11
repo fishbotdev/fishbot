@@ -76,19 +76,17 @@
 For any test that warrants further investigation, you can use `spectate_map.exe` to select and run the test in spectator mode.
 
 ### Plotting FishBot's Oil Economy
-While `DEBUG_MODE_ON` is set, FishBot prints one `OIL_TELEMETRY` line to the console per strategy update (6 per game minute), reporting its oil income, expenditure, reserves and the structure caps it derived from them:
+While `DEBUG_MODE_ON` is set, FishBot prints one `OIL` line to the console per strategy update (6 per game minute), reporting its oil income, expenditure, reserves and the structure caps it derived from them:
 
 ```
-F0:  05:30:   OIL_TELEMETRY t=330000 connected=8 idle=2 banked=146 income=396.0 spend=380.3 net=-15.8 unmet=0.0 share=0.800 surplus=0.000 budget=1.000 sufficiency=0.800 factories=4 labs=4
+F0:  05:30:   OIL conn=8 idle=2 bank=146 inc=396 spend=380 unmet=0 share=0.80 surp=0.00 budg=1.00 suff=0.80 fac=4 labs=4
 ```
 
-The game's script `debug()` writes to `stderr`, so these lines show up live in the console and can be captured by redirecting `stderr` to a file:
+These lines can only be recovered by **scraping the console**, for the same reason the test runner scrapes it (see the historical note at the top of `tests/_run_and_save_autogames.py`). Redirecting stdout/stderr does not work: `--enableconsole` makes the game call `SetStdOutToConsole_Win()`, which reopens both streams onto the console device (`freopen_s(&fi, "CONOUT$", "w", stderr)` in the game's `clparse.cpp`), discarding whatever redirection the launching process set up.
 
-```
-"Warzone 2100\bin\warzone2100.exe" --configdir="Warzone 2100\PRODCONFIG" --skirmish="GAMMA_HARD_COBRA_T2.json" --enableconsole --headless --autogame --nosound  2> oil_telemetry.log
-```
+So run `python_helper_scripts/process_results/plot_oil_economy.py`. It launches the game itself, scrapes the console it owns (reusing `windows_scrape_terminal_history` from the test runner), saves the telemetry next to itself, and then plots income vs expenditure, banked power vs unmet demand, and oil sufficiency vs the caps it sets, over the whole game. Set `RUN_GAME = False` in its configuration block to re-plot the newest saved capture without running a game. It needs `pandas` & `matplotlib` (`pip install pandas matplotlib`).
 
-Drop the captured log next to `python_helper_scripts/process_results/plot_oil_economy.py` and run that script to plot income vs expenditure, banked power vs unmet demand, and oil sufficiency vs the caps it sets, over the whole game. It needs `pandas` & `matplotlib` (`pip install pandas matplotlib`).
+The same platform and IDE caveats as `run_tests.py` apply, for the same reasons: the scraper is Windows-only, and PyCharm needs "Emulate Terminal in Output Console" enabled in the Run Configuration. Note also that the console only keeps 9999 rows of scroll-back (`MAX_CONSOLE_LINES` in the game's `clparse.cpp`), so a very long FFA can push the start of a game out of the buffer — the script warns when that has happened.
 
 ### Build the Map-Selector GUI to observe FishBot in Spectator Mode
 To spectate FishBot in real time, there is a handy map-selector GUI `spectate_map.exe` to configure a game in single-player spectator mode. This allows you to:
