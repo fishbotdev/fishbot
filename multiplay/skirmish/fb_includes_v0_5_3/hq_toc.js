@@ -988,11 +988,17 @@ class TacticalOperationsCenter {
             btnInfo["healthyUnitList"].length = 0;
         }
 
-        // Reclassify as damaged / healthy (and measure how big the brigade's units are, while every unit is in hand)
+        // Reclassify as damaged / healthy (and measure how big the brigade's vehicles are, while every unit is in hand)
         const brigadeUnits = this.#getBrigadeUnits(state, brigadeID);
+        let vehicleCount = 0;
         let bodySizeSum = 0;
         brigadeUnits.forEach(unit => {
-            bodySizeSum += getDroidBodySize(unit);
+            // Cyborgs walk and are not sized on the vehicle scale, so they are left out of the average entirely:
+            // how much room the brigade needs to maneuver is set by its vehicles.
+            if (unit.droidType !== DROID_CYBORG) {
+                vehicleCount++;
+                bodySizeSum += getDroidBodySize(unit);
+            }
 
             const category = getDroidFbGroupClassification(unit);
 
@@ -1030,10 +1036,11 @@ class TacticalOperationsCenter {
         currBrigade["directFireCount"] = directFireUnitCount;
         currBrigade["strength"] = Math.max(directFireUnitCount, currBrigade["strength"] - parameters.STRENGTH_DECAY_RATE);
 
-        // Update the brigade's average body size. The tactical drivers size the brigade's maneuvering room off this:
-        // a brigade of heavy bodies is physically bigger and slower to turn than the same number of mid-size bodies.
-        // An empty brigade keeps the neutral (medium) assumption rather than reporting a size of zero.
-        currBrigade["avgBodySize"] = (brigadeUnits.length === 0) ? BODY_WEIGHT.MEDIUM : (bodySizeSum / brigadeUnits.length);
+        // Update the brigade's average body size, over its vehicles only. The tactical drivers size the brigade's
+        // maneuvering room off this: a brigade of heavy bodies is physically bigger and slower to turn than the
+        // same number of mid-size bodies. A brigade holding no vehicles at all (it is empty, or it is all
+        // cyborgs) keeps the neutral (medium) assumption rather than reporting a size of zero.
+        currBrigade["avgBodySize"] = (vehicleCount === 0) ? BODY_WEIGHT.MEDIUM : (bodySizeSum / vehicleCount);
 
         if (false) {
             debug(`${gameTime}: Brigade ${brigadeID} Composition`)
