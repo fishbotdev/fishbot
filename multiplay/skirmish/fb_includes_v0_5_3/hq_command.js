@@ -323,13 +323,17 @@ class CommandCenter {
 			enemyRepair += p[playerID].numRepairUnits;
 		});
 
-		const POWER_LOST = state.myPowerLostToUnits + state.myPowerLostToStructures;
-
+		// Attrition is carried on every sample, not just on `FBTEND`. A headless autogame exits the moment
+		// the game ends, so the watchdog which emits `FBTEND` almost never gets a tick to run in: the last
+		// periodic sample is the only attrition record a batch game actually produces.
+		//
 		// `BRIGADE_DESIGNATIONS` grows as the division can man more BCTs, so the count is an outcome rather
 		// than a setting: it is how brigade size and composition translate into actual force structure.
 		debug(`FBT,${me},${Math.floor(gameTime / 1000)},${p[me].numDerricks},${this.myOilShare.toFixed(3)},` +
-			  `${livingPlayers.length},${playerPower(me)},${p[me].numTotalUnits},${state.myUnitsLost},` +
-			  `${POWER_LOST},${enemyDirectFire},${enemyIndirect},${enemyAir},${enemyRepair},` +
+			  `${livingPlayers.length},${playerPower(me)},${p[me].numTotalUnits},` +
+			  `${state.myUnitsLost},${state.myStructuresLost},` +
+			  `${state.myPowerLostToUnits},${state.myPowerLostToStructures},` +
+			  `${enemyDirectFire},${enemyIndirect},${enemyAir},${enemyRepair},` +
 			  `${this.BRIGADE_DESIGNATIONS.length}`);
 	}
 
