@@ -20,54 +20,66 @@ class armyAviation {
 
 	}
 
-	#createAirStrikeRequest({missionType, target, priority, numAircraft}) {
+	#createAirStrikeRequest({missionType, target, priority, numAircraft, targetClass}) {
 		return {
 			missionType: missionType,
 			target: target,
 			priority: priority,
 			numAircraft: numAircraft,
+			targetClass: targetClass,
+			cost: 0,
+			demandWeight: 1,
 		};
 	}
 
 	/**
 	 * Creates a request for a CAS mission from a provided `targetObject`.
 	 * @param {DroidObject | StructureObject | FeatureObject} targetObject 
+	 * @param {number} priority
+	 * @param {string} targetClass one of `AIR_TARGET_CLASS`
 	 * @returns {AirStrikeMissionRequest}
 	 */
-	translateIntoCASRequest(targetObject, priority) {
+	translateIntoCASRequest(targetObject, priority, targetClass) {
 		return this.#createAirStrikeRequest({
 			'missionType': MISSION_TYPE.CAS_STRIKE, 
 			'target': targetObject,
 			'priority': priority,
-			'numAircraft': 2		
+			'numAircraft': UNITS_PER_AIR_STRIKE,
+			'targetClass': targetClass,
 		});
 	}
 	
 	/**
 	 * Creates a request for an air raid mission from a provided `targetObject`.
 	 * @param {FbObject} targetObject 
+	 * @param {number} priority
+	 * @param {string} targetClass one of `AIR_TARGET_CLASS`
 	 * @returns {AirStrikeMissionRequestLazy}
 	 */
-	translateIntoRaidRequest(targetObject, priority) {
+	translateIntoRaidRequest(targetObject, priority, targetClass) {
 		return this.#createAirStrikeRequest({
 			'missionType': MISSION_TYPE.AIR_RAID, 
 			'target': targetObject,
 			'priority': priority,
-			'numAircraft': 2		
+			'numAircraft': UNITS_PER_AIR_STRIKE,
+			'targetClass': targetClass,
 		});
 	}
 
 	/**
 	 * Creates a request for an air raid mission from a provided `targetObject`.
 	 * @param {FbObject} targetObject 
+	 * @param {number} priority
+	 * @param {string} targetClass one of `AIR_TARGET_CLASS`
 	 * @returns {AirStrikeMissionRequestLazy}
 	 */
-	translateIntoDASRequest(targetObject, priority) {
+	translateIntoDASRequest(targetObject, priority, targetClass) {
 		return this.#createAirStrikeRequest({
 			'missionType': MISSION_TYPE.DAS_STRIKE, 
 			'target': targetObject,
 			'priority': priority,
-			'numAircraft': 2		
+			'numAircraft': UNITS_PER_AIR_STRIKE,
+			'targetClass': targetClass,
 		});
 	}
 
@@ -77,9 +89,10 @@ class armyAviation {
 	 * @param {number | string} id
 	 * @param {number | string} groupID
 	 * @param {DroidObject | StructureObject | undefined} target
+	 * @param {string | undefined} targetClass one of `AIR_TARGET_CLASS`
 	 * @returns {CombatMissionData}
 	 */
-	#createMissionOrders(missionType, id, groupID, target) {
+	#createMissionOrders(missionType, id, groupID, target, targetClass) {
 		return {
 			'id': id, 
 			'missionType': missionType, 
@@ -91,6 +104,8 @@ class armyAviation {
 			'timeStarted': -2,
 			'timeCompleted': -1,
 			'target': target,
+			'targetClass': targetClass,
+			'cost': 0,
 		};
 	}
 
@@ -115,7 +130,7 @@ class armyAviation {
 	 */
 	createVtolStagingMission({missionType}) {
 		const target = undefined;
-		const md =  this.#createMissionOrders(missionType, "VTOL_STAGING_MISSION", DIVISION.AIR_RESERVE, target);
+		const md =  this.#createMissionOrders(missionType, "VTOL_STAGING_MISSION", DIVISION.AIR_RESERVE, target, undefined);
 
 		md.orders = () => rearmVtolGroup(md.taskForceID);		
 		md.ceaseOrders = () => {};
@@ -130,9 +145,11 @@ class armyAviation {
 	 * @param {number} missionConfig.numRaidAircraft the number of aircraft assigned
 	 * @param {number} missionConfig.tickUID uid to distinguish between missions scheduled in the same tick
 	 * @param {string} missionConfig.type user-label for the mission (to help during debugging)
+	 * @param {string} missionConfig.targetClass one of `AIR_TARGET_CLASS`; retained so that a running mission can be
+	 * re-scored against fresh candidates each cycle (see `#scoreAirMissionRequest`).
 	 * @returns {CombatMissionData | undefined} Returns undefined if the mission was not able to be created.
 	 */
-	createAirStrikeMission({missionType, target, numRaidAircraft, tickUID, type}) {
+	createAirStrikeMission({missionType, target, numRaidAircraft, tickUID, type, targetClass}) {
 		
 		const airReserve = state.g.enumGroup(DIVISION.AIR_RESERVE);
 		if (airReserve.length < numRaidAircraft) {
@@ -160,7 +177,7 @@ class armyAviation {
 			taskForceUnits.push(...notReadyUnits.slice(0, deficit));
 		}
 
-		const md = this.#createMissionOrders(missionType, id, id, target);		
+		const md = this.#createMissionOrders(missionType, id, id, target, targetClass);		
 		taskForceUnits.forEach((droid) => {
 			state.g.addDroidToGroup({groupID: md.taskForceID, droidID: droid.id});
 			state.g.removeDroidFromGroup({groupID: DIVISION.AIR_RESERVE, droidID: droid.id});
