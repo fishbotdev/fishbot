@@ -1262,16 +1262,16 @@ class CommandCenter {
 	}
 
 	/**
-	 * Reports whether every battalion in a brigade is at its full establishment. Also valid for the reserve,
-	 * which is measured against the same brigade composition.
+	 * Reports whether a brigade's direct fire battalions are at their full establishment.
 	 * @param {worldState} state
-	 * @param {number} brigadeID
+	 * @param {number} brigadeID also valid for DIVISION.BCT_RESERVE, measured against the same composition
 	 * @returns {boolean}
 	 */
-	#isFullyManned(state, brigadeID) {
+	#isDirectFireFullyManned(state, brigadeID) {
+		const DIRECT_FIRE_CATEGORIES = [DIVISION.HEAVY_CAV_RESERVE, DIVISION.LIGHT_CAV_RESERVE, DIVISION.INFANTRY_RESERVE];
 		const brigadeComposition = state.brigades[brigadeID]["composition"];
-		for (const [category, btnComposition] of brigadeComposition) {
-			if (btnComposition["deficit"] > 0) {
+		for (const category of DIRECT_FIRE_CATEGORIES) {
+			if (brigadeComposition.get(category)["deficit"] > 0) {
 				return false;
 			}
 		}
@@ -1327,7 +1327,7 @@ class CommandCenter {
 	 * to fight, and whether the division can afford to form another one.
 	 *
 	 * Units are held in the reserve by default. A new BCT is only formed once every BCT already in the field
-	 * *and* the reserve are at full establishment, sustained for `RELEASE_DWELL_TICKS`. Forming is deliberately
+	 * *and* the reserve are at full direct fire establishment, sustained for `RELEASE_DWELL_TICKS`. Forming is deliberately
 	 * slow while folding is immediate, because a new BCT is empty and so drains a full brigade's worth out of
 	 * the reserve in a single resupply tick - that is the replacement depth the rest of the division gives up.
 	 * @param {worldState} state
@@ -1355,8 +1355,8 @@ class CommandCenter {
 		}
 
 		const AT_BRIGADE_CEILING = this.BRIGADE_DESIGNATIONS.length >= this.MAX_BRIGADES;
-		const FORCE_IS_SUFFICIENT = this.BRIGADE_DESIGNATIONS.every(brigadeID => this.#isFullyManned(state, brigadeID))
-			&& this.#isFullyManned(state, DIVISION.BCT_RESERVE);
+		const FORCE_IS_SUFFICIENT = this.BRIGADE_DESIGNATIONS.every(brigadeID => this.#isDirectFireFullyManned(state, brigadeID))
+			&& this.#isDirectFireFullyManned(state, DIVISION.BCT_RESERVE);
 
 		// Splitting the division is only safe if nothing already in the field is about to need the reserve
 		let expectingHeavyCombat = false;
