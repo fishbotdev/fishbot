@@ -255,7 +255,7 @@
  * @property {number} id This is the brigade ID (duplicate of the key).
  * @property {PositionInfo} location  
  * @property {number} strength Smoothed count of direct-fire units in the brigade (mortars excluded).
- * @property {number} avgBodySize Mean `BODY_WEIGHT` of the brigade's vehicles (cyborgs excluded). How much room the brigade needs to maneuver is sized off this.
+ * @property {number} avgBodySize Average vehicle BODY_WEIGHT (excludes cyborgs). Affects formation keeping (bigger vehicles need more room to maneuver).
  * @property {number} directFireCount Raw count of direct-fire units this update. `strength - directFireCount` is what the brigade is down on its recent peak.
  * @property {NearbyTargets} nearbyTargets
  * @property {FbObject[]} currentDirectFireTargets Previous cycle's ranked target list. Only `[0]` is read today; the rest is stored to be stepped through later.

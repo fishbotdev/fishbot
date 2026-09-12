@@ -434,21 +434,6 @@ Object.values(Stats.Body).forEach((body) => {
 });
 Object.freeze(BODY_SIZE_BY_COMPONENT_ID);
 
-/**
- * Returns how big a droid's body is, as a `BODY_WEIGHT` value.
- * Cyborgs are reported as `BODY_WEIGHT.LIGHT`: they walk, and their bodies are not sized on the vehicle scale.
- * An unrecognised body is reported as `BODY_WEIGHT.MEDIUM`, which is the neutral assumption for everything which sizes itself off this.
- * @param {DroidObject} droid
- * @returns {number} a `BODY_WEIGHT` value
- */
-function getDroidBodySize(droid) {
-    if (droid.droidType === DROID_CYBORG) {
-        return BODY_WEIGHT.LIGHT;
-    }
-
-    const bodySize = BODY_SIZE_BY_COMPONENT_ID[droid.body];
-    return (bodySize == null) ? BODY_WEIGHT.MEDIUM : bodySize;
-}
 
 /*
     PROPULSION INFORMATION

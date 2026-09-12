@@ -988,13 +988,12 @@ class TacticalOperationsCenter {
             btnInfo["healthyUnitList"].length = 0;
         }
 
-        // Reclassify as damaged / healthy (and measure how big the brigade's vehicles are, while every unit is in hand)
+        // Reclassify as damaged / healthy. Also measure vehicle size.
         const brigadeUnits = this.#getBrigadeUnits(state, brigadeID);
         let vehicleCount = 0;
         let bodySizeSum = 0;
         brigadeUnits.forEach(unit => {
-            // Cyborgs walk and are not sized on the vehicle scale, so they are left out of the average entirely:
-            // how much room the brigade needs to maneuver is set by its vehicles.
+            // The average vehicle size is used to determine the cohesion radius for formation-keeping. Cyborgs are excluded from this because they are small.
             if (unit.droidType !== DROID_CYBORG) {
                 vehicleCount++;
                 bodySizeSum += getDroidBodySize(unit);
@@ -1028,26 +1027,14 @@ class TacticalOperationsCenter {
             battalionComposition["deficit"] = maxUnitCount - healthyUnitCount;
         };
 
-        // Update brigade strength. This counts the same units that `getForceCenterLoc()` averages over
-        // (all direct-fire units, healthy or damaged). Strength rises immediately with reinforcement but
-        // decays gradually, so it does not jitter when single units die and are replaced.
+		// Brigade strength rises immediately with reinforcement but decays gradually, so it does not jitter when single units die and are replaced.
         const directFireUnitCount = brigadeUnits.filter(unit => !unit.hasIndirect).length;
         const currBrigade = state.brigades[brigadeID];
         currBrigade["directFireCount"] = directFireUnitCount;
         currBrigade["strength"] = Math.max(directFireUnitCount, currBrigade["strength"] - parameters.STRENGTH_DECAY_RATE);
 
-        // Update the brigade's average body size, over its vehicles only. The tactical drivers size the brigade's
-        // maneuvering room off this: a brigade of heavy bodies is physically bigger and slower to turn than the
-        // same number of mid-size bodies. A brigade holding no vehicles at all (it is empty, or it is all
-        // cyborgs) keeps the neutral (medium) assumption rather than reporting a size of zero.
+        // Update the brigade's average body size (vehicles only), which is used during formation keeping. Defaults to MEDIUM.
         currBrigade["avgBodySize"] = (vehicleCount === 0) ? BODY_WEIGHT.MEDIUM : (bodySizeSum / vehicleCount);
-
-        if (false) {
-            debug(`${gameTime}: Brigade ${brigadeID} Composition`)
-            for (const [btnID, btnInfo] of brigadeComposition) {
-                debug(`\t - ${btnID}: ${btnInfo["count"]} healthy (- ${btnInfo["deficit"]}) ( - ${btnInfo["damagedUnitList"].length} damaged)`);
-            }
-        }
     }
 
 	/**

@@ -522,3 +522,20 @@ function getDroidFbGroupClassification(droid) {
 
 	return DIVISION.GENERAL_RESERVE;
 }
+
+/**
+ * Returns a droid's body size. Defaults to BODY_WEIGHT.MEDIUM.
+ * @param {DroidObject} droid
+ * @returns {number} body size, using the`BODY_WEIGHT` enum.
+ */
+function getDroidBodySize(droid) {
+    if (droid.droidType === DROID_CYBORG) {
+        return BODY_WEIGHT.LIGHT;
+    }
+
+    const bodySize = BODY_SIZE_BY_COMPONENT_ID[droid.body];
+	if (bodySize != null) {
+		return bodySize;
+	}
+	return BODY_WEIGHT.MEDIUM;
+}
