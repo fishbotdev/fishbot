@@ -8,6 +8,7 @@ This file is used to record the changes to FishBot between each version.
     - Group cohesion improved by:
         - Adjusting the combat-group splitting system to only split brigades when force strength is sufficient.
         - Adjusting the threshold for 'safe' vs 'aggressive' play.
+        - Sizing a brigade's maneuvering room off the average body size of its units, so a brigade of heavy bodies is given more room than the same number of mid-size bodies (and is quicker to filter through a chokepoint rather than jam it).
     - Fixed VTOLs being too passive when the match is neck-and-neck.
 - Construction & production fixes
     - Fixed a rare issue where base builder trucks would get stuck when a structure was built in the intended base structure footprint.

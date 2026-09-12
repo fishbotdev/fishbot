@@ -144,22 +144,81 @@ function moveReservesToShadow(reserveGroupIDs, x, y) {
 }
 
 /**
+ * Baseline cohesion radii (in tiles), which are what a brigade of mid-size bodies needs to maneuver.
+ * These are a floor, not a fixed value: `getCohesionRadiusScaling()` widens them for heavier brigades.
+ */
+const COHESION_RADII = {
+	REGROUP: 8,				// beyond this, a unit breaks off what it is doing and rejoins the group
+	HOLD: 5,				// beyond this, a unit which is ahead of the group waits for the group to catch up
+	FIRE_SUPPORT: 6,		// how far fire support may sit from the group center before it is recalled
+	STATION_KEEPING: 4,		// how far a sensor / AA unit may sit from the unit nearest the target
+	REPAIR: 7,				// how far a repair unit may roam from the unit nearest the target
+};
+Object.freeze(COHESION_RADII);
+
+// Every cohesion radius is widened by this fraction per body size class above medium, so an all-heavy brigade
+// maneuvers with radii 25% wider than an all-medium one.
+const COHESION_RADIUS_GROWTH_PER_BODY_SIZE = 0.25;
+
+/**
+ * Returns the multiplier to apply to `COHESION_RADII` for a brigade of the given average body size.
+ * Heavy bodies are larger and slower to turn, so they need more room to maneuver than the same number of
+ * mid-size bodies. Brigades of medium bodies or lighter keep the baseline radii: the radii are already tuned
+ * for them, and tightening them further would only crowd the group.
+ * @param {number} avgBodySize the brigade's average `BODY_WEIGHT`
+ * @returns {number} a multiplier of 1.0 or greater
+ */
+function getCohesionRadiusScaling(avgBodySize) {
+	const SIZE_ABOVE_MEDIUM = Math.max(0, avgBodySize - BODY_WEIGHT.MEDIUM);
+	return 1 + (SIZE_ABOVE_MEDIUM * COHESION_RADIUS_GROWTH_PER_BODY_SIZE);
+}
+
+/**
+ * Returns the squared cohesion radius a brigade of the given average body size gets, for a baseline radius in tiles.
+ * Squared, because the callers compare against `distSq()`.
+ * @param {number} baseRadius one of `COHESION_RADII`
+ * @param {number} avgBodySize the brigade's average `BODY_WEIGHT`
+ * @returns {number}
+ */
+function getCohesionRadiusSq(baseRadius, avgBodySize) {
+	return (baseRadius * getCohesionRadiusScaling(avgBodySize)) ** 2;
+}
+
+/**
+ * Returns how much room a single body of the given size takes up in a corridor, in 'light bodies' worth of space.
+ * @param {number} bodySize a `BODY_WEIGHT` value (fractional values are permitted, e.g. a brigade average)
+ * @returns {number}
+ */
+function getBodyCongestionWeight(bodySize) {
+	return bodySize + 1;		// LIGHT -> 1, MEDIUM -> 2, HEAVY -> 3
+}
+
+/**
+ * Reports whether friendly armour is packed tightly enough around (x, y) to be getting in its own way.
+ *
+ * What saturates a corridor is bulk, not headcount: five mid-size bodies fit where five heavy bodies do not.
+ * Nearby units are therefore counted by how much room they take up, against an allowance of what five
+ * mid-size bodies are worth. Nearby units are charged at the *brigade's* average body size, which is an
+ * approximation when another brigade's units are also in the radius.
  * @param {worldState} state 
  * @param {number} x 
  * @param {number} y 
- * @returns 
+ * @param {number} avgBodySize the brigade's average `BODY_WEIGHT`
+ * @returns {boolean}
  */
-function isLocationCongested(state, x, y) {
+function isLocationCongested(state, x, y, avgBodySize) {
 	const CHOKEPOINT_CONGESTION_RADIUS = 5;
-	const CHOKEPOINT_CONGESTION_THRESHOLD = 8;
+	const CHOKEPOINT_CONGESTION_ALLOWANCE = 5 * getBodyCongestionWeight(BODY_WEIGHT.MEDIUM);		// what 5 mid-size bodies are worth
+
+	const CONGESTION_PER_UNIT = getBodyCongestionWeight(avgBodySize);
 
 	const nearby = state.grid.enumRangeLazy(x, y, CHOKEPOINT_CONGESTION_RADIUS, false, true);
 
-	let nearbyArmourUnits = 0;
+	let congestion = 0;
 	for (let i=0; i<nearby['friendlyUnits'].length; i++) {
 		if (nearby['friendlyUnits'][i].flags & OBJ_FLAGS.ARMOUR) {
-			nearbyArmourUnits++;
-			if (nearbyArmourUnits > CHOKEPOINT_CONGESTION_THRESHOLD) {
+			congestion += CONGESTION_PER_UNIT;
+			if (congestion > CHOKEPOINT_CONGESTION_ALLOWANCE) {
 				return true;
 			}
 		}
@@ -182,15 +241,20 @@ function moveBrigadeToLocation(state, brigadeID, targetX, targetY) {
 	const LOCATION_X = state.brigades[brigadeID].location.x;
 	const LOCATION_Y = state.brigades[brigadeID].location.y;
 
+	// How much room this brigade gets to maneuver in, which is set by how big its units are.
+	const AVG_BODY_SIZE = state.brigades[brigadeID].avgBodySize;
+	const REGROUP_RADIUS_SQ = getCohesionRadiusSq(COHESION_RADII.REGROUP, AVG_BODY_SIZE);
+	const HOLD_RADIUS_SQ = getCohesionRadiusSq(COHESION_RADII.HOLD, AVG_BODY_SIZE);
+
 	const DISTSQ_CENTER_TO_TARGET = distSq(LOCATION_X, targetX, LOCATION_Y, targetY);
-	const BRIGADE_CONGESTED = isLocationCongested(state, LOCATION_X, LOCATION_Y);
+	const BRIGADE_CONGESTED = isLocationCongested(state, LOCATION_X, LOCATION_Y, AVG_BODY_SIZE);
 
 	brigadeUnits.forEach(droid => {
 		const DISTSQ_TO_CENTER = distSq(LOCATION_X, droid.x, LOCATION_Y, droid.y);
 		const DISTSQ_TO_TARGET = distSq(targetX, droid.x, targetY, droid.y);
 
-		const TOO_FAR_AWAY_FROM_CENTER = DISTSQ_TO_CENTER > 8 ** 2;
-		const FAR_AWAY_FROM_CENTER = DISTSQ_TO_CENTER > 5 ** 2;
+		const TOO_FAR_AWAY_FROM_CENTER = DISTSQ_TO_CENTER > REGROUP_RADIUS_SQ;
+		const FAR_AWAY_FROM_CENTER = DISTSQ_TO_CENTER > HOLD_RADIUS_SQ;
 		const AHEAD_OF_GROUP = DISTSQ_TO_TARGET < DISTSQ_CENTER_TO_TARGET;
 		const UNIT_ROADBLOCKED = state.mapData.isChokepoint[droid.x][droid.y] && BRIGADE_CONGESTED;
 
@@ -239,7 +303,15 @@ function moveBrigadeToAttack(state, brigadeID, groundTargets) {
 	const LOCATION_X = forceLocation.x;
 	const LOCATION_Y = forceLocation.y;
 
-	const BRIGADE_CONGESTED = isLocationCongested(state, LOCATION_X, LOCATION_Y);
+	// How much room this brigade gets to maneuver in, which is set by how big its units are.
+	const AVG_BODY_SIZE = state.brigades[brigadeID].avgBodySize;
+	const REGROUP_RADIUS_SQ = getCohesionRadiusSq(COHESION_RADII.REGROUP, AVG_BODY_SIZE);
+	const HOLD_RADIUS_SQ = getCohesionRadiusSq(COHESION_RADII.HOLD, AVG_BODY_SIZE);
+	const FIRE_SUPPORT_RADIUS_SQ = getCohesionRadiusSq(COHESION_RADII.FIRE_SUPPORT, AVG_BODY_SIZE);
+	const STATION_KEEPING_RADIUS_SQ = getCohesionRadiusSq(COHESION_RADII.STATION_KEEPING, AVG_BODY_SIZE);
+	const REPAIR_RADIUS_SQ = getCohesionRadiusSq(COHESION_RADII.REPAIR, AVG_BODY_SIZE);
+
+	const BRIGADE_CONGESTED = isLocationCongested(state, LOCATION_X, LOCATION_Y, AVG_BODY_SIZE);
 
 	const ARMOUR_UNITS = [];
 	const INFANTRY_UNITS = [];
@@ -299,8 +371,8 @@ function moveBrigadeToAttack(state, brigadeID, groundTargets) {
 		const UNIT_ROADBLOCKED = state.mapData.isChokepoint[droid.x][droid.y] && BRIGADE_CONGESTED;
 		const DISTSQ_TO_CENTER = distSq(LOCATION_X, droid.x, LOCATION_Y, droid.y);
 
-		const TOO_FAR_AWAY_FROM_CENTER = DISTSQ_TO_CENTER > 8 ** 2;
-		const FAR_AWAY_FROM_CENTER = DISTSQ_TO_CENTER > 5 ** 2;
+		const TOO_FAR_AWAY_FROM_CENTER = DISTSQ_TO_CENTER > REGROUP_RADIUS_SQ;
+		const FAR_AWAY_FROM_CENTER = DISTSQ_TO_CENTER > HOLD_RADIUS_SQ;
 
 		const DISTSQ_TO_TARGET = distSq(targetX, droid.x, targetY, droid.y);
 		const AHEAD_OF_GROUP = DISTSQ_TO_TARGET < distSqGroupCenterToTarget;
@@ -323,7 +395,7 @@ function moveBrigadeToAttack(state, brigadeID, groundTargets) {
 	}
 
 	const maintainPosition = (droid) => {
-		if (_distSqToClosestDroid(droid) > 4 ** 2) {
+		if (_distSqToClosestDroid(droid) > STATION_KEEPING_RADIUS_SQ) {
 			moveToClosestDroid(droid);
 		} else {
 			orderDroidLoc(droid, DORDER_MOVE, LOCATION_X, LOCATION_Y);
@@ -331,7 +403,7 @@ function moveBrigadeToAttack(state, brigadeID, groundTargets) {
 	};
 
 	const fixNearestDamaged = (droid) => {
-		if (_distSqToClosestDroid(droid) >= 7 ** 2) {
+		if (_distSqToClosestDroid(droid) >= REPAIR_RADIUS_SQ) {
 			moveToClosestDroid(droid);
 			return;
 		} 
@@ -379,7 +451,7 @@ function moveBrigadeToAttack(state, brigadeID, groundTargets) {
 		const UNIT_ROADBLOCKED = state.mapData.isChokepoint[droid.x][droid.y] && BRIGADE_CONGESTED;
 		const DISTSQ_TO_CENTER = distSq(LOCATION_X, droid.x, LOCATION_Y, droid.y);
 
-		const TOO_FAR_AWAY_FROM_CENTER = DISTSQ_TO_CENTER > 6 ** 2;
+		const TOO_FAR_AWAY_FROM_CENTER = DISTSQ_TO_CENTER > FIRE_SUPPORT_RADIUS_SQ;
 
 		const DISTSQ_TO_TARGET = distSq(targetX, droid.x, targetY, droid.y);
 		const AHEAD_OF_GROUP = DISTSQ_TO_TARGET < DISTSQ_CENTER_TO_TARGET;		// this is the direct fire target

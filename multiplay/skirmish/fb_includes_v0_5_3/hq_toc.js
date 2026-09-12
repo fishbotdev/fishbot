@@ -988,9 +988,12 @@ class TacticalOperationsCenter {
             btnInfo["healthyUnitList"].length = 0;
         }
 
-        // Reclassify as damaged / healthy
+        // Reclassify as damaged / healthy (and measure how big the brigade's units are, while every unit is in hand)
         const brigadeUnits = this.#getBrigadeUnits(state, brigadeID);
+        let bodySizeSum = 0;
         brigadeUnits.forEach(unit => {
+            bodySizeSum += getDroidBodySize(unit);
+
             const category = getDroidFbGroupClassification(unit);
 
             const currBattalion = brigadeComposition.get(category);
@@ -1026,6 +1029,11 @@ class TacticalOperationsCenter {
         const currBrigade = state.brigades[brigadeID];
         currBrigade["directFireCount"] = directFireUnitCount;
         currBrigade["strength"] = Math.max(directFireUnitCount, currBrigade["strength"] - parameters.STRENGTH_DECAY_RATE);
+
+        // Update the brigade's average body size. The tactical drivers size the brigade's maneuvering room off this:
+        // a brigade of heavy bodies is physically bigger and slower to turn than the same number of mid-size bodies.
+        // An empty brigade keeps the neutral (medium) assumption rather than reporting a size of zero.
+        currBrigade["avgBodySize"] = (brigadeUnits.length === 0) ? BODY_WEIGHT.MEDIUM : (bodySizeSum / brigadeUnits.length);
 
         if (false) {
             debug(`${gameTime}: Brigade ${brigadeID} Composition`)

@@ -424,6 +424,32 @@ const BODY_WEIGHT = {
 };
 Object.freeze(BODY_WEIGHT);
 
+// Body size of every body in the game, indexed by component id (which is what `droid.body` reports).
+// Built from `Stats.Body` rather than `FISHBOT_BODIES` so that bodies FishBot does not produce itself can still be sized.
+const BODY_SIZE_BY_COMPONENT_ID = {};
+Object.values(Stats.Body).forEach((body) => {
+    if (typeof body.Size === 'number') {
+        BODY_SIZE_BY_COMPONENT_ID[body.Id] = body.Size;
+    }
+});
+Object.freeze(BODY_SIZE_BY_COMPONENT_ID);
+
+/**
+ * Returns how big a droid's body is, as a `BODY_WEIGHT` value.
+ * Cyborgs are reported as `BODY_WEIGHT.LIGHT`: they walk, and their bodies are not sized on the vehicle scale.
+ * An unrecognised body is reported as `BODY_WEIGHT.MEDIUM`, which is the neutral assumption for everything which sizes itself off this.
+ * @param {DroidObject} droid
+ * @returns {number} a `BODY_WEIGHT` value
+ */
+function getDroidBodySize(droid) {
+    if (droid.droidType === DROID_CYBORG) {
+        return BODY_WEIGHT.LIGHT;
+    }
+
+    const bodySize = BODY_SIZE_BY_COMPONENT_ID[droid.body];
+    return (bodySize == null) ? BODY_WEIGHT.MEDIUM : bodySize;
+}
+
 /*
     PROPULSION INFORMATION
 */
