@@ -120,13 +120,23 @@ function returnUnitGroupsToBase(unitGroups) {
 }
 
 /**
+ * TAC SOP: HOLD THE RESERVE BEHIND A BRIGADE, READY TO REINFORCE IT
+ *
+ * The reserve is held on the same leash as the brigade it shadows: it is given the brigade's own regroup
+ * radius, so it sits as close behind a heavy brigade as it does behind a mid-size one.
+ * @param {worldState} state
  * @param {number[]} reserveGroupIDs 
- * @param {number} x 
- * @param {number} y 
+ * @param {number} anchorBrigadeID the brigade which the reserve is held behind
  */
-function moveReservesToShadow(reserveGroupIDs, x, y) {
+function moveReservesToShadow(state, reserveGroupIDs, anchorBrigadeID) {
 
-	const isTooFarAway = (droid) => distSq(droid.x, x, droid.y, y) > 8 ** 2;
+	const anchorBrigade = state.brigades[anchorBrigadeID];
+	const x = anchorBrigade.location.x;
+	const y = anchorBrigade.location.y;
+
+	const REGROUP_RADIUS_SQ = getCohesionRadiusSq(COHESION_RADII.REGROUP, anchorBrigade.avgBodySize);
+
+	const isTooFarAway = (droid) => distSq(droid.x, x, droid.y, y) > REGROUP_RADIUS_SQ;
 
 	const maintainPositionBehind = (droid) => {
 		if (isTooFarAway(droid)) {

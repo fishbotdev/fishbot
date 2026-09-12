@@ -1045,9 +1045,7 @@ class CommandCenter {
 		});
 
 		// Manage reserves: temporary: Move reserves to pre-emptively reinforce BCT0
-		const x = state.brigades[DIVISION.FIRST_BCT]['location'].x;
-		const y = state.brigades[DIVISION.FIRST_BCT]['location'].y;
-		moveReservesToShadow(RESERVE_CATEGORY_GROUP_IDS, x, y);
+		moveReservesToShadow(state, RESERVE_CATEGORY_GROUP_IDS, DIVISION.FIRST_BCT);
 	}
 
 	/////////////////////////////////////////////////// G4: LOGISTICS ///////////////////////////////////////////////////
