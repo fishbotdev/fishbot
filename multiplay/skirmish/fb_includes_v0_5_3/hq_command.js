@@ -203,9 +203,6 @@ class CommandCenter {
 			'intel_getAviationTargets': {"requestsPerMin": 10},
 			'runStrategy': {"requestsPerMin": 6},
 		};
-
-		/** @type {Object<number, string>} DEBUG: the targets covered by the last blocked approach report printed for each brigade */
-		this.DEBUG_LAST_BLOCKED_APPROACH = {};
 	}
 
 	/**
@@ -570,37 +567,6 @@ class CommandCenter {
 	}
 
 	/**
-	 * DEBUG: reports the targets which `BLOCKED_APPROACH_WEIGHT` pushed down the direct fire ranking, and what the brigade went for instead.
-	 * Ranking runs once a second, so a report is only printed when it differs from the last one for that brigade.
-	 * @param {number} brigadeID
-	 * @param {number} brigadeX
-	 * @param {number} brigadeY
-	 * @param {TargetCandidate[]} deprioritisedCandidates
-	 * @param {TargetCandidate} chosenCandidate
-	 * @returns {void}
-	 */
-	#reportDeprioritisedTargets(brigadeID, brigadeX, brigadeY, deprioritisedCandidates, chosenCandidate) {
-
-		const ignoredCandidates = deprioritisedCandidates.filter(c => c !== chosenCandidate);
-		if (ignoredCandidates.length === 0) {
-			delete this.DEBUG_LAST_BLOCKED_APPROACH[brigadeID];
-			return;
-		}
-
-		// Positions and costs move every cycle, so the same fight is recognised by which targets it involves, not by the report text.
-		const TARGETS_INVOLVED = `${ignoredCandidates.map(c => c.target.id).sort().join()} > ${chosenCandidate.target.id}`;
-		if (this.DEBUG_LAST_BLOCKED_APPROACH[brigadeID] === TARGETS_INVOLVED) {
-			return;
-		}
-		this.DEBUG_LAST_BLOCKED_APPROACH[brigadeID] = TARGETS_INVOLVED;
-
-		/** @param {TargetCandidate} c */
-		const describe = (c) => `${c.targetObj.name} (${c.targetObj.x}, ${c.targetObj.y}) cost=${Math.round(c.cost)}`;
-
-		deb(`brigade ${brigadeID} (${brigadeX}, ${brigadeY}): blocked approach deprioritised ${ignoredCandidates.map(describe).join(", ")}; attacking ${describe(chosenCandidate)}`);
-	}
-
-	/**
 	 * This function returns a list of prioritised Droid / Structure Objects (fresh data) which can be directly used in the `__tac` functions.
 	 * @param {worldState} state 
 	 * @param {number} brigadeID 
@@ -720,9 +686,6 @@ class CommandCenter {
 
 		const ADJACENCY_RADIUS_SQ = parameters.TARGET_ADJACENCY_RADIUS ** 2;
 
-		/** @type {TargetCandidate[]} DEBUG: every candidate demoted by `BLOCKED_APPROACH_WEIGHT` this cycle */
-		const deprioritisedCandidates = [];
-
 		/** @param {TargetCandidate} c */
 		const directFireCost = (c) => {
 			const obj = c.targetObj;
@@ -746,7 +709,6 @@ class CommandCenter {
 				// features), which measures the avenue of approach rather than sight: a clear target is what the brigade can
 				// actually close with.
 				cost *= parameters.BLOCKED_APPROACH_WEIGHT;
-				if (DEBUG_MODE_ON)	deprioritisedCandidates.push(c);
 			}
 			return cost;
 		}
@@ -800,8 +762,6 @@ class CommandCenter {
 			brigadeTargets['directFireTargets'].push(c.targetObj);
 			brigadeTargets['directFireTargetRefs'].push(c.target);
 		});
-
-		if (DEBUG_MODE_ON)	this.#reportDeprioritisedTargets(brigadeID, x, y, deprioritisedCandidates, directFireTargetsInRange[0]);
 
 		if (false) {
 			// Draw lines to the top 3 targets (to see what the brigade is trying to attack)
