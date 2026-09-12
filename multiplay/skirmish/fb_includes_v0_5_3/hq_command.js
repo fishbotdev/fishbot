@@ -641,10 +641,8 @@ class CommandCenter {
 		}
 
 		/*
-			Direct Fire Targeting
-			Intent: attack what is closest (distSq to brigade) and reachable in a straight line, and see the current battle to
-			completion (e.g. distSq to current target, health).
-			The targets in radius have their cost adjusted (percentage-based) based on proximity to the current battle & various other factors.
+			Direct Fire Targeting: attack what is closest and reachable in a straight line, and see the current fight to completion.
+			TODO: Lacks input from the strategic layer (which reasons about objectives & OAKOC) because it is currently non-existent.
 		*/
 
 		// Where the brigade's fight is, or `null` if it is not near one. Relies on FbObject carrying the stale 'x', 'y'.
@@ -703,11 +701,8 @@ class CommandCenter {
 				cost *= parameters.KNOCKOUT_WEIGHT;
 			}
 			if (lineIsBlocked(x, y, obj.x, obj.y, isWalkable)) {
-				// Terrain 1: Demotes targets the brigade cannot drive straight at. `directFireTargets[0]` is the brigade's axis of
-				// advance (`__tac_com_ground.moveBrigadeToAttack`), so a target picked across a cliff or a lake sends the whole
-				// formation into that obstacle to path around it. The line is walked over `isWalkable` (terrain + blocking
-				// features), which measures the avenue of approach rather than sight: a clear target is what the brigade can
-				// actually close with.
+				// Terrain 1: Demotes targets the brigade cannot drive straight at. 
+				// TODO: Simplistic. Projects a straight line from the brigade position to the target & checks if the tiles are walkable. Replace by strategic layer inputs.
 				cost *= parameters.BLOCKED_APPROACH_WEIGHT;
 			}
 			return cost;
