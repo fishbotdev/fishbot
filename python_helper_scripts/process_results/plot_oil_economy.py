@@ -359,7 +359,7 @@ if __name__ == "__main__":
     RUN_GAME = True                 # False re-plots the newest saved capture instead of running a game
 
     # Make sure this json file exists in `%Warzone Configuration Directory%/tests`.
-    TEST_FILE_NAME = "GAMMA_1_2_COBRA_HARD_T2.json"
+    TEST_FILE_NAME = "00000_4c-Monocot_i_ffa_f1.json"
 
     PLAYER = None                   # a player ID to plot only that FishBot, or None for every FishBot in the capture
     SAVE_FIGURES_TO = None          # a Path to write PNGs to instead of opening plot windows
