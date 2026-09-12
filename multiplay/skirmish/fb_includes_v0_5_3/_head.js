@@ -255,6 +255,7 @@
  * @property {number} id This is the brigade ID (duplicate of the key).
  * @property {PositionInfo} location  
  * @property {number} strength Smoothed count of direct-fire units in the brigade (mortars excluded).
+ * @property {number} avgBodySize Average vehicle BODY_WEIGHT (excludes cyborgs). Affects formation keeping (bigger vehicles need more room to maneuver).
  * @property {number} directFireCount Raw count of direct-fire units this update. `strength - directFireCount` is what the brigade is down on its recent peak.
  * @property {NearbyTargets} nearbyTargets
  * @property {FbObject[]} currentDirectFireTargets Previous cycle's ranked target list. Only `[0]` is read today; the rest is stored to be stepped through later.
@@ -281,6 +282,14 @@
  * @property {(DroidObject | StructureObject | FeatureObject)[]} fireSupportTargets
  * @property {(DroidObject | StructureObject | FeatureObject)[]} adaTargets
  * @property {AirStrikeMissionRequest[]} casTargets
+ */
+
+/**
+ * Cohesion radii (in tiles): how much room a brigade is given to maneuver in.
+ * Upper bound is set by "relaxed" (big vehicles), lower bound is set by "tight" (small vehicles).
+ * @typedef {Object} CohesionRadius
+ * @property {number} tight
+ * @property {number} relaxed
  */
 
 

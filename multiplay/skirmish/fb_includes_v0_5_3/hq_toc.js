@@ -988,9 +988,17 @@ class TacticalOperationsCenter {
             btnInfo["healthyUnitList"].length = 0;
         }
 
-        // Reclassify as damaged / healthy
+        // Reclassify as damaged / healthy. Also measure vehicle size.
         const brigadeUnits = this.#getBrigadeUnits(state, brigadeID);
+        let vehicleCount = 0;
+        let bodySizeSum = 0;
         brigadeUnits.forEach(unit => {
+            // The average vehicle size is used to determine the cohesion radius for formation-keeping. Cyborgs are excluded from this because they are small.
+            if (unit.droidType !== DROID_CYBORG) {
+                vehicleCount++;
+                bodySizeSum += getDroidBodySize(unit);
+            }
+
             const category = getDroidFbGroupClassification(unit);
 
             const currBattalion = brigadeComposition.get(category);
@@ -1019,20 +1027,14 @@ class TacticalOperationsCenter {
             battalionComposition["deficit"] = maxUnitCount - healthyUnitCount;
         };
 
-        // Update brigade strength. This counts the same units that `getForceCenterLoc()` averages over
-        // (all direct-fire units, healthy or damaged). Strength rises immediately with reinforcement but
-        // decays gradually, so it does not jitter when single units die and are replaced.
+		// Brigade strength rises immediately with reinforcement but decays gradually, so it does not jitter when single units die and are replaced.
         const directFireUnitCount = brigadeUnits.filter(unit => !unit.hasIndirect).length;
         const currBrigade = state.brigades[brigadeID];
         currBrigade["directFireCount"] = directFireUnitCount;
         currBrigade["strength"] = Math.max(directFireUnitCount, currBrigade["strength"] - parameters.STRENGTH_DECAY_RATE);
 
-        if (false) {
-            debug(`${gameTime}: Brigade ${brigadeID} Composition`)
-            for (const [btnID, btnInfo] of brigadeComposition) {
-                debug(`\t - ${btnID}: ${btnInfo["count"]} healthy (- ${btnInfo["deficit"]}) ( - ${btnInfo["damagedUnitList"].length} damaged)`);
-            }
-        }
+        // Update the brigade's average body size (vehicles only), which is used during formation keeping. Defaults to MEDIUM.
+        currBrigade["avgBodySize"] = (vehicleCount === 0) ? BODY_WEIGHT.MEDIUM : (bodySizeSum / vehicleCount);
     }
 
 	/**

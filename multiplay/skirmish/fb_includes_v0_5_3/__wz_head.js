@@ -424,6 +424,17 @@ const BODY_WEIGHT = {
 };
 Object.freeze(BODY_WEIGHT);
 
+// Body size of every body in the game, indexed by component id (which is what `droid.body` reports).
+// Built from `Stats.Body` rather than `FISHBOT_BODIES` so that bodies FishBot does not produce itself can still be sized.
+const BODY_SIZE_BY_COMPONENT_ID = {};
+Object.values(Stats.Body).forEach((body) => {
+    if (typeof body.Size === 'number') {
+        BODY_SIZE_BY_COMPONENT_ID[body.Id] = body.Size;
+    }
+});
+Object.freeze(BODY_SIZE_BY_COMPONENT_ID);
+
+
 /*
     PROPULSION INFORMATION
 */
