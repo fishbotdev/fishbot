@@ -99,14 +99,57 @@ class CommandCenter {
 			EFFECTIVE_ADA_RADIUS: 12,
 		};
 
-		// Aviation parameters
+		/*
+			Aviation parameters
+
+			Air tasking ranks every CAS, raid and base strike request in one pool by a cost (lowest wins), in the
+			same style as `directFireCost()` below: a base cost multiplied by tunable weights, where a weight under
+			1.0 promotes a request and one above 1.0 demotes it. The base cost is the distance from the air base to
+			the target, because that is what a VTOL pays twice on every sortie, so a weight of w lets a promoted
+			target sit 1/w times further away than a rival and still win: 0.5 => 2x, 0.7 => ~1.4x.
+
+			Unlike the posture switches this replaced, no weight can remove a whole class of mission from the pool.
+			CAS in particular no longer depends on the oil situation at all: its posture weight is neutral, oil only
+			tilts raids against base strikes, and what promotes a CAS request is the requesting brigade's own demand.
+			So a brigade in trouble can always buy air support by out-bidding whatever else is on offer, while a
+			brigade advancing unopposed does not quietly hijack the air force away from the enemy's base.
+		*/
 		/** @type {AviationParameters} */
 		this.AVIATION_PARAMETERS = {
 			totalNumAircraft: 0,
-			prioritiseCasTargets: false,
-			prioritiseIndustrialTargets: false,
-			prioritiseRaidTargets: false,
 			SATURATION_RAID_ACTIVE: false,
+
+			// Posture: which kind of mission the air force leans toward. Rewritten each cycle by `#setAviationParameters()`.
+			MISSION_TYPE_WEIGHT: {
+				[MISSION_TYPE.CAS_STRIKE]: 1.0,
+				[MISSION_TYPE.DAS_STRIKE]: 1.0,
+				[MISSION_TYPE.AIR_RAID]: 1.0,
+			},
+
+			// Target value: what a sortie is worth spending on, most wanted (cheapest) first.
+			TARGET_CLASS_WEIGHT: {
+				[AIR_TARGET_CLASS.INDIRECT_FIRE]: 0.30,			// counter-battery; artillery cannot shoot back at aircraft
+				[AIR_TARGET_CLASS.ADA]: 0.45,					// opens the airspace for every strike after it
+				[AIR_TARGET_CLASS.PRODUCTION]: 0.55,			// factories & trucks; the industrial campaign
+				[AIR_TARGET_CLASS.ARMOUR]: 0.70,
+				[AIR_TARGET_CLASS.DEFENCE]: 0.90,
+				[AIR_TARGET_CLASS.RESOURCE_EXTRACTOR]: 1.00,	// the raid baseline
+				[AIR_TARGET_CLASS.CONSTRUCTOR]: 1.20,
+			},
+
+			COMMITMENT_WEIGHT: 0.5,				// a running strike is only displaced by a candidate twice as attractive
+			KNOCKOUT_WEIGHT: 0.8,				// prefers finishing off damaged targets (matches the ground force rule)
+			LOW_HEALTH_THRESHOLD: 50,			// a target below this health percentage is considered worth finishing off
+
+			// CAS demand ramp: turns a brigade's own CAS requests into how badly it wants air support. Replaces the
+			// old on/off trigger (1 urgent request, or 4 requests from one brigade); both those points now sit at
+			// 0.80 on the ramp rather than flipping the entire air force onto CAS.
+			CAS_URGENCY_GAIN: 0.15,				// per URGENT request the brigade raised
+			CAS_SATURATION_GAIN: 0.05,			// per request the brigade raised, urgent or not
+			MIN_CAS_DEMAND_WEIGHT: 0.35,		// floor, so one swamped brigade cannot monopolise the air force outright
+
+			TURNAROUND_DISTANCE_FLOOR: 10,		// tiles; stops a target parked on the airfield from dominating the ranking
+
 			STANDARD_THREAT_THRESHOLD: 0,
 			URGENT_THREAT_THRESHOLD: 0,
 			SATURATION_THREAT_THRESHOLD: 0,
@@ -443,26 +486,23 @@ class CommandCenter {
 		const NUM_AIRCRAFT = state.playerInfo[me].numAirUnits;	
 		const AIR_UNIT_DOMINANCE = NUM_AIRCRAFT >= 10;
 
-		let maxCasTargets = 0;
-		let numUrgentCasMissions = 0;
+		const SATURATION_RAID_ACTIVE = IS_OIL_DOMINANT && AIR_UNIT_DOMINANCE;
 
-		this.BRIGADE_DESIGNATIONS.forEach(id => {
-			const casStrikeRequests = state.brigades[id]['casStrikeRequests'];
+		/*
+			Posture weights.
 
-			const targetsInRadius = casStrikeRequests.length;
-			maxCasTargets = Math.max(maxCasTargets, targetsInRadius);
+			The oil situation decides how the air force splits its effort between hurting the enemy's economy
+			(raids on derricks) and dismantling its base (strikes on production, ADA & defences). It deliberately
+			does *not* decide whether close air support happens: CAS keeps a fixed weight, so a brigade that is
+			actually in a fight can always outbid both, whether FishBot is winning the oil war or losing it.
+		*/
+		const CAS_WEIGHT = 1.0;								// neutral on purpose; brigade demand is what promotes CAS
+		let dasWeight = IS_OIL_DOMINANT ? 0.7 : 1.1;		// a base-dismantling campaign is a luxury paid for with oil
+		const raidWeight = IS_OIL_DOMINANT ? 1.0 : 0.6;		// behind on oil => go and contest the enemy's derricks
 
-			casStrikeRequests.forEach(r => {
-				if (r.priority === MISSION_PRIORITY.URGENT) {
-					numUrgentCasMissions += 1
-				}
-			});
-		});
-
-		const prioritiseCasTargets = IS_OIL_DOMINANT && (numUrgentCasMissions >= 1 || maxCasTargets >= 4);
-		const prioritiseRaidTargets = !IS_OIL_DOMINANT;
-		const prioritiseIndustrialTargets = IS_OIL_DOMINANT;
-		const SATURATION_RAID_ACTIVE = prioritiseIndustrialTargets && AIR_UNIT_DOMINANCE;
+		if (SATURATION_RAID_ACTIVE) {
+			dasWeight *= 0.7;								// enough aircraft to sustain pressure on the enemy base
+		}
 		
 		// The following thresholds set no-fly regions. Modify the threshold to match the "hq_toc/updateSpatialFields" spatial filter.
 		//	0 => avoids all anti-air defences, 
@@ -473,10 +513,11 @@ class CommandCenter {
 		const SATURATION_THREAT_THRESHOLD = 2;	
 
 		this.AVIATION_PARAMETERS.totalNumAircraft = NUM_AIRCRAFT;
-		this.AVIATION_PARAMETERS.prioritiseCasTargets = prioritiseCasTargets;
-		this.AVIATION_PARAMETERS.prioritiseRaidTargets = prioritiseRaidTargets;
-		this.AVIATION_PARAMETERS.prioritiseIndustrialTargets = prioritiseIndustrialTargets;
 		this.AVIATION_PARAMETERS.SATURATION_RAID_ACTIVE = SATURATION_RAID_ACTIVE;
+
+		this.AVIATION_PARAMETERS.MISSION_TYPE_WEIGHT[MISSION_TYPE.CAS_STRIKE] = CAS_WEIGHT;
+		this.AVIATION_PARAMETERS.MISSION_TYPE_WEIGHT[MISSION_TYPE.DAS_STRIKE] = dasWeight;
+		this.AVIATION_PARAMETERS.MISSION_TYPE_WEIGHT[MISSION_TYPE.AIR_RAID] = raidWeight;
 
 		this.AVIATION_PARAMETERS.STANDARD_THREAT_THRESHOLD = STANDARD_THREAT_THRESHOLD;
 		this.AVIATION_PARAMETERS.URGENT_THREAT_THRESHOLD = URGENT_THREAT_THRESHOLD;
@@ -805,24 +846,30 @@ class CommandCenter {
 			brigadeTargets["fireSupportTargets"].push(...brigadeTargets['directFireTargets']);
 		}		
 
-		// CAS Targeting (Close Air Support)
-		// Intent: `casTargets` should be a list of mission requests interpretable by a following call of `#prioritiseAviationTargets`.
-		const primaryCASTargets = [...enemyIndirectFire];
-		const secondaryCASTargets = [...enemyADA, ...enemyArmor, ...enemyDefenses];
+		/*
+			CAS Targeting (Close Air Support)
+			Intent: `casTargets` is the brigade's bid for air support, ranked later against every other air
+			mission by `#prioritiseAviationTargets`. Order within this list no longer decides anything - the
+			request's target class and the brigade's demand do - so requests are simply appended.
 
-		const isHealthy = (obj) => obj.health > 25;
-		secondaryCASTargets.forEach(c => {
-			if (isHealthy(c.targetObj)) {
-				brigadeTargets['casTargets'].unshift(aviation.translateIntoCASRequest(c.targetObj, MISSION_PRIORITY.VERY_HIGH));
-			} else {
-				brigadeTargets['casTargets'].push(aviation.translateIntoCASRequest(c.targetObj, MISSION_PRIORITY.HIGH));
-			}			
-		});
+			`priority` is retained because it still selects the no-fly threshold a request is held to, and
+			because the count of URGENT requests is what the CAS demand ramp reads.
+		*/
+		/**
+		 * @param {TargetCandidate[]} candidates
+		 * @param {number} priority
+		 * @param {string} targetClass one of `AIR_TARGET_CLASS`
+		 */
+		const addCASRequests = (candidates, priority, targetClass) => {
+			candidates.forEach(c => {
+				brigadeTargets['casTargets'].push(aviation.translateIntoCASRequest(c.targetObj, priority, targetClass));
+			});
+		};
 
-		primaryCASTargets.forEach(c => {
-			const missionRequest = aviation.translateIntoCASRequest(c.targetObj, MISSION_PRIORITY.URGENT); 
-			brigadeTargets['casTargets'].unshift(missionRequest);
-		});
+		addCASRequests(enemyIndirectFire, MISSION_PRIORITY.URGENT, AIR_TARGET_CLASS.INDIRECT_FIRE);
+		addCASRequests(enemyADA, MISSION_PRIORITY.VERY_HIGH, AIR_TARGET_CLASS.ADA);
+		addCASRequests(enemyArmor, MISSION_PRIORITY.VERY_HIGH, AIR_TARGET_CLASS.ARMOUR);
+		addCASRequests(enemyDefenses, MISSION_PRIORITY.HIGH, AIR_TARGET_CLASS.DEFENCE);
 
 		// ADA Targeting (Air Defense Artillery)
 		// Intent: Concentrate fire on one target.
@@ -840,12 +887,82 @@ class CommandCenter {
 	}
 
 	/**
-	 * Terminates aviation missions which are TWO PRIORITY LEVELS below. e.g. If new URGENT task -> cancel HIGH missions.
+	 * The no-fly threshold an air mission is held to. Urgent work, and saturation raids once FishBot has the
+	 * aircraft to sustain them, accept flying over more air defence than routine work does.
+	 * @param {number} priority a `MISSION_PRIORITY`
+	 * @param {AviationParameters} parameters
+	 * @returns {number}
+	 */
+	#airThreatThreshold(priority, parameters) {
+		if (parameters.SATURATION_RAID_ACTIVE) {
+			return parameters.SATURATION_THREAT_THRESHOLD;
+		}
+		return (priority === MISSION_PRIORITY.URGENT) ? parameters.URGENT_THREAT_THRESHOLD : parameters.STANDARD_THREAT_THRESHOLD;
+	}
+
+	/**
+	 * How badly one brigade wants air support, expressed as a weight on its own CAS requests (lower = wanted more).
+	 *
+	 * This is a ramp rather than a trigger, so the air force shifts toward a brigade in trouble by degrees.
+	 * The two points which used to switch the whole air force onto CAS - one URGENT request, or four requests
+	 * from a single brigade - both land at 0.80 here.
+	 * @param {AirStrikeMissionRequest[]} casRequests one brigade's CAS requests this cycle
+	 * @param {AviationParameters} parameters
+	 * @returns {number}
+	 */
+	#casDemandWeight(casRequests, parameters) {
+		let numUrgentRequests = 0;
+		casRequests.forEach(r => {
+			if (r.priority === MISSION_PRIORITY.URGENT) {
+				numUrgentRequests++;
+			}
+		});
+
+		const demand = 1 - (parameters.CAS_URGENCY_GAIN * numUrgentRequests) - (parameters.CAS_SATURATION_GAIN * casRequests.length);
+		return clampValue(demand, parameters.MIN_CAS_DEMAND_WEIGHT, 1);
+	}
+
+	/**
+	 * Ranks one air strike request; the lowest cost is the most worthwhile sortie.
+	 *
+	 * Built the same way as `directFireCost()`: a distance base scaled by weights, where a weight below 1.0
+	 * promotes the request. The base is the distance from the air base to the target, because a VTOL pays that
+	 * distance twice on every sortie - so, at equal value, a nearer target buys more strikes per minute.
+	 * @param {AirStrikeMissionRequest | CombatMissionData} request
+	 * @param {DroidObject | StructureObject | FeatureObject} obj the target, freshly fetched
+	 * @param {AviationParameters} parameters
+	 * @returns {number}
+	 */
+	#scoreAirMissionRequest(request, obj, parameters) {
+		const distanceToTarget = Math.sqrt(distSq(baseLocation.x, obj.x, baseLocation.y, obj.y));
+		let cost = distanceToTarget + parameters.TURNAROUND_DISTANCE_FLOOR;
+
+		cost *= parameters.MISSION_TYPE_WEIGHT[request.missionType] ?? 1;		// posture: CAS vs raid vs base strike
+		cost *= parameters.TARGET_CLASS_WEIGHT[request.targetClass] ?? 1;		// what the target is worth killing from the air
+
+		if (request.missionType === MISSION_TYPE.CAS_STRIKE) {
+			cost *= request.demandWeight ?? 1;									// how badly the supported brigade needs it
+		}
+		if (obj.health < parameters.LOW_HEALTH_THRESHOLD) {
+			cost *= parameters.KNOCKOUT_WEIGHT;									// finishing a damaged target is cheap value
+		}
+		return cost;
+	}
+
+	/**
+	 * Reviews the air missions already running: aborts any whose target has become untenable, and scores the rest
+	 * so that they can be ranked against this cycle's fresh candidates.
+	 *
+	 * Survivors are scored with `COMMITMENT_WEIGHT` applied, which is what keeps a strike package on its target
+	 * unless something clearly better turns up. It replaces the previous rule - cancel every raid and base strike
+	 * outright whenever CAS was being prioritised - which tore down a whole industrial campaign as soon as one
+	 * urgent CAS request appeared, then rebuilt it a few cycles later.
 	 * @param {worldState} state 
 	 * @param {AviationParameters} parameters 
-	 * @returns {number[]}
+	 * @param {number} casDemandWeight the strongest CAS demand across the brigades, applied to running CAS missions
+	 * @returns {{activeTargetIDs: number[], survivingMissions: CombatMissionData[]}}
 	 */
-	#filterPriorityAirMissions(state, parameters) {
+	#filterPriorityAirMissions(state, parameters, casDemandWeight) {
 
 		const adaThreat = state.fields.adaThreat;
 		const cellSize = state.grid.cellSize;
@@ -859,6 +976,8 @@ class CommandCenter {
 		const activeMissions = this.toc.getActiveAviationMissions(state).filter(m => OFFENSIVE_MISSION_TYPES.includes(m.missionType));
 		
 		const activeTargetIDs = [];		// Intent: Even if cancelled, I want this knowledge that this task was present so that it can be pre-emptively removed from the target candidate list.
+		/** @type {CombatMissionData[]} */
+		const survivingMissions = [];
 		
 		activeMissions.forEach(c => {
 			activeTargetIDs.push(c.target.id);
@@ -866,20 +985,9 @@ class CommandCenter {
 			const currObj = getObject(c.target.type, c.target.player, c.target.id);
 			if (currObj == null) 	return;
 
-			if (parameters.prioritiseCasTargets && c.missionType !== MISSION_TYPE.CAS_STRIKE) {
-				// debug(`removed DAS / RAID mission to make room for CAS`);
-				c.missionStatus = MISSION_STATUS.ABORT;
-				return;
-			}
-
-			let threatThreshold = (c.priority === MISSION_PRIORITY.URGENT) ? parameters.URGENT_THREAT_THRESHOLD : parameters.STANDARD_THREAT_THRESHOLD;
-			if (parameters.SATURATION_RAID_ACTIVE) {
-				threatThreshold  = parameters.SATURATION_THREAT_THRESHOLD;
-			}
-
 			const gx = Math.floor(currObj.x / cellSize); 
 			const gy = Math.floor(currObj.y / cellSize);
-			if (adaThreat[gx][gy] > threatThreshold) {
+			if (adaThreat[gx][gy] > this.#airThreatThreshold(c.priority, parameters)) {
 				// debug(`	removed ACTIVE: ${currObj.name} (${c.missionType}) @ grid (${currObj.x} ${currObj.y})`);
 				c.missionStatus = MISSION_STATUS.ABORT;		
 				return;
@@ -892,10 +1000,16 @@ class CommandCenter {
 					c.missionStatus = MISSION_STATUS.ABORT;					
 					return;
 				}
+				// A running CAS mission does not record which brigade asked for it, so it is scored against the
+				// strongest demand currently in the field - it is supporting somebody who is still asking.
+				c.demandWeight = casDemandWeight;
 			}
+
+			c.cost = this.#scoreAirMissionRequest(c, currObj, parameters) * parameters.COMMITMENT_WEIGHT;
+			survivingMissions.push(c);
 		});
 
-		return activeTargetIDs;
+		return {activeTargetIDs: activeTargetIDs, survivingMissions: survivingMissions};
 	}
 
 	/**
@@ -906,66 +1020,53 @@ class CommandCenter {
 	 */
 	#prioritiseAviationTargets(state, parameters) {
 
-		const airRaidTargets = state.aviationTargets['raidTargets'];
-		const industrialTargets = state.aviationTargets['productionTargets'];
-		const adaTargets = state.aviationTargets['adaTargets'];
-		adaTargets.forEach(t => {t.numAircraft = parameters.UNITS_FOR_ADA_STRIKE;});
-		const indirectFireTargets = state.aviationTargets['indirectFireTargets'];
-		const defensiveStructureTargets = state.aviationTargets['defensiveStructureTargets'];
-
 		const adaThreat = state.fields.adaThreat;
 		const cellSize = state.grid.cellSize;
 
+		const adaTargets = state.aviationTargets['adaTargets'];
+		adaTargets.forEach(t => {t.numAircraft = parameters.UNITS_FOR_ADA_STRIKE;});
+
 		/** @type {AirStrikeMissionRequest[]} */
 		const casTargets = [];
+		let strongestCasDemand = 1;
 		this.BRIGADE_DESIGNATIONS.forEach(id => {
-			casTargets.push(...state.brigades[id]['casStrikeRequests']);
+			const casStrikeRequests = state.brigades[id]['casStrikeRequests'];
+
+			const demandWeight = this.#casDemandWeight(casStrikeRequests, parameters);
+			casStrikeRequests.forEach(r => {r.demandWeight = demandWeight;});
+			strongestCasDemand = Math.min(strongestCasDemand, demandWeight);
+
+			casTargets.push(...casStrikeRequests);
 		});
-		casTargets.sort((a, b) => b.priority - a.priority);		// todo: prioritise based on brigade need (e.g. brigade weights); to be passed in 'parameters'
-		
+
+		/*
+			One pool, one ranking. Close air support, base strikes and derrick raids all compete on cost, so the
+			air force can split its effort between them within a cycle. Previously a posture flag elected one list
+			and discarded the others outright, which is what dropped every CAS request whenever FishBot was not
+			oil dominant - exactly when its ground force most needed the help.
+		*/
+		const targetCandidates = [
+			...casTargets,
+			...state.aviationTargets['productionTargets'],
+			...adaTargets,
+			...state.aviationTargets['indirectFireTargets'],
+			...state.aviationTargets['defensiveStructureTargets'],
+			...state.aviationTargets['raidTargets'],
+		];
+
+		/** @type {AirStrikeMissionRequest[]} */
 		const aviationTargets = [];
-		let targetCandidates = [];
-
-		const casPriorityTargets = [...casTargets, ...airRaidTargets];
-		const raidPriorityTargets = [...airRaidTargets];
-
-		if (parameters.prioritiseIndustrialTargets) {
-
-			if (parameters.prioritiseCasTargets) {
-				targetCandidates = [...casTargets, ...adaTargets, ...indirectFireTargets, ...defensiveStructureTargets, ...industrialTargets, ...airRaidTargets];
-			} else {
-				// Industrial strike
-				if (parameters.SATURATION_RAID_ACTIVE) {
-					targetCandidates = [...adaTargets, ...industrialTargets, ...indirectFireTargets, ...defensiveStructureTargets, ...casPriorityTargets];
-				} else {
-					targetCandidates = [...industrialTargets, ...indirectFireTargets, ...adaTargets, ...defensiveStructureTargets, ...casPriorityTargets];			
-				}
-			}
-
-		} else if (parameters.prioritiseCasTargets) {
-			targetCandidates = casPriorityTargets;
-		} else if (parameters.prioritiseRaidTargets) {
-			targetCandidates = raidPriorityTargets;
-		} else {
-			targetCandidates = casPriorityTargets;
-		}
-
 		if (targetCandidates.length === 0) {
-			// debug(`${gameTime}: no target candidates; (CAS/RAID/IND = ${prioritiseIndustrialTargets}, ${prioritiseCasTargets}, ${prioritiseRaidTargets})`);
+			// debug(`${gameTime}: no aviation target candidates`);
 			return aviationTargets;
 		} 
 		
-		const activeTargetObjIDs = this.#filterPriorityAirMissions(state, parameters);
+		const {activeTargetIDs, survivingMissions} = this.#filterPriorityAirMissions(state, parameters, strongestCasDemand);
 		
-		// Remove already active missions from the target candidate pool
-		let newAviationTargets = [], existingAviationTargets = [];
+		// Score the candidates, dropping any target which is gone or sits under more air defence than its priority buys
+		const newAviationTargets = [], existingAviationTargets = [];
 
 		targetCandidates.forEach(missionRequest => {
-
-			let threatThreshold = (missionRequest.priority === MISSION_PRIORITY.URGENT) ? parameters.URGENT_THREAT_THRESHOLD : parameters.STANDARD_THREAT_THRESHOLD;
-			if (parameters.SATURATION_RAID_ACTIVE) {
-				threatThreshold  = parameters.SATURATION_THREAT_THRESHOLD;
-			}
 
 			const t = missionRequest.target;
 
@@ -976,21 +1077,54 @@ class CommandCenter {
 			
 			const gx = Math.floor(obj.x / cellSize); 
 			const gy = Math.floor(obj.y / cellSize);
-			if (adaThreat[gx][gy] > threatThreshold) {
-				// debug(`	removed CANDIDATE, adaThreat: ${c.name} @ grid (${c.x} ${c.y})`);
+			if (adaThreat[gx][gy] > this.#airThreatThreshold(missionRequest.priority, parameters)) {
+				// debug(`	removed CANDIDATE, adaThreat: ${obj.name} @ grid (${obj.x} ${obj.y})`);
 				return;
 			}
 
-			if (activeTargetObjIDs.includes(obj.id)) {
+			missionRequest.cost = this.#scoreAirMissionRequest(missionRequest, obj, parameters);
+
+			if (activeTargetIDs.includes(obj.id)) {
 				existingAviationTargets.push(missionRequest);
 			} else {
 				newAviationTargets.push(missionRequest);
 			}
 		});
 
-		aviationTargets.push(...newAviationTargets);
+		/*
+			Capacity cut: rank what is already flying against what is on offer, and keep the best packages the air
+			force can man. A running mission which no longer makes the cut is aborted, handing its aircraft back to
+			the reserve for the strike which displaced it.
+		*/
+		/** @type {{cost: number, request: (AirStrikeMissionRequest | undefined), mission: (CombatMissionData | undefined)}[]} */
+		const ranked = [];
+		newAviationTargets.forEach(r => ranked.push({cost: r.cost, request: r, mission: undefined}));
+		survivingMissions.forEach(m => ranked.push({cost: m.cost, request: undefined, mission: m}));
+		ranked.sort((a, b) => a.cost - b.cost);
+
+		const STRIKE_CAPACITY = Math.max(1, Math.floor(parameters.totalNumAircraft / UNITS_PER_AIR_STRIKE));
+
+		for (let i = 0; i < ranked.length; i++) {
+			const entry = ranked[i];
+			const WITHIN_CAPACITY = (i < STRIKE_CAPACITY);
+
+			if (entry.mission != undefined) {
+				if (!WITHIN_CAPACITY) {
+					// debug(`displaced ACTIVE: ${entry.mission.target.name} (${entry.mission.missionType})`);
+					entry.mission.missionStatus = MISSION_STATUS.ABORT;
+				}
+				continue;
+			}
+			if (WITHIN_CAPACITY) {
+				aviationTargets.push(entry.request);
+			}
+		}
+
+		// Spare aircraft double up on a target already under attack rather than sitting on the pad. Counts the
+		// candidates found, not the ones selected, which is capped at the strike capacity and so always fits.
 		const TOO_MANY_AIRCRAFT = newAviationTargets.length <= Math.floor(parameters.totalNumAircraft / 2);
 		if (TOO_MANY_AIRCRAFT) {
+			existingAviationTargets.sort((a, b) => a.cost - b.cost);
 			aviationTargets.push(...existingAviationTargets);
 		}
 
