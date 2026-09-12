@@ -134,7 +134,7 @@ function moveReservesToShadow(state, reserveGroupIDs, anchorBrigadeID) {
 	const x = anchorBrigade.location.x;
 	const y = anchorBrigade.location.y;
 
-	const REGROUP_RADIUS_SQ = getCohesionRadiusSq(COHESION_RADII.REGROUP, anchorBrigade.avgBodySize);
+	const REGROUP_RADIUS_SQ = interpolateCohesionRadiusSq(COHESION_RADII.REGROUP, anchorBrigade.avgBodySize);
 
 	const isTooFarAway = (droid) => distSq(droid.x, x, droid.y, y) > REGROUP_RADIUS_SQ;
 
@@ -169,58 +169,40 @@ const COHESION_RELAXED_AT_BODY_SIZE = BODY_WEIGHT.MEDIUM;
 
 /**
  * Returns the squared cohesion radius a brigade of the given average body size gets.
- * Squared, because the callers compare against `distSq()`.
  * @param {CohesionRadius} cohesionRadius one of `COHESION_RADII`
  * @param {number} avgBodySize the brigade's average `BODY_WEIGHT`, over its vehicles
  * @returns {number}
  */
-function getCohesionRadiusSq(cohesionRadius, avgBodySize) {
-	// 0 for a brigade of light vehicles, 1 once the average body is medium (or heavier).
-	const BULK = clampValue(
-		(avgBodySize - COHESION_TIGHT_AT_BODY_SIZE) / (COHESION_RELAXED_AT_BODY_SIZE - COHESION_TIGHT_AT_BODY_SIZE), 
-		0, 
-		1
-	);
-
-	const radius = cohesionRadius.tight + ((cohesionRadius.relaxed - cohesionRadius.tight) * BULK);
-	return radius ** 2;
+function interpolateCohesionRadiusSq(cohesionRadius, avgBodySize) {
+	const relativeBodySize = (avgBodySize - COHESION_TIGHT_AT_BODY_SIZE) / (COHESION_RELAXED_AT_BODY_SIZE - COHESION_TIGHT_AT_BODY_SIZE);
+	const linearScalingFactor = clampValue(relativeBodySize, 0, 1); 
+	const interpolatedRadius = cohesionRadius.tight + ((cohesionRadius.relaxed - cohesionRadius.tight) * linearScalingFactor);
+	return interpolatedRadius ** 2;
 }
 
 /**
- * Returns how much room a single body of the given size takes up in a corridor, in 'light bodies' worth of space.
- * @param {number} bodySize a `BODY_WEIGHT` value (fractional values are permitted, e.g. a brigade average)
- * @returns {number}
- */
-function getBodyCongestionWeight(bodySize) {
-	return bodySize + 1;		// LIGHT -> 1, MEDIUM -> 2, HEAVY -> 3
-}
-
-/**
- * Reports whether friendly armour is packed tightly enough around (x, y) to be getting in its own way.
- *
- * What saturates a corridor is bulk, not headcount: five mid-size bodies fit where five heavy bodies do not.
- * Nearby units are therefore counted by how much room they take up, against an allowance of what five
- * mid-size bodies are worth. Nearby units are charged at the *brigade's* average body size, which is an
- * approximation when another brigade's units are also in the radius.
+ * Reports whether friendly armour is packed tightly enough around (x, y) to be getting in its own way. Also a function of body size.
  * @param {worldState} state 
  * @param {number} x 
  * @param {number} y 
- * @param {number} avgBodySize the brigade's average `BODY_WEIGHT`
+ * @param {number} avgBodySize the brigade's average `BODY_WEIGHT`. Note: BODY_WEIGHT is a zero-indexed enum; this is why "1" is added.
  * @returns {boolean}
  */
 function isLocationCongested(state, x, y, avgBodySize) {
-	const CHOKEPOINT_CONGESTION_RADIUS = 5;
-	const CHOKEPOINT_CONGESTION_ALLOWANCE = 5 * getBodyCongestionWeight(BODY_WEIGHT.MEDIUM);		// what 5 mid-size bodies are worth
+	const CHECK_RADIUS = 5;
+	const MAX_CONGESTION_SCORE_IN_CHECK_RADIUS = 5 * (BODY_WEIGHT.MEDIUM + 1);			// = 5 medium tanks in a 5 tile radius
+	
+	const nearby = state.grid.enumRangeLazy(x, y, CHECK_RADIUS, false, true);
 
-	const CONGESTION_PER_UNIT = getBodyCongestionWeight(avgBodySize);
+	const TRACKED_VEHICLE_MASK = (OBJ_FLAGS.ARMOUR | OBJ_FLAGS.ADA | OBJ_FLAGS.INDIRECT_FIRE | OBJ_FLAGS.REPAIR);
+	const CONGESTION_SCORE_PER_TRACKED_VEHICLE = avgBodySize + 1;
 
-	const nearby = state.grid.enumRangeLazy(x, y, CHOKEPOINT_CONGESTION_RADIUS, false, true);
-
-	let congestion = 0;
+	let congestionScore = 0;
 	for (let i=0; i<nearby['friendlyUnits'].length; i++) {
-		if (nearby['friendlyUnits'][i].flags & OBJ_FLAGS.ARMOUR) {
-			congestion += CONGESTION_PER_UNIT;
-			if (congestion > CHOKEPOINT_CONGESTION_ALLOWANCE) {
+		const IS_TRACKED_VEHICLE = nearby['friendlyUnits'][i].flags & TRACKED_VEHICLE_MASK;
+		if (IS_TRACKED_VEHICLE) {
+			congestionScore += CONGESTION_SCORE_PER_TRACKED_VEHICLE;
+			if (congestionScore > MAX_CONGESTION_SCORE_IN_CHECK_RADIUS) {
 				return true;
 			}
 		}
@@ -245,8 +227,8 @@ function moveBrigadeToLocation(state, brigadeID, targetX, targetY) {
 
 	// How much room this brigade gets to maneuver in, which is set by how big its units are.
 	const AVG_BODY_SIZE = state.brigades[brigadeID].avgBodySize;
-	const REGROUP_RADIUS_SQ = getCohesionRadiusSq(COHESION_RADII.REGROUP, AVG_BODY_SIZE);
-	const HOLD_RADIUS_SQ = getCohesionRadiusSq(COHESION_RADII.HOLD, AVG_BODY_SIZE);
+	const REGROUP_RADIUS_SQ = interpolateCohesionRadiusSq(COHESION_RADII.REGROUP, AVG_BODY_SIZE);
+	const HOLD_RADIUS_SQ = interpolateCohesionRadiusSq(COHESION_RADII.HOLD, AVG_BODY_SIZE);
 
 	const DISTSQ_CENTER_TO_TARGET = distSq(LOCATION_X, targetX, LOCATION_Y, targetY);
 	const BRIGADE_CONGESTED = isLocationCongested(state, LOCATION_X, LOCATION_Y, AVG_BODY_SIZE);
@@ -307,11 +289,11 @@ function moveBrigadeToAttack(state, brigadeID, groundTargets) {
 
 	// How much room this brigade gets to maneuver in, which is set by how big its units are.
 	const AVG_BODY_SIZE = state.brigades[brigadeID].avgBodySize;
-	const REGROUP_RADIUS_SQ = getCohesionRadiusSq(COHESION_RADII.REGROUP, AVG_BODY_SIZE);
-	const HOLD_RADIUS_SQ = getCohesionRadiusSq(COHESION_RADII.HOLD, AVG_BODY_SIZE);
-	const FIRE_SUPPORT_RADIUS_SQ = getCohesionRadiusSq(COHESION_RADII.FIRE_SUPPORT, AVG_BODY_SIZE);
-	const STATION_KEEPING_RADIUS_SQ = getCohesionRadiusSq(COHESION_RADII.STATION_KEEPING, AVG_BODY_SIZE);
-	const REPAIR_RADIUS_SQ = getCohesionRadiusSq(COHESION_RADII.REPAIR, AVG_BODY_SIZE);
+	const REGROUP_RADIUS_SQ = interpolateCohesionRadiusSq(COHESION_RADII.REGROUP, AVG_BODY_SIZE);
+	const HOLD_RADIUS_SQ = interpolateCohesionRadiusSq(COHESION_RADII.HOLD, AVG_BODY_SIZE);
+	const FIRE_SUPPORT_RADIUS_SQ = interpolateCohesionRadiusSq(COHESION_RADII.FIRE_SUPPORT, AVG_BODY_SIZE);
+	const STATION_KEEPING_RADIUS_SQ = interpolateCohesionRadiusSq(COHESION_RADII.STATION_KEEPING, AVG_BODY_SIZE);
+	const REPAIR_RADIUS_SQ = interpolateCohesionRadiusSq(COHESION_RADII.REPAIR, AVG_BODY_SIZE);
 
 	const BRIGADE_CONGESTED = isLocationCongested(state, LOCATION_X, LOCATION_Y, AVG_BODY_SIZE);
 
