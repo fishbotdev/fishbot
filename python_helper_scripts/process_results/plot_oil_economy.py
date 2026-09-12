@@ -34,30 +34,34 @@ That discards whatever redirection the launching process set up, which is why `t
 scrapes the Win32 console screen buffer instead of piping. This script reuses that same scraper, so it has to
 launch the game itself: the scrape reads the console that this Python process owns.
 
-That also caps how much history is recoverable. The game sets the console buffer to 9999 rows
-(`MAX_CONSOLE_LINES` in `clparse.cpp`), and telemetry costs ~6 rows per game minute per FishBot, so a long FFA
-can push the start of the game out of the buffer. `parse_telemetry` warns when that has happened.
+What the console holds is therefore what can be recovered. A console attached from a terminal starts with a
+screen buffer only as tall as its visible window - about 30 rows, a couple of game minutes - so
+`prepare_console_for_scraping` grows it to 9999 rows first, or runs the game in a console of its own when the
+terminal will not allow that. Telemetry still costs ~6 rows per game minute per FishBot, so a very long FFA can
+outrun even that; `parse_telemetry` warns when the start of a game did not survive.
 
 Usage:
     No command-line arguments needed -- set TEST_FILE_NAME in the configuration block at the bottom and run the
     file (e.g. hit Run/F5 in your IDE). The scraped telemetry is saved next to this script before plotting, so a
     run is never lost; set RUN_GAME = False to re-plot the newest saved capture without running a game.
 
-Platform & IDE notes (these mirror `tests/run_tests.py`, and apply for the same reasons):
+Platform notes:
     - The scraper is Windows-only. On Linux/Mac, plot a capture saved elsewhere (RUN_GAME = False).
-    - In PyCharm, enable "Emulate Terminal in Output Console" in the Run Configuration, or the game's console
-      output never reaches the console this script scrapes. VSCode generally needs no change.
-    - A telemetry line is ~120 characters. If the console is narrower it wraps; wrapped rows are stitched back
-      together by the parser, but widening/undocking the console keeps the live output readable.
+    - No IDE setting is needed, unlike `tests/run_tests.py`: a console the script cannot scrape is replaced with
+      one it can, so the game's output may appear in a separate window rather than inline.
+    - Wrapped telemetry lines are stitched back together by the parser, so a narrow console costs rows but not
+      data.
 
 Requires `pandas` & `matplotlib` (`pip install pandas matplotlib`).
 
 Authored by Claude.
 """
 
+import ctypes
 import re
 import subprocess
 import sys
+from ctypes import wintypes
 from datetime import datetime
 from pathlib import Path
 from typing import Callable, List
@@ -69,9 +73,15 @@ SCRIPT_DIR = Path(__file__).resolve().parent
 REPO_ROOT = SCRIPT_DIR.parent.parent
 TESTS_DIR = REPO_ROOT / "tests"
 
-# The game sets the console scroll-back to this many rows (`MAX_CONSOLE_LINES` in its `clparse.cpp`), so there is
-# nothing to be gained by asking the scraper for more.
+# The number of rows the console screen buffer is grown to before the game runs, matching `MAX_CONSOLE_LINES` in
+# the game's `clparse.cpp`. Telemetry costs ~6 rows per game minute per FishBot.
 CONSOLE_SCROLLBACK_ROWS = 9999
+
+# A telemetry line is ~120 characters. Widening the buffer past that stops the console splitting lines in two,
+# which both halves the rows a game costs and keeps the live output readable.
+CONSOLE_MIN_COLUMNS = 200
+
+STD_OUTPUT_HANDLE = -11
 
 # Matches the `deb()` prefix ("F0:  05:30:  ") followed by the telemetry tag, and takes the game time from it.
 TELEMETRY_ROW = re.compile(r"F(?P<player>\d+):\s+(?P<mins>\d+):(?P<secs>\d{2}):\s+OIL\s+(?P<fields>.*)$")
@@ -102,6 +112,80 @@ def load_console_scraper() -> Callable[[int], List[str]]:
     return test_runner.windows_scrape_terminal_history
 
 
+class _COORD(ctypes.Structure):
+    _fields_ = [("X", ctypes.c_short), ("Y", ctypes.c_short)]
+
+
+class _SMALL_RECT(ctypes.Structure):
+    _fields_ = [("Left", ctypes.c_short), ("Top", ctypes.c_short),
+                ("Right", ctypes.c_short), ("Bottom", ctypes.c_short)]
+
+
+class _CONSOLE_SCREEN_BUFFER_INFO(ctypes.Structure):
+    _fields_ = [("dwSize", _COORD), ("dwCursorPosition", _COORD), ("wAttributes", ctypes.c_ushort),
+                ("srWindow", _SMALL_RECT), ("dwMaximumWindowSize", _COORD)]
+
+
+def _open_console_screen_buffer():
+    """A handle to this process's console screen buffer, or None if it has no console."""
+    kernel32 = ctypes.windll.kernel32
+    kernel32.CreateFileW.restype = wintypes.HANDLE
+    kernel32.CreateFileW.argtypes = [wintypes.LPCWSTR, wintypes.DWORD, wintypes.DWORD,
+                                     ctypes.c_void_p, wintypes.DWORD, wintypes.DWORD, wintypes.HANDLE]
+
+    GENERIC_READ_WRITE, SHARE_READ_WRITE, OPEN_EXISTING = 0xC0000000, 0x3, 3
+    handle = kernel32.CreateFileW("CONOUT$", GENERIC_READ_WRITE, SHARE_READ_WRITE, None, OPEN_EXISTING, 0, None)
+
+    INVALID_HANDLE_VALUE = 2 ** (8 * ctypes.sizeof(wintypes.HANDLE)) - 1
+    return None if handle in (None, 0, -1, INVALID_HANDLE_VALUE) else handle
+
+
+def _screen_buffer_size(handle) -> tuple:
+    """The screen buffer's `(columns, rows)`, or `(0, 0)` if it cannot be read."""
+    info = _CONSOLE_SCREEN_BUFFER_INFO()
+    if not ctypes.windll.kernel32.GetConsoleScreenBufferInfo(handle, ctypes.byref(info)):
+        return 0, 0
+    return info.dwSize.X, info.dwSize.Y
+
+
+def _grow_screen_buffer(handle) -> tuple:
+    """Grows the screen buffer to hold a whole game, never shrinking it, and returns the size actually applied."""
+    columns, rows = _screen_buffer_size(handle)
+    wanted = _COORD(max(columns, CONSOLE_MIN_COLUMNS), max(rows, CONSOLE_SCROLLBACK_ROWS))
+
+    ctypes.windll.kernel32.SetConsoleScreenBufferSize(handle, wanted)
+    return _screen_buffer_size(handle)       # read back: a request the console ignored still reports success
+
+
+def prepare_console_for_scraping():
+    """
+    Gives this process a console whose screen buffer can hold a whole game, and returns `(handle, description)`.
+
+    This is what makes the capture whole. The scraper reads the console *screen buffer*, and a console backed by
+    ConPTY - Windows Terminal, VSCode, PyCharm's "Emulate Terminal in Output Console" - keeps its scroll-back in
+    the terminal emulator instead, leaving a buffer only as tall as the visible window (~30 rows, a couple of game
+    minutes) and silently ignoring a request to grow it. A private console is allocated when that happens, which
+    the game attaches to in place of the terminal's.
+    """
+    handle = _open_console_screen_buffer()
+
+    if handle is not None:
+        columns, rows = _grow_screen_buffer(handle)
+        if rows >= CONSOLE_SCROLLBACK_ROWS:
+            return handle, f"capturing from this console ({columns} x {rows})"
+
+    ctypes.windll.kernel32.FreeConsole()
+    if not ctypes.windll.kernel32.AllocConsole():
+        raise SystemExit("Could not allocate a console to run the game in.")
+
+    handle = _open_console_screen_buffer()
+    if handle is None:
+        raise SystemExit("Allocated a console but could not open its screen buffer.")
+
+    columns, rows = _grow_screen_buffer(handle)
+    return handle, f"capturing from a new console window ({columns} x {rows}); this one cannot hold a whole game"
+
+
 def build_autogame_command(test_file_name: str) -> List[str]:
     """
     Builds the same autogame command `tests/run_tests.py` uses, but with paths resolved from the repo root so that
@@ -130,10 +214,15 @@ def run_autogame_and_scrape(test_file_name: str, timeout_seconds: int = 1200) ->
     Runs one autogame to completion (letting it write straight to this console), then returns the console rows.
     """
     scrape_console = load_console_scraper()
+    console_handle, console_description = prepare_console_for_scraping()
 
     command = build_autogame_command(test_file_name)
-    print(f"Running {test_file_name} (up to {timeout_seconds // 60} minutes)...")
+    print(f"Running {test_file_name} (up to {timeout_seconds // 60} minutes) -- {console_description}...")
     subprocess.run(command, timeout=timeout_seconds)        # blocking; returns once the game exits
+
+    # The scraper reads whichever buffer the standard output handle names, which is not the prepared console when
+    # the game had to be given one of its own.
+    ctypes.windll.kernel32.SetStdHandle(STD_OUTPUT_HANDLE, console_handle)
 
     return scrape_console(CONSOLE_SCROLLBACK_ROWS)
 

@@ -204,7 +204,7 @@ if __name__ == "__main__":
 
     # INPUT DIRECTORY DEFINITIONS
     # BASE_MAPS_PATH = Path.cwd() / r'custom_test_map_packager\\v4.7.0_base_maps'
-    BASE_MAPS_PATH = Path.cwd() / r'custom_test_map_packager\\v4.7.0_base_maps__release_set'
+    BASE_MAPS_PATH = Path.cwd() / r'custom_test_map_packager\\v4.7.0_brigade_tuning_maps'
     # BASE_MAPS_PATH = Path.cwd() / r'custom_test_map_packager\\v4.7.0_vertical_slice_maps'
 
     # OUTPUT DIRECTORY DEFINITIONS
