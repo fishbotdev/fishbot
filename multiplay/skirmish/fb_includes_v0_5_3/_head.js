@@ -284,6 +284,14 @@
  * @property {AirStrikeMissionRequest[]} casTargets
  */
 
+/**
+ * Cohesion radii (in tiles): how much room a brigade is given to maneuver in.
+ * Upper bound is set by "relaxed" (big vehicles), lower bound is set by "tight" (small vehicles).
+ * @typedef {Object} CohesionRadius
+ * @property {number} tight
+ * @property {number} relaxed
+ */
+
 
 /*
 	STRATEGIC PARAMETERS

@@ -153,28 +153,15 @@ function moveReservesToShadow(state, reserveGroupIDs, anchorBrigadeID) {
 
 }
 
-/**
- * Cohesion radii (in tiles): how much room a brigade is given to maneuver in.
- *
- * Heavy bodies are larger and slower to turn, so a brigade carrying them needs more room than one of light
- * bodies, and has to wait out to a wider radius before its stragglers have caught up. Each radius is therefore
- * stated twice: `tight` is what a brigade of light vehicles gets, and `relaxed` is the room a brigade gets once
- * its bodies are big enough to need it. In between, `getCohesionRadiusSq()` interpolates.
- *
- * `HOLD` must stay below `REGROUP` at every body size, otherwise the 'wait for the group' band disappears.
- * @typedef {Object} CohesionRadius
- * @property {number} tight
- * @property {number} relaxed
- */
 const COHESION_RADII = {
+	/** @type {CohesionRadius} */
 	REGROUP:         {tight: 8, relaxed: 12},		// beyond this, a unit breaks off what it is doing and rejoins the group
-	HOLD:            {tight: 5, relaxed: 9},		// beyond this, a unit which is ahead of the group waits for the group to catch up
+	HOLD:            {tight: 5, relaxed: 9},		// beyond this, a unit which is ahead of the group waits for the group to catch up.  
+	// Note: `HOLD` thresholds must stay below `REGROUP` thresholds at every body size (otherwise the behaviour gets eaten by "REGROUP").
 	FIRE_SUPPORT:    {tight: 6, relaxed: 7.5},		// how far fire support may sit from the group center before it is recalled
 	STATION_KEEPING: {tight: 4, relaxed: 5},		// how far a sensor / AA unit may sit from the unit nearest the target
 	REPAIR:          {tight: 7, relaxed: 8.75},		// how far a repair unit may roam from the unit nearest the target
 };
-Object.values(COHESION_RADII).forEach(Object.freeze);
-Object.freeze(COHESION_RADII);
 
 // The average body size a brigade's vehicles must reach for it to be given the `tight` and `relaxed` radii.
 const COHESION_TIGHT_AT_BODY_SIZE = BODY_WEIGHT.LIGHT;
