@@ -1,8 +1,27 @@
 # Changelog
 This file is used to record the changes to FishBot between each version.
 
+## Fishbot v0.5.3
+*Released **xx Sep 2026***
+### Changes in v0.5.3
+- Combat improvements
+    - Group cohesion improved by:
+        - Adjusting the combat-group splitting system to only split brigades when force strength is sufficient.
+        - Adjusting the threshold for 'safe' vs 'aggressive' play.
+        - Adjusting cohesion radii with tank size (bigger tanks need more room to maneuver).
+    - Improved VTOLs being too passive when the match is neck-and-neck.
+- Construction & production fixes
+    - Fixed a rare issue where base builder trucks would get stuck when a structure was built in the intended base structure footprint.
+    - Fixed some uncommon construction planning issues causing trucks to oscillate back and forth doing nothing.
+    - Unit designs & force composition tweaked. 
+    - Added adaptation to truck production & base structure construction (based on FishBot's oil situation).
+- Technical changes
+    - Fixed a latent issue where combat cyborgs could potentially be produced before the Command Center was built; this means that FishBot continues to respect human player rules even if only cyborg factories are allowed.
+    - Improved E2E test coverage of most base maps shipped with the game (*excluding 10 player maps and sea maps*), as script-generated maps are now testable.
+    - `spectate_map.exe` now can automatically run the `run_debug_gamespeed_up.ahk` macro on startup. Also fixed a selection in "Recent" overriding a subsequent selection in the main list.
+
 ## Fishbot v0.5.2
-*Released **1 Sep 2026***
+*Released **01 Sep 2026***
 ### Changes in v0.5.2
 - Combat improvements:
     - Complete overhaul of:

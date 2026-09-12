@@ -241,26 +241,41 @@ class TacticalOperationsCenter {
 	}
 
 	/**
-	 * Writes back what a construction tick learned about oil-capture planning: sectors called off as too
-	 * dangerous, and whether a planning pass ran. Cooldown entries which have expired are pruned here, so
-	 * everything left in `state.abortedOilSectors` afterwards is still cooling down.
-	 * @param {worldState} state 
+	 * Prunes expired entries from an aborted-sector record, then records the sectors called off this tick.
+	 * Everything left in the record afterwards is still cooling down.
+	 * @param {Map<number | string, number>} record Map from `sectorID` to the `gameTime` it was called off.
 	 * @param {(number | string)[]} abortedSectorIDs Sectors called off as dangerous this tick.
-	 * @param {boolean} planningPassRan Whether oil-capture options were regenerated this tick.
 	 * @param {number} cooldownMs How long an aborted sector stays off the option list.
 	 * @returns {void}
 	 */
-	updateOilCapturePlanningRecord(state, abortedSectorIDs, planningPassRan, cooldownMs) {
-		state.abortedOilSectors.forEach((abortedAt, sectorID) => {
+	#updateAbortedSectorRecord(record, abortedSectorIDs, cooldownMs) {
+		record.forEach((abortedAt, sectorID) => {
 			if (gameTime - abortedAt >= cooldownMs) {
-				state.abortedOilSectors.delete(sectorID);
+				record.delete(sectorID);
 			}
 		});
 
-		abortedSectorIDs.forEach(sectorID => state.abortedOilSectors.set(sectorID, gameTime));
+		abortedSectorIDs.forEach(sectorID => record.set(sectorID, gameTime));
+	}
+
+	/**
+	 * Writes back what a construction tick learned about remote construction planning: the sectors called off
+	 * as too dangerous (oil capture and derrick defences are recorded separately, as a defence mission reuses
+	 * the derrick's ID as its sectorID), and whether a planning pass ran.
+	 * @param {worldState} state
+	 * @param {Object} abortedSectors Sectors called off as dangerous this tick.
+	 * @param {(number | string)[]} abortedSectors.abortedOilSectorIDs
+	 * @param {(number | string)[]} abortedSectors.abortedDefenceSectorIDs
+	 * @param {boolean} planningPassRan Whether construction options were regenerated this tick.
+	 * @param {number} cooldownMs How long an aborted sector stays off the option list.
+	 * @returns {void}
+	 */
+	updateConstructionPlanningRecord(state, {abortedOilSectorIDs, abortedDefenceSectorIDs}, planningPassRan, cooldownMs) {
+		this.#updateAbortedSectorRecord(state.abortedOilSectors, abortedOilSectorIDs, cooldownMs);
+		this.#updateAbortedSectorRecord(state.abortedDefenceSectors, abortedDefenceSectorIDs, cooldownMs);
 
 		if (planningPassRan) {
-			state.oilCapPlannedAt = state.grid.lastUpdatedAt;
+			state.constructionPlannedAt = state.grid.lastUpdatedAt;
 		}
 	}
 
@@ -910,6 +925,26 @@ class TacticalOperationsCenter {
 	}
 
 	/**
+	 * Returns the units belonging to a brigade.
+	 *
+	 * The reserve is the exception: it owns no group of its own, so its units are gathered from the category
+	 * reserve groups. Units away for repair sit in `RETURNING_FOR_REPAIR` and are deliberately not counted,
+	 * so the reserve's strength reflects only what resupply could hand out right now.
+	 * @param {worldState} state
+	 * @param {number} brigadeID
+	 * @returns {DroidObject[]}
+	 */
+	#getBrigadeUnits(state, brigadeID) {
+		if (brigadeID !== DIVISION.BCT_RESERVE) {
+			return state.g.enumGroup(brigadeID);
+		}
+
+		const reserveUnits = [];
+		RESERVE_CATEGORY_GROUP_IDS.forEach(groupID => reserveUnits.push(...state.g.enumGroup(groupID)));
+		return reserveUnits;
+	}
+
+	/**
 	 * Updates unit lists for each battalion in a brigade, and the brigade's overall strength.
 	 * @param {worldState} state
 	 * @param {number} brigadeID
@@ -953,9 +988,17 @@ class TacticalOperationsCenter {
             btnInfo["healthyUnitList"].length = 0;
         }
 
-        // Reclassify as damaged / healthy
-        const brigadeUnits = state.g.enumGroup(brigadeID);      
+        // Reclassify as damaged / healthy. Also measure vehicle size.
+        const brigadeUnits = this.#getBrigadeUnits(state, brigadeID);
+        let vehicleCount = 0;
+        let bodySizeSum = 0;
         brigadeUnits.forEach(unit => {
+            // The average vehicle size is used to determine the cohesion radius for formation-keeping. Cyborgs are excluded from this because they are small.
+            if (unit.droidType !== DROID_CYBORG) {
+                vehicleCount++;
+                bodySizeSum += getDroidBodySize(unit);
+            }
+
             const category = getDroidFbGroupClassification(unit);
 
             const currBattalion = brigadeComposition.get(category);
@@ -984,19 +1027,14 @@ class TacticalOperationsCenter {
             battalionComposition["deficit"] = maxUnitCount - healthyUnitCount;
         };
 
-        // Update brigade strength. This counts the same units that `getForceCenterLoc()` averages over
-        // (all direct-fire units, healthy or damaged). Strength rises immediately with reinforcement but
-        // decays gradually, so it does not jitter when single units die and are replaced.
+		// Brigade strength rises immediately with reinforcement but decays gradually, so it does not jitter when single units die and are replaced.
         const directFireUnitCount = brigadeUnits.filter(unit => !unit.hasIndirect).length;
         const currBrigade = state.brigades[brigadeID];
+        currBrigade["directFireCount"] = directFireUnitCount;
         currBrigade["strength"] = Math.max(directFireUnitCount, currBrigade["strength"] - parameters.STRENGTH_DECAY_RATE);
 
-        if (false) {
-            debug(`${gameTime}: Brigade ${brigadeID} Composition`)
-            for (const [btnID, btnInfo] of brigadeComposition) {
-                debug(`\t - ${btnID}: ${btnInfo["count"]} healthy (- ${btnInfo["deficit"]}) ( - ${btnInfo["damagedUnitList"].length} damaged)`);
-            }
-        }
+        // Update the brigade's average body size (vehicles only), which is used during formation keeping. Defaults to MEDIUM.
+        currBrigade["avgBodySize"] = (vehicleCount === 0) ? BODY_WEIGHT.MEDIUM : (bodySizeSum / vehicleCount);
     }
 
 	/**

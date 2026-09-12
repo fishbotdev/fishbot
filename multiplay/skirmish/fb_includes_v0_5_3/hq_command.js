@@ -49,22 +49,36 @@ class CommandCenter {
 		this.TARGET_SEARCH_RADIUS = 25;				// how many tiles away from the brigadeLocation to look for enemies (impacts computational performance)
 
 		// Ground targeting
-		this.NUMBER_OF_BRIGADES = 4;
-		this.BRIGADE_DESIGNATIONS = BRIGADE_IDS.slice(0, this.NUMBER_OF_BRIGADES);
+		this.MAX_BRIGADES = 3;								// ceiling on how many BCTs the division may put in the field
+		this.BRIGADE_DESIGNATIONS = [DIVISION.FIRST_BCT];	// the BCTs which currently exist; grows and shrinks as the division can man them
+
+		/** @type {ForceStructureParameters} */
+		this.FORCE_STRUCTURE_PARAMETERS = {
+			RELEASE_DWELL_TICKS: 15,	// consecutive resupply ticks the formation conditions must hold before a new BCT is formed (~30s)
+			MAX_THREAT_RATIO: 0.4,		// nearby ground threats per combat unit, above which a BCT is judged to be expecting heavy combat
+			MAX_UNREPLACED_LOSSES: 2,	// direct-fire units a BCT may be down on its recent peak before it counts as bleeding
+			releaseDwell: 0,
+		};
+
+		// Total ground force budget, counted in brigades' worth of units (BCTs in the field + reserve).
+		// Kept separate from MAX_BRIGADES so that changing how the force is split into BCTs does not also
+		// change how big the army is (or, via the leftover, the VTOL budget). It is also what decides how
+		// far the division can actually grow: forming a BCT needs every BCT *and* the reserve at full
+		// establishment, so the division settles at (FORCE_BUDGET_BRIGADES - 1) BCTs or MAX_BRIGADES,
+		// whichever is smaller.
+		this.FORCE_BUDGET_BRIGADES = 4;
 
 		const DEFAULT_FISHBOT_BRIGADE_COMPOSITION = {
-			'MAX_HEAVY_CAVALRY': 3,
-			'MAX_LIGHT_CAVALRY': 3,
-			'MAX_MORTAR': 4,
+			'MAX_HEAVY_CAVALRY': 6,
+			'MAX_LIGHT_CAVALRY': 2,
+			'MAX_MORTAR': 5,
 			'MAX_ADA': 2,
 			'MAX_SENSOR': 1,
-			'MAX_INFANTRY': 6,
 			'MAX_REPAIR': 1,
+			'MAX_INFANTRY': 3,
 		};
 
 		const TOTAL_UNITS_PER_BRIGADE = Object.values(DEFAULT_FISHBOT_BRIGADE_COMPOSITION).reduce((a, b) => a + b, 0);
-
-		const MAX_DIRECT_FIRE_UNITS = DEFAULT_FISHBOT_BRIGADE_COMPOSITION.MAX_HEAVY_CAVALRY + DEFAULT_FISHBOT_BRIGADE_COMPOSITION.MAX_LIGHT_CAVALRY + DEFAULT_FISHBOT_BRIGADE_COMPOSITION.MAX_INFANTRY;
 
 		/** @type {GroundForceParameters} */
 		this.GROUND_FORCE_PARAMETERS = {
@@ -79,10 +93,10 @@ class CommandCenter {
 			ADJACENCY_WEIGHT: 0.25,					// promotes further-away targets which are part of the same fight (e.g. the rest of an enemy base)
 			KNOCKOUT_WEIGHT: 0.56,					// promotes targets which the brigade has already damaged
 			LOW_HEALTH_THRESHOLD: 50,				// a target below this health percentage is considered worth finishing off
+			BLOCKED_APPROACH_WEIGHT: 2.0,			// demotes targets with terrain in the way; a target with a clear approach wins from ~1.4x further away
 
-			EFFECTIVE_FIRE_SUPPORT_RADIUS: 10,		// todo: this should be adaptive - when the brigade has a sensor, this is better, without, it is restricted by sight range of the front units
+			EFFECTIVE_FIRE_SUPPORT_RADIUS: 12,		// todo: this should be adaptive - when the brigade has a sensor, this is better, without, it is restricted by sight range of the front units
 			EFFECTIVE_ADA_RADIUS: 12,
-			MEDIAN_CENTER_STRENGTH_THRESHOLD: Math.ceil(0.50 * MAX_DIRECT_FIRE_UNITS),		// at/above this brigade strength, the brigade position estimator switches from average to median which changes the aggression of the brigade
 		};
 
 		// Aviation parameters
@@ -111,19 +125,20 @@ class CommandCenter {
 			ABORTED_SECTOR_COOLDOWN_MS: 30000,		// how long a sector aborted as dangerous stays off the option list
 
 			// Structure limits
-			MAX_GENERATORS_AND_POWER_MODULES: 2,
+			DYNAMIC_POWER_GENERATOR_CAP: 2,
+			DYNAMIC_FACTORY_CAP: 2,
+			DYNAMIC_RESEARCH_LAB_CAP: 1,
 			MAX_VTOL_REARMING_PADS: 2, 
 			SHOULD_BUILD_VTOLS: false,
-			SHOULD_USE_FACTORY_MODULES: false,
 		};
 
 		// Production parameters
 		/** @type {Map<number, number>} */
 		const DEFAULT_BRIGADE_WEIGHTS = new Map([
-			[DIVISION.FIRST_BCT, 16], 
-			[DIVISION.SECOND_BCT, 8], 
-			[DIVISION.THIRD_BCT, 4], 
-			[DIVISION.FOURTH_BCT, 2], 
+			[DIVISION.FIRST_BCT, 1000], 
+			[DIVISION.SECOND_BCT, 100], 
+			[DIVISION.THIRD_BCT, 10], 
+			[DIVISION.FOURTH_BCT, 0], 
 			[DIVISION.FIFTH_BCT, 0],
 			[DIVISION.BCT_RESERVE, 1],
 		]);
@@ -132,22 +147,22 @@ class CommandCenter {
 		const DEFAULT_UNIT_WEIGHTS = new Map([
 			// Production weights (which influences production order) are tuned using `python_helper_scripts / production_scheduling.py`.
 			// Must be rebalanced each time the brigade composition is changed.	
-			[DIVISION.HEAVY_CAV_RESERVE, 0.95],
-			[DIVISION.LIGHT_CAV_RESERVE, 1.0],
-			[DIVISION.SHORT_RANGE_FIRE_SUPPORT_RESERVE, 0.7],
-			[DIVISION.AIR_DEFENCE_RESERVE, 0.65],
-			[DIVISION.SENSOR_RESERVE, 0.25],
-			[DIVISION.MAINTENANCE_RESERVE, 0.5],
+			[DIVISION.HEAVY_CAV_RESERVE, 0.55],
+			[DIVISION.LIGHT_CAV_RESERVE, 0.95],
+			[DIVISION.SHORT_RANGE_FIRE_SUPPORT_RESERVE, 0.6],
+			[DIVISION.AIR_DEFENCE_RESERVE, 0.35],
+			[DIVISION.SENSOR_RESERVE, 0.2],
+			[DIVISION.MAINTENANCE_RESERVE, 0.1],
 		]);
 
 		/** @type {ProductionParameters} */
 		this.PRODUCTION_RESUPPLY_PARAMETERS = {
 			CAN_DESIGN_UNITS: false,
 
-			SHOULD_PRODUCE_TRUCKS: true,
+			SHOULD_PRODUCE_TRUCK_VEHICLES: true,
 			MAX_TRUCKS_THIS_TICK: 1,
-			CYBORG_CONSTRUCTOR_AVAILABLE: false,
-			MAX_TRUCKS: 8,
+			SHOULD_PRODUCE_TRUCK_CYBORGS: false,
+			DYNAMIC_TRUCK_CAP: 8,
 			
 			BRIGADE_WEIGHTS: DEFAULT_BRIGADE_WEIGHTS,
 			BRIGADE_COMPOSITION: DEFAULT_FISHBOT_BRIGADE_COMPOSITION,
@@ -166,11 +181,12 @@ class CommandCenter {
 		};
 		
 		// Research parameters
-		const defaultResearchPath = rnd.researchOrders.getT2CannonResearchPath();
+		this.DEFAULT_RESEARCH_PATH = rnd.researchOrders.getT2CannonResearchPath();
+		this.FOCUSED_COMBAT_RESEARCH_PATH = rnd.researchOrders.getFocusedT2CannonResearchPath();
 
 		/** @type {ResearchParameters} */
 		this.RESEARCH_PARAMETERS = {
-			path: defaultResearchPath,
+			path: this.DEFAULT_RESEARCH_PATH,
 		};
 
 		// Task scheduling parameters
@@ -178,7 +194,6 @@ class CommandCenter {
 		// Update `_run.js` if any of the below task names change.
 		this.TASK_SCHEDULE = {
 			'combat_runC2': {"requestsPerMin": 60},
-			'combat_runAviationOperations': {"requestsPerMin": 60},
 			'global_missionManager': {"requestsPerMin": 60},
 			'logistics_runConstruction': {"requestsPerMin": 60},
 			'logistics_runResupplyLogistics': {"requestsPerMin": 30},
@@ -202,7 +217,7 @@ class CommandCenter {
 	///////////////////////////////////////////////////     STRATEGY     ///////////////////////////////////////////////////
 
 	/**
-	 * Updates FishBot's strategic parameters with evolution of the game state.
+	 * Updates FishBot's strategic parameters dynamically with the evolution of the game state.
 	 * The intent is `_world_state.js` stores the objective world, while `hq_command.js` stores the decisions based on observations of that state.
 	 * @param {worldState} state 
 	 * @returns {void} Writes directly to `this`.
@@ -217,9 +232,20 @@ class CommandCenter {
 		const livingPlayers = state.enumLivingPlayers();
 		const ALIVE_PLAYER_COUNT = Math.max(livingPlayers.length, 1);
 
-		const DOMINANT_OIL_SHARE = 1.2;
+		const FAIR_SHARE_DERRICK_COUNT = Math.floor(TOTAL_DERRICKS / ALIVE_PLAYER_COUNT);
+		const MINIMUM_OILS_CLAIMED = MY_DERRICK_COUNT >= Math.ceil(TOTAL_DERRICKS / (ALIVE_PLAYER_COUNT + 1));	// 2p -> bigger than 1/3, 3p -> bigger than 1/4 and so on
 
-		// The following code sets the current FishBot strategic parameters
+		const getDynamicTruckCap = (fairShareDerrickCount, minBaseBuilderTrucks, maxFishbotTruckCount) => {
+			// TODO: make this depend the construction state of the base (e.g. `CAMP_CLEAN`)
+			const NOMINAL_TRUCKS = Math.floor(fairShareDerrickCount / 2) + minBaseBuilderTrucks;
+			const DYNAMIC_TRUCK_LIMIT = clampValue(NOMINAL_TRUCKS, 1, maxFishbotTruckCount);
+			return DYNAMIC_TRUCK_LIMIT;
+		};
+
+		const BASE_BUILDER_TRUCK_COUNT = 2;
+		const FISHBOT_TRUCK_SOFT_CAP = 10;
+		
+		this.PRODUCTION_RESUPPLY_PARAMETERS.DYNAMIC_TRUCK_CAP = getDynamicTruckCap(FAIR_SHARE_DERRICK_COUNT, BASE_BUILDER_TRUCK_COUNT, FISHBOT_TRUCK_SOFT_CAP);
 
 		/*
 			Oil parameters (the most important strategic resource)
@@ -245,10 +271,9 @@ class CommandCenter {
 			const LARGEST_OIL_SHARE = oilShare.get(largestOilSharePlayer);
 			const MY_OIL_SHARE = oilShare.get(me);
 
-			const BIG_OIL_SHARE = (MY_OIL_SHARE > DOMINANT_OIL_SHARE) || (MY_DERRICK_COUNT >= Math.ceil(0.85 * TOTAL_DERRICKS));
 			const BIGGEST_OIL_SHARE = MY_OIL_SHARE >= LARGEST_OIL_SHARE;
 
-			oilDominance = BIG_OIL_SHARE && BIGGEST_OIL_SHARE;
+			oilDominance = MINIMUM_OILS_CLAIMED && BIGGEST_OIL_SHARE;
 		}
 
 		if (this.isOilDominant != oilDominance) {
@@ -256,6 +281,8 @@ class CommandCenter {
 			deb(`oil dominance changed to: ${oilDominance} (${derrickCount})`);
 			this.isOilDominant = oilDominance;
 		}
+
+		const IS_ENERGY_DEFICIENT = !MINIMUM_OILS_CLAIMED;
 
 		/*
 			CONSTRUCTION PARAMETERS
@@ -273,37 +300,59 @@ class CommandCenter {
 		this.CONSTRUCTION_PARAMETERS.MAX_PARALLEL_REPAIR_CENTER_BUILD_TASKS = MAX_PARALLEL_REPAIR_CENTER_BUILD_TASKS;
 
 		// Structure limit adaptation
-		const generatorsRequired = Math.ceil((MY_DERRICK_COUNT + 1) / 4);		// + 1 is here to provide extra capacity
-		const MIN_GENERATORS = 2;
+		const getDynamicPowerGeneratorCap = (myDerrickCount, minGeneratorCounts, maxGeneratorCounts) => {
+			const generatorsRequired = Math.ceil(myDerrickCount / 4);
+			return clampValue(generatorsRequired, minGeneratorCounts, maxGeneratorCounts);
+		};
+		const TYPICAL_MIN_GENERATORS = 2;
+		const MIN_GENERATORS = Math.min(TYPICAL_MIN_GENERATORS, Math.ceil(FAIR_SHARE_DERRICK_COUNT / 4));
+		const MAX_GENERATORS = state.getMaxStructureCount("Power Generator");
+		const DYNAMIC_POWER_GENERATOR_CAP = getDynamicPowerGeneratorCap(MY_DERRICK_COUNT, MIN_GENERATORS, MAX_GENERATORS);
 
-		const MAX_GENERATORS_AND_POWER_MODULES = clampValue(generatorsRequired, MIN_GENERATORS, state.getMaxStructureCount("Power Generator"));
 
-		const USE_VTOL = (MY_DERRICK_COUNT >= 8);
-		const USE_FACTORY_MODULES = (MY_DERRICK_COUNT >= 6);
+		const getDynamicFactoryCap = (isEnergyDeficient, minFactoryCount, maxFactoryCount) => {
+			const DYNAMIC_FACTORY_CAP = isEnergyDeficient ? minFactoryCount : maxFactoryCount;
+			return DYNAMIC_FACTORY_CAP;
+		}
+		const MIN_FACTORIES = 1;
+		const MAX_FACTORIES = state.getMaxStructureCount("Factory");
+		const DYNAMIC_FACTORY_CAP = getDynamicFactoryCap(IS_ENERGY_DEFICIENT, MIN_FACTORIES, MAX_FACTORIES);
+
+
+		const getDynamicResearchLabCap = (isEnergyDeficient, minLabCount, maxLabCount) => {
+			const DYNAMIC_RESEARCH_LAB_CAP = isEnergyDeficient ? minLabCount : maxLabCount;
+			return DYNAMIC_RESEARCH_LAB_CAP;
+		}
+		const MIN_RESEARCH_LABS = 1;
+		const MAX_RESEARCH_LABS = state.getMaxStructureCount("Research Facility");
+		const DYNAMIC_RESEARCH_LAB_CAP = getDynamicResearchLabCap(IS_ENERGY_DEFICIENT, MIN_RESEARCH_LABS, MAX_RESEARCH_LABS);
+
+		const USE_VTOL = true;							// todo: find a situation in which you don't want to use VTOL
 		const MY_VTOL_COUNT = state.playerInfo[me]['numAirUnits'];
 
-		this.CONSTRUCTION_PARAMETERS.MAX_GENERATORS_AND_POWER_MODULES = MAX_GENERATORS_AND_POWER_MODULES;
+		this.CONSTRUCTION_PARAMETERS.DYNAMIC_POWER_GENERATOR_CAP = DYNAMIC_POWER_GENERATOR_CAP;
+		this.CONSTRUCTION_PARAMETERS.DYNAMIC_FACTORY_CAP = DYNAMIC_FACTORY_CAP;
+		this.CONSTRUCTION_PARAMETERS.DYNAMIC_RESEARCH_LAB_CAP = DYNAMIC_RESEARCH_LAB_CAP;
 		this.CONSTRUCTION_PARAMETERS.MAX_VTOL_REARMING_PADS = MY_VTOL_COUNT;
 		this.CONSTRUCTION_PARAMETERS.SHOULD_BUILD_VTOLS = USE_VTOL;
-		this.CONSTRUCTION_PARAMETERS.SHOULD_USE_FACTORY_MODULES = USE_FACTORY_MODULES;
 
 		/*
 			PRODUCTION
 		*/
 		const BRIGADE_COMPOSITION = this.PRODUCTION_RESUPPLY_PARAMETERS.BRIGADE_COMPOSITION;
-		const NUMBER_OF_BRIGADES = this.NUMBER_OF_BRIGADES;
+		const FORCE_BUDGET_BRIGADES = this.FORCE_BUDGET_BRIGADES;
 
 		// Define unit limits
-		const MAX_TRUCKS = this.PRODUCTION_RESUPPLY_PARAMETERS.MAX_TRUCKS;
+
 		const MAX_INFANTRY = BRIGADE_COMPOSITION['MAX_INFANTRY'];
 		const TOTAL_UNITS_PER_BRIGADE = this.PRODUCTION_RESUPPLY_PARAMETERS.TOTAL_UNITS_PER_BRIGADE;
 		
 		const TRUCK_HARD_LIMIT = state.getMaxUnitCount("DROID_CONSTRUCT");
-		const TRUCK_SOFT_LIMIT = Math.min(TRUCK_HARD_LIMIT, MAX_TRUCKS);
+		const TRUCK_SOFT_LIMIT = Math.min(TRUCK_HARD_LIMIT, this.PRODUCTION_RESUPPLY_PARAMETERS.DYNAMIC_TRUCK_CAP);
 
 		const COMBAT_UNIT_HARD_LIMIT = state.getMaxUnitCount("DROID_WEAPON") - TRUCK_SOFT_LIMIT;
-		const INFANTRY_UNIT_SOFT_LIMIT = MAX_INFANTRY * (NUMBER_OF_BRIGADES + 1);		// "+1" includes reserve
-		const LAND_VEHICLE_SOFT_LIMIT = (TOTAL_UNITS_PER_BRIGADE - MAX_INFANTRY) * (NUMBER_OF_BRIGADES + 1);
+		const INFANTRY_UNIT_SOFT_LIMIT = MAX_INFANTRY * FORCE_BUDGET_BRIGADES;
+		const LAND_VEHICLE_SOFT_LIMIT = (TOTAL_UNITS_PER_BRIGADE - MAX_INFANTRY) * FORCE_BUDGET_BRIGADES;
 		const VTOL_UNIT_HARD_LIMIT = COMBAT_UNIT_HARD_LIMIT - LAND_VEHICLE_SOFT_LIMIT - INFANTRY_UNIT_SOFT_LIMIT;
 
 		// Get player data
@@ -333,55 +382,58 @@ class CommandCenter {
 			debug(`  HIT_AIR_UNIT_LIMIT: ${MY_VTOL_COUNT} >= ${VTOL_UNIT_HARD_LIMIT}?`);
 		}
 		
-		// Get unit deficits
 		// Decide on whether or not to produce combat units
-		// Note: FishBot will not build combat vehicles before it can design them, on any difficulty.	
+		// Note: FishBot will not build combat vehicles, combat cyborgs or VTOLs before it can design them, on any difficulty (in line with human player rules).	
 		const CAN_DESIGN_UNITS = HQ_IS_CONSTRUCTED;
-
 		const SHOULD_PRODUCE_LAND_VEHICLES = CAN_DESIGN_UNITS && !HIT_LAND_VEHICLE_LIMIT;
-		const SHOULD_PRODUCE_INFANTRY = !HIT_INFANTRY_LIMIT;
+		const SHOULD_PRODUCE_INFANTRY = CAN_DESIGN_UNITS && !HIT_INFANTRY_LIMIT;
 		const SHOULD_PRODUCE_VTOLS = CAN_DESIGN_UNITS && !HIT_AIR_UNIT_LIMIT;
 
 		// Decide on whether or not to produce trucks
-		const SHOULD_PRODUCE_TRUCKS = !HIT_TRUCK_LIMIT;
-		const MAX_TRUCKS_THIS_TICK = 1;
+		const MAX_TRUCKS_THIS_TICK = TRUCK_SOFT_LIMIT - MY_TRUCK_COUNT;
+
+		const INITIAL_TRUCK_RUSH_PERIOD = gameTime < 60000;
+
+		// TODO: wire this to deficits in both types of units.
+		const SHOULD_PRODUCE_TRUCK_VEHICLES = !HIT_TRUCK_LIMIT && (!CYBORG_CONSTRUCTOR_AVAILABLE || INITIAL_TRUCK_RUSH_PERIOD);
+		const SHOULD_PRODUCE_TRUCK_CYBORGS = !HIT_TRUCK_LIMIT && (CYBORG_CONSTRUCTOR_AVAILABLE || INITIAL_TRUCK_RUSH_PERIOD);
 
 		// Brigade production priorities
 		/** @type {Map<number, number>} */
 		const brigadeWeights = new Map([
-			[DIVISION.FIRST_BCT, 16], 
-			[DIVISION.SECOND_BCT, 8], 
-			[DIVISION.THIRD_BCT, 4], 
-			[DIVISION.FOURTH_BCT, 2], 
+			[DIVISION.FIRST_BCT, 1000], 
+			[DIVISION.SECOND_BCT, 100], 
+			[DIVISION.THIRD_BCT, 10], 
+			[DIVISION.FOURTH_BCT, 0], 
 			[DIVISION.FIFTH_BCT, 0],
 			[DIVISION.BCT_RESERVE, 1],
 		]);
 		
 		/** @type {Map<number, number>} */
-		const unitWeights = new Map([
+		const UNIT_WEIGHTS = new Map([
 			// Production weights (which influences production order) are tuned using `python_helper_scripts / production_scheduling.py`.
 			// Must be rebalanced each time the brigade composition is changed.	
-			[DIVISION.HEAVY_CAV_RESERVE, 0.95],
-			[DIVISION.LIGHT_CAV_RESERVE, 1.0],
-			[DIVISION.SHORT_RANGE_FIRE_SUPPORT_RESERVE, 0.7],
-			[DIVISION.AIR_DEFENCE_RESERVE, 0.65],
-			[DIVISION.SENSOR_RESERVE, 0.25],
-			[DIVISION.MAINTENANCE_RESERVE, 0.5],
+			[DIVISION.HEAVY_CAV_RESERVE, 0.55],
+			[DIVISION.LIGHT_CAV_RESERVE, 0.95],
+			[DIVISION.SHORT_RANGE_FIRE_SUPPORT_RESERVE, 0.6],
+			[DIVISION.AIR_DEFENCE_RESERVE, 0.35],
+			[DIVISION.SENSOR_RESERVE, 0.2],
+			[DIVISION.MAINTENANCE_RESERVE, 0.1],
 		]);
 
 		const DEFAULT_LAND_UNIT_CATEGORY = DIVISION.LIGHT_CAV_RESERVE;
 
 		this.PRODUCTION_RESUPPLY_PARAMETERS.CAN_DESIGN_UNITS = CAN_DESIGN_UNITS;
 
-		this.PRODUCTION_RESUPPLY_PARAMETERS.SHOULD_PRODUCE_TRUCKS = SHOULD_PRODUCE_TRUCKS;
 		this.PRODUCTION_RESUPPLY_PARAMETERS.MAX_TRUCKS_THIS_TICK = MAX_TRUCKS_THIS_TICK;
-		this.PRODUCTION_RESUPPLY_PARAMETERS.CYBORG_CONSTRUCTOR_AVAILABLE = CYBORG_CONSTRUCTOR_AVAILABLE;
+		this.PRODUCTION_RESUPPLY_PARAMETERS.SHOULD_PRODUCE_TRUCK_VEHICLES = SHOULD_PRODUCE_TRUCK_VEHICLES;
+		this.PRODUCTION_RESUPPLY_PARAMETERS.SHOULD_PRODUCE_TRUCK_CYBORGS = SHOULD_PRODUCE_TRUCK_CYBORGS;
 
 		this.PRODUCTION_RESUPPLY_PARAMETERS.SHOULD_PRODUCE_INFANTRY = SHOULD_PRODUCE_INFANTRY;
 		this.PRODUCTION_RESUPPLY_PARAMETERS.SHOULD_PRODUCE_VTOLS = SHOULD_PRODUCE_VTOLS;
 		this.PRODUCTION_RESUPPLY_PARAMETERS.SHOULD_PRODUCE_LAND_VEHICLES = SHOULD_PRODUCE_LAND_VEHICLES;
 		this.PRODUCTION_RESUPPLY_PARAMETERS.BRIGADE_WEIGHTS = brigadeWeights;
-		this.PRODUCTION_RESUPPLY_PARAMETERS.UNIT_WEIGHTS = unitWeights;
+		this.PRODUCTION_RESUPPLY_PARAMETERS.UNIT_WEIGHTS = UNIT_WEIGHTS;
 		this.PRODUCTION_RESUPPLY_PARAMETERS.DEFAULT_LAND_UNIT_CATEGORY = DEFAULT_LAND_UNIT_CATEGORY;
 
 		/*
@@ -431,6 +483,18 @@ class CommandCenter {
 		this.AVIATION_PARAMETERS.SATURATION_THREAT_THRESHOLD = SATURATION_THREAT_THRESHOLD;
 		this.AVIATION_PARAMETERS.CAS_SUPPORT_RADIUS = 25;
 		this.AVIATION_PARAMETERS.UNITS_FOR_ADA_STRIKE = 3;
+
+		/*
+			RESEARCH
+		*/
+		const LIVING_ENEMY_COUNT = livingPlayers.filter(isEnemy).length;
+		const FIGHTING_LAST_OPPONENT = LIVING_ENEMY_COUNT <= 1;
+		const path = FIGHTING_LAST_OPPONENT ? this.FOCUSED_COMBAT_RESEARCH_PATH : this.DEFAULT_RESEARCH_PATH;
+
+		if (this.RESEARCH_PARAMETERS.path !== path) {
+			deb(`research weights changed to: ${FIGHTING_LAST_OPPONENT ? "focused combat" : "default"} (${LIVING_ENEMY_COUNT} enemies remaining)`);
+			this.RESEARCH_PARAMETERS.path = path;
+		}
 	}
 	
 	/////////////////////////////////////////////////// G2: INTELLIGENCE ///////////////////////////////////////////////////
@@ -512,6 +576,7 @@ class CommandCenter {
 	#prioritiseBrigadeTargets(state, brigadeID, parameters) {
 
 		const isReachable = state.mapData.isReachable;
+		const isWalkable = state.mapData.isWalkable;
 
 		/** @type {BrigadeTargets} */
 		const brigadeTargets = {
@@ -576,9 +641,8 @@ class CommandCenter {
 		}
 
 		/*
-			Direct Fire Targeting
-			Intent: attack what is closest (distSq to brigade) and see the current battle to completion (e.g. distSq to current target, health).
-			The targets in radius have their cost adjusted (percentage-based) based on proximity to the current battle & various other factors.
+			Direct Fire Targeting: attack what is closest and reachable in a straight line, and see the current fight to completion.
+			TODO: Lacks input from the strategic layer (which reasons about objectives & OAKOC) because it is currently non-existent.
 		*/
 
 		// Where the brigade's fight is, or `null` if it is not near one. Relies on FbObject carrying the stale 'x', 'y'.
@@ -635,6 +699,11 @@ class CommandCenter {
 			if (obj.health < parameters.LOW_HEALTH_THRESHOLD) {
 				// Opportunity 1: Prefers weak targets if available
 				cost *= parameters.KNOCKOUT_WEIGHT;
+			}
+			if (lineIsBlocked(x, y, obj.x, obj.y, isWalkable)) {
+				// Terrain 1: Demotes targets the brigade cannot drive straight at. 
+				// TODO: Simplistic. Projects a straight line from the brigade position to the target & checks if the tiles are walkable. Replace by strategic layer inputs.
+				cost *= parameters.BLOCKED_APPROACH_WEIGHT;
 			}
 			return cost;
 		}
@@ -698,20 +767,38 @@ class CommandCenter {
 			}
 		}
 
-		// Fire Support Targeting
-		// Intent: Suppress enemy infantry then destroy defences, indirect fires & ADA.
+		/*
+			Fire Support Targeting
+			Intent: Suppress enemy infantry then destroy defences, indirect fires & ADA, preferring targets that are already in sensor range of the brigade.
+			The visible-targets preference prevents mortar units from driving in front of the direct fire units to reveal the target with its own sight range.
+		*/
+		/** @type {Map<number, number>} object ID -> owning player, for every enemy object the brigade can currently see */
+		const visibleEnemies = new Map();
+		enumRange(x, y, parameters.EFFECTIVE_FIRE_SUPPORT_RADIUS, ENEMIES, true).forEach(obj => visibleEnemies.set(obj.id, obj.player));
+
+		/** @type {(DroidObject | StructureObject | FeatureObject)[]} */
+		const visibleFireSupportTargets = [];
+		/** @type {(DroidObject | StructureObject | FeatureObject)[]} */
+		const hiddenFireSupportTargets = [];
+
+		/** @param {DroidObject | StructureObject | FeatureObject} obj */
+		const addFireSupportTarget = (obj) => {
+			if (outsideOfRadius(obj, parameters.EFFECTIVE_FIRE_SUPPORT_RADIUS)) 	return;
+			const IS_VISIBLE_TO_BRIGADE = (visibleEnemies.get(obj.id) === obj.player);
+			if (IS_VISIBLE_TO_BRIGADE) {
+				visibleFireSupportTargets.push(obj);
+				return;
+			}
+			hiddenFireSupportTargets.push(obj);
+		};
+
 		const primaryIndirectFireTargets = [...enemyInfantry, ...enemyDefenses, ...enemyIndirectFire, ...enemyADA, ...enemyIndustrial, ...enemyArmor];
 		const secondaryIndirectFireTargets = [...enemyConstructor, ...enemyUtility];
 
-		primaryIndirectFireTargets.forEach(c => {
-			if (outsideOfRadius(c.targetObj, parameters.EFFECTIVE_FIRE_SUPPORT_RADIUS)) 	return;
-			brigadeTargets["fireSupportTargets"].push(c.targetObj);
-		});
+		primaryIndirectFireTargets.forEach(c => addFireSupportTarget(c.targetObj));
+		secondaryIndirectFireTargets.forEach(c => addFireSupportTarget(c.targetObj));
 
-		secondaryIndirectFireTargets.forEach(c => {
-			if (outsideOfRadius(c.targetObj, parameters.EFFECTIVE_FIRE_SUPPORT_RADIUS)) 	return;
-			brigadeTargets["fireSupportTargets"].push(c.targetObj);
-		});
+		brigadeTargets["fireSupportTargets"].push(...visibleFireSupportTargets, ...hiddenFireSupportTargets);		// prefers already-visible
 
 		const FALLBACK_TO_DIRECT_FIRE_TARGETS = (brigadeTargets["fireSupportTargets"].length === 0);
 		if (FALLBACK_TO_DIRECT_FIRE_TARGETS) {
@@ -954,22 +1041,19 @@ class CommandCenter {
 			}
 			
 			moveBrigadeToAttack(state, brigadeID, groundTargets);	
-			highlightTiles(brigadeLocation.x, brigadeLocation.y);
+			// highlightTiles(brigadeLocation.x, brigadeLocation.y);
 		});
 
 		// Manage reserves: temporary: Move reserves to pre-emptively reinforce BCT0
-		const reserveGroupIDs = [DIVISION.HEAVY_CAV_RESERVE, DIVISION.LIGHT_CAV_RESERVE, DIVISION.INFANTRY_RESERVE, DIVISION.SHORT_RANGE_FIRE_SUPPORT_RESERVE, DIVISION.SENSOR_RESERVE, DIVISION.AIR_DEFENCE_RESERVE, DIVISION.MAINTENANCE_RESERVE];
-		const x = state.brigades[DIVISION.FIRST_BCT]['location'].x;
-		const y = state.brigades[DIVISION.FIRST_BCT]['location'].y;
-		moveReservesToShadow(reserveGroupIDs, x, y);
+		moveReservesToShadow(state, RESERVE_CATEGORY_GROUP_IDS, DIVISION.FIRST_BCT);
 	}
 
 	/////////////////////////////////////////////////// G4: LOGISTICS ///////////////////////////////////////////////////
 	/**
 	 * This function aborts active construction missions where conditions at the build site have become too dangerous.
-	 * @param {worldState} state 
+	 * @param {worldState} state
 	 * @param {Array} activeRemoteMissions
-	 * @returns {(number | string)[]} the oil-capture sectorIDs aborted
+	 * @returns {{abortedOilSectorIDs: (number | string)[], abortedDefenceSectorIDs: (number | string)[]}} the sectorIDs aborted, split by task type
 	 */
 	#abortDangerousConstructionTasks(state, activeRemoteMissions) {
 		const cellSize = state.grid.cellSize;
@@ -977,7 +1061,10 @@ class CommandCenter {
 		const enemyUnitThreat = state.fields.enemyUnitThreat;
 		const enemyStaticDefenceThreat = state.fields.enemyStaticDefenceThreat;
 
+		/** @type {(number | string)[]} */
 		const abortedOilSectorIDs = [];
+		/** @type {(number | string)[]} */
+		const abortedDefenceSectorIDs = [];
 
 		// New mission planning system has implemented .gx, .gy grid references for all missions
 		// This allows the following algorithm:
@@ -1007,16 +1094,17 @@ class CommandCenter {
 				// debug(`aborted (${md.id}) @ (~ tileco ${md.gx * cellSize} ${md.gy * cellSize}); high threat`);
 				md.missionStatus = MISSION_STATUS.ABORT;
 
-				// Only oil capture cools down. Defence missions reuse the derrick's ID as their sectorID,
-				// so reporting those here would block *capturing* the derrick they were meant to protect.
+				// Todo: combine these into a unified concept of 'denied region' rather than keying by sectorID (resolves to derrickID)
 				if (md.missionType === MISSION_TYPE.CONSTRUCT_OIL_DERRICK ||
 					md.missionType === MISSION_TYPE.CONSTRUCT_ALL_DERRICKS_IN_SECTOR) {
 					abortedOilSectorIDs.push(md.sectorID);
+				} else if (md.missionType === MISSION_TYPE.CONSTRUCT_NEARBY_DEFENCE) {
+					abortedDefenceSectorIDs.push(md.sectorID);
 				}
 			}
 		});
 
-		return abortedOilSectorIDs;
+		return {abortedOilSectorIDs: abortedOilSectorIDs, abortedDefenceSectorIDs: abortedDefenceSectorIDs};
 	}
 
 	/**
@@ -1055,24 +1143,20 @@ class CommandCenter {
 			}
 		});
 		
-		const abortedOilSectorIDs = this.#abortDangerousConstructionTasks(state, activeRemoteMissions);
+		const abortedSectors = this.#abortDangerousConstructionTasks(state, activeRemoteMissions);
 
 		// Command then terminates, if there are no available trucks this tick (avoids expensive planning tasks)
 		const trucksUnavailable = (state.g.enumGroup(ENGINEERING.ENGINEERING_RESERVE).length === 0) && 
 								  (state.g.enumGroup(ENGINEERING.BASE_BUILDER).length === 0);
 
-		// Oil capture is re-planned only once per intelligence refresh: the inputs cannot have changed in
-		// between, so planning again re-issues the same missions against a world state up to 5 seconds stale.
-		const oilCapDeficit = this.CONSTRUCTION_PARAMETERS.MAX_PARALLEL_OIL_CAP_TASKS - activeOilCapTaskIDs.length;
-		const WORLD_UNCHANGED_SINCE_LAST_PLAN = (state.grid.lastUpdatedAt === state.oilCapPlannedAt);
-		const SHOULD_PLAN_OIL_CAPTURE = !trucksUnavailable && (oilCapDeficit > 0) && !WORLD_UNCHANGED_SINCE_LAST_PLAN;
+		// `state.fields` / `state.grid` is updated slowly by intel (nominally once every 5 seconds). 
+		// To avoid redundant work, construction should be planned only once per intel update.
+		const WORLD_UNCHANGED_SINCE_LAST_PLAN = (state.grid.lastUpdatedAt === state.constructionPlannedAt);
+		const SHOULD_PLAN_REMOTE_CONSTRUCTION = !trucksUnavailable && !WORLD_UNCHANGED_SINCE_LAST_PLAN;
 
-		this.toc.updateOilCapturePlanningRecord(state, abortedOilSectorIDs, SHOULD_PLAN_OIL_CAPTURE,
-												this.CONSTRUCTION_PARAMETERS.ABORTED_SECTOR_COOLDOWN_MS);
+		this.toc.updateConstructionPlanningRecord(state, abortedSectors, SHOULD_PLAN_REMOTE_CONSTRUCTION, this.CONSTRUCTION_PARAMETERS.ABORTED_SECTOR_COOLDOWN_MS);
 
 		if (trucksUnavailable) {
-			// warn(`No trucks to execute construction actions.`);
-			// deb(`Active construction missions | oilcap: ${activeOilCapTaskIDs.length} |  basebuild: ${activeBaseBuildTasks.length}  | defencebuild: ${activeDefenceBuildTaskIDs.length}  | repairCenter: ${activeRepairCenterBuildTaskIDs.length}`);
 			return;
 		}
 
@@ -1085,8 +1169,14 @@ class CommandCenter {
 			approvedConstructionTasks.push(...requestedBaseBuildTasks.slice(0, baseBuildDeficit));
 		}
 
+		if (!SHOULD_PLAN_REMOTE_CONSTRUCTION) {
+			this.toc.assignConstructionTasks(state, approvedConstructionTasks);
+			return;
+		}
+
 		// OIL CAP
-		if (SHOULD_PLAN_OIL_CAPTURE) {
+		const oilCapDeficit = this.CONSTRUCTION_PARAMETERS.MAX_PARALLEL_OIL_CAP_TASKS - activeOilCapTaskIDs.length;
+		if (oilCapDeficit > 0) {
 			// The record was pruned above, so everything left in it is still cooling down.
 			const excludedSectorIDs = [];
 			excludedSectorIDs.push(...activeOilCapTaskIDs, ...state.abortedOilSectors.keys());
@@ -1097,7 +1187,12 @@ class CommandCenter {
 		// DERRICK DEFENCES
 		const fortificationDeficit = this.CONSTRUCTION_PARAMETERS.MAX_PARALLEL_DEFENCE_BUILD_TASKS - activeDefenceBuildTaskIDs.length;
 		if (fortificationDeficit > 0) {
-			const sectorDefenceTasks = engineering.generateOilDefenceConstructionOptions(state, activeDefenceBuildTaskIDs);
+			// As with oil capture: a site called off as too dangerous stays off the option list until its
+			// cooldown expires, so the trucks are not sent straight back into the threat which turned them away.
+			// The record was pruned above, so everything left in it is still cooling down.
+			const excludedDerrickIDs = [];
+			excludedDerrickIDs.push(...activeDefenceBuildTaskIDs, ...state.abortedDefenceSectors.keys());
+			const sectorDefenceTasks = engineering.generateOilDefenceConstructionOptions(state, excludedDerrickIDs);
 			approvedConstructionTasks.push(...sectorDefenceTasks.slice(0, fortificationDeficit));
 		}
 
@@ -1167,6 +1262,141 @@ class CommandCenter {
 	}
 
 	/**
+	 * Reports whether every battalion in a brigade is at its full establishment. Also valid for the reserve,
+	 * which is measured against the same brigade composition.
+	 * @param {worldState} state
+	 * @param {number} brigadeID
+	 * @returns {boolean}
+	 */
+	#isFullyManned(state, brigadeID) {
+		const brigadeComposition = state.brigades[brigadeID]["composition"];
+		for (const [category, btnComposition] of brigadeComposition) {
+			if (btnComposition["deficit"] > 0) {
+				return false;
+			}
+		}
+		return true;
+	}
+
+	/**
+	 * Reports whether a BCT is facing enough nearby enemies to expect heavy combat.
+	 *
+	 * Only the classes which shoot back at ground forces are counted. ADA cannot engage them, and constructors,
+	 * industry and utility structures are the opposite signal - finding those means the front is soft, which is
+	 * exactly when splitting the division is safe. The count is taken relative to the BCT's own strength, since
+	 * a dozen targets mean something different to a full BCT than to a half-dead one.
+	 * @param {worldState} state
+	 * @param {number} brigadeID
+	 * @param {number} combatUnitCount
+	 * @returns {boolean}
+	 */
+	#isExpectingHeavyCombat(state, brigadeID, combatUnitCount) {
+		const THREATENING_TARGET_CLASSES = ['enemyArmor', 'enemyInfantry', 'enemyIndirectFire', 'enemyDefenses'];
+		const nearbyTargets = state.brigades[brigadeID]['nearbyTargets'];
+
+		let threatCount = 0;
+		THREATENING_TARGET_CLASSES.forEach(targetClass => threatCount += nearbyTargets[targetClass].length);
+
+		if (combatUnitCount === 0) {
+			return threatCount > 0;
+		}
+		return threatCount > combatUnitCount * this.FORCE_STRUCTURE_PARAMETERS.MAX_THREAT_RATIO;
+	}
+
+	/**
+	 * Reports whether a BCT is losing units faster than resupply is replacing them.
+	 *
+	 * `strength` is a high-water mark which decays by `STRENGTH_DECAY_RATE` per update but snaps straight back up
+	 * to the real count when the BCT is reinforced, so the gap between the two is what the BCT is down on its
+	 * recent peak *and* has not had made good. Losses which the reserve is deep enough to keep replacing do not
+	 * register, which is the intent: it is the replacement rate being outrun that should stop the division
+	 * splitting, not casualties as such.
+	 * @param {worldState} state
+	 * @param {number} brigadeID
+	 * @returns {boolean}
+	 */
+	#isTakingUnreplacedLosses(state, brigadeID) {
+		const brigade = state.brigades[brigadeID];
+		const unreplacedLosses = brigade['strength'] - brigade['directFireCount'];
+
+		return unreplacedLosses > this.FORCE_STRUCTURE_PARAMETERS.MAX_UNREPLACED_LOSSES;
+	}
+
+	/**
+	 * Decides the division's force structure for this tick: which of the existing BCTs are manned well enough
+	 * to fight, and whether the division can afford to form another one.
+	 *
+	 * Units are held in the reserve by default. A new BCT is only formed once every BCT already in the field
+	 * *and* the reserve are at full establishment, sustained for `RELEASE_DWELL_TICKS`. Forming is deliberately
+	 * slow while folding is immediate, because a new BCT is empty and so drains a full brigade's worth out of
+	 * the reserve in a single resupply tick - that is the replacement depth the rest of the division gives up.
+	 * @param {worldState} state
+	 * @param {Map<number, number>} brigadeUnitCount combat unit count per existing BCT; a newly formed BCT is added to it
+	 * @returns {Map<number, boolean>} whether each existing BCT is manned well enough to fight
+	 */
+	#updateForceStructure(state, brigadeUnitCount) {
+		const parameters = this.PRODUCTION_RESUPPLY_PARAMETERS;
+		const forceStructure = this.FORCE_STRUCTURE_PARAMETERS;
+
+		/** @type {Map<number, boolean>} */
+		const activeBrigade = new Map();
+
+		let weakBCTCount = 0;
+		for (const [brigadeID, unitCount] of brigadeUnitCount) {
+			if (unitCount > parameters.TOTAL_UNITS_PER_BRIGADE * 1 / 2) {
+				activeBrigade.set(brigadeID, true);
+				continue;
+			}
+
+			// One under-strength BCT is tolerated; any others are folded back into the reserve
+			weakBCTCount += 1;
+			// if (weakBCTCount > 1 && unitCount > 0) 	debug(`${gameTime}: Brigade "${brigadeID}" recombined (only ${unitCount} units).`);
+			activeBrigade.set(brigadeID, weakBCTCount <= 1);
+		}
+
+		const AT_BRIGADE_CEILING = this.BRIGADE_DESIGNATIONS.length >= this.MAX_BRIGADES;
+		const FORCE_IS_SUFFICIENT = this.BRIGADE_DESIGNATIONS.every(brigadeID => this.#isFullyManned(state, brigadeID))
+			&& this.#isFullyManned(state, DIVISION.BCT_RESERVE);
+
+		// Splitting the division is only safe if nothing already in the field is about to need the reserve
+		let expectingHeavyCombat = false;
+		for (const [brigadeID, unitCount] of brigadeUnitCount) {
+			if (this.#isExpectingHeavyCombat(state, brigadeID, unitCount) || this.#isTakingUnreplacedLosses(state, brigadeID)) {
+				expectingHeavyCombat = true;
+				break;
+			}
+		}
+
+		if (AT_BRIGADE_CEILING || !FORCE_IS_SUFFICIENT || expectingHeavyCombat) {
+			forceStructure.releaseDwell = 0;
+			return activeBrigade;
+		}
+
+		forceStructure.releaseDwell += 1;
+		if (forceStructure.releaseDwell < forceStructure.RELEASE_DWELL_TICKS) {
+			return activeBrigade;
+		}
+		forceStructure.releaseDwell = 0;
+
+		// Form the next BCT. It is empty, so the reinforcement loop below hands it a whole brigade's worth of
+		// units from the reserve this tick, and the next formation waits on production refilling the reserve.
+		// Designations are not necessarily a prefix of BRIGADE_IDS: a middle BCT can be folded back into the
+		// reserve, leaving a gap for the next formation to take.
+		const newBrigadeID = BRIGADE_IDS.find(brigadeID => !this.BRIGADE_DESIGNATIONS.includes(brigadeID));
+		if (newBrigadeID == null) {
+			return activeBrigade;
+		}
+
+		this.BRIGADE_DESIGNATIONS.push(newBrigadeID);
+		this.toc.updateBrigadeSupplyStatus(state, newBrigadeID, parameters);
+		brigadeUnitCount.set(newBrigadeID, this.#getBctCombatUnitCount(state, newBrigadeID));
+		activeBrigade.set(newBrigadeID, true);
+		// debug(`${gameTime}: Brigade "${newBrigadeID}" formed (${this.BRIGADE_DESIGNATIONS.length} of ${this.MAX_BRIGADES}).`);
+
+		return activeBrigade;
+	}
+
+	/**
 	 * This function:
 	 * - returns repaired units to active duty 
 	 * - assigns reserve units to active brigade combat teams
@@ -1186,24 +1416,13 @@ class CommandCenter {
 			this.toc.updateBrigadeSupplyStatus(state, brigadeID, this.PRODUCTION_RESUPPLY_PARAMETERS);
 			brigadeUnitCount.set(brigadeID, this.#getBctCombatUnitCount(state, brigadeID));
 		});
-		this.toc.updateBrigadeSupplyStatus(state, DIVISION.BCT_RESERVE, this.PRODUCTION_RESUPPLY_PARAMETERS);
 
 		const REPAIR_FACILITY_AVAILABLE = state.playerInfo[me]["repairFacilityFbObjects"].length > 0;		// this has the potential to be stale, but it is not critical that it is up-to-date
 
 		// Get reserve force units
-		const RESERVE_GROUP_IDS = [
-			DIVISION.HEAVY_CAV_RESERVE, 
-			DIVISION.LIGHT_CAV_RESERVE, 
-			DIVISION.INFANTRY_RESERVE, 
-			DIVISION.SHORT_RANGE_FIRE_SUPPORT_RESERVE, 
-			DIVISION.AIR_DEFENCE_RESERVE, 
-			DIVISION.SENSOR_RESERVE,
-			DIVISION.MAINTENANCE_RESERVE
-		];
-
 		/** @type {Map<number, DroidObject[]>} */
 		const reserveUnits = new Map();
-		RESERVE_GROUP_IDS.forEach(id => {reserveUnits.set(id, state.g.enumGroup(id))});
+		RESERVE_CATEGORY_GROUP_IDS.forEach(id => {reserveUnits.set(id, state.g.enumGroup(id))});
 
 		if (REPAIR_FACILITY_AVAILABLE) {
 			const RESERVE_REPAIR_THRESHOLD = 70;
@@ -1224,33 +1443,18 @@ class CommandCenter {
 				
 				this.toc.assignUnitsToBrigade(state, unitsToBeRepaired, category, DIVISION.RETURNING_FOR_REPAIR);
 			}
+
+			// Units sent for repair have left their category group, but the lists read above still hold them.
+			// Re-read, so that resupply cannot hand a repair-bound unit straight back to a BCT.
+			RESERVE_CATEGORY_GROUP_IDS.forEach(id => {reserveUnits.set(id, state.g.enumGroup(id))});
 		}
 
-		// Decide how many BCTs should be made with the available units
-		const activeBrigade = new Map([
-			[DIVISION.FIRST_BCT, false], 
-			[DIVISION.SECOND_BCT, false],
-			[DIVISION.THIRD_BCT, false],
-			[DIVISION.FOURTH_BCT, false],
-			[DIVISION.FIFTH_BCT, false]
-		]);
+		// Count the reserve only once its damaged units have been sent away, so that the force structure
+		// decision below sees the units resupply can actually hand out.
+		this.toc.updateBrigadeSupplyStatus(state, DIVISION.BCT_RESERVE, this.PRODUCTION_RESUPPLY_PARAMETERS);
 
-		let weakBCTCount = 0;
-		for (const [brigadeID, unitCount] of brigadeUnitCount) {
-			if (unitCount > this.PRODUCTION_RESUPPLY_PARAMETERS.TOTAL_UNITS_PER_BRIGADE * 1 / 2) {
-				activeBrigade.set(brigadeID, true);
-				continue;
-			}
-
-			weakBCTCount += 1;
-			if (weakBCTCount > 1) {
-				// if (unitCount > 0) 	debug(`${gameTime}: Brigade "${brigadeID}" recombined (only ${unitCount} units).`);
-				activeBrigade.set(brigadeID, false);	// deactivate the brigade for recombination
-			} else {
-				activeBrigade.set(brigadeID, true);
-			}
-			continue;	
-		}
+		// Decide which BCTs can be manned, and whether the division can afford to form another
+		const activeBrigade = this.#updateForceStructure(state, brigadeUnitCount);
 
 		// Reinforce & replace damaged units for existing brigades, recombining where appropriate
 		for (const [brigadeID, unitCount] of brigadeUnitCount) {
@@ -1288,6 +1492,13 @@ class CommandCenter {
 				}
 			}
 		}
+
+		// Retire the BCTs which were folded back into the reserve above. This is done last so that the loop
+		// still visits them: a BCT is only struck off once it has handed its units back.
+		// BCT0 is the division's last formation and is never retired, however weak it becomes.
+		this.BRIGADE_DESIGNATIONS = this.BRIGADE_DESIGNATIONS.filter(brigadeID => {
+			return brigadeID === DIVISION.FIRST_BCT || activeBrigade.get(brigadeID) !== false;
+		});
 	}
 
 	/**
@@ -1327,15 +1538,16 @@ class CommandCenter {
 		}
 
 		// Extract parameters
-		const SHOULD_PRODUCE_TRUCKS = this.PRODUCTION_RESUPPLY_PARAMETERS.SHOULD_PRODUCE_TRUCKS;
+		
 		const MAX_TRUCKS_THIS_TICK = this.PRODUCTION_RESUPPLY_PARAMETERS.MAX_TRUCKS_THIS_TICK;
-
-		const CYBORG_CONSTRUCTOR_AVAILABLE = this.PRODUCTION_RESUPPLY_PARAMETERS.CYBORG_CONSTRUCTOR_AVAILABLE;
+		const SHOULD_PRODUCE_TRUCK_VEHICLES = this.PRODUCTION_RESUPPLY_PARAMETERS.SHOULD_PRODUCE_TRUCK_VEHICLES;
+		const SHOULD_PRODUCE_TRUCK_CYBORGS = this.PRODUCTION_RESUPPLY_PARAMETERS.SHOULD_PRODUCE_TRUCK_CYBORGS;
+		
+		const CAN_DESIGN_UNITS = this.PRODUCTION_RESUPPLY_PARAMETERS.CAN_DESIGN_UNITS;
+		
+		const SHOULD_PRODUCE_LAND_VEHICLES = this.PRODUCTION_RESUPPLY_PARAMETERS.SHOULD_PRODUCE_LAND_VEHICLES;
 		const SHOULD_PRODUCE_INFANTRY = this.PRODUCTION_RESUPPLY_PARAMETERS.SHOULD_PRODUCE_INFANTRY;
 		const SHOULD_PRODUCE_VTOLS = this.PRODUCTION_RESUPPLY_PARAMETERS.SHOULD_PRODUCE_VTOLS;
-		const CAN_DESIGN_UNITS = this.PRODUCTION_RESUPPLY_PARAMETERS.CAN_DESIGN_UNITS;
-
-		const SHOULD_PRODUCE_LAND_VEHICLES = this.PRODUCTION_RESUPPLY_PARAMETERS.SHOULD_PRODUCE_LAND_VEHICLES;
 
 		const landUnitQueue = [];
 
@@ -1398,7 +1610,7 @@ class CommandCenter {
 		for (let i=0; i<idleCyborgFactories.length; i++) {
 			const f = idleCyborgFactories[i];
 
-			if (SHOULD_PRODUCE_TRUCKS && CYBORG_CONSTRUCTOR_AVAILABLE && trucksThisTick < MAX_TRUCKS_THIS_TICK) {
+			if (SHOULD_PRODUCE_TRUCK_CYBORGS && trucksThisTick < MAX_TRUCKS_THIS_TICK) {
 				if (DEBUG_PRODUCTION) debug(`	${gameTime}: produced Combat Engineer`);
 				const productionStarted = produceCombatEngineer(f);
 				if (productionStarted) {
@@ -1434,7 +1646,7 @@ class CommandCenter {
 		for (let i=0; i<idleFactories.length; i++) {
 			const factory = idleFactories[i];
 
-			if (SHOULD_PRODUCE_TRUCKS && !CYBORG_CONSTRUCTOR_AVAILABLE && trucksThisTick < MAX_TRUCKS_THIS_TICK) {
+			if (SHOULD_PRODUCE_TRUCK_VEHICLES && trucksThisTick < MAX_TRUCKS_THIS_TICK) {
 				if (DEBUG_PRODUCTION) debug(`	${gameTime}: produced Truck`);
 				// Note: CAN_DESIGN_UNITS prevents FishBot from producing any other trucks other than `Truck Viper Wheels` until the command center is built
 				const productionStarted = produceTruck(factory, CAN_DESIGN_UNITS);
@@ -1481,7 +1693,7 @@ class CommandCenter {
 				const researchStarted = pursueResearch(idleLabs[i], researchOrder[j].id);
 				if (researchStarted) {		// This check avoids conflicts with allies (shared-research mode)
 					positionInResearchOrder++;
-					// debug(`${me}:\t${getCurrGameTimeMinSec()}\t${researchOrder[j].name}`);		
+					deb(`${researchOrder[j].name}`);		
 					break;
 				}
 			}

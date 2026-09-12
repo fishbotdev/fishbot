@@ -255,6 +255,8 @@
  * @property {number} id This is the brigade ID (duplicate of the key).
  * @property {PositionInfo} location  
  * @property {number} strength Smoothed count of direct-fire units in the brigade (mortars excluded).
+ * @property {number} avgBodySize Average vehicle BODY_WEIGHT (excludes cyborgs). Affects formation keeping (bigger vehicles need more room to maneuver).
+ * @property {number} directFireCount Raw count of direct-fire units this update. `strength - directFireCount` is what the brigade is down on its recent peak.
  * @property {NearbyTargets} nearbyTargets
  * @property {FbObject[]} currentDirectFireTargets Previous cycle's ranked target list. Only `[0]` is read today; the rest is stored to be stepped through later.
  * @property {AirStrikeMissionRequest[]} casStrikeRequests
@@ -280,6 +282,14 @@
  * @property {(DroidObject | StructureObject | FeatureObject)[]} fireSupportTargets
  * @property {(DroidObject | StructureObject | FeatureObject)[]} adaTargets
  * @property {AirStrikeMissionRequest[]} casTargets
+ */
+
+/**
+ * Cohesion radii (in tiles): how much room a brigade is given to maneuver in.
+ * Upper bound is set by "relaxed" (big vehicles), lower bound is set by "tight" (small vehicles).
+ * @typedef {Object} CohesionRadius
+ * @property {number} tight
+ * @property {number} relaxed
  */
 
 
@@ -310,9 +320,17 @@
  * @property {number} ADJACENCY_WEIGHT
  * @property {number} KNOCKOUT_WEIGHT
  * @property {number} LOW_HEALTH_THRESHOLD
+ * @property {number} BLOCKED_APPROACH_WEIGHT
  * @property {number} EFFECTIVE_FIRE_SUPPORT_RADIUS
  * @property {number} EFFECTIVE_ADA_RADIUS
- * @property {number} MEDIAN_CENTER_STRENGTH_THRESHOLD
+ */
+
+/**
+ * @typedef {Object} ForceStructureParameters
+ * @property {number} RELEASE_DWELL_TICKS
+ * @property {number} MAX_THREAT_RATIO
+ * @property {number} MAX_UNREPLACED_LOSSES
+ * @property {number} releaseDwell
  */
 
 /**
@@ -323,10 +341,11 @@
  * @property {number} MAX_PARALLEL_REPAIR_CENTER_BUILD_TASKS
  * @property {number} ABORTED_SECTOR_COOLDOWN_MS
  * 
- * @property {number} MAX_GENERATORS_AND_POWER_MODULES 
+ * @property {number} DYNAMIC_POWER_GENERATOR_CAP 
+ * @property {number} DYNAMIC_FACTORY_CAP
+ * @property {number} DYNAMIC_RESEARCH_LAB_CAP
  * @property {number} MAX_VTOL_REARMING_PADS 
  * @property {boolean} SHOULD_BUILD_VTOLS 
- * @property {boolean} SHOULD_USE_FACTORY_MODULES 
  */
 
 /** 
@@ -344,10 +363,10 @@
  * @typedef {Object} ProductionParameters
  * @property {boolean} CAN_DESIGN_UNITS
  * 
- * @property {boolean} SHOULD_PRODUCE_TRUCKS
+ * @property {boolean} SHOULD_PRODUCE_TRUCK_VEHICLES
  * @property {number} MAX_TRUCKS_THIS_TICK
- * @property {boolean} CYBORG_CONSTRUCTOR_AVAILABLE
- * @property {number} MAX_TRUCKS	Unit limit
+ * @property {boolean} SHOULD_PRODUCE_TRUCK_CYBORGS
+ * @property {number} DYNAMIC_TRUCK_CAP	
  * 
  * @property {Map<number, number>} BRIGADE_WEIGHTS
  * @property {Object} BRIGADE_COMPOSITION
@@ -470,6 +489,18 @@ const DIVISION = {
 Object.freeze(DIVISION);
 
 const BRIGADE_IDS = [DIVISION.FIRST_BCT, DIVISION.SECOND_BCT, DIVISION.THIRD_BCT, DIVISION.FOURTH_BCT, DIVISION.FIFTH_BCT];
+
+// The reserve force is not a group of its own: reserve units sit in these category groups (which is also where
+// newly manufactured units are placed) until resupply assigns them to a BCT.
+const RESERVE_CATEGORY_GROUP_IDS = [
+	DIVISION.HEAVY_CAV_RESERVE,
+	DIVISION.LIGHT_CAV_RESERVE,
+	DIVISION.INFANTRY_RESERVE,
+	DIVISION.SHORT_RANGE_FIRE_SUPPORT_RESERVE,
+	DIVISION.AIR_DEFENCE_RESERVE,
+	DIVISION.SENSOR_RESERVE,
+	DIVISION.MAINTENANCE_RESERVE,
+];
 
 /*
     LOGISTICS CONSTANTS

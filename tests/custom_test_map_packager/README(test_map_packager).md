@@ -14,6 +14,39 @@ Warzone2100 (up to v4.7.0) currently cannot:
 * Replace `Player 0` with `Player {currMaxPlayers + 1}` by force-spawning the new player directly on top of `Player 0`.
 * As long as FishBot forces `Player 0` to be a spectator, this will allow Approach 2 to be used generally for all maps supplied with the base game, as an AI can be freely assigned to start position `{currMaxPlayers + 1}`.
  
+## Supported Map Formats
+Warzone2100 ships two flavours of multiplayer map inside `mp.wz`, and the re-packager handles both.
+The format is detected from the contents of each map folder.
+
+### 1. Static maps (`game.map` + `*.json`)
+e.g. [`multiplay/maps/2c-highground`](https://github.com/Warzone2100/warzone2100/tree/master/data/mp/multiplay/maps/2c-highground).
+
+The map is a folder of pre-baked data files (`game.map`, `ttypes.ttp`, `struct.json`, `droid.json`,
+`feature.json`). The re-packager edits `struct.json` / `droid.json` directly: every `startpos: 0`
+entry is handed to Player `N+1`, and a copy of Player 0's command centre is left behind so that
+start position 0 still exists.
+
+### 2. Script-generated ("js-defined") maps (`game.js`)
+e.g. [`multiplay/maps/2c-DustyMaze`](https://github.com/Warzone2100/warzone2100/tree/master/data/mp/multiplay/maps/2c-DustyMaze).
+
+The map folder is only `game.js` + `ttypes.ttp`. There is no map data on disk at all: the engine
+runs `game.js` through its embedded QuickJS interpreter at load time, and the script hands the whole
+map back in a single `setMapData(mapWidth, mapHeight, texture, height, structures, droids, features)`
+call (see `lib/wzmaplib/src/map_script.cpp` in the Warzone2100 source).
+
+Because the map content only exists once the script has run, there is nothing to edit on disk.
+Re-implementing the script in Python would also mean re-implementing `gameRand()` in lockstep with
+the engine's Mersenne Twister, which would be both fragile and pointless.
+
+Instead, `__map_script_parser.py` rewrites the *script*, so that the exact same transformation runs
+inside the engine on the data the script has just generated:
+* a prologue defining `__fishbot_setMapData()` is prepended to `game.js`, and
+* the script's single `setMapData(...)` call is redirected to it.
+
+`__fishbot_setMapData()` re-labels the `structures` / `droids` arrays and then forwards everything to
+the real `setMapData()`, so the terrain, heightmap, features and scavengers are left exactly as the
+map author intended. The result is identical in shape to the static-map path above.
+
 ## Script Usage
 The following pipeline implements the proposed solution.
 
@@ -25,6 +58,9 @@ To get the raw map data required for this script:
 4. Extract all of the internal folders in `multiplay\maps`, leaving out:
    * `10c-` maps (not compatible), and
    * `.gam` files (not required).
+   
+   Note: both static and script-generated map folders can be extracted as-is - the re-packager tells
+   them apart on its own.
 5. Place all of extracted folders in a new folder e.g. `fishbot\tests\custom_test_map_packager\v4.7.0_base_maps`. If done correctly, there should be a new folder `v4.7.0_base_maps` inside `custom_test_map_packager` filled with around 40 subfolders.
 
 ### Step 2: Create custom maps & test files (with Player 0 overwritten with Player N+1)
