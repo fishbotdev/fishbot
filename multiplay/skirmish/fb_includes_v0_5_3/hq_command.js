@@ -149,6 +149,7 @@ class CommandCenter {
 			MIN_CAS_DEMAND_WEIGHT: 0.35,		// floor, so one swamped brigade cannot monopolise the air force outright
 
 			TURNAROUND_DISTANCE_FLOOR: 10,		// tiles; stops a target parked on the airfield from dominating the ranking
+			THREAT_EXPOSURE_GAIN: 0.5,			// demotes targets under air defence: a cell at threat t costs (1 + 0.5t) times more
 
 			STANDARD_THREAT_THRESHOLD: 0,
 			URGENT_THREAT_THRESHOLD: 0,
@@ -504,11 +505,18 @@ class CommandCenter {
 			dasWeight *= 0.7;								// enough aircraft to sustain pressure on the enemy base
 		}
 		
-		// The following thresholds set no-fly regions. Modify the threshold to match the "hq_toc/updateSpatialFields" spatial filter.
-		//	0 => avoids all anti-air defences, 
-		//	0.69 > (0.33 * 2) => allows targeting 1 cell over from a single air defence. 
-		//	2 => allows 2 air defences in one isolated cell (with no cells directly adjacent containing anti-air defences) or adjacent air defences - 1 per cell.
-		const STANDARD_THREAT_THRESHOLD = IS_OIL_DOMINANT ? 0.69 : 0;		
+		/*
+			The following thresholds set no-fly regions. Modify the threshold to match the "hq_toc/updateSpatialFields" spatial filter.
+				0 => avoids all anti-air defences, 
+				0.69 > (0.33 * 2) => allows targeting 1 cell over from a single air defence. 
+				2 => allows 2 air defences in one isolated cell (with no cells directly adjacent containing anti-air defences) or adjacent air defences - 1 per cell.
+
+			These are now hard limits only. Exposure below the limit is priced by `THREAT_EXPOSURE_GAIN` instead of
+			banned, so a valuable target is still worth flying at through light air defence while a cheap one is not.
+			The standard threshold no longer tightens to 0 when FishBot is behind on oil: grounding the air force over
+			any threatened cell was a large part of why it contributed so little from behind.
+		*/
+		const STANDARD_THREAT_THRESHOLD = 0.69;		
 		const URGENT_THREAT_THRESHOLD = 2;
 		const SATURATION_THREAT_THRESHOLD = 2;	
 
@@ -856,12 +864,19 @@ class CommandCenter {
 			because the count of URGENT requests is what the CAS demand ramp reads.
 		*/
 		/**
+		 * A request is only raised for a target inside the CAS support radius. `#filterPriorityAirMissions` holds
+		 * running CAS missions to that same radius, so without this check the brigade could ask for - and be given
+		 * aircraft for - a target which is cancelled on the next cycle. The brigade's location is refreshed more
+		 * often than its target list, so the two do drift apart.
 		 * @param {TargetCandidate[]} candidates
 		 * @param {number} priority
 		 * @param {string} targetClass one of `AIR_TARGET_CLASS`
 		 */
 		const addCASRequests = (candidates, priority, targetClass) => {
 			candidates.forEach(c => {
+				if (outsideOfRadius(c.targetObj, this.AVIATION_PARAMETERS.CAS_SUPPORT_RADIUS)) {
+					return;
+				}
 				brigadeTargets['casTargets'].push(aviation.translateIntoCASRequest(c.targetObj, priority, targetClass));
 			});
 		};
@@ -930,10 +945,11 @@ class CommandCenter {
 	 * distance twice on every sortie - so, at equal value, a nearer target buys more strikes per minute.
 	 * @param {AirStrikeMissionRequest | CombatMissionData} request
 	 * @param {DroidObject | StructureObject | FeatureObject} obj the target, freshly fetched
+	 * @param {number} threat the `adaThreat` field value over the target
 	 * @param {AviationParameters} parameters
 	 * @returns {number}
 	 */
-	#scoreAirMissionRequest(request, obj, parameters) {
+	#scoreAirMissionRequest(request, obj, threat, parameters) {
 		const distanceToTarget = Math.sqrt(distSq(baseLocation.x, obj.x, baseLocation.y, obj.y));
 		let cost = distanceToTarget + parameters.TURNAROUND_DISTANCE_FLOOR;
 
@@ -946,6 +962,10 @@ class CommandCenter {
 		if (obj.health < parameters.LOW_HEALTH_THRESHOLD) {
 			cost *= parameters.KNOCKOUT_WEIGHT;									// finishing a damaged target is cheap value
 		}
+
+		// Exposure below the no-fly threshold is priced rather than banned, so the air force gives up a defended
+		// target for a comparable undefended one, but will still go after something genuinely worth the risk.
+		cost *= 1 + (parameters.THREAT_EXPOSURE_GAIN * threat);
 		return cost;
 	}
 
@@ -987,7 +1007,8 @@ class CommandCenter {
 
 			const gx = Math.floor(currObj.x / cellSize); 
 			const gy = Math.floor(currObj.y / cellSize);
-			if (adaThreat[gx][gy] > this.#airThreatThreshold(c.priority, parameters)) {
+			const threat = adaThreat[gx][gy];
+			if (threat > this.#airThreatThreshold(c.priority, parameters)) {
 				// debug(`	removed ACTIVE: ${currObj.name} (${c.missionType}) @ grid (${currObj.x} ${currObj.y})`);
 				c.missionStatus = MISSION_STATUS.ABORT;		
 				return;
@@ -1005,7 +1026,7 @@ class CommandCenter {
 				c.demandWeight = casDemandWeight;
 			}
 
-			c.cost = this.#scoreAirMissionRequest(c, currObj, parameters) * parameters.COMMITMENT_WEIGHT;
+			c.cost = this.#scoreAirMissionRequest(c, currObj, threat, parameters) * parameters.COMMITMENT_WEIGHT;
 			survivingMissions.push(c);
 		});
 
@@ -1077,12 +1098,13 @@ class CommandCenter {
 			
 			const gx = Math.floor(obj.x / cellSize); 
 			const gy = Math.floor(obj.y / cellSize);
-			if (adaThreat[gx][gy] > this.#airThreatThreshold(missionRequest.priority, parameters)) {
+			const threat = adaThreat[gx][gy];
+			if (threat > this.#airThreatThreshold(missionRequest.priority, parameters)) {
 				// debug(`	removed CANDIDATE, adaThreat: ${obj.name} @ grid (${obj.x} ${obj.y})`);
 				return;
 			}
 
-			missionRequest.cost = this.#scoreAirMissionRequest(missionRequest, obj, parameters);
+			missionRequest.cost = this.#scoreAirMissionRequest(missionRequest, obj, threat, parameters);
 
 			if (activeTargetIDs.includes(obj.id)) {
 				existingAviationTargets.push(missionRequest);
