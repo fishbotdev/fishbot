@@ -177,8 +177,6 @@ Object.values(COHESION_RADII).forEach(Object.freeze);
 Object.freeze(COHESION_RADII);
 
 // The average body size a brigade's vehicles must reach for it to be given the `tight` and `relaxed` radii.
-// The relaxed radii arrive as early as a medium average, because a brigade which averages medium is a mix
-// carrying real heavies in it, and those heavies need the room well before the whole brigade is made of them.
 const COHESION_TIGHT_AT_BODY_SIZE = BODY_WEIGHT.LIGHT;
 const COHESION_RELAXED_AT_BODY_SIZE = BODY_WEIGHT.MEDIUM;
 
