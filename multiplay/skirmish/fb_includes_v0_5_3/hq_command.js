@@ -93,6 +93,7 @@ class CommandCenter {
 			ADJACENCY_WEIGHT: 0.25,					// promotes further-away targets which are part of the same fight (e.g. the rest of an enemy base)
 			KNOCKOUT_WEIGHT: 0.56,					// promotes targets which the brigade has already damaged
 			LOW_HEALTH_THRESHOLD: 50,				// a target below this health percentage is considered worth finishing off
+			BLOCKED_APPROACH_WEIGHT: 2.0,			// demotes targets with terrain in the way; a target with a clear approach wins from ~1.4x further away
 
 			EFFECTIVE_FIRE_SUPPORT_RADIUS: 12,		// todo: this should be adaptive - when the brigade has a sensor, this is better, without, it is restricted by sight range of the front units
 			EFFECTIVE_ADA_RADIUS: 12,
@@ -575,6 +576,7 @@ class CommandCenter {
 	#prioritiseBrigadeTargets(state, brigadeID, parameters) {
 
 		const isReachable = state.mapData.isReachable;
+		const isWalkable = state.mapData.isWalkable;
 
 		/** @type {BrigadeTargets} */
 		const brigadeTargets = {
@@ -639,9 +641,8 @@ class CommandCenter {
 		}
 
 		/*
-			Direct Fire Targeting
-			Intent: attack what is closest (distSq to brigade) and see the current battle to completion (e.g. distSq to current target, health).
-			The targets in radius have their cost adjusted (percentage-based) based on proximity to the current battle & various other factors.
+			Direct Fire Targeting: attack what is closest and reachable in a straight line, and see the current fight to completion.
+			TODO: Lacks input from the strategic layer (which reasons about objectives & OAKOC) because it is currently non-existent.
 		*/
 
 		// Where the brigade's fight is, or `null` if it is not near one. Relies on FbObject carrying the stale 'x', 'y'.
@@ -698,6 +699,11 @@ class CommandCenter {
 			if (obj.health < parameters.LOW_HEALTH_THRESHOLD) {
 				// Opportunity 1: Prefers weak targets if available
 				cost *= parameters.KNOCKOUT_WEIGHT;
+			}
+			if (lineIsBlocked(x, y, obj.x, obj.y, isWalkable)) {
+				// Terrain 1: Demotes targets the brigade cannot drive straight at. 
+				// TODO: Simplistic. Projects a straight line from the brigade position to the target & checks if the tiles are walkable. Replace by strategic layer inputs.
+				cost *= parameters.BLOCKED_APPROACH_WEIGHT;
 			}
 			return cost;
 		}
@@ -1035,7 +1041,7 @@ class CommandCenter {
 			}
 			
 			moveBrigadeToAttack(state, brigadeID, groundTargets);	
-			highlightTiles(brigadeLocation.x, brigadeLocation.y);
+			// highlightTiles(brigadeLocation.x, brigadeLocation.y);
 		});
 
 		// Manage reserves: temporary: Move reserves to pre-emptively reinforce BCT0

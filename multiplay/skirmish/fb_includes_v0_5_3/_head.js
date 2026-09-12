@@ -311,6 +311,7 @@
  * @property {number} ADJACENCY_WEIGHT
  * @property {number} KNOCKOUT_WEIGHT
  * @property {number} LOW_HEALTH_THRESHOLD
+ * @property {number} BLOCKED_APPROACH_WEIGHT
  * @property {number} EFFECTIVE_FIRE_SUPPORT_RADIUS
  * @property {number} EFFECTIVE_ADA_RADIUS
  */

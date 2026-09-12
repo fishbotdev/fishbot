@@ -252,6 +252,56 @@ function drawLine(startX, startY, endX, endY) {
     return points;
 }
 
+/**
+ * Walks the tiles between two points (Bresenham's Line Algorithm), returning `true` as soon as one of them blocks the line.
+ * Both endpoints are excluded: the caller occupies the first tile, and the object being tested may itself stand on a tile
+ * which is flagged as blocked (e.g. an enemy derrick sits on an "Oil Resource" tile, which `isWalkable` marks non-walkable).
+ * Unlike `drawLine`, this allocates nothing, so it is cheap enough to call on every target every cycle.
+ * Note: like `drawLine`, a diagonal step moves between two tiles without testing either corner, so a line can thread a
+ * one tile diagonal gap. Testing the corners would cost ~30% more lookups; it is not worth it for target ranking.
+ * @param {number} startX
+ * @param {number} startY
+ * @param {number} endX
+ * @param {number} endY
+ * @param {(boolean[])[]} isPassable Lookup table indexed by (x, y) (e.g. `state.mapData.isWalkable`); `false` blocks the line
+ * @returns {boolean}
+ */
+function lineIsBlocked(startX, startY, endX, endY, isPassable) {
+
+	let x = startX;
+	let y = startY;
+
+	const dx = Math.abs(endX - startX);
+	const dy = Math.abs(endY - startY);
+
+	const sx = startX < endX ? 1 : -1;
+	const sy = startY < endY ? 1 : -1;
+
+	let err = dx - dy;
+
+	while (x !== endX || y !== endY) {
+		const e2 = 2 * err;
+
+		if (e2 > -dy) {
+			err -= dy;
+			x += sx;
+		}
+		if (e2 < dx) {
+			err += dx;
+			y += sy;
+		}
+
+		if (x === endX && y === endY) {
+			return false;		// the line reached the target with nothing in the way
+		}
+		if (!isPassable[x][y]) {
+			return true;
+		}
+	}
+
+	return false;		// the start tile is the target tile
+}
+
 /////////////////////////////////	WZ2100 helper functions (uses the WZ2100 JS API)	/////////////////////////////////
 
 /**
