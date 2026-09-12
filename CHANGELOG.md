@@ -1,6 +1,12 @@
 # Changelog
 This file is used to record the changes to FishBot between each version.
 
+## Fishbot v0.5.4
+*Released **xx xxx 2026***
+### Changes in v0.5.4
+- Combat improvements
+    - VTOLs are no longer grounded by any nearby air defence; they now pick better targets and waste fewer sorties.
+
 ## Fishbot v0.5.3
 *Released **20 Sep 2026***
 ### Changes in v0.5.3

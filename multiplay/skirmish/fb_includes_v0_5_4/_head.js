@@ -316,6 +316,7 @@
  * @property {number} CAS_SATURATION_GAIN
  * @property {number} MIN_CAS_DEMAND_WEIGHT
  * @property {number} TURNAROUND_DISTANCE_FLOOR
+ * @property {number} THREAT_EXPOSURE_GAIN
  * @property {number} STANDARD_THREAT_THRESHOLD
  * @property {number} URGENT_THREAT_THRESHOLD
  * @property {number} SATURATION_THREAT_THRESHOLD
