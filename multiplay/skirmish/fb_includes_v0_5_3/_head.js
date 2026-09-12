@@ -230,6 +230,9 @@
  * @property {DroidObject | StructureObject | FeatureObject} target
  * @property {number} priority
  * @property {number} numAircraft
+ * @property {string} targetClass one of `AIR_TARGET_CLASS`; selects the request's target class weight
+ * @property {number} cost air tasking ranking (lower wins); written each cycle by `#scoreAirMissionRequest`
+ * @property {number} demandWeight CAS only: how badly the requesting brigade needs air support (lower = more)
  */
 
 /**
@@ -238,6 +241,9 @@
  * @property {FbObject} target
  * @property {number} priority
  * @property {number} numAircraft
+ * @property {string} targetClass one of `AIR_TARGET_CLASS`; selects the request's target class weight
+ * @property {number} cost air tasking ranking (lower wins); written each cycle by `#scoreAirMissionRequest`
+ * @property {number} demandWeight CAS only: how badly the requesting brigade needs air support (lower = more)
  */
 
 /**
@@ -300,10 +306,17 @@
 /**
  * @typedef {Object} AviationParameters
  * @property {number} totalNumAircraft
- * @property {boolean} prioritiseCasTargets 
- * @property {boolean} prioritiseRaidTargets 
- * @property {boolean} prioritiseIndustrialTargets 
  * @property {boolean} SATURATION_RAID_ACTIVE 
+ * @property {Object.<number, number>} MISSION_TYPE_WEIGHT CAS / raid / base strike posture, keyed by `MISSION_TYPE`
+ * @property {Object.<string, number>} TARGET_CLASS_WEIGHT target value, keyed by `AIR_TARGET_CLASS`
+ * @property {number} COMMITMENT_WEIGHT
+ * @property {number} KNOCKOUT_WEIGHT
+ * @property {number} LOW_HEALTH_THRESHOLD
+ * @property {number} CAS_URGENCY_GAIN
+ * @property {number} CAS_SATURATION_GAIN
+ * @property {number} MIN_CAS_DEMAND_WEIGHT
+ * @property {number} TURNAROUND_DISTANCE_FLOOR
+ * @property {number} THREAT_EXPOSURE_GAIN
  * @property {number} STANDARD_THREAT_THRESHOLD
  * @property {number} URGENT_THREAT_THRESHOLD
  * @property {number} SATURATION_THREAT_THRESHOLD
@@ -407,6 +420,25 @@ const MISSION_PRIORITY = {
 	LOW: 1
 };
 Object.freeze(MISSION_PRIORITY);
+
+/**
+ * The kind of thing an air strike request is pointed at. Assigned once, where the request is created (which
+ * always knows the class), so that ranking never has to re-derive it from `OBJ_FLAGS`. Each class carries a
+ * weight in `AVIATION_PARAMETERS.TARGET_CLASS_WEIGHT`, which is how "what is worth killing from the air" is tuned.
+ */
+/** Aircraft committed to one air strike. Also sets how many concurrent strikes the air reserve can sustain. */
+const UNITS_PER_AIR_STRIKE = 2;
+
+const AIR_TARGET_CLASS = {
+	INDIRECT_FIRE: 'indirectFire',
+	ADA: 'ada',
+	PRODUCTION: 'production',
+	ARMOUR: 'armour',
+	DEFENCE: 'defence',
+	RESOURCE_EXTRACTOR: 'resourceExtractor',
+	CONSTRUCTOR: 'constructor',
+};
+Object.freeze(AIR_TARGET_CLASS);
 
 
 const MISSION_TYPE = {

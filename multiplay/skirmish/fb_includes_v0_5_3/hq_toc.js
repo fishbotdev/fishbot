@@ -189,8 +189,9 @@ class TacticalOperationsCenter {
 			const missionType = newMissionRequest.missionType;
 			const priority = newMissionRequest.priority;
 			const NUM_UNITS = newMissionRequest.numAircraft;
+			const targetClass = newMissionRequest.targetClass;
 
-			const missionData = this.createNewMission({missionType: missionType, priority: priority}, target, NUM_UNITS, tickUID);
+			const missionData = this.createNewMission({missionType: missionType, priority: priority}, target, NUM_UNITS, tickUID, targetClass);
 				
 			if (missionData != undefined) {
 				// debug(`Scheduled AIR_STRIKE (${missionType}) for:`, missionData.id, newMissionRequest.name, newMissionRequest.type, newMissionRequest.player, newMissionRequest.id);
@@ -300,13 +301,13 @@ class TacticalOperationsCenter {
 				md = aviation.createVtolStagingMission({missionType: missionType});		
 				break;
 			case MISSION_TYPE.CAS_STRIKE:
-				md = aviation.createAirStrikeMission({missionType: missionType, target: args[0], numRaidAircraft: args[1], tickUID: args[2], type: "CAS_STRIKE"});
+				md = aviation.createAirStrikeMission({missionType: missionType, target: args[0], numRaidAircraft: args[1], tickUID: args[2], type: "CAS_STRIKE", targetClass: args[3]});
 				break;
 			case MISSION_TYPE.AIR_RAID:
-				md = aviation.createAirStrikeMission({missionType: missionType, target: args[0], numRaidAircraft: args[1], tickUID: args[2], type: "AIR_RAID"});
+				md = aviation.createAirStrikeMission({missionType: missionType, target: args[0], numRaidAircraft: args[1], tickUID: args[2], type: "AIR_RAID", targetClass: args[3]});
 				break;
 			case MISSION_TYPE.DAS_STRIKE:
-				md = aviation.createAirStrikeMission({missionType: missionType, target: args[0], numRaidAircraft: args[1], tickUID: args[2], type: "DAS_STRIKE"});
+				md = aviation.createAirStrikeMission({missionType: missionType, target: args[0], numRaidAircraft: args[1], tickUID: args[2], type: "DAS_STRIKE", targetClass: args[3]});
 				break;
 
 			/*
