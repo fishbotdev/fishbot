@@ -156,38 +156,48 @@ function moveReservesToShadow(state, reserveGroupIDs, anchorBrigadeID) {
 /**
  * Cohesion radii (in tiles): how much room a brigade is given to maneuver in.
  *
- * Heavy bodies are larger and slower to turn, so a brigade of them needs more room than the same number of
- * mid-size bodies, and has to wait out to a wider radius before its stragglers have caught up. Each radius is
- * therefore stated twice: `baseline` is what a brigade of mid-size bodies (or lighter) gets, and `allHeavy` is
- * what a brigade made up entirely of heavy bodies gets. In between, `getCohesionRadiusSq()` interpolates.
+ * Heavy bodies are larger and slower to turn, so a brigade carrying them needs more room than one of light
+ * bodies, and has to wait out to a wider radius before its stragglers have caught up. Each radius is therefore
+ * stated twice: `tight` is what a brigade of light vehicles gets, and `relaxed` is the room a brigade gets once
+ * its bodies are big enough to need it. In between, `getCohesionRadiusSq()` interpolates.
  *
  * `HOLD` must stay below `REGROUP` at every body size, otherwise the 'wait for the group' band disappears.
  * @typedef {Object} CohesionRadius
- * @property {number} baseline
- * @property {number} allHeavy
+ * @property {number} tight
+ * @property {number} relaxed
  */
 const COHESION_RADII = {
-	REGROUP:         {baseline: 8, allHeavy: 12},		// beyond this, a unit breaks off what it is doing and rejoins the group
-	HOLD:            {baseline: 5, allHeavy: 9},		// beyond this, a unit which is ahead of the group waits for the group to catch up
-	FIRE_SUPPORT:    {baseline: 6, allHeavy: 7.5},		// how far fire support may sit from the group center before it is recalled
-	STATION_KEEPING: {baseline: 4, allHeavy: 5},		// how far a sensor / AA unit may sit from the unit nearest the target
-	REPAIR:          {baseline: 7, allHeavy: 8.75},		// how far a repair unit may roam from the unit nearest the target
+	REGROUP:         {tight: 8, relaxed: 12},		// beyond this, a unit breaks off what it is doing and rejoins the group
+	HOLD:            {tight: 5, relaxed: 9},		// beyond this, a unit which is ahead of the group waits for the group to catch up
+	FIRE_SUPPORT:    {tight: 6, relaxed: 7.5},		// how far fire support may sit from the group center before it is recalled
+	STATION_KEEPING: {tight: 4, relaxed: 5},		// how far a sensor / AA unit may sit from the unit nearest the target
+	REPAIR:          {tight: 7, relaxed: 8.75},		// how far a repair unit may roam from the unit nearest the target
 };
 Object.values(COHESION_RADII).forEach(Object.freeze);
 Object.freeze(COHESION_RADII);
+
+// The average body size a brigade's vehicles must reach for it to be given the `tight` and `relaxed` radii.
+// The relaxed radii arrive as early as a medium average, because a brigade which averages medium is a mix
+// carrying real heavies in it, and those heavies need the room well before the whole brigade is made of them.
+const COHESION_TIGHT_AT_BODY_SIZE = BODY_WEIGHT.LIGHT;
+const COHESION_RELAXED_AT_BODY_SIZE = BODY_WEIGHT.MEDIUM;
 
 /**
  * Returns the squared cohesion radius a brigade of the given average body size gets.
  * Squared, because the callers compare against `distSq()`.
  * @param {CohesionRadius} cohesionRadius one of `COHESION_RADII`
- * @param {number} avgBodySize the brigade's average `BODY_WEIGHT`
+ * @param {number} avgBodySize the brigade's average `BODY_WEIGHT`, over its vehicles
  * @returns {number}
  */
 function getCohesionRadiusSq(cohesionRadius, avgBodySize) {
-	// 0 for a brigade of mid-size bodies or lighter, 1 when every body in it is heavy.
-	const HEAVINESS = clampValue((avgBodySize - BODY_WEIGHT.MEDIUM) / (BODY_WEIGHT.HEAVY - BODY_WEIGHT.MEDIUM), 0, 1);
+	// 0 for a brigade of light vehicles, 1 once the average body is medium (or heavier).
+	const BULK = clampValue(
+		(avgBodySize - COHESION_TIGHT_AT_BODY_SIZE) / (COHESION_RELAXED_AT_BODY_SIZE - COHESION_TIGHT_AT_BODY_SIZE), 
+		0, 
+		1
+	);
 
-	const radius = cohesionRadius.baseline + ((cohesionRadius.allHeavy - cohesionRadius.baseline) * HEAVINESS);
+	const radius = cohesionRadius.tight + ((cohesionRadius.relaxed - cohesionRadius.tight) * BULK);
 	return radius ** 2;
 }
 
