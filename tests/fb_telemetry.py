@@ -50,8 +50,8 @@ SCHEMAS: Dict[str, List[str]] = {
     "FBTUW":  ["player", "w_heavy_cav", "w_light_cav", "w_mortar", "w_ada", "w_sensor",
                "w_maintenance"],
     "FBT":    ["player", "t_sec", "derricks", "oil_share", "living_players", "power", "units",
-               "units_lost", "power_lost", "enemy_direct_fire", "enemy_indirect", "enemy_air",
-               "enemy_repair", "bcts_fielded"],
+               "units_lost", "structures_lost", "power_lost_units", "power_lost_structures",
+               "enemy_direct_fire", "enemy_indirect", "enemy_air", "enemy_repair", "bcts_fielded"],
     "FBTEND": ["player", "t_sec", "units_lost", "structures_lost", "power_lost_units",
                "power_lost_structures"],
 }
@@ -221,21 +221,24 @@ def summarise_telemetry(telemetry: dict) -> dict:
             "tlm_bcts_peak": max(s["bcts_fielded"] for s in samples),
         })
 
-    # `FBTEND` is authoritative for attrition and duration: it is emitted when the game actually ends,
-    # whereas the last periodic sample can be up to a strategy interval earlier.
+    # Attrition and duration come from `FBTEND` when it is there, and from the last periodic sample when it
+    # is not. Both carry the same fields, so every game yields a full set of attrition metrics; `FBTEND` is
+    # preferred only because it is emitted at the true end rather than up to one strategy interval earlier.
+    #
+    # A headless autogame exits as soon as the game ends, so the 60-second watchdog which emits `FBTEND`
+    # almost never gets a tick to run in. `tlm_reached_game_end` therefore reports whether the bot observed
+    # the end itself, which is informative but is not a data-quality gate: use `tlm_sample_count` against
+    # `tlm_duration_sec` for that.
     source = final if final else (samples[-1] if samples else None)
+
     if source:
         metrics["tlm_duration_sec"] = source["t_sec"]
         metrics["tlm_units_lost"] = source["units_lost"]
+        metrics["tlm_structures_lost"] = source["structures_lost"]
+        metrics["tlm_power_lost"] = source["power_lost_units"] + source["power_lost_structures"]
+        metrics["tlm_power_lost_units"] = source["power_lost_units"]
+        metrics["tlm_power_lost_structures"] = source["power_lost_structures"]
 
-    if final:
-        metrics["tlm_structures_lost"] = final["structures_lost"]
-        metrics["tlm_power_lost"] = final["power_lost_units"] + final["power_lost_structures"]
-        metrics["tlm_power_lost_units"] = final["power_lost_units"]
-        metrics["tlm_power_lost_structures"] = final["power_lost_structures"]
-        metrics["tlm_reached_game_end"] = True
-    else:
-        # No FBTEND means the game was cut short, or the line was scrolled out of the console buffer.
-        metrics["tlm_reached_game_end"] = False
+    metrics["tlm_reached_game_end"] = bool(final)
 
     return metrics
