@@ -144,44 +144,41 @@ function moveReservesToShadow(reserveGroupIDs, x, y) {
 }
 
 /**
- * Baseline cohesion radii (in tiles), which are what a brigade of mid-size bodies needs to maneuver.
- * These are a floor, not a fixed value: `getCohesionRadiusScaling()` widens them for heavier brigades.
+ * Cohesion radii (in tiles): how much room a brigade is given to maneuver in.
+ *
+ * Heavy bodies are larger and slower to turn, so a brigade of them needs more room than the same number of
+ * mid-size bodies, and has to wait out to a wider radius before its stragglers have caught up. Each radius is
+ * therefore stated twice: `baseline` is what a brigade of mid-size bodies (or lighter) gets, and `allHeavy` is
+ * what a brigade made up entirely of heavy bodies gets. In between, `getCohesionRadiusSq()` interpolates.
+ *
+ * `HOLD` must stay below `REGROUP` at every body size, otherwise the 'wait for the group' band disappears.
+ * @typedef {Object} CohesionRadius
+ * @property {number} baseline
+ * @property {number} allHeavy
  */
 const COHESION_RADII = {
-	REGROUP: 8,				// beyond this, a unit breaks off what it is doing and rejoins the group
-	HOLD: 5,				// beyond this, a unit which is ahead of the group waits for the group to catch up
-	FIRE_SUPPORT: 6,		// how far fire support may sit from the group center before it is recalled
-	STATION_KEEPING: 4,		// how far a sensor / AA unit may sit from the unit nearest the target
-	REPAIR: 7,				// how far a repair unit may roam from the unit nearest the target
+	REGROUP:         {baseline: 8, allHeavy: 12},		// beyond this, a unit breaks off what it is doing and rejoins the group
+	HOLD:            {baseline: 5, allHeavy: 9},		// beyond this, a unit which is ahead of the group waits for the group to catch up
+	FIRE_SUPPORT:    {baseline: 6, allHeavy: 7.5},		// how far fire support may sit from the group center before it is recalled
+	STATION_KEEPING: {baseline: 4, allHeavy: 5},		// how far a sensor / AA unit may sit from the unit nearest the target
+	REPAIR:          {baseline: 7, allHeavy: 8.75},		// how far a repair unit may roam from the unit nearest the target
 };
+Object.values(COHESION_RADII).forEach(Object.freeze);
 Object.freeze(COHESION_RADII);
 
-// Every cohesion radius is widened by this fraction per body size class above medium, so an all-heavy brigade
-// maneuvers with radii 25% wider than an all-medium one.
-const COHESION_RADIUS_GROWTH_PER_BODY_SIZE = 0.25;
-
 /**
- * Returns the multiplier to apply to `COHESION_RADII` for a brigade of the given average body size.
- * Heavy bodies are larger and slower to turn, so they need more room to maneuver than the same number of
- * mid-size bodies. Brigades of medium bodies or lighter keep the baseline radii: the radii are already tuned
- * for them, and tightening them further would only crowd the group.
- * @param {number} avgBodySize the brigade's average `BODY_WEIGHT`
- * @returns {number} a multiplier of 1.0 or greater
- */
-function getCohesionRadiusScaling(avgBodySize) {
-	const SIZE_ABOVE_MEDIUM = Math.max(0, avgBodySize - BODY_WEIGHT.MEDIUM);
-	return 1 + (SIZE_ABOVE_MEDIUM * COHESION_RADIUS_GROWTH_PER_BODY_SIZE);
-}
-
-/**
- * Returns the squared cohesion radius a brigade of the given average body size gets, for a baseline radius in tiles.
+ * Returns the squared cohesion radius a brigade of the given average body size gets.
  * Squared, because the callers compare against `distSq()`.
- * @param {number} baseRadius one of `COHESION_RADII`
+ * @param {CohesionRadius} cohesionRadius one of `COHESION_RADII`
  * @param {number} avgBodySize the brigade's average `BODY_WEIGHT`
  * @returns {number}
  */
-function getCohesionRadiusSq(baseRadius, avgBodySize) {
-	return (baseRadius * getCohesionRadiusScaling(avgBodySize)) ** 2;
+function getCohesionRadiusSq(cohesionRadius, avgBodySize) {
+	// 0 for a brigade of mid-size bodies or lighter, 1 when every body in it is heavy.
+	const HEAVINESS = clampValue((avgBodySize - BODY_WEIGHT.MEDIUM) / (BODY_WEIGHT.HEAVY - BODY_WEIGHT.MEDIUM), 0, 1);
+
+	const radius = cohesionRadius.baseline + ((cohesionRadius.allHeavy - cohesionRadius.baseline) * HEAVINESS);
+	return radius ** 2;
 }
 
 /**
