@@ -60,7 +60,7 @@ class armyEngineering {
 		Algorithm:
 		Use the grid system to:
 		- Find cells with unclaimed derricks											-- uses state.fields.unclaimedDerricksInCell[gx][gy]
-		- Remove derricks which are already claimed									-- uses the DerrickObject's own `isClaimed`
+		- Remove derricks which are already claimed										-- uses the DerrickObject's own `isClaimed`
 		- Remove cells with high threat from enemy struct concentrations 				-- uses state.grid.grid[gx][gy].targetStructures 
 		- Remove cells with defensive structures										-- uses state.fields.enemyStaticDefenceThreat
 		- Remove cells with enemy offensive units										-- uses state.fields.enemyUnitThreat
@@ -77,8 +77,6 @@ class armyEngineering {
 		const enemyUnitThreat = state.fields.enemyUnitThreat;
 		const isReachable = state.mapData.isReachable;
 
-		const DEBUG_ON = false;
-		let debugGrid = create2DGrid(numXCells, numYCells, (...args) => {return "_";});
 		const captureOptions = [];
 
 		// Iterate through the grid, find & remember valid cells
@@ -99,16 +97,13 @@ class armyEngineering {
 
 					// Check for existing missions
 					if (activeOilCapTaskIDs.indexOf(d.id) !== -1) continue; 									// found 'CONSTRUCT_OIL_DERRICK' task
-					if (activeOilCapTaskIDs.indexOf(grid[gx][gy].id) !== -1) continue;							// found the same 'CONSTRUCT_ALL_DERRICKS_IN_SECTOR' task
 
-					// if (tileIsBurning(d.x, d.y)) continue;		// seems to be worse
 					const br = this.translateIntoBuildRequest({
 						missionType: MISSION_TYPE.CONSTRUCT_OIL_DERRICK, 
 						structureData: STRUCTURES["Oil Derrick"],
 						payload: d
 					});
 					captureOptions.push([d.id, br]);
-					if (DEBUG_ON) debugGrid[gx][gy] = "X";
 				}
 			}
 		}
