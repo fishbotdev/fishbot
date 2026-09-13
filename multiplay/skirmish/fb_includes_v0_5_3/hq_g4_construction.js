@@ -550,6 +550,9 @@ class armyEngineering {
 			STRUCTURES["Cyborg Factory"],
 		];
 
+		// Every type of factory competes for the same oil, so they share one cap (see `DYNAMIC_FACTORY_CAP`).
+		const PRODUCTION_STRUCTURE_NAMES = ["Factory", "Cyborg Factory", "VTOL Factory"];
+
 		// Put each task into an appropriate format for approval ("buildTask", which is internal to g4_construction)
 		let buildTasks = [];
 
@@ -586,8 +589,16 @@ class armyEngineering {
 					continue;
 				}	
 			}
-			if (["Factory", "Cyborg Factory", "VTOL Factory"].includes(STRUCTURE_NAME)) {
-				if (structCount >= parameters.DYNAMIC_FACTORY_CAP) {
+			// The oil budget pays for production structures as a group, so the cap is spent across the types
+			// rather than granted to each of them: a cyborg or VTOL factory draws on the same oil as a tank one.
+			if (PRODUCTION_STRUCTURE_NAMES.includes(STRUCTURE_NAME)) {
+				const countOf = (structureName) => {
+					const structureCount = structureCounts.get(STRUCTURES[structureName]);
+					return (structureCount != null) ? structureCount['count'] : 0;
+				};
+				const PRODUCTION_STRUCTURE_COUNT = PRODUCTION_STRUCTURE_NAMES.reduce((total, name) => total + countOf(name), 0);
+
+				if (PRODUCTION_STRUCTURE_COUNT >= parameters.DYNAMIC_FACTORY_CAP) {
 					continue;
 				}
 			}
