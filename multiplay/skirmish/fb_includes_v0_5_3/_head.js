@@ -180,6 +180,10 @@
  * @property {number} numBuiltDerricks only built derricks extract oil
  * @property {number} numBuiltPowerGenerators only built generators convert oil into power
  * @property {number} numBuiltPowerModules power modules across the built generators
+ * @property {number} numBuiltFactories only built factories draw power to produce
+ * @property {number} numBuiltFactoryModules factory modules across the built factories
+ * @property {number} numBuiltResearchLabs only built labs draw power to research
+ * @property {number} numBuiltResearchModules research modules across the built labs
  * @property {number} numConstructedHQs
  * @property {number} numRepairFacilities
  * 
@@ -203,6 +207,7 @@
  * @property {number} incomePerMin forecast oil income
  * @property {number} expenditurePerMin smoothed spend on production, construction & research
  * @property {number} netFlowPerMin smoothed rate at which banked power is growing (negative while drawing down)
+ * @property {number} starvation smoothed 0 - 1 share of recent samples with an empty bank & jobs still queued
  */
 
 /**

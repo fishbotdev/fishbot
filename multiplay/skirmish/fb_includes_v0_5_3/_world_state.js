@@ -324,6 +324,7 @@ class worldState {
             'incomePerMin': 0,
             'expenditurePerMin': 0,
             'netFlowPerMin': 0,
+            'starvation': 0,
         };
 
         ////////////////////////// FISHBOT METADATA (CONSIDER MOVING THIS TO HQ_COMMAND) //////////////////////////

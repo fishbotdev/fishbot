@@ -231,7 +231,7 @@ class CommandCenter {
 	 *
 	 * The `OIL` tag & the `key=value` fields are the format that script expects; keep them in step.
 	 * @param {OilEconomyObject} economy the current oil supply & demand observations
-	 * @param {{share: number, surplus: number, budget: number, sufficiency: number, factoryCap: number, labCap: number}} decision what FishBot concluded from `economy` this update
+	 * @param {{factoryRunningCost: number, fundableFactories: number, starvation: number, sufficiency: number, factoryCap: number, labCap: number}} decision what FishBot concluded from `economy` this update
 	 * @returns {void}
 	 */
 	#logOilTelemetry(economy, decision) {
@@ -248,9 +248,9 @@ class CommandCenter {
 			`inc=${Math.round(economy.incomePerMin)}`,
 			`spend=${Math.round(economy.expenditurePerMin)}`,
 			`unmet=${Math.round(economy.unmetDemand)}`,
-			`share=${decision.share.toFixed(2)}`,
-			`surp=${decision.surplus.toFixed(2)}`,
-			`budg=${decision.budget.toFixed(2)}`,
+			`fcost=${Math.round(decision.factoryRunningCost)}`,
+			`fund=${decision.fundableFactories.toFixed(2)}`,
+			`starv=${decision.starvation.toFixed(2)}`,
 			`suff=${decision.sufficiency.toFixed(2)}`,
 			`fac=${decision.factoryCap}`,
 			`labs=${decision.labCap}`,
@@ -331,27 +331,54 @@ class CommandCenter {
 			Oil sufficiency: a continuous (0 - 1) measure of how much base FishBot's oil can actually support.
 			0 means "build the bare minimum & go take more oil"; 1 means "build everything the structure limits allow".
 
-			It is the product of a strategic term and an operational term, because both have to hold:
-			1. `OIL_SHARE_SCORE` asks how much of a player's expected share of the map's oil FishBot is *earning* from.
-			   Derricks which no generator has capacity for are excluded, because they earn nothing.
-			2. `POWER_BUDGET_SCORE` asks whether income covers what the base has already committed. The game engine
-			   queues up a job whose cost it cannot pay, so `unmetDemand` is oil FishBot has promised and does not
-			   have; against a minute of income, it measures how far the base is over-built for its oil. It is a
-			   smoothed figure, so it reports a base which is *persistently* stalled rather than one job waiting.
+			A structure is sized by what it costs to *run*, not by how much work is queued behind it. The engine charges
+			power in step with progress, so income divided by what a structure draws while busy gives the number of them
+			the oil can keep working. Queue length cannot answer this: a base which spends all of its income always has
+			a long queue, so it would read as starving exactly when it is healthiest.
 
-			A persistent surplus adds a bounded bonus on top of the share: banking oil means FishBot is under-using
-			what it has, which justifies a bigger base than its share of derricks alone would.
+			Nor does all of the income reach production. Construction & research draw on the same pool, and a busy truck
+			costs about as much to run as a busy factory, so the income is split three ways before anything is sized.
 		*/
 		const oilEconomy = state.oilEconomy;
-		const INCOME_PER_MIN = Math.max(oilEconomy.incomePerMin, 1);		// guards the ratios below before the first derrick is connected
+		const myInfo = playerInfo[me];
 
-		const MAX_SURPLUS_BONUS = 0.25;			// how far a surplus alone may push the base past FishBot's share of the oil
+		const PRODUCTION_SHARE_OF_INCOME = 0.50;
+		const CONSTRUCTION_SHARE_OF_INCOME = 0.30;		// trucks are capped elsewhere, but this is the oil they run on
+		const RESEARCH_SHARE_OF_INCOME = 1 - PRODUCTION_SHARE_OF_INCOME - CONSTRUCTION_SHARE_OF_INCOME;
 
-		const OIL_SHARE_SCORE = clampValue(oilEconomy.connectedDerricks / Math.max(FAIR_SHARE_DERRICK_COUNT, 1), 0, 1);
-		const SURPLUS_BONUS = MAX_SURPLUS_BONUS * clampValue(oilEconomy.netFlowPerMin / INCOME_PER_MIN, 0, 1);
-		const POWER_BUDGET_SCORE = clampValue(1 - oilEconomy.unmetDemand / INCOME_PER_MIN, 0, 1);
+		// A structure only draws power while it is working, and no factory works every minute: it waits on the truck
+		// that places it, on designs research has yet to unlock, and on a queue that drains unevenly across factories.
+		// Sizing against the time it can expect to be busy is what turns a running cost into a sensible count -
+		// against a full minute every minute, no map on the roster carries enough oil for a second factory.
+		const TARGET_FACTORY_UTILISATION = 0.4;
+		const TARGET_RESEARCH_LAB_UTILISATION = 0.9;	// there is nearly always a topic waiting to be researched
 
-		const OIL_SUFFICIENCY = clampValue((OIL_SHARE_SCORE + SURPLUS_BONUS) * POWER_BUDGET_SCORE, 0, 1);
+		// A module adds to a structure's output rate outright, so it raises what that structure draws by as much.
+		// The engine spreads modules unevenly across structures, so the mean over the built ones is used.
+		const meanModulesEach = (moduleCount, structureCount) => (structureCount > 0) ? (moduleCount / structureCount) : 0;
+
+		const factoryUpgrades = Upgrades[me].Building["Factory"];
+		const FACTORY_PRODUCTION_POINTS_PER_SEC = factoryUpgrades["ProductionPoints"] +
+			factoryUpgrades["ModuleProductionPoints"] * meanModulesEach(myInfo['numBuiltFactoryModules'], myInfo['numBuiltFactories']);
+
+		const labUpgrades = Upgrades[me].Building["Research Facility"];
+		const LAB_RESEARCH_POINTS_PER_SEC = labUpgrades["ResearchPoints"] +
+			labUpgrades["ModuleResearchPoints"] * meanModulesEach(myInfo['numBuiltResearchModules'], myInfo['numBuiltResearchLabs']);
+
+		const POWER_PER_BUSY_FACTORY_PER_MIN = 60 * FACTORY_PRODUCTION_POINTS_PER_SEC * POWER_PER_PRODUCTION_POINT;
+		const POWER_PER_BUSY_RESEARCH_LAB_PER_MIN = 60 * LAB_RESEARCH_POINTS_PER_SEC * POWER_PER_RESEARCH_POINT;
+
+		const POWER_PER_FACTORY_PER_MIN = POWER_PER_BUSY_FACTORY_PER_MIN * TARGET_FACTORY_UTILISATION;
+		const POWER_PER_RESEARCH_LAB_PER_MIN = POWER_PER_BUSY_RESEARCH_LAB_PER_MIN * TARGET_RESEARCH_LAB_UTILISATION;
+
+		const FUNDABLE_FACTORIES = oilEconomy.incomePerMin * PRODUCTION_SHARE_OF_INCOME / Math.max(POWER_PER_FACTORY_PER_MIN, 1);
+		const FUNDABLE_RESEARCH_LABS = oilEconomy.incomePerMin * RESEARCH_SHARE_OF_INCOME / Math.max(POWER_PER_RESEARCH_LAB_PER_MIN, 1);
+
+		// Running dry is the one direct sign that the estimate above is ahead of what the economy really funds. It
+		// only ever holds the base part of the way back: a cap does not drain a queue already placed, so cutting to
+		// the minimum on the first empty bank would be a spiral rather than a correction.
+		const MAX_STARVATION_PENALTY = 0.5;
+		const STARVATION_BRAKE = 1 - MAX_STARVATION_PENALTY * clampValue(oilEconomy.starvation, 0, 1);
 
 		/*
 			CONSTRUCTION PARAMETERS
@@ -379,19 +406,23 @@ class CommandCenter {
 		const DYNAMIC_POWER_GENERATOR_CAP = getDynamicPowerGeneratorCap(MY_DERRICK_COUNT, MIN_GENERATORS, MAX_GENERATORS);
 
 
-		// Power-hungry structures scale with `OIL_SUFFICIENCY` rather than flipping at a single threshold, so that
-		// FishBot grows its base in step with its oil instead of jumping between a minimal & a maximal base.
-		const getOilScaledCap = (oilSufficiency, minCount, maxCount) => {
-			return Math.round(minCount + oilSufficiency * (maxCount - minCount));
+		// Each cap is the number the oil can keep working, held back while the economy is running dry. Growing with
+		// income rather than with a share of the map's oil means the base answers to what FishBot earns, not to what
+		// its rivals hold.
+		const getFundableCap = (fundableCount, minCount, maxCount) => {
+			return clampValue(Math.round(fundableCount * STARVATION_BRAKE), minCount, maxCount);
 		};
 
 		const MIN_FACTORIES = 1;
 		const MAX_FACTORIES = state.getMaxStructureCount("Factory");
-		const DYNAMIC_FACTORY_CAP = getOilScaledCap(OIL_SUFFICIENCY, MIN_FACTORIES, MAX_FACTORIES);
+		const DYNAMIC_FACTORY_CAP = getFundableCap(FUNDABLE_FACTORIES, MIN_FACTORIES, MAX_FACTORIES);
 
 		const MIN_RESEARCH_LABS = 1;
 		const MAX_RESEARCH_LABS = state.getMaxStructureCount("Research Facility");
-		const DYNAMIC_RESEARCH_LAB_CAP = getOilScaledCap(OIL_SUFFICIENCY, MIN_RESEARCH_LABS, MAX_RESEARCH_LABS);
+		const DYNAMIC_RESEARCH_LAB_CAP = getFundableCap(FUNDABLE_RESEARCH_LABS, MIN_RESEARCH_LABS, MAX_RESEARCH_LABS);
+
+		// Reported as one figure: the share of the largest base the rules allow that FishBot's oil can keep working.
+		const OIL_SUFFICIENCY = clampValue(FUNDABLE_FACTORIES * STARVATION_BRAKE / Math.max(MAX_FACTORIES, 1), 0, 1);
 
 		const USE_VTOL = true;							// todo: find a situation in which you don't want to use VTOL
 		const MY_VTOL_COUNT = state.playerInfo[me]['numAirUnits'];
@@ -400,14 +431,15 @@ class CommandCenter {
 								  (this.CONSTRUCTION_PARAMETERS.DYNAMIC_RESEARCH_LAB_CAP !== DYNAMIC_RESEARCH_LAB_CAP);
 		if (BASE_SIZE_CHANGED) {
 			const derricks = `${oilEconomy.connectedDerricks} connected + ${oilEconomy.idleDerricks} idle derricks`;
-			const oilRates = `income ${Math.round(oilEconomy.incomePerMin)}/min, spend ${Math.round(oilEconomy.expenditurePerMin)}/min, unmet ${Math.round(oilEconomy.unmetDemand)}`;
-			deb(`oil sufficiency ${OIL_SUFFICIENCY.toFixed(2)} (${derricks}; ${oilRates}) -> ${DYNAMIC_FACTORY_CAP} factories, ${DYNAMIC_RESEARCH_LAB_CAP} labs`);
+			const oilRates = `income ${Math.round(oilEconomy.incomePerMin)}/min, spend ${Math.round(oilEconomy.expenditurePerMin)}/min, starvation ${oilEconomy.starvation.toFixed(2)}`;
+			const runningCosts = `factory ${Math.round(POWER_PER_FACTORY_PER_MIN)}/min, lab ${Math.round(POWER_PER_RESEARCH_LAB_PER_MIN)}/min`;
+			deb(`oil sufficiency ${OIL_SUFFICIENCY.toFixed(2)} (${derricks}; ${oilRates}; ${runningCosts}) -> ${DYNAMIC_FACTORY_CAP} factories, ${DYNAMIC_RESEARCH_LAB_CAP} labs`);
 		}
 
 		this.#logOilTelemetry(oilEconomy, {
-			'share': OIL_SHARE_SCORE,
-			'surplus': SURPLUS_BONUS,
-			'budget': POWER_BUDGET_SCORE,
+			'factoryRunningCost': POWER_PER_BUSY_FACTORY_PER_MIN,
+			'fundableFactories': FUNDABLE_FACTORIES,
+			'starvation': oilEconomy.starvation,
 			'sufficiency': OIL_SUFFICIENCY,
 			'factoryCap': DYNAMIC_FACTORY_CAP,
 			'labCap': DYNAMIC_RESEARCH_LAB_CAP,

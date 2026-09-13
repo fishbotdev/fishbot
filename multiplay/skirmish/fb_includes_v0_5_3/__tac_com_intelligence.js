@@ -227,6 +227,10 @@ function createPlayerInfoEntry(playerID) {
         'numBuiltDerricks': 0,              // only built derricks extract oil
         'numBuiltPowerGenerators': 0,       // only built generators convert oil into power
         'numBuiltPowerModules': 0,          // power modules across the built generators
+        'numBuiltFactories': 0,             // only built factories draw power to produce
+        'numBuiltFactoryModules': 0,        // factory modules across the built factories
+        'numBuiltResearchLabs': 0,          // only built labs draw power to research
+        'numBuiltResearchModules': 0,       // research modules across the built labs
         'numConstructedHQs': 0,
         'numRepairFacilities': 0,
 

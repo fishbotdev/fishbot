@@ -688,6 +688,8 @@ class TacticalOperationsCenter {
 	updateOilEconomy(state) {
 
 		const SMOOTHING_WINDOW_MIN = 0.5;		// estimates follow a change in spending over roughly this long
+		const STARVATION_WINDOW_MIN = 2;		// a brake on base growth should answer to a trend, not to one empty tick
+		const STARVED_BANK_POWER = 20;			// below this there is nothing left in hand to start the next job
 
 		const economy = state.oilEconomy;
 		const p = state.playerInfo[me];
@@ -735,6 +737,13 @@ class TacticalOperationsCenter {
 		economy['netFlowPerMin'] += SMOOTHING * (NET_FLOW_PER_MIN - economy['netFlowPerMin']);
 		economy['expenditurePerMin'] += SMOOTHING * (EXPENDITURE_PER_MIN - economy['expenditurePerMin']);
 		economy['unmetDemand'] += SMOOTHING * (UNMET_DEMAND - economy['unmetDemand']);
+
+		// 4. Track how often the economy actually runs dry. An empty bank with jobs still queued is the only
+		// direct evidence that the base is bigger than the oil can fund; a long queue on its own is not, because
+		// a base which uses all of its income always has one.
+		const IS_STARVED = (BANKED_POWER < STARVED_BANK_POWER) && (UNMET_DEMAND > 0);
+		const STARVATION_SMOOTHING = clampValue(ELAPSED_MIN / STARVATION_WINDOW_MIN, 0, 1);
+		economy['starvation'] += STARVATION_SMOOTHING * ((IS_STARVED ? 1 : 0) - economy['starvation']);
 
 		economy['bankedPower'] = BANKED_POWER;
 		economy['sampledAt'] = gameTime;
@@ -909,6 +918,12 @@ class TacticalOperationsCenter {
 				if (flags & OBJ_FLAGS.PRODUCTION) {
 					p['numFactories']++;
 
+					// Only a built factory draws power, and a module raises what it draws while it works.
+					if (flags & OBJ_FLAGS.IS_BUILT) {
+						p['numBuiltFactories']++;
+						p['numBuiltFactoryModules'] += obj.modules;
+					}
+
 					if (PLAYER_IS_ME) {
 						if (obj.stattype === FACTORY) {
 							// debug(`${p.playerID}: factory ${idx} `)
@@ -924,6 +939,11 @@ class TacticalOperationsCenter {
 				}
 
 				if (flags & OBJ_FLAGS.RESEARCH) {
+					if (flags & OBJ_FLAGS.IS_BUILT) {
+						p['numBuiltResearchLabs']++;
+						p['numBuiltResearchModules'] += obj.modules;
+					}
+
 					if (PLAYER_IS_ME) {
 						p["researchFacilityFbObjects"].push(fbObject);
 					}

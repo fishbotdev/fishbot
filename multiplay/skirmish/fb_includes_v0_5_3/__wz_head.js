@@ -68,6 +68,27 @@ function getPowerModifierPct() {
 const POWER_MODIFIER_PCT = getPowerModifierPct();       // fixed for the whole game, so it is only read once
 
 /*
+    What a structure costs to *run*, as opposed to what it costs to build.
+
+    The engine charges power in step with progress, so a structure which is working draws its output rate times
+    the power each point of that output costs. Those costs are near enough constant across the things FishBot
+    builds & researches, so the medians below stand in for the fleet:
+
+    -   0.26 power per build point is the median over whole tank designs (body + propulsion + weapon) in
+        `data/mp/stats/{body,propulsion,weapons}.json`; the spread across designs is roughly 0.25 - 0.30.
+    -   0.031 power per research point is the median of `researchPower / researchPoints` over all 389 topics in
+        `data/mp/stats/research.json`.
+    -   0.25 power per build point is the median over every structure in `data/mp/stats/structure.json`.
+
+    So a factory at its stock 10 production points/sec draws ~157 power/min while it is busy, a truck at 8
+    construct points/sec ~120 power/min, and a research facility at 14 research points/sec only ~26 power/min.
+    Research is cheap to run; production & construction are what oil actually pays for.
+*/
+const POWER_PER_PRODUCTION_POINT = 0.26;
+const POWER_PER_RESEARCH_POINT = 0.031;
+const POWER_PER_CONSTRUCTION_POINT = 0.25;
+
+/*
     RESEARCH INFORMATION
 */
 const RESEARCHES = {};

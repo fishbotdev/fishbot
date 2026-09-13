@@ -21,7 +21,7 @@ Plots FishBot's oil income & expenditure over the course of a game.
 While `DEBUG_MODE_ON` is set, FishBot prints one `OIL` line per strategy update (6 per game minute) from
 `CommandCenter.#logOilTelemetry` in `hq_command.js`:
 
-    F0:  05:30:   OIL conn=8 idle=2 bank=146 inc=396 spend=380 unmet=0 share=0.80 surp=0.00 budg=1.00 suff=0.80 fac=4 labs=4
+    F1:  05:30:   OIL conn=8 idle=2 bank=146 inc=396 spend=380 unmet=0 fcost=343 fund=1.15 starv=0.00 suff=0.23 fac=1 labs=5
 
 ~ Why this script runs the game itself ~
 
@@ -94,8 +94,8 @@ CONTINUATION_ROW = re.compile(r"^[a-z0-9_=.\- ]+$")
 
 # The fields `#logOilTelemetry` writes. Declared here so that a rename on the FishBot side fails loudly instead
 # of silently dropping a column.
-INTEGER_FIELDS = {"conn", "idle", "bank", "inc", "spend", "unmet", "fac", "labs"}
-FLOAT_FIELDS = {"share", "surp", "budg", "suff"}
+INTEGER_FIELDS = {"conn", "idle", "bank", "inc", "spend", "unmet", "fcost", "fac", "labs"}
+FLOAT_FIELDS = {"fund", "starv", "suff"}
 EXPECTED_FIELDS = INTEGER_FIELDS | FLOAT_FIELDS
 
 
@@ -353,7 +353,7 @@ def plot_oil_economy(df: pd.DataFrame, player: int, suptitle: str = ""):
     Plots one FishBot's oil economy as three stacked panels sharing a game-time axis:
         1. the power rates (income vs expenditure), which is the headline supply-and-demand picture,
         2. the power stocks (banked power & unmet demand) against the derricks earning the income, and
-        3. the oil sufficiency score & the structure caps FishBot derived from it.
+        3. how many factories the income can fund, against the structure caps FishBot derived from it.
     """
     GRID = {"color": "grey", "linestyle": "-", "linewidth": 0.4, "alpha": 0.3}
 
@@ -393,14 +393,12 @@ def plot_oil_economy(df: pd.DataFrame, player: int, suptitle: str = ""):
 
     # ---- 3. Sufficiency & the caps it drives ----
     ax3.grid(**GRID)
-    ax3.plot(df["t_min"], df["suff"], label="oil sufficiency", color="black", linewidth=2)
-    ax3.plot(df["t_min"], df["share"], label="oil share score", color="tab:green", alpha=0.6)
-    ax3.plot(df["t_min"], df["budg"], label="power budget score", color="tab:red", alpha=0.6)
-    ax3.plot(df["t_min"], df["surp"], label="surplus bonus", color="tab:blue", alpha=0.6)
-    ax3.set_ylim(-0.05, 1.05)
-    ax3.set_title("Oil sufficiency (and its terms) vs the structure caps it sets")
+    ax3.plot(df["t_min"], df["fund"], label="factories the income can fund", color="black", linewidth=2)
+    ax3.plot(df["t_min"], df["starv"], label="starvation (empty bank, jobs queued)", color="tab:red", alpha=0.6)
+    ax3.plot(df["t_min"], df["suff"], label="oil sufficiency (0 - 1)", color="tab:green", alpha=0.6)
+    ax3.set_title("What the income can fund, and the structure caps it sets")
     ax3.set_xlabel("game time (minutes)")
-    ax3.set_ylabel("score (0 - 1)")
+    ax3.set_ylabel("factories / score")
     ax3.legend(loc="upper left", fontsize=8)
 
     ax3_caps = ax3.twinx()
@@ -424,9 +422,14 @@ def print_summary(df: pd.DataFrame, player: int) -> None:
     print(f"  mean sufficiency   {df['suff'].mean():8.2f}            "
           f"(range {df['suff'].min():.2f} - {df['suff'].max():.2f})")
 
-    # A job waiting on power means the base is outspending its income; an idle derrick means FishBot captured
-    # oil it has no generator capacity to earn through, which is a build order problem rather than an oil one.
-    print(f"  samples with jobs waiting on power:       {(df['unmet'] > 0).mean() * 100:.0f}%")
+    print(f"  mean factory cap   {df['fac'].mean():8.2f}            "
+          f"(at the minimum of 1 for {(df['fac'] <= 1).mean() * 100:.0f}% of samples, "
+          f"changed {int((df['fac'].diff() != 0).sum()) - 1} times)")
+
+    # Running dry is what actually limits the base. A queue on its own does not: a base spending all of its
+    # income always has one. An idle derrick is oil FishBot captured but has no generator capacity to earn
+    # through, which is a build order problem rather than an oil one.
+    print(f"  samples with an empty bank (< 20 power):  {(df['bank'] < 20).mean() * 100:.0f}%")
     print(f"  samples with idle (unconnected) derricks: {(df['idle'] > 0).mean() * 100:.0f}%")
 
 
