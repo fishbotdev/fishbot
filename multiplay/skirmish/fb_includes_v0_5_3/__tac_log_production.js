@@ -311,7 +311,6 @@ function produceLandAPFireSupport(factory) {
 		WEAPONS["Bombard"],
 		WEAPONS["Pepperpot"],
 		WEAPONS["Incendiary Mortar"],
-		WEAPONS["Incendiary Howitzer"],
 	].reverse();
 	
 	const fireSupportPropulsions = [

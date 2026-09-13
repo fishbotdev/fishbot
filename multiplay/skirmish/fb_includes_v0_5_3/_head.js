@@ -373,7 +373,6 @@
  * @property {number} TOTAL_UNITS_PER_BRIGADE
  * 
  * @property {Map<number, number>} UNIT_WEIGHTS
- * @property {number} DEFAULT_LAND_UNIT_CATEGORY
  * @property {boolean} SHOULD_PRODUCE_INFANTRY
  * @property {boolean} SHOULD_PRODUCE_VTOLS
  * @property {boolean} SHOULD_PRODUCE_LAND_VEHICLES
