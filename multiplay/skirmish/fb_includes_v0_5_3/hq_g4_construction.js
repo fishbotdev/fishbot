@@ -60,20 +60,13 @@ class armyEngineering {
 		Algorithm:
 		Use the grid system to:
 		- Find cells with unclaimed derricks											-- uses state.fields.unclaimedDerricksInCell[gx][gy]
-		- Remove derricks which are already claimed									-- uses the DerrickObject's own `isClaimed`
+		- Remove derricks which are already claimed										-- uses the DerrickObject's own `isClaimed`
 		- Remove cells with high threat from enemy struct concentrations 				-- uses state.grid.grid[gx][gy].targetStructures 
 		- Remove cells with defensive structures										-- uses state.fields.enemyStaticDefenceThreat
 		- Remove cells with enemy offensive units										-- uses state.fields.enemyUnitThreat
 		- Remove cells with all derricks already being claimed in active missions		-- uses this.toc.getActiveConstructionMissions()
 		
 		-> if all conditions satisfied, push derrick ID to be used to filter state.poi.derricks
-		
-		Iterate through the ordered list
-		1. Skip if id not found in grid entries
-		2. >= 4 derricks which are close to one another (multiple in one grid); move to front of list
-			2a. create new CONSTRUCT_ALL_DERRICKS_IN_SECTOR
-		3. Else, continue (the ordered list already orders the derricks in order of increasing distance from base)
-			3a. create new CONSTRUCT_OIL_DERRICK for single, CONSTRUCT_ALL_DERRICKS_IN_SECTOR for multiple
 		*/
 		const grid = state.grid.grid;
 		const numXCells = state.grid.numXCells;
@@ -84,10 +77,7 @@ class armyEngineering {
 		const enemyUnitThreat = state.fields.enemyUnitThreat;
 		const isReachable = state.mapData.isReachable;
 
-		const DEBUG_ON = false;
-		let debugGrid = create2DGrid(numXCells, numYCells, (...args) => {return "_";});
-		const normalPriorityDerricks = [];
-		const highPriorityDerricks = [];
+		const captureOptions = [];
 
 		// Iterate through the grid, find & remember valid cells
 		for (let gx=0; gx<numXCells; gx++) {
@@ -107,55 +97,23 @@ class armyEngineering {
 
 					// Check for existing missions
 					if (activeOilCapTaskIDs.indexOf(d.id) !== -1) continue; 									// found 'CONSTRUCT_OIL_DERRICK' task
-					if (activeOilCapTaskIDs.indexOf(grid[gx][gy].id) !== -1) continue;							// found the same 'CONSTRUCT_ALL_DERRICKS_IN_SECTOR' task
 
-					// if (tileIsBurning(d.x, d.y)) continue;		// seems to be worse
-
-					if (derricksInCell.length >= 4) {
-						const br = this.translateIntoBuildRequest({
-							missionType: MISSION_TYPE.CONSTRUCT_ALL_DERRICKS_IN_SECTOR, 
-							structureData: STRUCTURES["Oil Derrick"],
-							payload: grid[gx][gy]		// needs to have the '.derricks' property to work with the existing system
-						});
-						highPriorityDerricks.push(br);
-						if (DEBUG_ON) debugGrid[gx][gy] = "X";
-						break;
-					} else {
-						const br = this.translateIntoBuildRequest({
-							missionType: MISSION_TYPE.CONSTRUCT_OIL_DERRICK, 
-							structureData: STRUCTURES["Oil Derrick"],
-							payload: d
-						});
-						normalPriorityDerricks.push([d.id, br]);
-						if (DEBUG_ON) debugGrid[gx][gy] = "X";
-					}
+					const br = this.translateIntoBuildRequest({
+						missionType: MISSION_TYPE.CONSTRUCT_OIL_DERRICK, 
+						structureData: STRUCTURES["Oil Derrick"],
+						payload: d
+					});
+					captureOptions.push([d.id, br]);
 				}
 			}
-		}
-
-		if (DEBUG_ON) {
-			debug(`prioritiseOilCapTasks() @ ${gameTime} ms`);
-
-			for (let gy=0; gy<numYCells; gy++) {
-				let row = "";
-
-				for (let gx=0; gx<numXCells; gx++) {					
-					row += `${debugGrid[gx][gy]} `;
-				}
-				debug(row);
-			}
-		}
-
-		const result = [...highPriorityDerricks];
-		if (normalPriorityDerricks.length === 0) {
-			return result;
 		}
 		
-		// Else, order the tasks in order of decreasing distance from base (assumes state.poi.derricks is in order).
+		const result = [];
+		// Intent: Order the tasks in order of increasing distance from base (assumes state.poi.derricks is in order).
 		state.poi.derricks.forEach(d => {
-			for (let i=0; i<normalPriorityDerricks.length; i++) {
-				if (d.id === normalPriorityDerricks[i][0]) {
-					result.push(normalPriorityDerricks[i][1]);
+			for (let i=0; i<captureOptions.length; i++) {
+				if (d.id === captureOptions[i][0]) {
+					result.push(captureOptions[i][1]);
 					return;
 				}
 			}
@@ -300,16 +258,10 @@ class armyEngineering {
 			
 			const regularContestedDerrick = tileIsBurning(d.x, d.y) || (enemyDerricksNearby > 0 && friendlyDefencesNearby === 0);		
 			if (regularContestedDerrick) {
-				normalPrioOil.unshift(makePrimaryDefence(d));
+				highPrioOil.push(makePrimaryDefence(d));
 			} else {
 				normalPrioOil.push(makePrimaryDefence(d));
 			}
-		}
-
-		if (false) {
-			debug(`generateOilDefenceConstructionOptions() @${gameTime}`);
-			debug(`	highPrio: ${highPrioOil}`);
-			debug(`	normalPrio: ${normalPrioOil}`);
 		}
 
 		return [...highPrioOil, ...normalPrioOil];
