@@ -157,6 +157,32 @@ def _grow_screen_buffer(handle) -> tuple:
     return _screen_buffer_size(handle)       # read back: a request the console ignored still reports success
 
 
+def _buffer_really_holds(handle, rows: int) -> bool:
+    """
+    Checks that the last row of the screen buffer can be written & read back.
+
+    Reporting the requested size is not proof of holding it: a ConPTY console accepts the resize, reports the new
+    size, and still keeps its scroll-back in the terminal emulator rather than in the buffer the scrape reads --
+    which silently costs all but the last screenful of a game. Writing straight into a cell bypasses the output
+    stream, so this neither scrolls the console nor shows the sentinel to anyone.
+    """
+    kernel32 = ctypes.windll.kernel32
+    SENTINEL, last_row = b"~wz~", _COORD(0, rows - 1)
+
+    written = ctypes.c_ulong(0)
+    if not kernel32.WriteConsoleOutputCharacterA(handle, SENTINEL, len(SENTINEL), last_row, ctypes.byref(written)):
+        return False
+
+    read_back = ctypes.create_string_buffer(len(SENTINEL))
+    got = ctypes.c_ulong(0)
+    kernel32.ReadConsoleOutputCharacterA(handle, read_back, len(SENTINEL), last_row, ctypes.byref(got))
+
+    blanks = b" " * len(SENTINEL)
+    kernel32.WriteConsoleOutputCharacterA(handle, blanks, len(blanks), last_row, ctypes.byref(written))
+
+    return read_back.raw == SENTINEL
+
+
 def prepare_console_for_scraping():
     """
     Gives this process a console whose screen buffer can hold a whole game, and returns `(handle, description)`.
@@ -164,14 +190,16 @@ def prepare_console_for_scraping():
     This is what makes the capture whole. The scraper reads the console *screen buffer*, and a console backed by
     ConPTY - Windows Terminal, VSCode, PyCharm's "Emulate Terminal in Output Console" - keeps its scroll-back in
     the terminal emulator instead, leaving a buffer only as tall as the visible window (~30 rows, a couple of game
-    minutes) and silently ignoring a request to grow it. A private console is allocated when that happens, which
-    the game attaches to in place of the terminal's.
+    minutes). It reports the larger size once asked to grow, so the buffer is tested rather than trusted; a private
+    console is allocated when that test fails, which the game attaches to in place of the terminal's. Freeing the
+    terminal's console is safe in exactly that case, because a ConPTY parent's standard output is a pipe and goes
+    on working without it.
     """
     handle = _open_console_screen_buffer()
 
     if handle is not None:
         columns, rows = _grow_screen_buffer(handle)
-        if rows >= CONSOLE_SCROLLBACK_ROWS:
+        if rows >= CONSOLE_SCROLLBACK_ROWS and _buffer_really_holds(handle, rows):
             return handle, f"capturing from this console ({columns} x {rows})"
 
     ctypes.windll.kernel32.FreeConsole()
