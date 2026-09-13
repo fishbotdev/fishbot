@@ -309,7 +309,8 @@ def parse_telemetry(console_rows: List[str]) -> pd.DataFrame:
     if missing:
         raise SystemExit(
             f"Telemetry is missing the field(s) {sorted(missing)}.\n"
-            f"`#logOilTelemetry` in hq_command.js and this script have drifted apart -- update EXPECTED_FIELDS."
+            f"Either this capture came from an older build of FishBot, or `#logOilTelemetry` in hq_command.js\n"
+            f"and this script have drifted apart -- in which case update EXPECTED_FIELDS."
         )
 
     # Dropped from the logged line to keep it inside a console width; it is exactly income less expenditure.
