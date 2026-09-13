@@ -113,10 +113,11 @@ Ideally, FishBot will also have a good win rate in both duel (1-vs-1, tested in 
 * ~~`WaterLoop`~~ - **not compatible**: sea map
 
 ## Recent updates
-* **v0.5.3** - *released **xx Sep 2026***
+* **v0.5.3** - *released **15 Sep 2026***
     * Combat fixes:
-        * Improved group cohesion during heavy fighting.
+        * Improved group cohesion during heavy fighting and further improved chokepoint handling for heavy body units.
         * Improved VTOL utilisation when the match is neck-and-neck.
+        * Mortars no longer try to path in front of the front line to attack an invisible target (now prefers visible targets).
     * Improved the construction planner to reduce the chance that trucks oscillate back and forth doing nothing.
     * Unit designs & base construction tweaked.
     * New focused cannon research path added for 1v1 matches.
