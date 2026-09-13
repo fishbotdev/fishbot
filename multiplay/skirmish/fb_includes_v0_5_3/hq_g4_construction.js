@@ -265,7 +265,7 @@ class armyEngineering {
 			if (isHighPriority) {
 				// Has a special case of defences === 1 -> can build secondary defence
 				if (friendlyDefencesNearby === 0) {
-					highPrioOil.unshift(makePrimaryDefence(d));			// unshift -> reverses the order of `state.poi.derricks` which is ordered in ascending order from base
+					highPrioOil.push(makePrimaryDefence(d));			// unshift -> reverses the order of `state.poi.derricks` which is ordered in ascending order from base
 				} else if (friendlyDefencesNearby === 1) {
 					const specialContestedDerrick = (enemyDerricksNearby > 0 && friendlyDefencesNearby === 1);
 					if (specialContestedDerrick) {
@@ -282,16 +282,10 @@ class armyEngineering {
 			
 			const regularContestedDerrick = tileIsBurning(d.x, d.y) || (enemyDerricksNearby > 0 && friendlyDefencesNearby === 0);		
 			if (regularContestedDerrick) {
-				normalPrioOil.unshift(makePrimaryDefence(d));
+				highPrioOil.push(makePrimaryDefence(d));
 			} else {
 				normalPrioOil.push(makePrimaryDefence(d));
 			}
-		}
-
-		if (false) {
-			debug(`generateOilDefenceConstructionOptions() @${gameTime}`);
-			debug(`	highPrio: ${highPrioOil}`);
-			debug(`	normalPrio: ${normalPrioOil}`);
 		}
 
 		return [...highPrioOil, ...normalPrioOil];
