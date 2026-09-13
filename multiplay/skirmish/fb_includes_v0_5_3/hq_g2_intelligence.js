@@ -40,7 +40,7 @@ class armyIntelligence {
 		const targetsNearDerricks = [];
 		const seenGridCoord = [];
 
-		const createRaidRequest = (obj, priority) => aviation.translateIntoRaidRequest(obj, priority);
+		const createRaidRequest = (obj, priority, targetClass) => aviation.translateIntoRaidRequest(obj, priority, targetClass);
 
 		for (let i=0; i<allDerricks.length; i++) {
 			const d = allDerricks[i];
@@ -73,14 +73,14 @@ class armyIntelligence {
 
 					if (flags & OBJ_FLAGS.DEFENSIVE_STRUCTURE) {
 						if (flags & OBJ_FLAGS.INDIRECT_FIRE) {
-							defences.unshift(createRaidRequest(t, MISSION_PRIORITY.HIGH));
+							defences.unshift(createRaidRequest(t, MISSION_PRIORITY.HIGH, AIR_TARGET_CLASS.INDIRECT_FIRE));
 						} else {
-							defences.push(createRaidRequest(t, MISSION_PRIORITY.HIGH));
+							defences.push(createRaidRequest(t, MISSION_PRIORITY.HIGH, AIR_TARGET_CLASS.DEFENCE));
 						}
 						return;
 					}
 					if (flags & OBJ_FLAGS.RESOURCE_EXTRACTOR) {
-						derricks.push(createRaidRequest(t, MISSION_PRIORITY.MEDIUM));
+						derricks.push(createRaidRequest(t, MISSION_PRIORITY.MEDIUM, AIR_TARGET_CLASS.RESOURCE_EXTRACTOR));
 					}
 				});
 
@@ -88,7 +88,7 @@ class armyIntelligence {
 					const flags = t.flags;
 
 					if (flags & OBJ_FLAGS.CONSTRUCTOR && !(flags & OBJ_FLAGS.CYBORG_PROPULSION)) {
-						trucks.push(createRaidRequest(t, MISSION_PRIORITY.LOW));
+						trucks.push(createRaidRequest(t, MISSION_PRIORITY.LOW, AIR_TARGET_CLASS.CONSTRUCTOR));
 					}
 				});
 
@@ -126,7 +126,7 @@ class armyIntelligence {
 			return result;
 		}
 
-		const createDASRequest = (obj, priority) => aviation.translateIntoDASRequest(obj, priority);
+		const createDASRequest = (obj, priority, targetClass) => aviation.translateIntoDASRequest(obj, priority, targetClass);
 
 		const SEARCH_RADIUS = 30;
 		for (let i=0; i<bases.length; i++) {
@@ -144,19 +144,19 @@ class armyIntelligence {
 				const flags = t.flags;
 
 				if (flags & OBJ_FLAGS.ADA) {
-					result.adaTargets.push(createDASRequest(t, MISSION_PRIORITY.VERY_HIGH));
+					result.adaTargets.push(createDASRequest(t, MISSION_PRIORITY.VERY_HIGH, AIR_TARGET_CLASS.ADA));
 					return;
 				}
 				if (flags & OBJ_FLAGS.PRODUCTION) {
-					result.productionTargets.push(createDASRequest(t, MISSION_PRIORITY.VERY_HIGH));
+					result.productionTargets.push(createDASRequest(t, MISSION_PRIORITY.VERY_HIGH, AIR_TARGET_CLASS.PRODUCTION));
 					return;
 				}
 				if (flags & OBJ_FLAGS.INDIRECT_FIRE) {
-					result.indirectFireTargets.push(createDASRequest(t, MISSION_PRIORITY.HIGH));
+					result.indirectFireTargets.push(createDASRequest(t, MISSION_PRIORITY.HIGH, AIR_TARGET_CLASS.INDIRECT_FIRE));
 					return;
 				}
 				if (flags & OBJ_FLAGS.DEFENSIVE_STRUCTURE) {
-					result.defensiveStructureTargets.push(createDASRequest(t, MISSION_PRIORITY.HIGH));
+					result.defensiveStructureTargets.push(createDASRequest(t, MISSION_PRIORITY.HIGH, AIR_TARGET_CLASS.DEFENCE));
 					return;
 				}
 			});
@@ -165,17 +165,17 @@ class armyIntelligence {
 				const flags = t.flags;
 
 				if (flags & OBJ_FLAGS.ADA) {
-					result.adaTargets.push(createDASRequest(t, MISSION_PRIORITY.VERY_HIGH));
+					result.adaTargets.push(createDASRequest(t, MISSION_PRIORITY.VERY_HIGH, AIR_TARGET_CLASS.ADA));
 					return;
 				}
 				if (flags & OBJ_FLAGS.CONSTRUCTOR && !(flags & OBJ_FLAGS.CYBORG_PROPULSION)) {
 					// Cyborg propulsion is omitted because FishBot 0.4.0 does not use anti-cyborg VTOL weapons
-					result.productionTargets.push(createDASRequest(t, MISSION_PRIORITY.LOW));
+					result.productionTargets.push(createDASRequest(t, MISSION_PRIORITY.LOW, AIR_TARGET_CLASS.CONSTRUCTOR));
 					return;
 				}
 				if (flags & OBJ_FLAGS.INDIRECT_FIRE && !(flags & OBJ_FLAGS.CYBORG_PROPULSION)) {
 					// Cyborg propulsion is omitted because FishBot 0.4.0 does not use anti-cyborg VTOL weapons (e.g. will falsely attack grenadiers)
-					result.indirectFireTargets.push(createDASRequest(t, MISSION_PRIORITY.HIGH));
+					result.indirectFireTargets.push(createDASRequest(t, MISSION_PRIORITY.HIGH, AIR_TARGET_CLASS.INDIRECT_FIRE));
 					return;
 				}
 			});
