@@ -55,7 +55,7 @@ class CommandCenter {
 		/** @type {ForceStructureParameters} */
 		this.FORCE_STRUCTURE_PARAMETERS = {
 			RELEASE_DWELL_TICKS: 15,	// consecutive resupply ticks the formation conditions must hold before a new BCT is formed (~30s)
-			MAX_THREAT_RATIO: 0.4,		// nearby ground threats per combat unit, above which a BCT is judged to be expecting heavy combat
+			MAX_THREAT_RATIO: 0.6,		// nearby ground threats per combat unit, above which a BCT is judged to be expecting heavy combat
 			MAX_UNREPLACED_LOSSES: 2,	// direct-fire units a BCT may be down on its recent peak before it counts as bleeding
 			releaseDwell: 0,
 		};
@@ -1262,15 +1262,18 @@ class CommandCenter {
 	}
 
 	/**
-	 * Reports whether a brigade's direct fire battalions are at their full establishment.
+	 * Reports whether a brigade's cavalry battalions are at their full establishment.
+	 *
+	 * Infantry is deliberately not measured: it comes from the cyborg factories rather than the land vehicle
+	 * queue, so gating on it lets the division deadlock with a full reserve and nothing left to produce.
 	 * @param {worldState} state
 	 * @param {number} brigadeID also valid for DIVISION.BCT_RESERVE, measured against the same composition
 	 * @returns {boolean}
 	 */
-	#isDirectFireFullyManned(state, brigadeID) {
-		const DIRECT_FIRE_CATEGORIES = [DIVISION.HEAVY_CAV_RESERVE, DIVISION.LIGHT_CAV_RESERVE, DIVISION.INFANTRY_RESERVE];
+	#isCavalryFullyManned(state, brigadeID) {
+		const CAVALRY_CATEGORIES = [DIVISION.HEAVY_CAV_RESERVE, DIVISION.LIGHT_CAV_RESERVE];
 		const brigadeComposition = state.brigades[brigadeID]["composition"];
-		for (const category of DIRECT_FIRE_CATEGORIES) {
+		for (const category of CAVALRY_CATEGORIES) {
 			if (brigadeComposition.get(category)["deficit"] > 0) {
 				return false;
 			}
@@ -1327,7 +1330,7 @@ class CommandCenter {
 	 * to fight, and whether the division can afford to form another one.
 	 *
 	 * Units are held in the reserve by default. A new BCT is only formed once every BCT already in the field
-	 * *and* the reserve are at full direct fire establishment, sustained for `RELEASE_DWELL_TICKS`. Forming is deliberately
+	 * *and* the reserve are at full cavalry establishment, sustained for `RELEASE_DWELL_TICKS`. Forming is deliberately
 	 * slow while folding is immediate, because a new BCT is empty and so drains a full brigade's worth out of
 	 * the reserve in a single resupply tick - that is the replacement depth the rest of the division gives up.
 	 * @param {worldState} state
@@ -1355,8 +1358,8 @@ class CommandCenter {
 		}
 
 		const AT_BRIGADE_CEILING = this.BRIGADE_DESIGNATIONS.length >= this.MAX_BRIGADES;
-		const FORCE_IS_SUFFICIENT = this.BRIGADE_DESIGNATIONS.every(brigadeID => this.#isDirectFireFullyManned(state, brigadeID))
-			&& this.#isDirectFireFullyManned(state, DIVISION.BCT_RESERVE);
+		const FORCE_IS_SUFFICIENT = this.BRIGADE_DESIGNATIONS.every(brigadeID => this.#isCavalryFullyManned(state, brigadeID))
+			&& this.#isCavalryFullyManned(state, DIVISION.BCT_RESERVE);
 
 		// Splitting the division is only safe if nothing already in the field is about to need the reserve
 		let expectingHeavyCombat = false;
