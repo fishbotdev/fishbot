@@ -67,13 +67,6 @@ class armyEngineering {
 		- Remove cells with all derricks already being claimed in active missions		-- uses this.toc.getActiveConstructionMissions()
 		
 		-> if all conditions satisfied, push derrick ID to be used to filter state.poi.derricks
-		
-		Iterate through the ordered list
-		1. Skip if id not found in grid entries
-		2. >= 4 derricks which are close to one another (multiple in one grid); move to front of list
-			2a. create new CONSTRUCT_ALL_DERRICKS_IN_SECTOR
-		3. Else, continue (the ordered list already orders the derricks in order of increasing distance from base)
-			3a. create new CONSTRUCT_OIL_DERRICK for single, CONSTRUCT_ALL_DERRICKS_IN_SECTOR for multiple
 		*/
 		const grid = state.grid.grid;
 		const numXCells = state.grid.numXCells;
@@ -109,31 +102,19 @@ class armyEngineering {
 					if (activeOilCapTaskIDs.indexOf(grid[gx][gy].id) !== -1) continue;							// found the same 'CONSTRUCT_ALL_DERRICKS_IN_SECTOR' task
 
 					// if (tileIsBurning(d.x, d.y)) continue;		// seems to be worse
-
-					if (derricksInCell.length >= 4) {
-						const br = this.translateIntoBuildRequest({
-							missionType: MISSION_TYPE.CONSTRUCT_ALL_DERRICKS_IN_SECTOR, 
-							structureData: STRUCTURES["Oil Derrick"],
-							payload: grid[gx][gy]		// needs to have the '.derricks' property to work with the existing system
-						});
-						captureOptions.push([d.id, br]);
-						if (DEBUG_ON) debugGrid[gx][gy] = "X";
-						break;
-					} else {
-						const br = this.translateIntoBuildRequest({
-							missionType: MISSION_TYPE.CONSTRUCT_OIL_DERRICK, 
-							structureData: STRUCTURES["Oil Derrick"],
-							payload: d
-						});
-						captureOptions.push([d.id, br]);
-						if (DEBUG_ON) debugGrid[gx][gy] = "X";
-					}
+					const br = this.translateIntoBuildRequest({
+						missionType: MISSION_TYPE.CONSTRUCT_OIL_DERRICK, 
+						structureData: STRUCTURES["Oil Derrick"],
+						payload: d
+					});
+					captureOptions.push([d.id, br]);
+					if (DEBUG_ON) debugGrid[gx][gy] = "X";
 				}
 			}
 		}
 		
 		const result = [];
-		// Else, order the tasks in order of decreasing distance from base (assumes state.poi.derricks is in order).
+		// Intent: Order the tasks in order of increasing distance from base (assumes state.poi.derricks is in order).
 		state.poi.derricks.forEach(d => {
 			for (let i=0; i<captureOptions.length; i++) {
 				if (d.id === captureOptions[i][0]) {
