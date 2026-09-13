@@ -225,15 +225,25 @@ def launch_workers(
         process.wait()
 
 
-def run_batch_test(commit_sha: str) -> Path:
+def run_batch_test(
+    *,
+    commit_sha: str,
+    base_manifest_name: str,
+    runs_per_test: int,
+    worker_count: int,
+) -> Path:
+    """
+    Runs every test in a base manifest & returns the run manifest describing what was executed.
 
-    WORKER_COUNT = 4    # match to number of CPU cores
+    Results are keyed by commit, so running two builds writes two folders under `results/` & a build already
+    tested is resumed rather than repeated (see `filter_completed_tests`).
+    """
 
-    COMMIT_SHA = commit_sha
-    SHORT_SHA = COMMIT_SHA[:7]
-    RUNS_PER_TEST = 10
+    WORKER_COUNT = worker_count
+    RUNS_PER_TEST = runs_per_test
+    SHORT_SHA = commit_sha[:7]
 
-    BASE_MANIFEST_PATH = Path.cwd() / "base_manifest.json"
+    BASE_MANIFEST_PATH = Path.cwd() / base_manifest_name
     TEST_RESULTS_PATH = Path.cwd() / "results" / SHORT_SHA
 
     base_manifest = read_json(BASE_MANIFEST_PATH)
@@ -295,9 +305,26 @@ if __name__ == "__main__":
     else:
         # Orchestrator mode
 
+        ######## PROGRAM CONFIGURATION ########
+
+        # Results are written to `results/<first 7 characters>`, so this decides which build a batch is filed
+        # under. Set it to the build actually loaded in PRODCONFIG, or two builds will share one folder.
+        COMMIT_SHA = "66c8f5e3ade5aa41220509cff0a77cf81b6807c9"
+
+        BASE_MANIFEST_NAME = "oil_economy_manifest.json"    # `base_manifest.json` is the PSO tuning set
+        RUNS_PER_TEST = 50
+        WORKER_COUNT = 4                                    # match to the number of CPU cores
+
+        ######## END PROGRAM CONFIGURATION ########
+
         start_time = time.time()
 
-        run_batch_test(commit_sha="b155be21ee55cffe7240ab54bd39e5a2ced12ab2")
+        run_batch_test(
+            commit_sha=COMMIT_SHA,
+            base_manifest_name=BASE_MANIFEST_NAME,
+            runs_per_test=RUNS_PER_TEST,
+            worker_count=WORKER_COUNT,
+        )
 
         end_time = time.time()
 

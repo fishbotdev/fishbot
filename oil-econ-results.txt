@@ -1,342 +1,488 @@
-plot_oil_economy.py 
-Running 00000_4c-Monocot_i_ffa_f1.json (up to 20 minutes)...
---------------------------------------------------------------------------------------
- * Warzone 2100 - Headless Mode
- * Version: 4.7.0, Built: 2026-04-07
---------------------------------------------------------------------------------------
-info    |08:53:32: [wzAttemptInitializeBackend:3128] Attempting to initialize backend: (headless)
-info    |08:53:32: [startMultiplayerGame:5547] startMultiplayerGame
-info    |08:53:32: [SendFireUp:3808] Sending NET_FIREUP
-info    |08:53:33: [fpathInitialise:166] Using threads: 2
-error   |08:53:34: [buildStructureDir:1621] Player 0 (Human): is building Command Center at (28, 48) but found Command Center already at (28, 48)
-error   |08:53:34: [loadWzMapStructure:6374] Structure A0CommandCentre couldn't be built (probably on top of another structure).
 
 FISHBOT DEBUG MODE
 
-Map: 4c-Monocot_i (4 players)
+Map: Gamma (3 players)
 
 Player Info
   - Player 0: forcing to spec
-info    |08:53:35: [makePlayerSpectator:2883] player: 0 (gameTime: 2)
+info    |10:44:45: [makePlayerSpectator:2883] player: 0 (gameTime: 2)
   - Player 1: FishBot v0.5.3 (Medium)
-  - Player 2: PeacemakerAI (Medium)
-  - Player 3: PeacemakerAI (Medium)
+  - Player 2: Cobra (Insane)
 F1:  00:00:   Initialisation completed.
 
-F1:  00:00:   oil sufficiency 0.00 (0 connected + 0 idle derricks; income 0/min, spend 0/min, unmet 0) -> 1 factories, 1 labs
-F1:  00:00:   OIL conn=0 idle=0 bank=1300 inc=0 spend=0 unmet=0 share=0.00 surp=0.00 budg=1.00 suff=0.00 fac=1 labs=1
+F1:  00:00:   oil sufficiency 0.00 (0 connected + 0 idle derricks; income 0/min, spend 0/min, starvation 0.00; factory 137/min, lab 65/min) -> 1 factories, 1 labs
+F1:  00:00:   OIL conn=0 idle=0 bank=1300 inc=0 spend=0 unmet=0 fcost=343 fund=0.00 starv=0.00 suff=0.00 fac=1 labs=1
 F1:  00:00:   research weights changed to: focused combat (0 enemies remaining)
-info    |08:53:35: [NETreplaySaveStart:199] Started writing replay file "replay/skirmish/20260913_085335_skirmish.wzrp".
-F1:  00:07:   OIL conn=0 idle=0 bank=1200 inc=0 spend=200 unmet=0 share=0.00 surp=0.00 budg=1.00 suff=0.00 fac=1 labs=1
-F1:  00:07:   research weights changed to: default (2 enemies remaining)
-Game State [gameTime: 16902]
---------------------------------------------------------------------------------------
- # | Player Name | Extrct Pwr | Units Killed | Structs (F/R) | Units Alive |  Power  |
--- | ----------- | ---------- | ------------ | ------------- | ----------- | ------- |
- 0 |      Player |          0 |            0 |       0 (0/0) |           0 |       0 | x
- 1 | Yellow-Fish |          0 |            0 |       1 (0/0) |           2 |    1200 | 
- 2 | Cyan-Peacem |          0 |            0 |       1 (0/0) |           2 |    1200 | 
- 3 | Blue-Peacem |          0 |            0 |       1 (0/0) |           2 |    1200 | 
---------------------------------------------------------------------------------------
-F1:  00:17:   OIL conn=0 idle=0 bank=1200 inc=0 spend=133 unmet=0 share=0.00 surp=0.00 budg=1.00 suff=0.00 fac=1 labs=1
-F1:  00:27:   OIL conn=0 idle=0 bank=1100 inc=0 spend=289 unmet=0 share=0.00 surp=0.00 budg=1.00 suff=0.00 fac=1 labs=1
-F1:  00:37:   OIL conn=0 idle=0 bank=1038 inc=0 spend=317 unmet=0 share=0.00 surp=0.00 budg=1.00 suff=0.00 fac=1 labs=1
-F1:  00:47:   OIL conn=0 idle=0 bank=976 inc=0 spend=335 unmet=0 share=0.00 surp=0.00 budg=1.00 suff=0.00 fac=1 labs=1
-F1:  00:57:   OIL conn=0 idle=0 bank=839 inc=0 spend=497 unmet=0 share=0.00 surp=0.00 budg=1.00 suff=0.00 fac=1 labs=1
-F1:  01:07:   OIL conn=0 idle=0 bank=740 inc=0 spend=530 unmet=0 share=0.00 surp=0.00 budg=1.00 suff=0.00 fac=1 labs=1
-F1:  01:17:   OIL conn=0 idle=1 bank=653 inc=0 spend=527 unmet=0 share=0.00 surp=0.00 budg=1.00 suff=0.00 fac=1 labs=1
-F1:  01:27:   OIL conn=0 idle=3 bank=445 inc=0 spend=767 unmet=0 share=0.00 surp=0.00 budg=1.00 suff=0.00 fac=1 labs=1
-F1:  01:37:   oil sufficiency 0.36 (4 connected + 0 idle derricks; income 333/min, spend 955/min, unmet 0) -> 2 factories, 2 labs
-F1:  01:37:   OIL conn=4 idle=0 bank=279 inc=333 spend=955 unmet=0 share=0.36 surp=0.00 budg=1.00 suff=0.36 fac=2 labs=2
-F1:  01:47:   OIL conn=4 idle=1 bank=285 inc=333 spend=735 unmet=0 share=0.36 surp=0.00 budg=1.00 suff=0.36 fac=2 labs=2
-F1:  01:57:   OIL conn=4 idle=2 bank=132 inc=333 spend=907 unmet=0 share=0.36 surp=0.00 budg=1.00 suff=0.36 fac=2 labs=2
-F1:  02:07:   OIL conn=4 idle=3 bank=15 inc=333 spend=950 unmet=0 share=0.36 surp=0.00 budg=1.00 suff=0.36 fac=2 labs=2
-F1:  02:17:   OIL conn=4 idle=3 bank=71 inc=333 spend=633 unmet=42 share=0.36 surp=0.00 budg=0.87 suff=0.32 fac=2 labs=2
-F1:  02:27:   OIL conn=4 idle=3 bank=9 inc=333 spend=657 unmet=28 share=0.36 surp=0.00 budg=0.92 suff=0.33 fac=2 labs=2
-F1:  02:37:   oil sufficiency 0.62 (8 connected + 0 idle derricks; income 750/min, spend 658/min, unmet 113) -> 3 factories, 3 labs
-F1:  02:37:   OIL conn=8 idle=0 bank=24 inc=750 spend=658 unmet=113 share=0.73 surp=0.00 budg=0.85 suff=0.62 fac=3 labs=3
-F1:  02:47:   OIL conn=8 idle=0 bank=149 inc=750 spend=439 unmet=230 share=0.73 surp=0.04 budg=0.69 suff=0.53 fac=3 labs=3
-F1:  02:57:   OIL conn=8 idle=0 bank=274 inc=750 spend=292 unmet=307 share=0.73 surp=0.11 budg=0.59 suff=0.49 fac=3 labs=3
-F1:  03:07:   OIL conn=8 idle=0 bank=19 inc=750 spend=955 unmet=205 share=0.73 surp=0.00 budg=0.73 suff=0.53 fac=3 labs=3
-F1:  03:17:   OIL conn=8 idle=0 bank=144 inc=750 spend=637 unmet=137 share=0.73 surp=0.02 budg=0.82 suff=0.61 fac=3 labs=3
-F1:  03:27:   oil sufficiency 0.66 (8 connected + 0 idle derricks; income 750/min, spend 624/min, unmet 91) -> 4 factories, 4 labs
-F1:  03:27:   OIL conn=8 idle=0 bank=169 inc=750 spend=624 unmet=91 share=0.73 surp=0.03 budg=0.88 suff=0.66 fac=4 labs=4
-F1:  03:37:   OIL conn=8 idle=0 bank=114 inc=750 spend=776 unmet=61 share=0.73 surp=0.00 budg=0.92 suff=0.67 fac=4 labs=4
-F1:  03:47:   OIL conn=8 idle=0 bank=239 inc=750 spend=518 unmet=135 share=0.73 surp=0.07 budg=0.82 suff=0.66 fac=4 labs=4
-F1:  03:57:   oil sufficiency 0.29 (4 connected + 4 idle derricks; income 417/min, spend 910/min, unmet 90) -> 2 factories, 2 labs
-F1:  03:57:   OIL conn=4 idle=4 bank=26 inc=417 spend=910 unmet=90 share=0.36 surp=0.00 budg=0.78 suff=0.29 fac=2 labs=2
-F1:  04:07:   OIL conn=4 idle=4 bank=95 inc=417 spend=608 unmet=102 share=0.36 surp=0.00 budg=0.76 suff=0.28 fac=2 labs=2
-F1:  04:17:   oil sufficiency 0.64 (8 connected + 0 idle derricks; income 834/min, spend 757/min, unmet 101) -> 4 factories, 4 labs
-F1:  04:17:   OIL conn=8 idle=0 bank=58 inc=834 spend=757 unmet=101 share=0.73 surp=0.00 budg=0.88 suff=0.64 fac=4 labs=4
-F1:  04:27:   oil sufficiency 0.53 (8 connected + 0 idle derricks; income 834/min, spend 705/min, unmet 227) -> 3 factories, 3 labs
-F1:  04:27:   OIL conn=8 idle=0 bank=97 inc=834 spend=705 unmet=227 share=0.73 surp=0.00 budg=0.73 suff=0.53 fac=3 labs=3
-F1:  04:37:   OIL conn=8 idle=0 bank=74 inc=834 spend=794 unmet=257 share=0.73 surp=0.00 budg=0.69 suff=0.50 fac=3 labs=3
-F1:  04:47:   OIL conn=8 idle=0 bank=210 inc=834 spend=535 unmet=323 share=0.73 surp=0.07 budg=0.61 suff=0.49 fac=3 labs=3
-Game State [gameTime: 288302]
---------------------------------------------------------------------------------------
- # | Player Name | Extrct Pwr | Units Killed | Structs (F/R) | Units Alive |  Power  |
--- | ----------- | ---------- | ------------ | ------------- | ----------- | ------- |
- 0 |      Player |          0 |            0 |       0 (0/0) |           0 |       0 | x
- 1 | Yellow-Fish |       1986 |            4 |      18 (2/0) |          14 |     221 | 
- 2 | Cyan-Peacem |       2596 |            6 |      24 (2/2) |          13 |     144 | 
- 3 | Blue-Peacem |       2674 |            8 |      25 (2/2) |          13 |     142 | 
---------------------------------------------------------------------------------------
-F1:  04:57:   OIL conn=7 idle=0 bank=15 inc=730 spend=990 unmet=261 share=0.64 surp=0.00 budg=0.64 suff=0.41 fac=3 labs=3
-F1:  05:07:   OIL conn=7 idle=0 bank=36 inc=730 spend=861 unmet=186 share=0.64 surp=0.00 budg=0.74 suff=0.47 fac=3 labs=3
-F1:  05:17:   OIL conn=7 idle=0 bank=123 inc=730 spend=643 unmet=166 share=0.64 surp=0.03 budg=0.77 suff=0.52 fac=3 labs=3
-F1:  05:27:   OIL conn=8 idle=1 bank=137 inc=834 spend=679 unmet=171 share=0.73 surp=0.03 budg=0.80 suff=0.60 fac=3 labs=3
+info    |10:44:45: [NETreplaySaveStart:199] Started writing replay file "replay/skirmish/20260913_104445_skirmish.wzrp".
+F1:  00:07:   OIL conn=0 idle=0 bank=1200 inc=0 spend=200 unmet=0 fcost=343 fund=0.00 starv=0.00 suff=0.00 fac=1 labs=1
+F1:  00:17:   OIL conn=0 idle=0 bank=1200 inc=0 spend=133 unmet=0 fcost=343 fund=0.00 starv=0.00 suff=0.00 fac=1 labs=1
+F1:  00:27:   OIL conn=0 idle=0 bank=1100 inc=0 spend=289 unmet=0 fcost=343 fund=0.00 starv=0.00 suff=0.00 fac=1 labs=1
+F1:  00:37:   OIL conn=0 idle=0 bank=1038 inc=0 spend=317 unmet=0 fcost=343 fund=0.00 starv=0.00 suff=0.00 fac=1 labs=1
+F1:  00:47:   OIL conn=0 idle=0 bank=976 inc=0 spend=335 unmet=0 fcost=343 fund=0.00 starv=0.00 suff=0.00 fac=1 labs=1
+F1:  00:57:   OIL conn=0 idle=0 bank=926 inc=0 spend=323 unmet=0 fcost=343 fund=0.00 starv=0.00 suff=0.00 fac=1 labs=1
+F1:  01:07:   OIL conn=0 idle=1 bank=817 inc=0 spend=434 unmet=0 fcost=343 fund=0.00 starv=0.00 suff=0.00 fac=1 labs=1
+F1:  01:17:   OIL conn=2 idle=0 bank=781 inc=167 spend=417 unmet=0 fcost=343 fund=0.61 starv=0.00 suff=0.12 fac=1 labs=1
+F1:  01:27:   OIL conn=3 idle=0 bank=714 inc=250 spend=495 unmet=0 fcost=343 fund=0.91 starv=0.00 suff=0.18 fac=1 labs=1
+F1:  01:37:   OIL conn=4 idle=0 bank=767 inc=333 spend=335 unmet=0 fcost=343 fund=1.21 starv=0.00 suff=0.24 fac=1 labs=1
+F1:  01:47:   OIL conn=4 idle=1 bank=714 inc=333 spend=440 unmet=0 fcost=343 fund=1.21 starv=0.00 suff=0.24 fac=1 labs=1
+F1:  01:57:   OIL conn=4 idle=1 bank=770 inc=333 spend=294 unmet=0 fcost=343 fund=1.21 starv=0.00 suff=0.24 fac=1 labs=1
+F1:  02:07:   oil sufficiency 0.41 (6 connected + 0 idle derricks; income 563/min, spend 633/min, starvation 0.00; factory 137/min, lab 65/min) -> 2 factories, 2 labs
+F1:  02:07:   OIL conn=6 idle=0 bank=645 inc=563 spend=633 unmet=0 fcost=343 fund=2.05 starv=0.00 suff=0.41 fac=2 labs=2
+F1:  02:17:   OIL conn=7 idle=0 bank=757 inc=656 spend=422 unmet=0 fcost=343 fund=2.39 starv=0.00 suff=0.48 fac=2 labs=2
+F1:  02:27:   oil sufficiency 0.55 (8 connected + 0 idle derricks; income 750/min, spend 521/min, starvation 0.00; factory 137/min, lab 65/min) -> 3 factories, 2 labs
+F1:  02:27:   OIL conn=8 idle=0 bank=762 inc=750 spend=521 unmet=0 fcost=343 fund=2.73 starv=0.00 suff=0.55 fac=3 labs=2
+F1:  02:37:   OIL conn=8 idle=1 bank=787 inc=750 spend=548 unmet=0 fcost=343 fund=2.73 starv=0.00 suff=0.55 fac=3 labs=2
+F1:  02:47:   OIL conn=8 idle=2 bank=579 inc=750 spend=1031 unmet=0 fcost=343 fund=2.73 starv=0.00 suff=0.55 fac=3 labs=2
+F1:  02:57:   OIL conn=8 idle=2 bank=474 inc=750 spend=1147 unmet=0 fcost=343 fund=2.73 starv=0.00 suff=0.55 fac=3 labs=2
+F1:  03:07:   oil sufficiency 0.72 (11 connected + 0 idle derricks; income 993/min, spend 998/min, starvation 0.00; factory 137/min, lab 65/min) -> 4 factories, 3 labs
+F1:  03:07:   OIL conn=11 idle=0 bank=523 inc=993 spend=998 unmet=0 fcost=343 fund=3.62 starv=0.00 suff=0.72 fac=4 labs=3
+F1:  03:17:   oil sufficiency 0.66 (10 connected + 0 idle derricks; income 903/min, spend 665/min, starvation 0.00; factory 137/min, lab 65/min) -> 3 factories, 3 labs
+F1:  03:17:   OIL conn=10 idle=0 bank=676 inc=903 spend=665 unmet=0 fcost=343 fund=3.29 starv=0.00 suff=0.66 fac=3 labs=3
+F1:  03:27:   OIL conn=10 idle=0 bank=299 inc=903 spend=1498 unmet=0 fcost=343 fund=3.29 starv=0.00 suff=0.66 fac=3 labs=3
+F1:  03:37:   oil sufficiency 0.38 (8 connected + 1 idle derricks; income 750/min, spend 1467/min, starvation 0.00; factory 200/min, lab 65/min) -> 2 factories, 2 labs
+F1:  03:37:   OIL conn=8 idle=1 bank=190 inc=750 spend=1467 unmet=0 fcost=499 fund=1.88 starv=0.00 suff=0.38 fac=2 labs=2
+F1:  03:47:   oil sufficiency 0.44 (9 connected + 0 idle derricks; income 875/min, spend 1000/min, starvation 0.00; factory 200/min, lab 65/min) -> 2 factories, 3 labs
+F1:  03:47:   OIL conn=9 idle=0 bank=325 inc=875 spend=1000 unmet=0 fcost=499 fund=2.19 starv=0.00 suff=0.44 fac=2 labs=3
+F1:  03:57:   OIL conn=9 idle=0 bank=378 inc=875 spend=852 unmet=0 fcost=499 fund=2.19 starv=0.00 suff=0.44 fac=2 labs=3
+F1:  04:07:   OIL conn=9 idle=0 bank=52 inc=875 spend=1512 unmet=0 fcost=499 fund=2.19 starv=0.00 suff=0.44 fac=2 labs=3
+F1:  04:17:   OIL conn=10 idle=0 bank=71 inc=973 spend=1294 unmet=0 fcost=499 fund=2.44 starv=0.00 suff=0.49 fac=2 labs=3
+F1:  04:27:   OIL conn=10 idle=0 bank=201 inc=973 spend=927 unmet=0 fcost=499 fund=2.44 starv=0.00 suff=0.49 fac=2 labs=3
+F1:  04:31:   APFSDS Cannon Rounds Mk3
+F1:  04:37:   oil sufficiency 0.42 (8 connected + 2 idle derricks; income 834/min, spend 1190/min, starvation 0.00; factory 200/min, lab 77/min) -> 2 factories, 2 labs
+F1:  04:37:   OIL conn=8 idle=2 bank=54 inc=834 spend=1190 unmet=0 fcost=499 fund=2.09 starv=0.00 suff=0.42 fac=2 labs=2
+F1:  04:47:   OIL conn=8 idle=3 bank=193 inc=834 spend=793 unmet=106 fcost=499 fund=2.09 starv=0.00 suff=0.42 fac=2 labs=2
+F1:  04:57:   oil sufficiency 0.57 (11 connected + 0 idle derricks; income 1147/min, spend 1229/min, starvation 0.00; factory 200/min, lab 77/min) -> 3 factories, 3 labs
+F1:  04:57:   OIL conn=11 idle=0 bank=34 inc=1147 spend=1229 unmet=83 fcost=499 fund=2.87 starv=0.00 suff=0.57 fac=3 labs=3
+F1:  05:07:   OIL conn=11 idle=0 bank=88 inc=1147 spend=1094 unmet=139 fcost=499 fund=2.87 starv=0.00 suff=0.57 fac=3 labs=3
+F1:  05:17:   OIL conn=11 idle=0 bank=29 inc=1147 spend=1229 unmet=138 fcost=499 fund=2.87 starv=0.00 suff=0.57 fac=3 labs=3
+F1:  05:27:   OIL conn=11 idle=0 bank=84 inc=1147 spend=1092 unmet=92 fcost=499 fund=2.87 starv=0.00 suff=0.57 fac=3 labs=3
 F1:  05:27:   Dedicated Synaptic Link Data Analysis Mk3
-F1:  05:37:   OIL conn=8 idle=1 bank=96 inc=834 spend=813 unmet=303 share=0.73 surp=0.00 budg=0.64 suff=0.46 fac=3 labs=3
-F1:  05:47:   OIL conn=8 idle=1 bank=235 inc=834 spend=542 unmet=391 share=0.73 surp=0.08 budg=0.53 suff=0.43 fac=3 labs=3
-F1:  05:57:   oil dominance changed to: true (10 out of 34 (30%))
-F1:  05:57:   OIL conn=8 idle=1 bank=74 inc=834 spend=961 unmet=350 share=0.73 surp=0.00 budg=0.58 suff=0.42 fac=3 labs=3
-F1:  06:07:   OIL conn=8 idle=2 bank=213 inc=834 spend=641 unmet=382 share=0.73 surp=0.05 budg=0.54 suff=0.42 fac=3 labs=3
-F1:  06:17:   oil sufficiency 0.71 (11 connected + 0 idle derricks; income 1070/min, spend 1002/min, unmet 315) -> 4 factories, 4 labs
-F1:  06:17:   OIL conn=11 idle=0 bank=104 inc=1070 spend=1002 unmet=315 share=1.00 surp=0.00 budg=0.71 suff=0.71 fac=4 labs=4
-F1:  06:27:   OIL conn=11 idle=0 bank=5 inc=1070 spend=1222 unmet=243 share=1.00 surp=0.00 budg=0.77 suff=0.77 fac=4 labs=4
-F1:  06:37:   OIL conn=11 idle=0 bank=85 inc=1070 spend=1012 unmet=162 share=1.00 surp=0.00 budg=0.85 suff=0.85 fac=4 labs=4
-F1:  06:47:   oil sufficiency 0.98 (12 connected + 0 idle derricks; income 1167/min, spend 685/min, unmet 108) -> 5 factories, 5 labs
-F1:  06:47:   OIL conn=12 idle=0 bank=274 inc=1167 spend=685 unmet=108 share=1.00 surp=0.08 budg=0.91 suff=0.98 fac=5 labs=5
-F1:  06:57:   oil sufficiency 0.83 (12 connected + 0 idle derricks; income 1167/min, spend 998/min, unmet 213) -> 4 factories, 4 labs
-F1:  06:57:   OIL conn=12 idle=0 bank=198 inc=1167 spend=998 unmet=213 share=1.00 surp=0.02 budg=0.82 suff=0.83 fac=4 labs=4
-F1:  07:07:   OIL conn=12 idle=0 bank=151 inc=1167 spend=1148 unmet=218 share=1.00 surp=0.00 budg=0.81 suff=0.81 fac=4 labs=4
-F1:  07:17:   oil sufficiency 0.88 (12 connected + 0 idle derricks; income 1167/min, spend 1227/min, unmet 146) -> 5 factories, 5 labs
-F1:  07:17:   OIL conn=12 idle=0 bank=115 inc=1167 spend=1227 unmet=146 share=1.00 surp=0.00 budg=0.88 suff=0.88 fac=5 labs=5
-F1:  07:27:   OIL conn=12 idle=0 bank=43 inc=1167 spend=1351 unmet=139 share=1.00 surp=0.00 budg=0.88 suff=0.88 fac=5 labs=5
-F1:  07:37:   OIL conn=13 idle=0 bank=120 inc=1219 spend=1153 unmet=134 share=1.00 surp=0.00 budg=0.89 suff=0.89 fac=5 labs=5
-F1:  07:47:   OIL conn=13 idle=0 bank=66 inc=1219 spend=1283 unmet=89 share=1.00 surp=0.00 budg=0.93 suff=0.93 fac=5 labs=5
-Game State [gameTime: 473702]
---------------------------------------------------------------------------------------
- # | Player Name | Extrct Pwr | Units Killed | Structs (F/R) | Units Alive |  Power  |
--- | ----------- | ---------- | ------------ | ------------- | ----------- | ------- |
- 0 |      Player |          0 |            0 |       0 (0/0) |           0 |       0 | x
- 1 | Yellow-Fish |       5061 |           15 |      29 (2/1) |          19 |     197 | 
- 2 | Cyan-Peacem |       5374 |           16 |      22 (2/3) |          15 |      81 | 
- 3 | Blue-Peacem |       5648 |           15 |      23 (2/4) |          17 |     271 | 
---------------------------------------------------------------------------------------
-F1:  07:57:   OIL conn=13 idle=0 bank=236 inc=1219 spend=921 unmet=60 share=1.00 surp=0.06 budg=0.95 suff=1.00 fac=5 labs=5
-F1:  08:07:   OIL conn=12 idle=0 bank=64 inc=1125 spend=1333 unmet=40 share=1.00 surp=0.00 budg=0.96 suff=0.96 fac=5 labs=5
-F1:  08:17:   OIL conn=12 idle=0 bank=221 inc=1125 spend=950 unmet=27 share=1.00 surp=0.05 budg=0.98 suff=1.00 fac=5 labs=5
-F1:  08:27:   OIL conn=12 idle=0 bank=236 inc=1125 spend=978 unmet=115 share=1.00 surp=0.04 budg=0.90 suff=0.93 fac=5 labs=5
-F1:  08:37:   OIL conn=11 idle=0 bank=124 inc=1070 spend=1233 unmet=77 share=1.00 surp=0.00 budg=0.93 suff=0.93 fac=5 labs=5
-F1:  08:43:   APFSDS Cannon Rounds Mk3
-F1:  08:47:   oil sufficiency 0.82 (11 connected + 0 idle derricks; income 1070/min, spend 822/min, unmet 244) -> 4 factories, 4 labs
-F1:  08:47:   OIL conn=11 idle=0 bank=306 inc=1070 spend=822 unmet=244 share=1.00 surp=0.07 budg=0.77 suff=0.82 fac=4 labs=4
-F1:  08:57:   OIL conn=11 idle=0 bank=181 inc=1089 spend=1161 unmet=377 share=1.00 surp=0.00 budg=0.65 suff=0.65 fac=4 labs=4
-F1:  09:07:   oil sufficiency 0.59 (11 connected + 0 idle derricks; income 1089/min, spend 1479/min, unmet 442) -> 3 factories, 3 labs
-F1:  09:07:   OIL conn=11 idle=0 bank=10 inc=1089 spend=1479 unmet=442 share=1.00 surp=0.00 budg=0.59 suff=0.59 fac=3 labs=3
-F1:  09:17:   OIL conn=10 idle=0 bank=16 inc=990 spend=1304 unmet=425 share=0.91 surp=0.00 budg=0.57 suff=0.52 fac=3 labs=3
-F1:  09:27:   OIL conn=10 idle=0 bank=190 inc=990 spend=869 unmet=381 share=0.91 surp=0.05 budg=0.62 suff=0.59 fac=3 labs=3
-F1:  09:37:   OIL conn=10 idle=0 bank=72 inc=990 spend=1146 unmet=393 share=0.91 surp=0.00 budg=0.60 suff=0.55 fac=3 labs=3
-F1:  09:47:   oil sufficiency 0.68 (11 connected + 0 idle derricks; income 1089/min, spend 764/min, unmet 401) -> 4 factories, 4 labs
-F1:  09:47:   OIL conn=11 idle=0 bank=263 inc=1089 spend=764 unmet=401 share=1.00 surp=0.07 budg=0.63 suff=0.68 fac=4 labs=4
-F1:  09:57:   oil sufficiency 0.61 (10 connected + 0 idle derricks; income 990/min, spend 1299/min, unmet 327) -> 3 factories, 3 labs
-F1:  09:57:   OIL conn=10 idle=0 bank=33 inc=990 spend=1299 unmet=327 share=0.91 surp=0.00 budg=0.67 suff=0.61 fac=3 labs=3
-F1:  10:07:   oil sufficiency 0.71 (10 connected + 0 idle derricks; income 990/min, spend 1208/min, unmet 218) -> 4 factories, 4 labs
-F1:  10:07:   OIL conn=10 idle=0 bank=27 inc=990 spend=1208 unmet=218 share=0.91 surp=0.00 budg=0.78 suff=0.71 fac=4 labs=4
-F1:  10:17:   OIL conn=10 idle=0 bank=201 inc=990 spend=805 unmet=336 share=0.91 surp=0.06 budg=0.66 suff=0.64 fac=4 labs=4
-F1:  10:27:   oil sufficiency 0.59 (10 connected + 0 idle derricks; income 990/min, spend 1105/min, unmet 351) -> 3 factories, 3 labs
-F1:  10:27:   OIL conn=10 idle=0 bank=82 inc=990 spend=1105 unmet=351 share=0.91 surp=0.00 budg=0.65 suff=0.59 fac=3 labs=3
-Game State [gameTime: 630102]
---------------------------------------------------------------------------------------
- # | Player Name | Extrct Pwr | Units Killed | Structs (F/R) | Units Alive |  Power  |
--- | ----------- | ---------- | ------------ | ------------- | ----------- | ------- |
- 0 |      Player |          0 |            0 |       0 (0/0) |           0 |       0 | x
- 1 | Yellow-Fish |       7946 |           18 |      28 (4/1) |          30 |     129 | 
- 2 | Cyan-Peacem |       7698 |           28 |      20 (2/4) |          16 |     253 | 
- 3 | Blue-Peacem |       7991 |           26 |      22 (2/4) |          18 |     232 | 
---------------------------------------------------------------------------------------
-F1:  10:37:   OIL conn=10 idle=0 bank=76 inc=990 spend=1079 unmet=389 share=0.91 surp=0.00 budg=0.61 suff=0.55 fac=3 labs=3
-F1:  10:47:   OIL conn=10 idle=0 bank=50 inc=990 spend=1101 unmet=409 share=0.91 surp=0.00 budg=0.59 suff=0.53 fac=3 labs=3
-F1:  10:57:   OIL conn=10 idle=0 bank=224 inc=990 spend=734 unmet=519 share=0.91 surp=0.07 budg=0.48 suff=0.47 fac=3 labs=3
-F1:  11:07:   OIL conn=10 idle=0 bank=130 inc=990 spend=1007 unmet=545 share=0.91 surp=0.00 budg=0.45 suff=0.41 fac=3 labs=3
-F1:  11:17:   oil sufficiency 0.36 (10 connected + 0 idle derricks; income 990/min, spend 1022/min, unmet 596) -> 2 factories, 2 labs
-F1:  11:17:   OIL conn=10 idle=0 bank=120 inc=990 spend=1022 unmet=596 share=0.91 surp=0.00 budg=0.40 suff=0.36 fac=2 labs=2
-F1:  11:27:   oil sufficiency 0.42 (10 connected + 0 idle derricks; income 990/min, spend 1249/min, unmet 532) -> 3 factories, 3 labs
-F1:  11:27:   OIL conn=10 idle=0 bank=1 inc=990 spend=1249 unmet=532 share=0.91 surp=0.00 budg=0.46 suff=0.42 fac=3 labs=3
-F1:  11:37:   OIL conn=10 idle=0 bank=50 inc=990 spend=1065 unmet=529 share=0.91 surp=0.00 budg=0.47 suff=0.42 fac=3 labs=3
-F1:  11:47:   OIL conn=10 idle=0 bank=124 inc=990 spend=892 unmet=553 share=0.91 surp=0.03 budg=0.44 suff=0.41 fac=3 labs=3
-F1:  11:47:   Gas Turbine Generator Mk3
-F1:  11:57:   OIL conn=11 idle=0 bank=123 inc=1089 spend=960 unmet=572 share=1.00 surp=0.02 budg=0.47 suff=0.48 fac=3 labs=3
-F1:  12:07:   OIL conn=11 idle=0 bank=72 inc=1089 spend=1105 unmet=601 share=1.00 surp=0.00 budg=0.45 suff=0.45 fac=3 labs=3
-F1:  12:07:   Twin Assault Cannon
-F1:  12:17:   oil sufficiency 0.30 (10 connected + 0 idle derricks; income 990/min, spend 1060/min, unmet 669) -> 2 factories, 2 labs
-F1:  12:17:   OIL conn=10 idle=0 bank=75 inc=990 spend=1060 unmet=669 share=0.91 surp=0.00 budg=0.32 suff=0.30 fac=2 labs=2
-F1:  12:27:   oil sufficiency 0.39 (11 connected + 0 idle derricks; income 1089/min, spend 1080/min, unmet 664) -> 3 factories, 3 labs
-F1:  12:27:   OIL conn=11 idle=0 bank=70 inc=1089 spend=1080 unmet=664 share=1.00 surp=0.00 budg=0.39 suff=0.39 fac=3 labs=3
-F1:  12:37:   oil sufficiency 0.35 (11 connected + 0 idle derricks; income 1089/min, spend 720/min, unmet 741) -> 2 factories, 2 labs
-F1:  12:37:   OIL conn=11 idle=0 bank=261 inc=1089 spend=720 unmet=741 share=1.00 surp=0.08 budg=0.32 suff=0.35 fac=2 labs=2
-F1:  12:47:   OIL conn=10 idle=0 bank=148 inc=990 spend=1036 unmet=695 share=0.91 surp=0.00 budg=0.30 suff=0.27 fac=2 labs=2
-F1:  12:57:   OIL conn=10 idle=0 bank=97 inc=990 spend=1123 unmet=602 share=0.91 surp=0.00 budg=0.39 suff=0.36 fac=2 labs=2
-Game State [gameTime: 781302]
---------------------------------------------------------------------------------------
- # | Player Name | Extrct Pwr | Units Killed | Structs (F/R) | Units Alive |  Power  |
--- | ----------- | ---------- | ------------ | ------------- | ----------- | ------- |
- 0 |      Player |          0 |            0 |       0 (0/0) |           0 |       0 | x
- 1 | Yellow-Fish |      10632 |           29 |      28 (4/2) |          23 |      28 | 
- 2 | Cyan-Peacem |      10205 |           31 |      23 (2/3) |          14 |     291 | 
- 3 | Blue-Peacem |      10616 |           44 |      24 (2/4) |          19 |     345 | 
---------------------------------------------------------------------------------------
-F1:  13:07:   oil sufficiency 0.46 (10 connected + 0 idle derricks; income 990/min, spend 1004/min, unmet 495) -> 3 factories, 3 labs
-F1:  13:07:   OIL conn=10 idle=0 bank=134 inc=990 spend=1004 unmet=495 share=0.91 surp=0.00 budg=0.50 suff=0.46 fac=3 labs=3
-F1:  13:17:   oil dominance changed to: false (10 out of 34 (30%))
-F1:  13:17:   OIL conn=10 idle=0 bank=28 inc=990 spend=1212 unmet=439 share=0.91 surp=0.00 budg=0.56 suff=0.51 fac=3 labs=3
-F1:  13:27:   OIL conn=10 idle=0 bank=165 inc=990 spend=864 unmet=424 share=0.91 surp=0.03 budg=0.57 suff=0.54 fac=3 labs=3
-F1:  13:37:   OIL conn=8 idle=0 bank=27 inc=792 spend=1116 unmet=340 share=0.73 surp=0.00 budg=0.57 suff=0.41 fac=3 labs=3
-F1:  13:47:   OIL conn=8 idle=0 bank=29 inc=792 spend=1004 unmet=320 share=0.73 surp=0.00 budg=0.60 suff=0.43 fac=3 labs=3
-F1:  13:57:   OIL conn=8 idle=0 bank=131 inc=792 spend=729 unmet=306 share=0.73 surp=0.04 budg=0.61 suff=0.47 fac=3 labs=3
-F1:  14:07:   OIL conn=8 idle=0 bank=28 inc=792 spend=956 unmet=262 share=0.73 surp=0.00 budg=0.67 suff=0.49 fac=3 labs=3
-F1:  14:17:   OIL conn=8 idle=0 bank=30 inc=792 spend=897 unmet=284 share=0.73 surp=0.00 budg=0.64 suff=0.47 fac=3 labs=3
-F1:  14:23:   HVAPFSDS Cannon Rounds
-F1:  14:27:   OIL conn=8 idle=0 bank=140 inc=876 spend=670 unmet=447 share=0.73 surp=0.05 budg=0.49 suff=0.38 fac=3 labs=3
-F1:  14:37:   oil sufficiency 0.22 (8 connected + 0 idle derricks; income 876/min, spend 1017/min, unmet 609) -> 2 factories, 2 labs
-F1:  14:37:   OIL conn=8 idle=0 bank=1 inc=876 spend=1017 unmet=609 share=0.73 surp=0.00 budg=0.30 suff=0.22 fac=2 labs=2
-F1:  14:47:   OIL conn=8 idle=0 bank=154 inc=876 spend=678 unmet=718 share=0.73 surp=0.06 budg=0.18 suff=0.14 fac=2 labs=2
-F1:  14:57:   OIL conn=8 idle=0 bank=127 inc=876 spend=798 unmet=730 share=0.73 surp=0.02 budg=0.17 suff=0.13 fac=2 labs=2
-F1:  15:07:   OIL conn=8 idle=0 bank=280 inc=876 spend=532 unmet=738 share=0.73 surp=0.10 budg=0.16 suff=0.13 fac=2 labs=2
-F1:  15:11:   Dense Composite Alloys Mk2
-F1:  15:17:   oil sufficiency 0.04 (8 connected + 0 idle derricks; income 876/min, spend 1015/min, unmet 828) -> 1 factories, 1 labs
-F1:  15:17:   OIL conn=8 idle=0 bank=96 inc=876 spend=1015 unmet=828 share=0.73 surp=0.00 budg=0.05 suff=0.04 fac=1 labs=1
-F1:  15:27:   OIL conn=8 idle=0 bank=149 inc=876 spend=862 unmet=927 share=0.73 surp=0.01 budg=0.00 suff=0.00 fac=1 labs=1
-F1:  15:37:   OIL conn=8 idle=0 bank=302 inc=876 spend=575 unmet=994 share=0.73 surp=0.09 budg=0.00 suff=0.00 fac=1 labs=1
-F1:  15:47:   OIL conn=8 idle=0 bank=138 inc=876 spend=1003 unmet=1038 share=0.73 surp=0.00 budg=0.00 suff=0.00 fac=1 labs=1
-Game State [gameTime: 950302]
---------------------------------------------------------------------------------------
- # | Player Name | Extrct Pwr | Units Killed | Structs (F/R) | Units Alive |  Power  |
--- | ----------- | ---------- | ------------ | ------------- | ----------- | ------- |
- 0 |      Player |          0 |            0 |       0 (0/0) |           0 |       0 | x
- 1 | Yellow-Fish |      13211 |           40 |      27 (5/2) |          19 |     183 | 
- 2 | Cyan-Peacem |      12740 |           32 |      21 (2/4) |          12 |     213 | 
- 3 | Blue-Peacem |      13894 |           68 |      29 (2/4) |          24 |      76 | 
---------------------------------------------------------------------------------------
-F1:  15:57:   OIL conn=8 idle=0 bank=291 inc=876 spend=669 unmet=1101 share=0.73 surp=0.07 budg=0.00 suff=0.00 fac=1 labs=1
-F1:  16:07:   OIL conn=9 idle=0 bank=162 inc=986 spend=1032 unmet=1042 share=0.82 surp=0.00 budg=0.00 suff=0.00 fac=1 labs=1
-F1:  16:17:   OIL conn=9 idle=0 bank=6 inc=986 spend=1329 unmet=1016 share=0.82 surp=0.00 budg=0.00 suff=0.00 fac=1 labs=1
-F1:  16:27:   OIL conn=9 idle=0 bank=178 inc=986 spend=886 unmet=999 share=0.82 surp=0.02 budg=0.00 suff=0.00 fac=1 labs=1
-F1:  16:37:   OIL conn=9 idle=0 bank=170 inc=986 spend=935 unmet=940 share=0.82 surp=0.01 budg=0.05 suff=0.04 fac=1 labs=1
-F1:  16:47:   oil sufficiency 0.16 (9 connected + 0 idle derricks; income 986/min, spend 1242/min, unmet 794) -> 2 factories, 2 labs
-F1:  16:47:   OIL conn=9 idle=0 bank=25 inc=986 spend=1242 unmet=794 share=0.82 surp=0.00 budg=0.19 suff=0.16 fac=2 labs=2
-F1:  16:57:   OIL conn=9 idle=0 bank=97 inc=986 spend=1012 unmet=762 share=0.82 surp=0.00 budg=0.23 suff=0.19 fac=2 labs=2
-F1:  17:07:   OIL conn=9 idle=0 bank=269 inc=986 spend=675 unmet=752 share=0.82 surp=0.08 budg=0.24 suff=0.21 fac=2 labs=2
-F1:  17:17:   OIL conn=8 idle=0 bank=23 inc=876 spend=1234 unmet=644 share=0.73 surp=0.00 budg=0.26 suff=0.19 fac=2 labs=2
-F1:  17:27:   OIL conn=8 idle=0 bank=176 inc=876 spend=823 unmet=653 share=0.73 surp=0.03 budg=0.25 suff=0.19 fac=2 labs=2
-F1:  17:37:   oil sufficiency 0.07 (6 connected + 0 idle derricks; income 657/min, spend 1083/min, unmet 574) -> 1 factories, 1 labs
-F1:  17:37:   OIL conn=6 idle=0 bank=18 inc=657 spend=1083 unmet=574 share=0.55 surp=0.00 budg=0.13 suff=0.07 fac=1 labs=1
-F1:  17:47:   OIL conn=6 idle=0 bank=96 inc=657 spend=785 unmet=509 share=0.55 surp=0.00 budg=0.23 suff=0.12 fac=1 labs=1
-F1:  17:57:   OIL conn=6 idle=0 bank=110 inc=657 spend=715 unmet=567 share=0.55 surp=0.01 budg=0.14 suff=0.08 fac=1 labs=1
-F1:  18:07:   OIL conn=6 idle=0 bank=225 inc=657 spend=476 unmet=606 share=0.55 surp=0.09 budg=0.08 suff=0.05 fac=1 labs=1
-F1:  18:17:   OIL conn=6 idle=0 bank=24 inc=657 spend=939 unmet=657 share=0.55 surp=0.00 budg=0.00 suff=0.00 fac=1 labs=1
-F1:  18:19:   HVAPFSDS Cannon Rounds Mk2
-F1:  18:27:   OIL conn=6 idle=0 bank=139 inc=657 spend=626 unmet=816 share=0.55 surp=0.03 budg=0.00 suff=0.00 fac=1 labs=1
-Game State [gameTime: 1113102]
---------------------------------------------------------------------------------------
- # | Player Name | Extrct Pwr | Units Killed | Structs (F/R) | Units Alive |  Power  |
--- | ----------- | ---------- | ------------ | ------------- | ----------- | ------- |
- 0 |      Player |          0 |            0 |       0 (0/0) |           0 |       0 | x
- 1 | Yellow-Fish |      15607 |           50 |      26 (5/2) |          19 |     204 | 
- 2 | Cyan-Peacem |      14854 |           36 |      19 (2/4) |          14 |       0 | 
- 3 | Blue-Peacem |      17704 |           83 |      29 (3/5) |          28 |      49 | 
---------------------------------------------------------------------------------------
-F1:  18:37:   OIL conn=6 idle=0 bank=253 inc=657 spend=417 unmet=934 share=0.55 surp=0.11 budg=0.00 suff=0.00 fac=1 labs=1
-F1:  18:47:   OIL conn=7 idle=0 bank=11 inc=767 spend=1018 unmet=971 share=0.64 surp=0.00 budg=0.00 suff=0.00 fac=1 labs=1
-F1:  18:57:   OIL conn=7 idle=0 bank=45 inc=767 spend=866 unmet=962 share=0.64 surp=0.00 budg=0.00 suff=0.00 fac=1 labs=1
-F1:  19:07:   OIL conn=7 idle=0 bank=179 inc=767 spend=577 unmet=956 share=0.64 surp=0.06 budg=0.00 suff=0.00 fac=1 labs=1
-F1:  19:07:   Heavy Body - Tiger
-F1:  19:17:   OIL conn=7 idle=0 bank=21 inc=767 spend=956 unmet=1001 share=0.64 surp=0.00 budg=0.00 suff=0.00 fac=1 labs=1
-F1:  19:27:   OIL conn=7 idle=0 bank=155 inc=767 spend=638 unmet=1031 share=0.64 surp=0.04 budg=0.00 suff=0.00 fac=1 labs=1
-F1:  19:37:   OIL conn=7 idle=0 bank=289 inc=767 spend=425 unmet=1173 share=0.64 surp=0.12 budg=0.00 suff=0.00 fac=1 labs=1
-F1:  19:47:   OIL conn=7 idle=0 bank=14 inc=767 spend=1089 unmet=1131 share=0.64 surp=0.00 budg=0.00 suff=0.00 fac=1 labs=1
-F1:  19:57:   OIL conn=8 idle=0 bank=167 inc=876 spend=726 unmet=1212 share=0.73 surp=0.03 budg=0.00 suff=0.00 fac=1 labs=1
-F1:  20:07:   OIL conn=8 idle=0 bank=78 inc=876 spend=954 unmet=1198 share=0.73 surp=0.00 budg=0.00 suff=0.00 fac=1 labs=1
-F1:  20:17:   OIL conn=8 idle=0 bank=229 inc=876 spend=636 unmet=1189 share=0.73 surp=0.06 budg=0.00 suff=0.00 fac=1 labs=1
-F1:  20:27:   OIL conn=7 idle=0 bank=26 inc=767 spend=1085 unmet=1070 share=0.64 surp=0.00 budg=0.00 suff=0.00 fac=1 labs=1
-F1:  20:37:   OIL conn=7 idle=0 bank=60 inc=767 spend=911 unmet=1038 share=0.64 surp=0.00 budg=0.00 suff=0.00 fac=1 labs=1
-F1:  20:47:   OIL conn=7 idle=0 bank=194 inc=767 spend=607 unmet=1017 share=0.64 surp=0.07 budg=0.00 suff=0.00 fac=1 labs=1
-F1:  20:57:   OIL conn=7 idle=0 bank=333 inc=767 spend=405 unmet=1037 share=0.64 surp=0.13 budg=0.00 suff=0.00 fac=1 labs=1
-Game State [gameTime: 1262202]
---------------------------------------------------------------------------------------
- # | Player Name | Extrct Pwr | Units Killed | Structs (F/R) | Units Alive |  Power  |
--- | ----------- | ---------- | ------------ | ------------- | ----------- | ------- |
- 0 |      Player |          0 |            0 |       0 (0/0) |           0 |       0 | x
- 1 | Yellow-Fish |      17649 |           58 |      28 (5/2) |          18 |      30 | 
- 2 | Cyan-Peacem |      16769 |           39 |      23 (2/4) |          14 |      46 | 
- 3 | Blue-Peacem |      20691 |           96 |      29 (3/5) |          32 |     194 | 
---------------------------------------------------------------------------------------
-F1:  21:07:   OIL conn=7 idle=0 bank=100 inc=767 spend=991 unmet=927 share=0.64 surp=0.00 budg=0.00 suff=0.00 fac=1 labs=1
-F1:  21:17:   OIL conn=7 idle=0 bank=233 inc=767 spend=661 unmet=854 share=0.64 surp=0.05 budg=0.00 suff=0.00 fac=1 labs=1
-F1:  21:27:   OIL conn=7 idle=0 bank=3 inc=767 spend=1156 unmet=683 share=0.64 surp=0.00 budg=0.11 suff=0.07 fac=1 labs=1
-F1:  21:37:   oil sufficiency 0.25 (8 connected + 0 idle derricks; income 876/min, spend 771/min, unmet 582) -> 2 factories, 2 labs
-F1:  21:37:   OIL conn=8 idle=0 bank=156 inc=876 spend=771 unmet=582 share=0.73 surp=0.02 budg=0.34 suff=0.25 fac=2 labs=2
-F1:  21:47:   oil dominance changed to: true (10 out of 34 (30%))
-F1:  21:47:   OIL conn=8 idle=0 bank=74 inc=876 spend=970 unmet=552 share=0.73 surp=0.00 budg=0.37 suff=0.27 fac=2 labs=2
-F1:  21:57:   OIL conn=9 idle=0 bank=81 inc=986 spend=961 unmet=571 share=0.82 surp=0.00 budg=0.42 suff=0.34 fac=2 labs=2
-F1:  22:07:   oil dominance changed to: false (8 out of 34 (24%))
-F1:  22:07:   OIL conn=8 idle=0 bank=248 inc=876 spend=641 unmet=703 share=0.73 surp=0.08 budg=0.20 suff=0.16 fac=2 labs=2
-F1:  22:17:   oil sufficiency 0.06 (8 connected + 0 idle derricks; income 876/min, spend 1047/min, unmet 800) -> 1 factories, 1 labs
-F1:  22:17:   OIL conn=8 idle=0 bank=84 inc=876 spend=1047 unmet=800 share=0.73 surp=0.00 budg=0.09 suff=0.06 fac=1 labs=1
-F1:  22:27:   OIL conn=8 idle=0 bank=237 inc=876 spend=698 unmet=865 share=0.73 surp=0.06 budg=0.01 suff=0.01 fac=1 labs=1
-F1:  22:37:   OIL conn=8 idle=0 bank=98 inc=876 spend=1035 unmet=811 share=0.73 surp=0.00 budg=0.07 suff=0.05 fac=1 labs=1
-F1:  22:47:   oil sufficiency 0.13 (8 connected + 0 idle derricks; income 876/min, spend 1036/min, unmet 714) -> 2 factories, 2 labs
-F1:  22:47:   OIL conn=8 idle=0 bank=71 inc=876 spend=1036 unmet=714 share=0.73 surp=0.00 budg=0.18 suff=0.13 fac=2 labs=2
-F1:  22:57:   oil dominance changed to: true (9 out of 34 (27%))
-F1:  22:57:   OIL conn=8 idle=0 bank=44 inc=876 spend=1037 unmet=713 share=0.73 surp=0.00 budg=0.19 suff=0.14 fac=2 labs=2
-F1:  23:07:   OIL conn=9 idle=0 bank=106 inc=986 spend=896 unmet=678 share=0.82 surp=0.01 budg=0.31 suff=0.26 fac=2 labs=2
-F1:  23:15:   Heavy Body - Tiger
-F1:  23:17:   oil dominance changed to: false (8 out of 34 (24%))
-F1:  23:17:   OIL conn=8 idle=0 bank=19 inc=876 spend=1063 unmet=684 share=0.73 surp=0.00 budg=0.22 suff=0.16 fac=2 labs=2
-F1:  23:27:   oil sufficiency 0.06 (6 connected + 0 idle derricks; income 657/min, spend 709/min, unmet 591) -> 1 factories, 1 labs
-F1:  23:27:   OIL conn=6 idle=0 bank=140 inc=657 spend=709 unmet=591 share=0.55 surp=0.05 budg=0.10 suff=0.06 fac=1 labs=1
-Game State [gameTime: 1409202]
---------------------------------------------------------------------------------------
- # | Player Name | Extrct Pwr | Units Killed | Structs (F/R) | Units Alive |  Power  |
--- | ----------- | ---------- | ------------ | ------------- | ----------- | ------- |
- 0 |      Player |          0 |            0 |       0 (0/0) |           0 |       0 | x
- 1 | Yellow-Fish |      19873 |           66 |      24 (4/1) |          13 |     161 | 
- 2 | Cyan-Peacem |      18814 |           43 |      20 (2/4) |          14 |      25 | 
- 3 | Blue-Peacem |      22488 |          126 |      26 (3/5) |          33 |     110 | 
---------------------------------------------------------------------------------------
-F1:  23:31:  WARNING   Removed ProductionJob "161223 | 1000" as Factory "161223" was not found.
-F1:  23:37:   OIL conn=5 idle=0 bank=246 inc=548 spend=473 unmet=541 share=0.45 surp=0.14 budg=0.01 suff=0.01 fac=1 labs=1
-F1:  23:47:   OIL conn=5 idle=0 bank=342 inc=548 spend=315 unmet=549 share=0.45 surp=0.18 budg=0.00 suff=0.00 fac=1 labs=1
-F1:  23:57:   OIL conn=4 idle=0 bank=24 inc=431 spend=990 unmet=484 share=0.36 surp=0.00 budg=0.00 suff=0.00 fac=1 labs=1
-F1:  24:07:   OIL conn=4 idle=0 bank=64 inc=431 spend=723 unmet=441 share=0.36 surp=0.00 budg=0.00 suff=0.00 fac=1 labs=1
-F1:  24:15:  WARNING   Removed ProductionJob "160825 | 2002" as Factory "160825" was not found.
-F1:  24:15:  WARNING   Removed ProductionJob "160837 | 5000" as Factory "160837" was not found.
-F1:  24:17:   OIL conn=2 idle=0 bank=121 inc=208 spend=482 unmet=294 share=0.18 surp=0.00 budg=0.00 suff=0.00 fac=1 labs=1
-F1:  24:27:   OIL conn=2 idle=0 bank=122 inc=208 spend=389 unmet=196 share=0.18 surp=0.00 budg=0.06 suff=0.01 fac=1 labs=1
-F1:  24:27:   HVAPFSDS Cannon Rounds Mk3
-F1:  24:37:   OIL conn=2 idle=0 bank=153 inc=188 spend=260 unmet=268 share=0.18 surp=0.09 budg=0.00 suff=0.00 fac=1 labs=1
-F1:  24:47:   OIL conn=2 idle=0 bank=147 inc=188 spend=248 unmet=179 share=0.18 surp=0.04 budg=0.05 suff=0.01 fac=1 labs=1
-F1:  24:55:  WARNING   Removed ProductionJob "161495 | 2003" as Factory "161495" was not found.
-F1:  24:57:   OIL conn=0 idle=2 bank=170 inc=0 spend=165 unmet=119 share=0.00 surp=0.25 budg=0.00 suff=0.00 fac=1 labs=1
-F1:  25:07:   OIL conn=0 idle=2 bank=170 inc=0 spend=110 unmet=79 share=0.00 surp=0.25 budg=0.00 suff=0.00 fac=1 labs=1
-F1:  25:11:  WARNING   Removed ProductionJob "161367 | 5000" as Factory "161367" was not found.
-F1:  25:17:   OIL conn=0 idle=1 bank=170 inc=0 spend=73 unmet=53 share=0.00 surp=0.25 budg=0.00 suff=0.00 fac=1 labs=1
-F1:  25:27:   OIL conn=0 idle=2 bank=170 inc=0 spend=49 unmet=35 share=0.00 surp=0.25 budg=0.00 suff=0.00 fac=1 labs=1
-info    |08:54:20: [displayGameOver:399] Game ended (duration: 45)
-Game State [gameTime: 1530002]
---------------------------------------------------------------------------------------
- # | Player Name | Extrct Pwr | Units Killed | Structs (F/R) | Units Alive |  Power  |
--- | ----------- | ---------- | ------------ | ------------- | ----------- | ------- |
- 0 |      Player |          0 |            0 |       0 (0/0) |           0 |       0 | x
- 1 | Yellow-Fish |      20384 |           67 |       3 (0/0) |           0 |     170 | x
- 2 | Cyan-Peacem |      20190 |           46 |      19 (2/4) |           9 |       4 | 
- 3 | Blue-Peacem |      24060 |          175 |      29 (3/5) |          34 |      60 | 
---------------------------------------------------------------------------------------
-info    |08:54:21: [~quickjs_scripting_instance:222] Destroying [0]:multiplay/script/rules/init
-info    |08:54:21: [~quickjs_scripting_instance:222] Destroying [1]:multiplay/skirmish/FishBot_v0_5_3
-info    |08:54:21: [~quickjs_scripting_instance:222] Destroying [2]:multiplay/skirmish/PeacemakerAI
-info    |08:54:21: [~quickjs_scripting_instance:222] Destroying [3]:multiplay/skirmish/PeacemakerAI
-Saved 10 telemetry rows to C:\Users\nelso\OneDrive\Documents\wz2100_config_dir\mods\4.7.0\autoload\fishbot\python_helper_scripts\process_results\oil_telemetry_20260913_085424_00000_4c-Monocot_i_ffa_f1.log
+F1:  05:37:   OIL conn=11 idle=0 bank=25 inc=1147 spend=1228 unmet=244 fcost=499 fund=2.87 starv=0.00 suff=0.57 fac=3 labs=3
+F1:  05:47:   OIL conn=11 idle=0 bank=36 inc=1147 spend=1179 unmet=285 fcost=499 fund=2.87 starv=0.00 suff=0.57 fac=3 labs=3
+F1:  05:57:   OIL conn=11 idle=0 bank=127 inc=1147 spend=986 unmet=279 fcost=499 fund=2.87 starv=0.00 suff=0.57 fac=3 labs=3
+F1:  06:07:   OIL conn=11 idle=0 bank=51 inc=1147 spend=1192 unmet=228 fcost=499 fund=2.87 starv=0.00 suff=0.57 fac=3 labs=3
+F1:  06:17:   OIL conn=11 idle=0 bank=117 inc=1147 spend=1045 unmet=227 fcost=499 fund=2.87 starv=0.00 suff=0.57 fac=3 labs=3
+F1:  06:27:   oil sufficiency 0.63 (12 connected + 0 idle derricks; income 1251/min, spend 1154/min, starvation 0.00; factory 200/min, lab 71/min) -> 3 factories, 4 labs
+F1:  06:27:   OIL conn=12 idle=0 bank=97 inc=1251 spend=1154 unmet=211 fcost=499 fund=3.13 starv=0.00 suff=0.63 fac=3 labs=4
+F1:  06:37:   OIL conn=12 idle=0 bank=126 inc=1251 spend=1128 unmet=141 fcost=499 fund=3.13 starv=0.00 suff=0.63 fac=3 labs=4
+F1:  06:47:   oil dominance changed to: true (12 out of 27 (45%))
+F1:  06:47:   OIL conn=12 idle=0 bank=92 inc=1251 spend=1237 unmet=127 fcost=499 fund=3.13 starv=0.00 suff=0.63 fac=3 labs=4
+F1:  06:57:   OIL conn=12 idle=0 bank=201 inc=1251 spend=1024 unmet=85 fcost=499 fund=3.13 starv=0.00 suff=0.63 fac=3 labs=4
+F1:  07:07:   OIL conn=12 idle=1 bank=229 inc=1251 spend=1043 unmet=57 fcost=499 fund=3.13 starv=0.00 suff=0.63 fac=3 labs=4
+F1:  07:17:   OIL conn=12 idle=1 bank=146 inc=1251 spend=1279 unmet=168 fcost=551 fund=2.84 starv=0.00 suff=0.57 fac=3 labs=4
+F1:  07:27:   oil sufficiency 0.54 (12 connected + 1 idle derricks; income 1251/min, spend 1537/min, starvation 0.08; factory 220/min, lab 71/min) -> 3 factories, 3 labs
+F1:  07:27:   OIL conn=12 idle=1 bank=12 inc=1251 spend=1537 unmet=129 fcost=551 fund=2.84 starv=0.08 suff=0.54 fac=3 labs=3
+F1:  07:35:   HVAPFSDS Cannon Rounds
+F1:  07:37:   OIL conn=12 idle=1 bank=171 inc=1251 spend=1124 unmet=186 fcost=551 fund=2.84 starv=0.08 suff=0.55 fac=3 labs=3
+F1:  07:47:   OIL conn=12 idle=1 bank=81 inc=1251 spend=1346 unmet=281 fcost=551 fund=2.84 starv=0.07 suff=0.55 fac=3 labs=3
+F1:  07:57:   OIL conn=12 idle=1 bank=112 inc=1251 spend=1253 unmet=391 fcost=551 fund=2.84 starv=0.06 suff=0.55 fac=3 labs=3
+F1:  08:07:   oil sufficiency 0.69 (15 connected + 0 idle derricks; income 1564/min, spend 1462/min, starvation 0.06; factory 220/min, lab 71/min) -> 3 factories, 4 labs
+F1:  08:07:   OIL conn=15 idle=0 bank=59 inc=1564 spend=1462 unmet=399 fcost=551 fund=3.55 starv=0.06 suff=0.69 fac=3 labs=4
+F1:  08:17:   OIL conn=15 idle=0 bank=2 inc=1564 spend=1610 unmet=300 fcost=551 fund=3.55 starv=0.14 suff=0.66 fac=3 labs=4
+F1:  08:27:   OIL conn=15 idle=0 bank=163 inc=1564 spend=1273 unmet=200 fcost=551 fund=3.55 starv=0.13 suff=0.66 fac=3 labs=4
+F1:  08:37:   OIL conn=15 idle=0 bank=143 inc=1564 spend=1410 unmet=133 fcost=551 fund=3.55 starv=0.12 suff=0.67 fac=3 labs=4
+F1:  08:47:   OIL conn=15 idle=0 bank=112 inc=1564 spend=1523 unmet=89 fcost=551 fund=3.55 starv=0.11 suff=0.67 fac=3 labs=4
+F1:  08:57:   OIL conn=15 idle=0 bank=6 inc=1564 spend=1749 unmet=59 fcost=551 fund=3.55 starv=0.10 suff=0.67 fac=3 labs=4
+F1:  09:07:   OIL conn=15 idle=0 bank=86 inc=1564 spend=1527 unmet=39 fcost=551 fund=3.55 starv=0.09 suff=0.68 fac=3 labs=4
+F1:  09:11:   Twin Assault Cannon
+F1:  09:17:   OIL conn=15 idle=0 bank=122 inc=1564 spend=1467 unmet=26 fcost=551 fund=3.55 starv=0.08 suff=0.68 fac=3 labs=4
+F1:  09:27:   OIL conn=15 idle=0 bank=283 inc=1564 spend=1177 unmet=115 fcost=551 fund=3.55 starv=0.07 suff=0.68 fac=3 labs=4
+F1:  09:35:   Gas Turbine Generator Mk3
+F1:  09:37:   OIL conn=15 idle=0 bank=251 inc=1564 spend=1370 unmet=199 fcost=551 fund=3.55 starv=0.07 suff=0.68 fac=3 labs=4
+F1:  09:47:   OIL conn=15 idle=0 bank=145 inc=1564 spend=1647 unmet=193 fcost=551 fund=3.55 starv=0.06 suff=0.69 fac=3 labs=4
+F1:  09:57:   OIL conn=15 idle=0 bank=38 inc=1564 spend=1833 unmet=128 fcost=551 fund=3.55 starv=0.06 suff=0.69 fac=3 labs=4
+F1:  10:07:   OIL conn=15 idle=0 bank=199 inc=1564 spend=1421 unmet=183 fcost=551 fund=3.55 starv=0.05 suff=0.69 fac=3 labs=4
+F1:  10:17:   OIL conn=15 idle=0 bank=68 inc=1564 spend=1731 unmet=211 fcost=551 fund=3.55 starv=0.05 suff=0.69 fac=3 labs=4
+F1:  10:27:   OIL conn=15 idle=0 bank=61 inc=1564 spend=1689 unmet=234 fcost=551 fund=3.55 starv=0.04 suff=0.69 fac=3 labs=4
+F1:  10:37:   OIL conn=15 idle=0 bank=42 inc=1564 spend=1685 unmet=156 fcost=551 fund=3.55 starv=0.04 suff=0.69 fac=3 labs=4
+F1:  10:47:   OIL conn=15 idle=0 bank=303 inc=1564 spend=1124 unmet=104 fcost=551 fund=3.55 starv=0.04 suff=0.70 fac=3 labs=4
+F1:  10:57:   OIL conn=15 idle=0 bank=171 inc=1564 spend=1534 unmet=69 fcost=551 fund=3.55 starv=0.03 suff=0.70 fac=3 labs=4
+F1:  11:03:   Cannon Autoloader Mk3
+F1:  11:07:   OIL conn=15 idle=0 bank=182 inc=1564 spend=1522 unmet=135 fcost=551 fund=3.55 starv=0.03 suff=0.70 fac=3 labs=4
+F1:  11:11:   HEAP Mortar Shells Mk2
+F1:  11:17:   OIL conn=15 idle=0 bank=75 inc=1564 spend=1750 unmet=150 fcost=551 fund=3.55 starv=0.03 suff=0.70 fac=3 labs=4
+F1:  11:27:   OIL conn=15 idle=0 bank=156 inc=1564 spend=1526 unmet=294 fcost=551 fund=3.55 starv=0.03 suff=0.70 fac=3 labs=4
+F1:  11:31:   HVAPFSDS Cannon Rounds Mk2
+F1:  11:37:   oil sufficiency 0.70 (15 connected + 0 idle derricks; income 1564/min, spend 1597/min, starvation 0.02; factory 220/min, lab 85/min) -> 4 factories, 4 labs
+F1:  11:37:   OIL conn=15 idle=0 bank=127 inc=1564 spend=1597 unmet=406 fcost=551 fund=3.55 starv=0.02 suff=0.70 fac=4 labs=4
+F1:  11:47:   OIL conn=15 idle=0 bank=95 inc=1564 spend=1650 unmet=538 fcost=551 fund=3.55 starv=0.02 suff=0.70 fac=4 labs=4
+F1:  11:55:   Dense Composite Alloys Mk2
+F1:  11:57:   OIL conn=15 idle=0 bank=29 inc=1721 spend=1805 unmet=675 fcost=551 fund=3.90 starv=0.02 suff=0.77 fac=4 labs=4
+F1:  12:07:   OIL conn=15 idle=0 bank=316 inc=1721 spend=1204 unmet=765 fcost=551 fund=3.90 starv=0.02 suff=0.77 fac=4 labs=4
+F1:  12:17:   OIL conn=15 idle=0 bank=136 inc=1721 spend=1736 unmet=670 fcost=551 fund=3.90 starv=0.02 suff=0.77 fac=4 labs=4
+F1:  12:27:   OIL conn=15 idle=0 bank=123 inc=1721 spend=1757 unmet=664 fcost=499 fund=4.31 starv=0.02 suff=0.86 fac=4 labs=4
+F1:  12:37:   OIL conn=15 idle=0 bank=229 inc=1721 spend=1533 unmet=600 fcost=499 fund=4.31 starv=0.01 suff=0.86 fac=4 labs=4
+F1:  12:47:   OIL conn=15 idle=0 bank=44 inc=1721 spend=1966 unmet=400 fcost=499 fund=4.31 starv=0.01 suff=0.86 fac=4 labs=4
+F1:  12:57:   OIL conn=15 idle=0 bank=331 inc=1721 spend=1311 unmet=389 fcost=499 fund=4.31 starv=0.01 suff=0.86 fac=4 labs=4
+F1:  13:07:   OIL conn=15 idle=0 bank=71 inc=1721 spend=1967 unmet=259 fcost=499 fund=4.31 starv=0.01 suff=0.86 fac=4 labs=4
+F1:  13:17:   OIL conn=15 idle=0 bank=66 inc=1721 spend=1895 unmet=173 fcost=499 fund=4.31 starv=0.01 suff=0.86 fac=4 labs=4
+F1:  13:27:   OIL conn=15 idle=0 bank=173 inc=1721 spend=1623 unmet=115 fcost=499 fund=4.31 starv=0.01 suff=0.86 fac=4 labs=4
+F1:  13:37:   OIL conn=15 idle=0 bank=460 inc=1721 spend=1082 unmet=77 fcost=499 fund=4.31 starv=0.01 suff=0.86 fac=4 labs=4
+F1:  13:43:   Cannon Rapid Loader
+F1:  13:47:   OIL conn=15 idle=0 bank=250 inc=1721 spend=1715 unmet=155 fcost=499 fund=4.31 starv=0.01 suff=0.86 fac=4 labs=4
+F1:  13:57:   OIL conn=15 idle=0 bank=224 inc=1721 spend=1769 unmet=261 fcost=499 fund=4.31 starv=0.01 suff=0.86 fac=4 labs=4
+F1:  14:07:   OIL conn=15 idle=0 bank=39 inc=1721 spend=2123 unmet=174 fcost=499 fund=4.31 starv=0.01 suff=0.86 fac=4 labs=4
+F1:  14:17:   OIL conn=15 idle=0 bank=326 inc=1721 spend=1415 unmet=116 fcost=499 fund=4.31 starv=0.01 suff=0.86 fac=4 labs=4
+F1:  14:27:   OIL conn=15 idle=0 bank=296 inc=1721 spend=1577 unmet=77 fcost=499 fund=4.31 starv=0.01 suff=0.86 fac=4 labs=4
+F1:  14:35:   HEAP Mortar Shells Mk3
+F1:  14:37:   OIL conn=15 idle=0 bank=290 inc=1721 spend=1637 unmet=149 fcost=499 fund=4.31 starv=0.01 suff=0.86 fac=4 labs=4
+F1:  14:47:   OIL conn=15 idle=0 bank=285 inc=1721 spend=1675 unmet=99 fcost=499 fund=4.31 starv=0.00 suff=0.86 fac=4 labs=4
+F1:  14:57:   OIL conn=15 idle=0 bank=572 inc=1721 spend=1117 unmet=66 fcost=499 fund=4.31 starv=0.00 suff=0.86 fac=4 labs=4
+F1:  15:07:   OIL conn=15 idle=0 bank=492 inc=1721 spend=1478 unmet=44 fcost=499 fund=4.31 starv=0.00 suff=0.86 fac=4 labs=4
+F1:  15:17:   OIL conn=15 idle=0 bank=486 inc=1721 spend=1571 unmet=29 fcost=499 fund=4.31 starv=0.00 suff=0.86 fac=4 labs=4
+F1:  15:27:   OIL conn=15 idle=0 bank=673 inc=1721 spend=1247 unmet=20 fcost=499 fund=4.31 starv=0.00 suff=0.86 fac=4 labs=4
+F1:  15:31:   HVAPFSDS Cannon Rounds Mk3
+F1:  15:31:   Dense Composite Alloys Mk3
+F1:  15:37:   OIL conn=15 idle=0 bank=223 inc=1721 spend=2305 unmet=13 fcost=499 fund=4.31 starv=0.00 suff=0.86 fac=4 labs=4
+F1:  15:47:   OIL conn=15 idle=0 bank=291 inc=1721 spend=1975 unmet=9 fcost=499 fund=4.31 starv=0.00 suff=0.86 fac=4 labs=4
+F1:  15:57:   OIL conn=15 idle=0 bank=167 inc=1721 spend=2138 unmet=6 fcost=499 fund=4.31 starv=0.00 suff=0.86 fac=4 labs=4
+F1:  16:07:   OIL conn=15 idle=0 bank=354 inc=1721 spend=1625 unmet=4 fcost=499 fund=4.31 starv=0.00 suff=0.86 fac=4 labs=4
+F1:  16:17:   oil sufficiency 0.92 (16 connected + 0 idle derricks; income 1836/min, spend 1639/min, starvation 0.00; factory 200/min, lab 85/min) -> 5 factories, 4 labs
+F1:  16:17:   OIL conn=16 idle=0 bank=382 inc=1836 spend=1639 unmet=3 fcost=499 fund=4.60 starv=0.00 suff=0.92 fac=5 labs=4
+F1:  16:27:   OIL conn=16 idle=0 bank=146 inc=1836 spend=2177 unmet=2 fcost=499 fund=4.60 starv=0.00 suff=0.92 fac=5 labs=4
+F1:  16:37:   OIL conn=16 idle=2 bank=352 inc=1836 spend=1651 unmet=1 fcost=499 fund=4.60 starv=0.00 suff=0.92 fac=5 labs=4
+F1:  16:47:   OIL conn=16 idle=2 bank=471 inc=1836 spend=1475 unmet=1 fcost=499 fund=4.60 starv=0.00 suff=0.92 fac=5 labs=4
+F1:  16:57:   OIL conn=16 idle=2 bank=444 inc=1836 spend=1649 unmet=1 fcost=468 fund=4.90 starv=0.00 suff=0.98 fac=5 labs=4
+F1:  17:07:   OIL conn=16 idle=2 bank=408 inc=1836 spend=1784 unmet=0 fcost=468 fund=4.90 starv=0.00 suff=0.98 fac=5 labs=4
+F1:  17:07:   Cannon Rapid Loader Mk2
+F1:  17:17:   OIL conn=16 idle=1 bank=152 inc=1836 spend=2313 unmet=0 fcost=468 fund=4.90 starv=0.00 suff=0.98 fac=5 labs=4
+F1:  17:27:   OIL conn=17 idle=0 bank=462 inc=1879 spend=1548 unmet=0 fcost=468 fund=5.02 starv=0.00 suff=1.00 fac=5 labs=4
+F1:  17:37:   OIL conn=16 idle=1 bank=476 inc=1836 spend=1616 unmet=0 fcost=468 fund=4.90 starv=0.00 suff=0.98 fac=5 labs=4
+F1:  17:43:   Neural Synapse Research Brain
+info    |10:45:06: [displayGameOver:399] Game ended (duration: 21)
+F1:  17:47:   OIL conn=16 idle=4 bank=34 inc=1836 spend=2574 unmet=0 fcost=468 fund=4.90 starv=0.00 suff=0.98 fac=5 labs=4
+F1:  17:57:   oil sufficiency 1.00 (20 connected + 1 idle derricks; income 2295/min, spend 2529/min, starvation 0.00; factory 187/min, lab 85/min) -> 5 factories, 5 labs
+F1:  17:57:   OIL conn=20 idle=1 bank=10 inc=2295 spend=2529 unmet=0 fcost=468 fund=6.13 starv=0.00 suff=1.00 fac=5 labs=5
+F1:  18:00:   gameHasEnded, stopping all function
+info    |10:45:10: [~quickjs_scripting_instance:222] Destroying [0]:multiplay/script/rules/init
+info    |10:45:10: [~quickjs_scripting_instance:222] Destroying [1]:multiplay/skirmish/FishBot_v0_5_3
+info    |10:45:10: [~quickjs_scripting_instance:222] Destroying [2]:multiplay/skirmish/Cobra
+info    |10:45:13: [wzAttemptInitializeBackend:3124] Attempting to initialize backend: Vulkan
+info    |10:45:13: [wzChangeFullscreenDisplayMode:2149] Changing fullscreen mode to [1] 1920x1080
+info    |10:45:13: [_initialize:4970] Picking device: Intel(R) Iris(R) Xe Graphics
+info    |10:45:13: [_initialize:4971] - apiVersion: 1.3.240
+info    |10:45:13: [_initialize:4972] - driverVersion: 1659039
+info    |10:45:13: [_initialize:4973] - vendorID: 32902
+info    |10:45:13: [_initialize:4974] - deviceID: 18088
+info    |10:45:13: [_initialize:4975] - deviceType: IntegratedGpu
+info    |10:45:17: [startMultiplayerGame:5547] startMultiplayerGame
+info    |10:45:17: [SendFireUp:3808] Sending NET_FIREUP
+info    |10:45:19: [fpathInitialise:166] Using threads: 2
+info    |10:45:19: [gameLoad:3910] loading: multiplay/maps/3c-Gamma.gam
 
-WARNING: the earliest telemetry is at 23.9 game minutes, so the start of the game has
-         scrolled out of the 9999-row console buffer. The plot below is only the
-         part that survived -- shorten the game, or plot fewer FishBots, to capture the opening.
+FISHBOT DEBUG MODE
 
-FishBot 1: 10 samples over 25.4 game minutes
-  mean income           165.4 power/min  (peak 431)
-  mean expenditure      348.9 power/min  (peak 990)
-  mean banked power     131.1            (peak 170)
-  mean sufficiency       0.00            (range 0.00 - 0.01)
-  samples with jobs waiting on power:       100%
-  samples with idle (unconnected) derricks: 40%
+Map: Gamma (3 players)
+
+Player Info
+  - Player 0: forcing to spec
+info    |10:45:22: [makePlayerSpectator:2883] player: 0 (gameTime: 2)
+  - Player 1: FishBot v0.5.3 (Medium)
+  - Player 2: Cobra (Insane)
+F1:  00:00:   Initialisation completed.
+
+F1:  00:00:   oil sufficiency 0.00 (0 connected + 0 idle derricks; income 0/min, spend 0/min, starvation 0.00; factory 137/min, lab 65/min) -> 1 factories, 1 labs
+F1:  00:00:   OIL conn=0 idle=0 bank=1300 inc=0 spend=0 unmet=0 fcost=343 fund=0.00 starv=0.00 suff=0.00 fac=1 labs=1
+F1:  00:00:   research weights changed to: focused combat (0 enemies remaining)
+info    |10:45:22: [NETreplaySaveStart:199] Started writing replay file "replay/skirmish/20260913_104522_skirmish.wzrp".
+F1:  00:07:   OIL conn=0 idle=0 bank=1200 inc=0 spend=200 unmet=0 fcost=343 fund=0.00 starv=0.00 suff=0.00 fac=1 labs=1
+F1:  00:17:   OIL conn=0 idle=0 bank=1200 inc=0 spend=133 unmet=0 fcost=343 fund=0.00 starv=0.00 suff=0.00 fac=1 labs=1
+F1:  00:27:   OIL conn=0 idle=0 bank=1100 inc=0 spend=289 unmet=0 fcost=343 fund=0.00 starv=0.00 suff=0.00 fac=1 labs=1
+F1:  00:37:   OIL conn=0 idle=0 bank=1038 inc=0 spend=317 unmet=0 fcost=343 fund=0.00 starv=0.00 suff=0.00 fac=1 labs=1
+F1:  00:47:   OIL conn=0 idle=0 bank=976 inc=0 spend=335 unmet=0 fcost=343 fund=0.00 starv=0.00 suff=0.00 fac=1 labs=1
+F1:  00:57:   OIL conn=0 idle=0 bank=926 inc=0 spend=323 unmet=0 fcost=343 fund=0.00 starv=0.00 suff=0.00 fac=1 labs=1
+F1:  01:07:   OIL conn=0 idle=1 bank=817 inc=0 spend=434 unmet=0 fcost=343 fund=0.00 starv=0.00 suff=0.00 fac=1 labs=1
+F1:  01:17:   OIL conn=2 idle=0 bank=781 inc=167 spend=417 unmet=0 fcost=343 fund=0.61 starv=0.00 suff=0.12 fac=1 labs=1
+F1:  01:27:   OIL conn=3 idle=0 bank=714 inc=250 spend=495 unmet=0 fcost=343 fund=0.91 starv=0.00 suff=0.18 fac=1 labs=1
+F1:  01:37:   OIL conn=4 idle=0 bank=767 inc=333 spend=335 unmet=0 fcost=343 fund=1.21 starv=0.00 suff=0.24 fac=1 labs=1
+F1:  01:47:   OIL conn=4 idle=1 bank=714 inc=333 spend=440 unmet=0 fcost=343 fund=1.21 starv=0.00 suff=0.24 fac=1 labs=1
+F1:  01:57:   OIL conn=4 idle=1 bank=770 inc=333 spend=294 unmet=0 fcost=343 fund=1.21 starv=0.00 suff=0.24 fac=1 labs=1
+F1:  02:07:   oil sufficiency 0.41 (6 connected + 0 idle derricks; income 563/min, spend 633/min, starvation 0.00; factory 137/min, lab 65/min) -> 2 factories, 2 labs
+F1:  02:07:   OIL conn=6 idle=0 bank=645 inc=563 spend=633 unmet=0 fcost=343 fund=2.05 starv=0.00 suff=0.41 fac=2 labs=2
+F1:  02:17:   OIL conn=7 idle=0 bank=757 inc=656 spend=422 unmet=0 fcost=343 fund=2.39 starv=0.00 suff=0.48 fac=2 labs=2
+F1:  02:27:   oil sufficiency 0.55 (8 connected + 0 idle derricks; income 750/min, spend 521/min, starvation 0.00; factory 137/min, lab 65/min) -> 3 factories, 2 labs
+F1:  02:27:   OIL conn=8 idle=0 bank=762 inc=750 spend=521 unmet=0 fcost=343 fund=2.73 starv=0.00 suff=0.55 fac=3 labs=2
+F1:  02:37:   OIL conn=8 idle=1 bank=787 inc=750 spend=548 unmet=0 fcost=343 fund=2.73 starv=0.00 suff=0.55 fac=3 labs=2
+F1:  02:47:   OIL conn=8 idle=2 bank=579 inc=750 spend=1031 unmet=0 fcost=343 fund=2.73 starv=0.00 suff=0.55 fac=3 labs=2
+F1:  02:57:   OIL conn=8 idle=2 bank=474 inc=750 spend=1147 unmet=0 fcost=343 fund=2.73 starv=0.00 suff=0.55 fac=3 labs=2
+F1:  03:07:   oil sufficiency 0.66 (10 connected + 0 idle derricks; income 903/min, spend 976/min, starvation 0.00; factory 137/min, lab 65/min) -> 3 factories, 3 labs
+F1:  03:07:   OIL conn=10 idle=0 bank=519 inc=903 spend=976 unmet=0 fcost=343 fund=3.29 starv=0.00 suff=0.66 fac=3 labs=3
+F1:  03:17:   OIL conn=10 idle=0 bank=546 inc=903 spend=897 unmet=0 fcost=343 fund=3.29 starv=0.00 suff=0.66 fac=3 labs=3
+F1:  03:27:   oil sufficiency 0.59 (9 connected + 0 idle derricks; income 812/min, spend 1145/min, starvation 0.00; factory 137/min, lab 65/min) -> 3 factories, 2 labs
+F1:  03:27:   OIL conn=9 idle=0 bank=408 inc=812 spend=1145 unmet=0 fcost=343 fund=2.96 starv=0.00 suff=0.59 fac=3 labs=2
+F1:  03:37:   oil sufficiency 0.38 (8 connected + 1 idle derricks; income 750/min, spend 1489/min, starvation 0.00; factory 200/min, lab 65/min) -> 2 factories, 2 labs
+F1:  03:37:   OIL conn=8 idle=1 bank=170 inc=750 spend=1489 unmet=0 fcost=499 fund=1.88 starv=0.00 suff=0.38 fac=2 labs=2
+F1:  03:47:   oil sufficiency 0.44 (9 connected + 0 idle derricks; income 875/min, spend 1005/min, starvation 0.00; factory 200/min, lab 65/min) -> 2 factories, 3 labs
+F1:  03:47:   OIL conn=9 idle=0 bank=310 inc=875 spend=1005 unmet=0 fcost=499 fund=2.19 starv=0.00 suff=0.44 fac=2 labs=3
+F1:  03:57:   OIL conn=9 idle=0 bank=238 inc=875 spend=1106 unmet=0 fcost=499 fund=2.19 starv=0.00 suff=0.44 fac=2 labs=3
+F1:  04:07:   OIL conn=9 idle=0 bank=211 inc=875 spend=1083 unmet=139 fcost=499 fund=2.19 starv=0.00 suff=0.44 fac=2 labs=3
+F1:  04:07:   APFSDS Cannon Rounds Mk3
+F1:  04:17:   OIL conn=9 idle=0 bank=46 inc=875 spend=1344 unmet=126 fcost=499 fund=2.19 starv=0.00 suff=0.44 fac=2 labs=3
+F1:  04:27:   OIL conn=9 idle=0 bank=99 inc=875 spend=1081 unmet=159 fcost=499 fund=2.19 starv=0.00 suff=0.44 fac=2 labs=3
+F1:  04:37:   OIL conn=10 idle=0 bank=126 inc=973 spend=991 unmet=106 fcost=499 fund=2.44 starv=0.00 suff=0.49 fac=2 labs=3
+F1:  04:47:   oil sufficiency 0.42 (8 connected + 2 idle derricks; income 834/min, spend 1141/min, starvation 0.00; factory 200/min, lab 77/min) -> 2 factories, 2 labs
+F1:  04:47:   OIL conn=8 idle=2 bank=25 inc=834 spend=1141 unmet=71 fcost=499 fund=2.09 starv=0.00 suff=0.42 fac=2 labs=2
+F1:  04:57:   OIL conn=8 idle=2 bank=127 inc=834 spend=835 unmet=153 fcost=499 fund=2.09 starv=0.00 suff=0.42 fac=2 labs=2
+F1:  05:07:   oil sufficiency 0.52 (10 connected + 0 idle derricks; income 1042/min, spend 582/min, starvation 0.00; factory 200/min, lab 77/min) -> 3 factories, 3 labs
+F1:  05:07:   OIL conn=10 idle=0 bank=288 inc=1042 spend=582 unmet=253 fcost=499 fund=2.61 starv=0.00 suff=0.52 fac=3 labs=3
+F1:  05:17:   OIL conn=10 idle=0 bank=7 inc=1042 spend=1297 unmet=210 fcost=499 fund=2.61 starv=0.08 suff=0.50 fac=3 labs=3
+F1:  05:27:   OIL conn=10 idle=0 bank=19 inc=1042 spend=1188 unmet=140 fcost=499 fund=2.61 starv=0.08 suff=0.50 fac=3 labs=3
+F1:  05:37:   OIL conn=10 idle=0 bank=13 inc=1042 spend=1152 unmet=94 fcost=499 fund=2.61 starv=0.07 suff=0.50 fac=3 labs=3
+F1:  05:43:   Dedicated Synaptic Link Data Analysis Mk3
+F1:  05:47:   OIL conn=11 idle=0 bank=92 inc=1147 spend=992 unmet=187 fcost=499 fund=2.87 starv=0.06 suff=0.56 fac=3 labs=3
+F1:  05:57:   OIL conn=11 idle=0 bank=158 inc=1147 spend=912 unmet=297 fcost=499 fund=2.87 starv=0.06 suff=0.56 fac=3 labs=3
+F1:  06:07:   OIL conn=11 idle=0 bank=99 inc=1147 spend=1108 unmet=320 fcost=499 fund=2.87 starv=0.05 suff=0.56 fac=3 labs=3
+F1:  06:17:   OIL conn=11 idle=0 bank=23 inc=1147 spend=1273 unmet=307 fcost=499 fund=2.87 starv=0.05 suff=0.56 fac=3 labs=3
+F1:  06:27:   OIL conn=11 idle=0 bank=114 inc=1147 spend=1049 unmet=340 fcost=499 fund=2.87 starv=0.05 suff=0.56 fac=3 labs=3
+F1:  06:37:   OIL conn=11 idle=0 bank=25 inc=1147 spend=1259 unmet=268 fcost=499 fund=2.87 starv=0.04 suff=0.56 fac=3 labs=3
+F1:  06:47:   OIL conn=11 idle=0 bank=92 inc=1147 spend=1088 unmet=212 fcost=499 fund=2.87 starv=0.04 suff=0.56 fac=3 labs=3
+F1:  06:57:   OIL conn=11 idle=0 bank=183 inc=1147 spend=926 unmet=230 fcost=499 fund=2.87 starv=0.03 suff=0.56 fac=3 labs=3
+F1:  07:07:   oil dominance changed to: true (13 out of 27 (49%))
+F1:  07:07:   OIL conn=12 idle=0 bank=116 inc=1251 spend=1168 unmet=214 fcost=499 fund=3.13 starv=0.03 suff=0.62 fac=3 labs=3
+F1:  07:17:   OIL conn=12 idle=1 bank=45 inc=1251 spend=1338 unmet=256 fcost=551 fund=2.84 starv=0.03 suff=0.56 fac=3 labs=3
+F1:  07:27:   OIL conn=12 idle=1 bank=253 inc=1251 spend=893 unmet=285 fcost=551 fund=2.84 starv=0.03 suff=0.56 fac=3 labs=3
+F1:  07:37:   OIL conn=12 idle=1 bank=120 inc=1251 spend=1278 unmet=190 fcost=551 fund=2.84 starv=0.02 suff=0.56 fac=3 labs=3
+F1:  07:47:   OIL conn=12 idle=1 bank=61 inc=1251 spend=1387 unmet=228 fcost=551 fund=2.84 starv=0.02 suff=0.56 fac=3 labs=3
+F1:  07:51:   HVAPFSDS Cannon Rounds
+F1:  07:57:   OIL conn=12 idle=1 bank=148 inc=1251 spend=1168 unmet=312 fcost=551 fund=2.84 starv=0.02 suff=0.56 fac=3 labs=3
+F1:  08:07:   OIL conn=12 idle=1 bank=176 inc=1251 spend=1140 unmet=405 fcost=551 fund=2.84 starv=0.02 suff=0.56 fac=3 labs=3
+F1:  08:17:   OIL conn=12 idle=1 bank=88 inc=1251 spend=1353 unmet=401 fcost=551 fund=2.84 starv=0.02 suff=0.56 fac=3 labs=3
+F1:  08:27:   oil sufficiency 0.70 (15 connected + 0 idle derricks; income 1564/min, spend 1527/min, starvation 0.02; factory 220/min, lab 71/min) -> 4 factories, 4 labs
+F1:  08:27:   OIL conn=15 idle=0 bank=36 inc=1564 spend=1527 unmet=440 fcost=551 fund=3.55 starv=0.02 suff=0.70 fac=4 labs=4
+F1:  08:37:   OIL conn=15 idle=0 bank=96 inc=1564 spend=1419 unmet=459 fcost=551 fund=3.55 starv=0.01 suff=0.70 fac=4 labs=4
+F1:  08:47:   OIL conn=15 idle=0 bank=40 inc=1564 spend=1579 unmet=366 fcost=551 fund=3.55 starv=0.01 suff=0.70 fac=4 labs=4
+F1:  08:57:   OIL conn=15 idle=0 bank=21 inc=1564 spend=1612 unmet=244 fcost=551 fund=3.55 starv=0.01 suff=0.70 fac=4 labs=4
+F1:  09:07:   OIL conn=15 idle=0 bank=281 inc=1564 spend=1076 unmet=260 fcost=551 fund=3.55 starv=0.01 suff=0.71 fac=4 labs=4
+F1:  09:17:   OIL conn=15 idle=0 bank=150 inc=1564 spend=1501 unmet=233 fcost=499 fund=3.92 starv=0.01 suff=0.78 fac=4 labs=4
+F1:  09:27:   OIL conn=15 idle=0 bank=230 inc=1564 spend=1362 unmet=236 fcost=499 fund=3.92 starv=0.01 suff=0.78 fac=4 labs=4
+F1:  09:35:   Twin Assault Cannon
+F1:  09:37:   OIL conn=15 idle=0 bank=69 inc=1564 spend=1751 unmet=266 fcost=499 fund=3.92 starv=0.01 suff=0.78 fac=4 labs=4
+F1:  09:47:   oil sufficiency 0.75 (15 connected + 0 idle derricks; income 1564/min, spend 1817/min, starvation 0.09; factory 200/min, lab 85/min) -> 4 factories, 3 labs
+F1:  09:47:   OIL conn=15 idle=0 bank=5 inc=1564 spend=1817 unmet=275 fcost=499 fund=3.92 starv=0.09 suff=0.75 fac=4 labs=3
+F1:  09:57:   oil sufficiency 0.75 (15 connected + 0 idle derricks; income 1564/min, spend 1212/min, starvation 0.08; factory 200/min, lab 85/min) -> 4 factories, 4 labs
+F1:  09:57:   OIL conn=15 idle=0 bank=265 inc=1564 spend=1212 unmet=421 fcost=499 fund=3.92 starv=0.08 suff=0.75 fac=4 labs=4
+F1:  10:07:   OIL conn=15 idle=0 bank=54 inc=1564 spend=1751 unmet=395 fcost=499 fund=3.92 starv=0.08 suff=0.75 fac=4 labs=4
+F1:  10:17:   OIL conn=15 idle=0 bank=73 inc=1564 spend=1651 unmet=356 fcost=499 fund=3.92 starv=0.07 suff=0.76 fac=4 labs=4
+F1:  10:27:   OIL conn=15 idle=0 bank=53 inc=1564 spend=1662 unmet=271 fcost=499 fund=3.92 starv=0.06 suff=0.76 fac=4 labs=4
+F1:  10:27:   Gas Turbine Generator Mk3
+F1:  10:37:   OIL conn=15 idle=0 bank=214 inc=1564 spend=1307 unmet=340 fcost=499 fund=3.92 starv=0.06 suff=0.76 fac=4 labs=4
+F1:  10:47:   OIL conn=15 idle=0 bank=182 inc=1564 spend=1457 unmet=438 fcost=499 fund=3.92 starv=0.05 suff=0.76 fac=4 labs=4
+F1:  10:57:   OIL conn=15 idle=0 bank=76 inc=1564 spend=1704 unmet=414 fcost=499 fund=3.92 starv=0.05 suff=0.76 fac=4 labs=4
+F1:  11:07:   OIL conn=15 idle=0 bank=70 inc=1564 spend=1669 unmet=370 fcost=499 fund=3.92 starv=0.05 suff=0.77 fac=4 labs=4
+F1:  11:17:   OIL conn=15 idle=0 bank=50 inc=1564 spend=1674 unmet=344 fcost=499 fund=3.92 starv=0.04 suff=0.77 fac=4 labs=4
+F1:  11:27:   OIL conn=15 idle=0 bank=19 inc=1564 spend=1699 unmet=229 fcost=499 fund=3.92 starv=0.04 suff=0.77 fac=4 labs=4
+F1:  11:31:   Cannon Autoloader Mk3
+F1:  11:37:   oil sufficiency 0.74 (15 connected + 0 idle derricks; income 1564/min, spend 1692/min, starvation 0.12; factory 200/min, lab 85/min) -> 4 factories, 3 labs
+F1:  11:37:   OIL conn=15 idle=0 bank=0 inc=1564 spend=1692 unmet=325 fcost=499 fund=3.92 starv=0.12 suff=0.74 fac=4 labs=3
+F1:  11:47:   OIL conn=15 idle=0 bank=10 inc=1564 spend=1629 unmet=306 fcost=499 fund=3.92 starv=0.19 suff=0.71 fac=4 labs=3
+F1:  11:55:   HEAP Mortar Shells Mk2
+F1:  11:57:   oil sufficiency 0.68 (15 connected + 0 idle derricks; income 1564/min, spend 1620/min, starvation 0.26; factory 200/min, lab 82/min) -> 3 factories, 3 labs
+F1:  11:57:   OIL conn=15 idle=0 bank=4 inc=1564 spend=1620 unmet=360 fcost=499 fund=3.92 starv=0.26 suff=0.68 fac=3 labs=3
+F1:  12:07:   OIL conn=15 idle=0 bank=84 inc=1564 spend=1441 unmet=476 fcost=499 fund=3.92 starv=0.24 suff=0.69 fac=3 labs=3
+F1:  12:07:   HVAPFSDS Cannon Rounds Mk2
+F1:  12:17:   OIL conn=15 idle=0 bank=55 inc=1564 spend=1540 unmet=662 fcost=499 fund=3.92 starv=0.22 suff=0.70 fac=3 labs=3
+F1:  12:27:   oil sufficiency 0.70 (15 connected + 0 idle derricks; income 1564/min, spend 1610/min, starvation 0.20; factory 200/min, lab 82/min) -> 4 factories, 3 labs
+F1:  12:27:   OIL conn=15 idle=0 bank=24 inc=1564 spend=1610 unmet=722 fcost=499 fund=3.92 starv=0.20 suff=0.70 fac=4 labs=3
+F1:  12:37:   OIL conn=15 idle=0 bank=159 inc=1564 spend=1324 unmet=843 fcost=499 fund=3.92 starv=0.18 suff=0.71 fac=4 labs=3
+F1:  12:47:   oil sufficiency 0.79 (15 connected + 0 idle derricks; income 1721/min, spend 1283/min, starvation 0.17; factory 200/min, lab 82/min) -> 4 factories, 4 labs
+F1:  12:47:   OIL conn=15 idle=0 bank=246 inc=1721 spend=1283 unmet=863 fcost=499 fund=4.31 starv=0.17 suff=0.79 fac=4 labs=4
+F1:  12:47:   Dense Composite Alloys Mk2
+F1:  12:57:   OIL conn=15 idle=0 bank=96 inc=1721 spend=1729 unmet=831 fcost=499 fund=4.31 starv=0.15 suff=0.80 fac=4 labs=4
+F1:  13:07:   OIL conn=16 idle=0 bank=292 inc=1836 spend=1373 unmet=874 fcost=499 fund=4.60 starv=0.14 suff=0.85 fac=4 labs=4
+F1:  13:17:   OIL conn=16 idle=0 bank=231 inc=1836 spend=1649 unmet=780 fcost=499 fund=4.60 starv=0.13 suff=0.86 fac=4 labs=4
+F1:  13:27:   OIL conn=16 idle=0 bank=237 inc=1836 spend=1699 unmet=651 fcost=499 fund=4.60 starv=0.12 suff=0.87 fac=4 labs=4
+F1:  13:37:   OIL conn=16 idle=0 bank=151 inc=1836 spend=1917 unmet=434 fcost=499 fund=4.60 starv=0.11 suff=0.87 fac=4 labs=4
+F1:  13:47:   OIL conn=16 idle=0 bank=332 inc=1836 spend=1528 unmet=289 fcost=499 fund=4.60 starv=0.10 suff=0.87 fac=4 labs=4
+F1:  13:57:   OIL conn=16 idle=0 bank=271 inc=1836 spend=1753 unmet=193 fcost=499 fund=4.60 starv=0.09 suff=0.88 fac=4 labs=4
+F1:  14:07:   OIL conn=16 idle=0 bank=285 inc=1836 spend=1752 unmet=129 fcost=499 fund=4.60 starv=0.08 suff=0.88 fac=4 labs=4
+F1:  14:17:   OIL conn=16 idle=0 bank=591 inc=1836 spend=1168 unmet=86 fcost=499 fund=4.60 starv=0.08 suff=0.88 fac=4 labs=4
+F1:  14:27:   OIL conn=16 idle=0 bank=897 inc=1836 spend=779 unmet=57 fcost=499 fund=4.60 starv=0.07 suff=0.89 fac=4 labs=4
+F1:  14:27:   Cannon Rapid Loader
+F1:  14:37:   OIL conn=16 idle=0 bank=574 inc=1836 spend=1777 unmet=38 fcost=499 fund=4.60 starv=0.06 suff=0.89 fac=4 labs=4
+F1:  14:47:   OIL conn=16 idle=1 bank=588 inc=1836 spend=1769 unmet=25 fcost=499 fund=4.60 starv=0.06 suff=0.89 fac=4 labs=4
+F1:  14:57:   OIL conn=16 idle=1 bank=844 inc=1836 spend=1279 unmet=17 fcost=499 fund=4.60 starv=0.05 suff=0.89 fac=4 labs=4
+F1:  15:07:   oil sufficiency 0.92 (17 connected + 0 idle derricks; income 1879/min, spend 859/min, starvation 0.05; factory 200/min, lab 85/min) -> 5 factories, 4 labs
+F1:  15:07:   OIL conn=17 idle=0 bank=1154 inc=1879 spend=859 unmet=11 fcost=499 fund=4.71 starv=0.05 suff=0.92 fac=5 labs=4
+F1:  15:17:   oil sufficiency 0.90 (16 connected + 1 idle derricks; income 1836/min, spend 1785/min, starvation 0.05; factory 200/min, lab 85/min) -> 4 factories, 4 labs
+F1:  15:17:   OIL conn=16 idle=1 bank=854 inc=1836 spend=1785 unmet=8 fcost=499 fund=4.60 starv=0.05 suff=0.90 fac=4 labs=4
+F1:  15:27:   oil sufficiency 1.00 (18 connected + 0 idle derricks; income 2066/min, spend 1190/min, starvation 0.04; factory 200/min, lab 85/min) -> 5 factories, 5 labs
+F1:  15:27:   OIL conn=18 idle=0 bank=1248 inc=2066 spend=1190 unmet=5 fcost=499 fund=5.17 starv=0.04 suff=1.00 fac=5 labs=5
+info    |10:46:06: [displayGameOver:399] Game ended (duration: 43)
+F1:  15:37:   OIL conn=18 idle=0 bank=1492 inc=2066 spend=994 unmet=3 fcost=499 fund=5.17 starv=0.04 suff=1.00 fac=5 labs=5
+F1:  15:47:   OIL conn=18 idle=0 bank=1662 inc=2066 spend=1011 unmet=2 fcost=499 fund=5.17 starv=0.04 suff=1.00 fac=5 labs=5
+F1:  15:51:   HEAP Mortar Shells Mk3
+F1:  15:57:   OIL conn=19 idle=0 bank=1242 inc=2180 spend=2241 unmet=1 fcost=499 fund=5.46 starv=0.03 suff=1.00 fac=5 labs=5
+F1:  16:00:   gameHasEnded, stopping all function
+info    |10:46:12: [~quickjs_scripting_instance:222] Destroying [0]:multiplay/script/rules/init
+info    |10:46:12: [~quickjs_scripting_instance:222] Destroying [1]:multiplay/skirmish/FishBot_v0_5_3
+info    |10:46:12: [~quickjs_scripting_instance:222] Destroying [2]:multiplay/skirmish/Cobra
+info    |10:46:15: [wzAttemptInitializeBackend:3124] Attempting to initialize backend: Vulkan
+info    |10:46:15: [wzChangeFullscreenDisplayMode:2149] Changing fullscreen mode to [1] 1920x1080
+info    |10:46:15: [_initialize:4970] Picking device: Intel(R) Iris(R) Xe Graphics
+info    |10:46:15: [_initialize:4971] - apiVersion: 1.3.240
+info    |10:46:15: [_initialize:4972] - driverVersion: 1659039
+info    |10:46:15: [_initialize:4973] - vendorID: 32902
+info    |10:46:15: [_initialize:4974] - deviceID: 18088
+info    |10:46:15: [_initialize:4975] - deviceType: IntegratedGpu
+info    |10:46:18: [startMultiplayerGame:5547] startMultiplayerGame
+info    |10:46:18: [SendFireUp:3808] Sending NET_FIREUP
+info    |10:46:20: [fpathInitialise:166] Using threads: 2
+info    |10:46:20: [gameLoad:3910] loading: multiplay/maps/3c-Gamma.gam
+
+FISHBOT DEBUG MODE
+
+Map: Gamma (3 players)
+
+Player Info
+  - Player 0: forcing to spec
+info    |10:46:23: [makePlayerSpectator:2883] player: 0 (gameTime: 2)
+  - Player 1: FishBot v0.5.3 (Medium)
+  - Player 2: Cobra (Insane)
+F1:  00:00:   Initialisation completed.
+
+F1:  00:00:   oil sufficiency 0.00 (0 connected + 0 idle derricks; income 0/min, spend 0/min, starvation 0.00; factory 137/min, lab 65/min) -> 1 factories, 1 labs
+F1:  00:00:   OIL conn=0 idle=0 bank=1300 inc=0 spend=0 unmet=0 fcost=343 fund=0.00 starv=0.00 suff=0.00 fac=1 labs=1
+F1:  00:00:   research weights changed to: focused combat (0 enemies remaining)
+info    |10:46:23: [NETreplaySaveStart:199] Started writing replay file "replay/skirmish/20260913_104623_skirmish.wzrp".
+F1:  00:07:   OIL conn=0 idle=0 bank=1200 inc=0 spend=200 unmet=0 fcost=343 fund=0.00 starv=0.00 suff=0.00 fac=1 labs=1
+F1:  00:17:   OIL conn=0 idle=0 bank=1200 inc=0 spend=133 unmet=0 fcost=343 fund=0.00 starv=0.00 suff=0.00 fac=1 labs=1
+F1:  00:27:   OIL conn=0 idle=0 bank=1100 inc=0 spend=289 unmet=0 fcost=343 fund=0.00 starv=0.00 suff=0.00 fac=1 labs=1
+F1:  00:37:   OIL conn=0 idle=0 bank=1038 inc=0 spend=317 unmet=0 fcost=343 fund=0.00 starv=0.00 suff=0.00 fac=1 labs=1
+F1:  00:47:   OIL conn=0 idle=0 bank=976 inc=0 spend=335 unmet=0 fcost=343 fund=0.00 starv=0.00 suff=0.00 fac=1 labs=1
+F1:  00:57:   OIL conn=0 idle=0 bank=926 inc=0 spend=323 unmet=0 fcost=343 fund=0.00 starv=0.00 suff=0.00 fac=1 labs=1
+F1:  01:07:   OIL conn=0 idle=1 bank=817 inc=0 spend=434 unmet=0 fcost=343 fund=0.00 starv=0.00 suff=0.00 fac=1 labs=1
+F1:  01:17:   OIL conn=2 idle=0 bank=829 inc=167 spend=321 unmet=0 fcost=343 fund=0.61 starv=0.00 suff=0.12 fac=1 labs=1
+F1:  01:27:   OIL conn=3 idle=0 bank=712 inc=250 spend=531 unmet=0 fcost=343 fund=0.91 starv=0.00 suff=0.18 fac=1 labs=1
+F1:  01:37:   OIL conn=4 idle=0 bank=765 inc=333 spend=359 unmet=0 fcost=343 fund=1.21 starv=0.00 suff=0.24 fac=1 labs=1
+F1:  01:47:   OIL conn=4 idle=1 bank=715 inc=333 spend=450 unmet=0 fcost=343 fund=1.21 starv=0.00 suff=0.24 fac=1 labs=1
+F1:  01:57:   OIL conn=4 idle=1 bank=770 inc=333 spend=301 unmet=0 fcost=343 fund=1.21 starv=0.00 suff=0.24 fac=1 labs=1
+F1:  02:07:   oil sufficiency 0.41 (6 connected + 0 idle derricks; income 563/min, spend 652/min, starvation 0.00; factory 137/min, lab 65/min) -> 2 factories, 2 labs
+F1:  02:07:   OIL conn=6 idle=0 bank=638 inc=563 spend=652 unmet=0 fcost=343 fund=2.05 starv=0.00 suff=0.41 fac=2 labs=2
+F1:  02:17:   oil sufficiency 0.55 (8 connected + 0 idle derricks; income 750/min, spend 435/min, starvation 0.00; factory 137/min, lab 65/min) -> 3 factories, 2 labs
+F1:  02:17:   OIL conn=8 idle=0 bank=763 inc=750 spend=435 unmet=0 fcost=343 fund=2.73 starv=0.00 suff=0.55 fac=3 labs=2
+F1:  02:27:   OIL conn=8 idle=0 bank=679 inc=750 spend=708 unmet=0 fcost=343 fund=2.73 starv=0.00 suff=0.55 fac=3 labs=2
+F1:  02:37:   OIL conn=8 idle=1 bank=804 inc=750 spend=472 unmet=0 fcost=343 fund=2.73 starv=0.00 suff=0.55 fac=3 labs=2
+F1:  02:47:   OIL conn=8 idle=2 bank=491 inc=750 spend=1191 unmet=0 fcost=343 fund=2.73 starv=0.00 suff=0.55 fac=3 labs=2
+F1:  02:57:   OIL conn=8 idle=3 bank=499 inc=750 spend=1028 unmet=0 fcost=343 fund=2.73 starv=0.00 suff=0.55 fac=3 labs=2
+F1:  03:07:   oil sufficiency 0.79 (12 connected + 0 idle derricks; income 1083/min, spend 892/min, starvation 0.00; factory 137/min, lab 65/min) -> 4 factories, 3 labs
+F1:  03:07:   OIL conn=12 idle=0 bank=576 inc=1083 spend=892 unmet=0 fcost=343 fund=3.94 starv=0.00 suff=0.79 fac=4 labs=3
+F1:  03:17:   OIL conn=11 idle=0 bank=642 inc=993 spend=794 unmet=0 fcost=343 fund=3.62 starv=0.00 suff=0.72 fac=4 labs=3
+F1:  03:27:   oil sufficiency 0.50 (11 connected + 0 idle derricks; income 993/min, spend 1146/min, starvation 0.00; factory 200/min, lab 65/min) -> 2 factories, 3 labs
+F1:  03:27:   OIL conn=11 idle=0 bank=499 inc=993 spend=1146 unmet=0 fcost=499 fund=2.49 starv=0.00 suff=0.50 fac=2 labs=3
+F1:  03:37:   oil sufficiency 0.38 (8 connected + 3 idle derricks; income 750/min, spend 1494/min, starvation 0.00; factory 200/min, lab 65/min) -> 2 factories, 2 labs
+F1:  03:37:   OIL conn=8 idle=3 bank=259 inc=750 spend=1494 unmet=0 fcost=499 fund=1.88 starv=0.00 suff=0.38 fac=2 labs=2
+F1:  03:47:   oil sufficiency 0.49 (10 connected + 0 idle derricks; income 973/min, spend 1188/min, starvation 0.00; factory 200/min, lab 65/min) -> 2 factories, 3 labs
+F1:  03:47:   OIL conn=10 idle=0 bank=325 inc=973 spend=1188 unmet=0 fcost=499 fund=2.44 starv=0.00 suff=0.49 fac=2 labs=3
+F1:  03:57:   OIL conn=10 idle=0 bank=312 inc=973 spend=1142 unmet=0 fcost=499 fund=2.44 starv=0.00 suff=0.49 fac=2 labs=3
+F1:  04:07:   OIL conn=10 idle=0 bank=62 inc=973 spend=1586 unmet=42 fcost=499 fund=2.44 starv=0.00 suff=0.49 fac=2 labs=3
+F1:  04:17:   OIL conn=10 idle=0 bank=104 inc=973 spend=1297 unmet=28 fcost=499 fund=2.44 starv=0.00 suff=0.49 fac=2 labs=3
+F1:  04:23:   APFSDS Cannon Rounds Mk3
+F1:  04:27:   oil sufficiency 0.42 (8 connected + 2 idle derricks; income 834/min, spend 865/min, starvation 0.00; factory 200/min, lab 77/min) -> 2 factories, 2 labs
+F1:  04:27:   OIL conn=8 idle=2 bank=255 inc=834 spend=865 unmet=106 fcost=499 fund=2.09 starv=0.00 suff=0.42 fac=2 labs=2
+F1:  04:37:   OIL conn=8 idle=2 bank=95 inc=834 spend=1175 unmet=71 fcost=499 fund=2.09 starv=0.00 suff=0.42 fac=2 labs=2
+F1:  04:47:   oil sufficiency 0.52 (10 connected + 0 idle derricks; income 1042/min, spend 899/min, starvation 0.00; factory 200/min, lab 77/min) -> 3 factories, 3 labs
+F1:  04:47:   OIL conn=10 idle=0 bank=211 inc=1042 spend=899 unmet=136 fcost=499 fund=2.61 starv=0.00 suff=0.52 fac=3 labs=3
+F1:  04:57:   OIL conn=11 idle=0 bank=35 inc=1147 spend=1333 unmet=145 fcost=499 fund=2.87 starv=0.00 suff=0.57 fac=3 labs=3
+F1:  05:07:   OIL conn=11 idle=0 bank=64 inc=1147 spend=1213 unmet=96 fcost=499 fund=2.87 starv=0.00 suff=0.57 fac=3 labs=3
+F1:  05:11:   Dedicated Synaptic Link Data Analysis Mk3
+F1:  05:17:   OIL conn=11 idle=0 bank=5 inc=1147 spend=1309 unmet=110 fcost=499 fund=2.87 starv=0.08 suff=0.55 fac=3 labs=3
+F1:  05:27:   OIL conn=11 idle=0 bank=59 inc=1147 spend=1147 unmet=73 fcost=499 fund=2.87 starv=0.08 suff=0.55 fac=3 labs=3
+F1:  05:37:   oil dominance changed to: true (11 out of 27 (41%))
+F1:  05:37:   OIL conn=11 idle=0 bank=250 inc=1147 spend=765 unmet=231 fcost=499 fund=2.87 starv=0.07 suff=0.55 fac=3 labs=3
+F1:  05:47:   OIL conn=11 idle=0 bank=74 inc=1147 spend=1244 unmet=247 fcost=499 fund=2.87 starv=0.06 suff=0.56 fac=3 labs=3
+F1:  05:57:   OIL conn=12 idle=0 bank=91 inc=1251 spend=1212 unmet=240 fcost=499 fund=3.13 starv=0.06 suff=0.61 fac=3 labs=3
+F1:  06:07:   OIL conn=12 idle=1 bank=75 inc=1251 spend=1257 unmet=160 fcost=499 fund=3.13 starv=0.05 suff=0.61 fac=3 labs=3
+F1:  06:17:   OIL conn=12 idle=1 bank=158 inc=1251 spend=1089 unmet=212 fcost=499 fund=3.13 starv=0.05 suff=0.61 fac=3 labs=3
+F1:  06:27:   OIL conn=12 idle=2 bank=0 inc=1251 spend=1459 unmet=239 fcost=499 fund=3.13 starv=0.13 suff=0.59 fac=3 labs=3
+F1:  06:37:   OIL conn=12 idle=2 bank=208 inc=1251 spend=974 unmet=317 fcost=499 fund=3.13 starv=0.12 suff=0.59 fac=3 labs=3
+F1:  06:47:   OIL conn=12 idle=2 bank=129 inc=1251 spend=1224 unmet=304 fcost=499 fund=3.13 starv=0.11 suff=0.59 fac=3 labs=3
+F1:  06:57:   oil sufficiency 0.66 (14 connected + 0 idle derricks; income 1386/min, spend 1366/min, starvation 0.10; factory 200/min, lab 71/min) -> 3 factories, 4 labs
+F1:  06:57:   OIL conn=14 idle=0 bank=85 inc=1386 spend=1366 unmet=236 fcost=499 fund=3.47 starv=0.10 suff=0.66 fac=3 labs=4
+F1:  07:07:   OIL conn=14 idle=0 bank=221 inc=1386 spend=1101 unmet=263 fcost=499 fund=3.47 starv=0.09 suff=0.66 fac=3 labs=4
+F1:  07:17:   oil sufficiency 0.54 (12 connected + 2 idle derricks; income 1251/min, spend 1355/min, starvation 0.08; factory 220/min, lab 71/min) -> 3 factories, 3 labs
+F1:  07:17:   OIL conn=12 idle=2 bank=119 inc=1251 spend=1355 unmet=175 fcost=551 fund=2.84 starv=0.08 suff=0.54 fac=3 labs=3
+F1:  07:27:   oil sufficiency 0.64 (14 connected + 0 idle derricks; income 1459/min, spend 1290/min, starvation 0.08; factory 220/min, lab 71/min) -> 3 factories, 4 labs
+F1:  07:27:   OIL conn=14 idle=0 bank=169 inc=1459 spend=1290 unmet=117 fcost=551 fund=3.31 starv=0.08 suff=0.64 fac=3 labs=4
+F1:  07:31:   HVAPFSDS Cannon Rounds
+F1:  07:37:   OIL conn=14 idle=0 bank=12 inc=1459 spend=1660 unmet=175 fcost=551 fund=3.31 starv=0.15 suff=0.61 fac=3 labs=4
+F1:  07:47:   OIL conn=14 idle=0 bank=255 inc=1459 spend=1107 unmet=214 fcost=551 fund=3.31 starv=0.14 suff=0.62 fac=3 labs=4
+F1:  07:57:   OIL conn=14 idle=0 bank=106 inc=1459 spend=1523 unmet=232 fcost=551 fund=3.31 starv=0.13 suff=0.62 fac=3 labs=4
+F1:  08:07:   OIL conn=14 idle=0 bank=83 inc=1459 spend=1548 unmet=248 fcost=551 fund=3.31 starv=0.12 suff=0.62 fac=3 labs=4
+F1:  08:17:   OIL conn=14 idle=0 bank=46 inc=1459 spend=1592 unmet=240 fcost=551 fund=3.31 starv=0.11 suff=0.63 fac=3 labs=4
+F1:  08:27:   OIL conn=14 idle=0 bank=64 inc=1459 spend=1512 unmet=257 fcost=551 fund=3.31 starv=0.10 suff=0.63 fac=3 labs=4
+F1:  08:37:   OIL conn=14 idle=0 bank=15 inc=1459 spend=1593 unmet=172 fcost=551 fund=3.31 starv=0.09 suff=0.63 fac=3 labs=4
+F1:  08:47:   oil sufficiency 0.63 (14 connected + 0 idle derricks; income 1459/min, spend 1544/min, starvation 0.08; factory 220/min, lab 81/min) -> 3 factories, 3 labs
+F1:  08:47:   OIL conn=14 idle=0 bank=17 inc=1459 spend=1544 unmet=114 fcost=551 fund=3.31 starv=0.08 suff=0.63 fac=3 labs=3
+F1:  08:47:   Twin Assault Cannon
+F1:  08:47:   Gas Turbine Generator Mk3
+F1:  08:57:   OIL conn=14 idle=0 bank=35 inc=1459 spend=1480 unmet=232 fcost=551 fund=3.31 starv=0.08 suff=0.64 fac=3 labs=3
+F1:  09:07:   oil sufficiency 0.68 (15 connected + 0 idle derricks; income 1564/min, spend 1362/min, starvation 0.07; factory 220/min, lab 81/min) -> 3 factories, 4 labs
+F1:  09:07:   OIL conn=15 idle=0 bank=108 inc=1564 spend=1362 unmet=290 fcost=551 fund=3.55 starv=0.07 suff=0.68 fac=3 labs=4
+F1:  09:17:   OIL conn=15 idle=0 bank=88 inc=1564 spend=1469 unmet=413 fcost=551 fund=3.55 starv=0.06 suff=0.69 fac=3 labs=4
+F1:  09:27:   OIL conn=15 idle=0 bank=224 inc=1564 spend=1229 unmet=453 fcost=551 fund=3.55 starv=0.06 suff=0.69 fac=3 labs=4
+F1:  09:37:   oil sufficiency 0.74 (16 connected + 0 idle derricks; income 1668/min, spend 1405/min, starvation 0.05; factory 220/min, lab 81/min) -> 4 factories, 4 labs
+F1:  09:37:   OIL conn=16 idle=0 bank=209 inc=1668 spend=1405 unmet=416 fcost=551 fund=3.78 starv=0.05 suff=0.74 fac=4 labs=4
+F1:  09:47:   OIL conn=16 idle=0 bank=145 inc=1668 spend=1621 unmet=337 fcost=551 fund=3.78 starv=0.05 suff=0.74 fac=4 labs=4
+F1:  09:57:   OIL conn=16 idle=0 bank=243 inc=1668 spend=1441 unmet=225 fcost=551 fund=3.78 starv=0.05 suff=0.74 fac=4 labs=4
+F1:  10:07:   OIL conn=16 idle=0 bank=129 inc=1668 spend=1744 unmet=150 fcost=551 fund=3.78 starv=0.04 suff=0.74 fac=4 labs=4
+F1:  10:17:   OIL conn=16 idle=0 bank=165 inc=1668 spend=1647 unmet=100 fcost=551 fund=3.78 starv=0.04 suff=0.74 fac=4 labs=4
+F1:  10:27:   OIL conn=16 idle=0 bank=163 inc=1668 spend=1658 unmet=160 fcost=499 fund=4.18 starv=0.03 suff=0.82 fac=4 labs=4
+F1:  10:37:   OIL conn=16 idle=0 bank=161 inc=1668 spend=1665 unmet=107 fcost=499 fund=4.18 starv=0.03 suff=0.82 fac=4 labs=4
+F1:  10:47:   OIL conn=16 idle=0 bank=147 inc=1668 spend=1694 unmet=160 fcost=499 fund=4.18 starv=0.03 suff=0.82 fac=4 labs=4
+F1:  10:55:   Cannon Autoloader Mk3
+F1:  10:57:   OIL conn=16 idle=0 bank=58 inc=1668 spend=1863 unmet=190 fcost=499 fund=4.18 starv=0.03 suff=0.82 fac=4 labs=4
+F1:  11:03:   HEAP Mortar Shells Mk2
+F1:  11:07:   oil sufficiency 0.91 (16 connected + 0 idle derricks; income 1836/min, spend 1836/min, starvation 0.02; factory 200/min, lab 85/min) -> 5 factories, 4 labs
+F1:  11:07:   OIL conn=16 idle=0 bank=67 inc=1836 spend=1836 unmet=236 fcost=499 fund=4.60 starv=0.02 suff=0.91 fac=5 labs=4
+F1:  11:11:   HVAPFSDS Cannon Rounds Mk2
+F1:  11:17:   OIL conn=16 idle=0 bank=46 inc=1836 spend=1878 unmet=412 fcost=499 fund=4.60 starv=0.02 suff=0.91 fac=5 labs=4
+F1:  11:27:   oil sufficiency 0.87 (16 connected + 0 idle derricks; income 1836/min, spend 1926/min, starvation 0.10; factory 200/min, lab 82/min) -> 4 factories, 4 labs
+F1:  11:27:   OIL conn=16 idle=0 bank=15 inc=1836 spend=1926 unmet=418 fcost=499 fund=4.60 starv=0.10 suff=0.87 fac=4 labs=4
+F1:  11:37:   OIL conn=16 idle=0 bank=184 inc=1836 spend=1558 unmet=525 fcost=499 fund=4.60 starv=0.10 suff=0.88 fac=4 labs=4
+F1:  11:39:   Dense Composite Alloys Mk2
+F1:  11:47:   OIL conn=16 idle=0 bank=18 inc=1836 spend=1983 unmet=632 fcost=499 fund=4.60 starv=0.17 suff=0.84 fac=4 labs=4
+F1:  11:57:   OIL conn=16 idle=0 bank=57 inc=1836 spend=1856 unmet=615 fcost=499 fund=4.60 starv=0.16 suff=0.85 fac=4 labs=4
+F1:  12:07:   OIL conn=16 idle=0 bank=263 inc=1836 spend=1437 unmet=603 fcost=499 fund=4.60 starv=0.14 suff=0.85 fac=4 labs=4
+F1:  12:17:   OIL conn=16 idle=0 bank=89 inc=1836 spend=1918 unmet=533 fcost=499 fund=4.60 starv=0.13 suff=0.86 fac=4 labs=4
+F1:  12:27:   OIL conn=16 idle=0 bank=3 inc=1836 spend=2063 unmet=504 fcost=530 fund=4.33 starv=0.20 suff=0.78 fac=4 labs=4
+F1:  12:37:   OIL conn=16 idle=0 bank=129 inc=1836 spend=1735 unmet=547 fcost=530 fund=4.33 starv=0.19 suff=0.78 fac=4 labs=4
+F1:  12:47:   OIL conn=16 idle=0 bank=168 inc=1836 spend=1691 unmet=521 fcost=530 fund=4.33 starv=0.17 suff=0.79 fac=4 labs=4
+F1:  12:57:   OIL conn=16 idle=0 bank=7 inc=1836 spend=2061 unmet=407 fcost=530 fund=4.33 starv=0.24 suff=0.76 fac=4 labs=4
+F1:  13:07:   OIL conn=16 idle=0 bank=133 inc=1836 spend=1734 unmet=369 fcost=530 fund=4.33 starv=0.22 suff=0.77 fac=4 labs=4
+F1:  13:17:   OIL conn=16 idle=0 bank=147 inc=1836 spend=1740 unmet=376 fcost=530 fund=4.33 starv=0.20 suff=0.78 fac=4 labs=4
+F1:  13:27:   OIL conn=16 idle=0 bank=61 inc=1836 spend=1944 unmet=284 fcost=530 fund=4.33 starv=0.19 suff=0.79 fac=4 labs=4
+F1:  13:37:   OIL conn=16 idle=0 bank=267 inc=1836 spend=1496 unmet=295 fcost=530 fund=4.33 starv=0.17 suff=0.79 fac=4 labs=4
+F1:  13:43:   Cannon Rapid Loader
+F1:  13:47:   OIL conn=16 idle=0 bank=256 inc=1836 spend=1631 unmet=301 fcost=530 fund=4.33 starv=0.16 suff=0.80 fac=4 labs=4
+F1:  13:57:   OIL conn=16 idle=0 bank=250 inc=1836 spend=1712 unmet=338 fcost=530 fund=4.33 starv=0.14 suff=0.80 fac=4 labs=4
+F1:  14:07:   OIL conn=16 idle=0 bank=145 inc=1836 spend=1963 unmet=225 fcost=530 fund=4.33 starv=0.13 suff=0.81 fac=4 labs=4
+F1:  14:17:   OIL conn=16 idle=0 bank=84 inc=1836 spend=2043 unmet=150 fcost=530 fund=4.33 starv=0.12 suff=0.81 fac=4 labs=4
+F1:  14:19:   HEAP Mortar Shells Mk3
+F1:  14:27:   OIL conn=16 idle=0 bank=271 inc=1836 spend=1600 unmet=198 fcost=530 fund=4.33 starv=0.11 suff=0.82 fac=4 labs=4
+F1:  14:37:   OIL conn=16 idle=0 bank=284 inc=1836 spend=1653 unmet=351 fcost=530 fund=4.33 starv=0.10 suff=0.82 fac=4 labs=4
+F1:  14:47:   OIL conn=16 idle=0 bank=298 inc=1836 spend=1686 unmet=357 fcost=530 fund=4.33 starv=0.09 suff=0.83 fac=4 labs=4
+F1:  14:57:   OIL conn=16 idle=0 bank=237 inc=1836 spend=1858 unmet=360 fcost=530 fund=4.33 starv=0.08 suff=0.83 fac=4 labs=4
+F1:  15:07:   OIL conn=16 idle=0 bank=176 inc=1836 spend=1973 unmet=240 fcost=530 fund=4.33 starv=0.08 suff=0.83 fac=4 labs=4
+F1:  15:17:   OIL conn=16 idle=0 bank=190 inc=1836 spend=1899 unmet=160 fcost=530 fund=4.33 starv=0.07 suff=0.83 fac=4 labs=4
+F1:  15:19:   Dense Composite Alloys Mk3
+F1:  15:27:   OIL conn=16 idle=0 bank=134 inc=1836 spend=1990 unmet=107 fcost=530 fund=4.33 starv=0.07 suff=0.84 fac=4 labs=4
+F1:  15:35:   HVAPFSDS Cannon Rounds Mk3
+F1:  15:37:   OIL conn=16 idle=0 bank=123 inc=1836 spend=1961 unmet=196 fcost=530 fund=4.33 starv=0.06 suff=0.84 fac=4 labs=4
+F1:  15:47:   OIL conn=16 idle=0 bank=54 inc=1836 spend=2057 unmet=253 fcost=530 fund=4.33 starv=0.05 suff=0.84 fac=4 labs=4
+F1:  15:57:   OIL conn=16 idle=0 bank=360 inc=1836 spend=1371 unmet=422 fcost=530 fund=4.33 starv=0.05 suff=0.84 fac=4 labs=4
+F1:  16:07:   OIL conn=16 idle=0 bank=7 inc=1836 spend=2232 unmet=314 fcost=530 fund=4.33 starv=0.13 suff=0.81 fac=4 labs=4
+F1:  16:17:   OIL conn=16 idle=0 bank=213 inc=1836 spend=1688 unmet=315 fcost=530 fund=4.33 starv=0.12 suff=0.81 fac=4 labs=4
+F1:  16:27:   OIL conn=16 idle=0 bank=77 inc=1836 spend=2009 unmet=210 fcost=530 fund=4.33 starv=0.11 suff=0.82 fac=4 labs=4
+F1:  16:37:   OIL conn=16 idle=0 bank=196 inc=1836 spend=1714 unmet=140 fcost=530 fund=4.33 starv=0.10 suff=0.82 fac=4 labs=4
+F1:  16:47:   OIL conn=16 idle=0 bank=210 inc=1836 spend=1726 unmet=93 fcost=530 fund=4.33 starv=0.09 suff=0.83 fac=4 labs=4
+F1:  16:57:   OIL conn=16 idle=1 bank=516 inc=1836 spend=1151 unmet=62 fcost=530 fund=4.33 starv=0.08 suff=0.83 fac=4 labs=4
+F1:  17:07:   OIL conn=16 idle=1 bank=268 inc=1836 spend=1875 unmet=42 fcost=530 fund=4.33 starv=0.08 suff=0.83 fac=4 labs=4
+F1:  17:07:   Cannon Rapid Loader Mk2
+F1:  17:17:   OIL conn=16 idle=2 bank=199 inc=1836 spend=2000 unmet=28 fcost=530 fund=4.33 starv=0.07 suff=0.83 fac=4 labs=4
+info    |10:46:55: [displayGameOver:399] Game ended (duration: 31)
+F1:  17:27:   OIL conn=16 idle=2 bank=88 inc=1836 spend=2167 unmet=18 fcost=530 fund=4.33 starv=0.06 suff=0.84 fac=4 labs=4
+F1:  17:35:   Neural Synapse Research Brain
+F1:  17:37:   OIL conn=16 idle=3 bank=159 inc=1836 spend=1915 unmet=150 fcost=530 fund=4.33 starv=0.06 suff=0.84 fac=4 labs=4
+F1:  17:47:   OIL conn=16 idle=4 bank=53 inc=1836 spend=2101 unmet=222 fcost=530 fund=4.33 starv=0.05 suff=0.84 fac=4 labs=4
+F1:  17:57:   oil sufficiency 1.00 (20 connected + 1 idle derricks; income 2295/min, spend 2199/min, starvation 0.05; factory 212/min, lab 85/min) -> 5 factories, 5 labs
+F1:  17:57:   OIL conn=20 idle=1 bank=36 inc=2295 spend=2199 unmet=245 fcost=530 fund=5.41 starv=0.05 suff=1.00 fac=5 labs=5
