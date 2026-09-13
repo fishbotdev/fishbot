@@ -86,8 +86,7 @@ class armyEngineering {
 
 		const DEBUG_ON = false;
 		let debugGrid = create2DGrid(numXCells, numYCells, (...args) => {return "_";});
-		const normalPriorityDerricks = [];
-		const highPriorityDerricks = [];
+		const captureOptions = [];
 
 		// Iterate through the grid, find & remember valid cells
 		for (let gx=0; gx<numXCells; gx++) {
@@ -117,7 +116,7 @@ class armyEngineering {
 							structureData: STRUCTURES["Oil Derrick"],
 							payload: grid[gx][gy]		// needs to have the '.derricks' property to work with the existing system
 						});
-						highPriorityDerricks.push(br);
+						captureOptions.push([d.id, br]);
 						if (DEBUG_ON) debugGrid[gx][gy] = "X";
 						break;
 					} else {
@@ -126,36 +125,19 @@ class armyEngineering {
 							structureData: STRUCTURES["Oil Derrick"],
 							payload: d
 						});
-						normalPriorityDerricks.push([d.id, br]);
+						captureOptions.push([d.id, br]);
 						if (DEBUG_ON) debugGrid[gx][gy] = "X";
 					}
 				}
 			}
 		}
-
-		if (DEBUG_ON) {
-			debug(`prioritiseOilCapTasks() @ ${gameTime} ms`);
-
-			for (let gy=0; gy<numYCells; gy++) {
-				let row = "";
-
-				for (let gx=0; gx<numXCells; gx++) {					
-					row += `${debugGrid[gx][gy]} `;
-				}
-				debug(row);
-			}
-		}
-
-		const result = [...highPriorityDerricks];
-		if (normalPriorityDerricks.length === 0) {
-			return result;
-		}
 		
+		const result = [];
 		// Else, order the tasks in order of decreasing distance from base (assumes state.poi.derricks is in order).
 		state.poi.derricks.forEach(d => {
-			for (let i=0; i<normalPriorityDerricks.length; i++) {
-				if (d.id === normalPriorityDerricks[i][0]) {
-					result.push(normalPriorityDerricks[i][1]);
+			for (let i=0; i<captureOptions.length; i++) {
+				if (d.id === captureOptions[i][0]) {
+					result.push(captureOptions[i][1]);
 					return;
 				}
 			}
