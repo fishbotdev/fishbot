@@ -127,7 +127,7 @@ class TacticalOperationsCenter {
 
 			// Close aborted missions
 			if (md.missionStatus === MISSION_STATUS.ABORT) {
-				if (defined(md.ceaseOrders)) {
+				if (md.ceaseOrders != undefined) {
 					md.ceaseOrders();
 				}
 				md.missionStatus = MISSION_STATUS.FAILED_ABORTED;
@@ -150,14 +150,14 @@ class TacticalOperationsCenter {
 				switch (retval.status) {
 					case MISSION_STATUS.SUCCEEDED:
 
-						if (defined(md.ceaseOrders)) {
+						if (md.ceaseOrders != undefined) {
 							md.ceaseOrders();
 						}
 
 						md.missionStatus = MISSION_STATUS.SUCCEEDED;
 						break;
 					case MISSION_STATUS.FAILED:
-						if (defined(md.ceaseOrders)) {
+						if (md.ceaseOrders != undefined) {
 							md.ceaseOrders();
 						}
 						md.missionStatus = MISSION_STATUS.FAILED;
@@ -208,7 +208,7 @@ class TacticalOperationsCenter {
 	 */
 	#printConstructionDebugOutput(task, missionID, missionFilter=null) {
 		let structureID = '', coordinate = '';
-		if (defined(task.payload)) {
+		if (task.payload != undefined) {
 			structureID = `-- ${task.structureID}`;
 			coordinate = `(${task.payload.x}, ${task.payload.y})`
 		}

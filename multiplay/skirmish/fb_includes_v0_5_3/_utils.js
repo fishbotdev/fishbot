@@ -172,20 +172,6 @@ function getOrdinal(n) {
 
 
 /**
- * Returns `true` if `variable` is either `null` or `undefined`, otherwise, returns `false`.
- * @param {any} variable 
- * @returns {boolean} 
- */
-function defined(variable) { 
-	if (typeof variable !== "undefined") {
-		if (variable !== null) {
-			return true;
-		}
-	}
-	return false;
-}
-
-/**
  * This function implements a 2D-array.
  * 
  * This implementation is used to store the grid cells representation of the map because:
@@ -337,7 +323,7 @@ function isAntiAirDefense(obj) {
 }
 
 function isEnemy(playerID) {
-	if (!defined(playerID)) {
+	if (playerID == undefined) {
 		debug("isEnemy(): playerID is undefined. Check the calling function.");
 	}
 	return !allianceExistsBetween(me, playerID);
