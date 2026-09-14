@@ -391,7 +391,7 @@ function moveBrigadeToAttack(state, brigadeID, groundTargets) {
 			moveToClosestDroid(droid);
 			return;
 		} 
-		if (droid.order === DROID_REPAIR) {			// do not interrupt a repair in progress
+		if (droid.order === DORDER_REPAIR) {			// do not interrupt a repair in progress
 			return;	
 		}
 		const nearby = enumRange(droid.x, droid.y, 8, ALLIES);
