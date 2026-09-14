@@ -292,6 +292,15 @@
  * @property {number} relaxed
  */
 
+/**
+ * How long a ground unit has been unable to move, and the sidestep it was last given to break a head-on deadlock.
+ * @typedef {Object} UnitJamRecord
+ * @property {number} x tile the unit occupied at the previous sampling pass
+ * @property {number} y tile the unit occupied at the previous sampling pass
+ * @property {number} stuckSince `gameTime` when the unit was last seen to move a tile
+ * @property {number} sidestepUntil `gameTime` after which the unit's sidestep order may be overridden again
+ */
+
 
 /*
 	STRATEGIC PARAMETERS

@@ -66,6 +66,11 @@ function scheduleCoreFunctions() {
 		fprof(logistics_runConstruction);
 	}
 	
+	if (state.WORKER_IDS['combat_runJamResolution'][currWorkerID] !== -1) {
+		const combat_runJamResolution = () => hq.runJamResolution(state);
+		fprof(combat_runJamResolution);
+	}
+
 	if (state.WORKER_IDS['combat_runC2'][currWorkerID] !== -1) {
 		const combat_runC2 = () => hq.runCombatOperations(state);
 		fprof(combat_runC2);

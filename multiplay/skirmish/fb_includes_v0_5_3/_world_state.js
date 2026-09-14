@@ -347,6 +347,9 @@ class worldState {
         this.abortedOilSectors = new Map();
         /** @type {Map<number | string, number>} Map from `sectorID` (a derrick ID) to the `gameTime` when a defence-build task was called off as dangerous */
         this.abortedDefenceSectors = new Map();
+
+        /** @type {Map<number, UnitJamRecord>} Map from `droidID` to how long that unit has been unable to move */
+        this.unitJamRecord = new Map();
         
         // Load balancing parameters
         this.botIsActive = true;

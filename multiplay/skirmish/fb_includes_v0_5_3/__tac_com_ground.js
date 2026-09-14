@@ -26,6 +26,9 @@ function returnForRepair(taskForceID) {
 	const HAVE_REPAIR = state.playerInfo[me]["numRepairFacilities"] > 0;
 
 	unitsToRepair.forEach(droid => {
+		if (isSidestepping(state, droid)) {
+			return;
+		}
 		if (HAVE_REPAIR) {
 			orderDroid(droid, DORDER_RTR);
 		} else {
@@ -139,6 +142,9 @@ function moveReservesToShadow(state, reserveGroupIDs, anchorBrigadeID) {
 	const isTooFarAway = (droid) => distSq(droid.x, x, droid.y, y) > REGROUP_RADIUS_SQ;
 
 	const maintainPositionBehind = (droid) => {
+		if (isSidestepping(state, droid)) {
+			return;
+		}
 		if (isTooFarAway(droid)) {
 			orderDroidLoc(droid, DORDER_MOVE, x, y);
 		} else {
@@ -234,6 +240,10 @@ function moveBrigadeToLocation(state, brigadeID, targetX, targetY) {
 	const BRIGADE_CONGESTED = isLocationCongested(state, LOCATION_X, LOCATION_Y, AVG_BODY_SIZE);
 
 	brigadeUnits.forEach(droid => {
+		if (isSidestepping(state, droid)) {
+			return;
+		}
+
 		const DISTSQ_TO_CENTER = distSq(LOCATION_X, droid.x, LOCATION_Y, droid.y);
 		const DISTSQ_TO_TARGET = distSq(targetX, droid.x, targetY, droid.y);
 
@@ -352,6 +362,10 @@ function moveBrigadeToAttack(state, brigadeID, groundTargets) {
 	const moveToClosestDroid = (droid) => orderDroidLoc(droid, DORDER_MOVE, closestDroidToTarget.x, closestDroidToTarget.y);
 	
 	const attackDirectFireTarget = (droid, distSqGroupCenterToTarget) => {
+		if (isSidestepping(state, droid)) {
+			return;
+		}
+
 		const UNIT_ROADBLOCKED = state.mapData.isChokepoint[droid.x][droid.y] && BRIGADE_CONGESTED;
 		const DISTSQ_TO_CENTER = distSq(LOCATION_X, droid.x, LOCATION_Y, droid.y);
 
@@ -475,4 +489,150 @@ function moveBrigadeToAttack(state, brigadeID, groundTargets) {
 			highlightTiles(FIRE_SUPPORT_TARGET.x - RADIUS, FIRE_SUPPORT_TARGET.y - RADIUS, FIRE_SUPPORT_TARGET.x + RADIUS, FIRE_SUPPORT_TARGET.y + RADIUS);
 		}
 	}
+}
+/*
+	HEAD-ON DEADLOCK RESOLUTION
+
+	Two units meeting head-on in a narrow place can each hold a movement order forever without either giving way.
+	The engine's own watchdog does not rescue them: `moveBlocked` needs BLOCK_TIME (6s) of uninterrupted bumping,
+	but it clears that clock whenever the unit turns more than 90 degrees, which is exactly what the deadlock does.
+*/
+
+/** Movement orders FishBot issues which can leave a unit deadlocked against another. `DORDER_RTR` is how units bound for repair travel. */
+const JAM_MOVEMENT_ORDERS = [DORDER_MOVE, DORDER_SCOUT, DORDER_RTR, DORDER_RTB];
+
+const JAM_STUCK_MS = 3000;					// how long a unit must hold a movement order without moving before it counts as deadlocked
+const JAM_PAIR_RADIUS = 2;					// how close two deadlocked units must be to count as blocking each other
+const JAM_MIN_CHOKEPOINT_WIDTH = 2;			// a chokepoint this wide or narrower has no room to pass in, so no sidestep is attempted
+const JAM_SIDESTEP_MS = 2000;				// how long a sidestep is protected from being overridden, if the unit has not moved by then
+
+/**
+ * Reports whether a unit is currently carrying out a sidestep issued by `resolveHeadOnJams`.
+ * Callers which issue movement orders use this to leave that sidestep alone until it completes.
+ * @param {worldState} state 
+ * @param {DroidObject} droid 
+ * @returns {boolean}
+ */
+function isSidestepping(state, droid) {
+	const jamRecord = state.unitJamRecord.get(droid.id);
+	return jamRecord != undefined && gameTime < jamRecord.sidestepUntil;
+}
+
+/**
+ * Reports whether a unit has held a movement order without moving for `JAM_STUCK_MS`, on a chokepoint tile with
+ * enough room beside it for a unit to pass.
+ * @param {worldState} state 
+ * @param {DroidObject} droid 
+ * @returns {boolean}
+ */
+function isDeadlockedAtChokepoint(state, droid) {
+	const HAS_MOVEMENT_ORDER = JAM_MOVEMENT_ORDERS.includes(droid.order);
+	if (!HAS_MOVEMENT_ORDER) {
+		return false;
+	}
+
+	const jamRecord = state.unitJamRecord.get(droid.id);
+	if (jamRecord == undefined) {
+		return false;
+	}
+
+	const STUCK_LONG_ENOUGH = gameTime - jamRecord.stuckSince >= JAM_STUCK_MS;
+	const ON_CHOKEPOINT = state.mapData.isChokepoint[droid.x][droid.y];
+	const ROOM_TO_PASS = state.mapData.chokepointWidth[droid.x][droid.y] > JAM_MIN_CHOKEPOINT_WIDTH;
+
+	return STUCK_LONG_ENOUGH && ON_CHOKEPOINT && ROOM_TO_PASS;
+}
+
+/**
+ * Returns the deadlocked unit nearest to `droid` within `JAM_PAIR_RADIUS`, or `undefined` if there is none.
+ * A unit sharing `droid`'s tile is skipped, because the two give no axis to step away from.
+ * @param {DroidObject} droid 
+ * @param {DroidObject[]} deadlockedUnits 
+ * @returns {DroidObject | undefined}
+ */
+function findDeadlockedOpponent(droid, deadlockedUnits) {
+	let opponent = undefined;
+	let opponentDistSq = JAM_PAIR_RADIUS ** 2;
+
+	for (let i=0; i<deadlockedUnits.length; i++) {
+		const other = deadlockedUnits[i];
+		if (other.id === droid.id) {
+			continue;
+		}
+
+		const squaredDist = distSq(droid.x, other.x, droid.y, other.y);
+		if (squaredDist > 0 && squaredDist <= opponentDistSq) {
+			opponent = other;
+			opponentDistSq = squaredDist;
+		}
+	}
+
+	return opponent;
+}
+
+/**
+ * Returns the tile one step to `droid`'s right of the axis joining it to `opponent`, or `undefined` if that tile
+ * cannot be driven onto. `opponent` derives the same axis reversed, so the two units always step apart.
+ * @param {worldState} state 
+ * @param {DroidObject} droid 
+ * @param {DroidObject} opponent 
+ * @returns {{x: number, y: number} | undefined}
+ */
+function findSidestepTile(state, droid, opponent) {
+	const axisX = opponent.x - droid.x;
+	const axisY = opponent.y - droid.y;
+
+	const sidestepX = droid.x + Math.sign(axisY);
+	const sidestepY = droid.y - Math.sign(axisX);
+
+	const ON_MAP = sidestepX >= 0 && sidestepX < mapWidth && sidestepY >= 0 && sidestepY < mapHeight;
+	if (!ON_MAP) {
+		return undefined;
+	}
+
+	if (!state.mapData.isWalkable[sidestepX][sidestepY]) {
+		return undefined;
+	}
+
+	// `isWalkable` is built from terrain alone, so structures and other units are checked here instead.
+	const occupants = enumRange(sidestepX, sidestepY, 1, ALL_PLAYERS, false);
+	const TILE_OCCUPIED = occupants.some(obj => obj.x === sidestepX && obj.y === sidestepY);
+	if (TILE_OCCUPIED) {
+		return undefined;
+	}
+
+	return {x: sidestepX, y: sidestepY};
+}
+
+/**
+ * TAC SOP: BREAK A HEAD-ON DEADLOCK BY PASSING ON THE RIGHT
+ *
+ * Both units in a deadlocked pair derive the same axis between them and step to their own right of it, so the two
+ * sidesteps are always in opposite directions and the lane clears without either unit having to yield to the other.
+ * A unit with nowhere to step is left on the order it already has.
+ * @param {worldState} state 
+ * @param {DroidObject[]} groundUnits 
+ * @returns {void}
+ */
+function resolveHeadOnJams(state, groundUnits) {
+	const deadlockedUnits = groundUnits.filter(droid => isDeadlockedAtChokepoint(state, droid));
+
+	deadlockedUnits.forEach(droid => {
+		if (isSidestepping(state, droid)) {
+			return;
+		}
+
+		const opponent = findDeadlockedOpponent(droid, deadlockedUnits);
+		if (opponent == undefined) {
+			return;
+		}
+
+		const sidestep = findSidestepTile(state, droid, opponent);
+		if (sidestep == undefined) {
+			return;
+		}
+
+		state.unitJamRecord.get(droid.id).sidestepUntil = gameTime + JAM_SIDESTEP_MS;
+		orderDroidLoc(droid, DORDER_MOVE, sidestep.x, sidestep.y);
+	});
 }

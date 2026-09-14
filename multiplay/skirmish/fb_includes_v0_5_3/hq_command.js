@@ -193,6 +193,7 @@ class CommandCenter {
 		// Update `_run.js` if any of the below task names change.
 		this.TASK_SCHEDULE = {
 			'combat_runC2': {"requestsPerMin": 60},
+			'combat_runJamResolution': {"requestsPerMin": 60},
 			'global_missionManager': {"requestsPerMin": 60},
 			'logistics_runConstruction': {"requestsPerMin": 60},
 			'logistics_runResupplyLogistics': {"requestsPerMin": 30},
@@ -1000,6 +1001,19 @@ class CommandCenter {
 		const aviationTargets = this.#prioritiseAviationTargets(state, this.AVIATION_PARAMETERS);
 
 		this.toc.assignAviationMissions(state, aviationTargets);	
+	}
+
+	/**
+	 * Samples ground unit movement and breaks any head-on deadlock found at a chokepoint.
+	 * Runs over every ground unit rather than over the brigades, because a unit bound for repair is the most
+	 * common half of such a deadlock and it does not belong to a brigade while it travels.
+	 * @param {worldState} state 
+	 * @returns {void}
+	 */
+	runJamResolution(state) {
+		const groundUnits = enumDroid(me).filter(droid => !isVTOL(droid));
+		this.toc.updateUnitJamRecord(state, groundUnits);
+		resolveHeadOnJams(state, groundUnits);
 	}
 
 	/**

@@ -913,6 +913,43 @@ class TacticalOperationsCenter {
 	}
 
 	/**
+	 * Records how long each ground unit has been unable to move, and forgets units which no longer exist.
+	 * A unit which has moved at least one tile since the previous pass counts as making progress, which also
+	 * releases any sidestep it was given.
+	 * @param {worldState} state 
+	 * @param {DroidObject[]} groundUnits 
+	 * @returns {void}
+	 */
+	updateUnitJamRecord(state, groundUnits) {
+		const jamRecords = state.unitJamRecord;
+		const livingUnitIDs = new Set();
+
+		groundUnits.forEach(droid => {
+			livingUnitIDs.add(droid.id);
+
+			const jamRecord = jamRecords.get(droid.id);
+			if (jamRecord == undefined) {
+				jamRecords.set(droid.id, {x: droid.x, y: droid.y, stuckSince: gameTime, sidestepUntil: 0});
+				return;
+			}
+
+			const UNIT_HAS_MOVED = distSq(droid.x, jamRecord.x, droid.y, jamRecord.y) >= 1;
+			if (UNIT_HAS_MOVED) {
+				jamRecord.x = droid.x;
+				jamRecord.y = droid.y;
+				jamRecord.stuckSince = gameTime;
+				jamRecord.sidestepUntil = 0;
+			}
+		});
+
+		jamRecords.forEach((_, droidID) => {
+			if (!livingUnitIDs.has(droidID)) {
+				jamRecords.delete(droidID);
+			}
+		});
+	}
+
+	/**
 	 * This function writes `location` to `state.brigades[id].location`.
 	 * @param {worldState} state 
 	 * @param {number} brigadeID 
