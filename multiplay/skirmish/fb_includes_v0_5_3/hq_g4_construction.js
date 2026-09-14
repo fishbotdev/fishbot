@@ -60,20 +60,13 @@ class armyEngineering {
 		Algorithm:
 		Use the grid system to:
 		- Find cells with unclaimed derricks											-- uses state.fields.unclaimedDerricksInCell[gx][gy]
-		- Remove derricks which are already claimed									-- uses the DerrickObject's own `isClaimed`
+		- Remove derricks which are already claimed										-- uses the DerrickObject's own `isClaimed`
 		- Remove cells with high threat from enemy struct concentrations 				-- uses state.grid.grid[gx][gy].targetStructures 
 		- Remove cells with defensive structures										-- uses state.fields.enemyStaticDefenceThreat
 		- Remove cells with enemy offensive units										-- uses state.fields.enemyUnitThreat
 		- Remove cells with all derricks already being claimed in active missions		-- uses this.toc.getActiveConstructionMissions()
 		
 		-> if all conditions satisfied, push derrick ID to be used to filter state.poi.derricks
-		
-		Iterate through the ordered list
-		1. Skip if id not found in grid entries
-		2. >= 4 derricks which are close to one another (multiple in one grid); move to front of list
-			2a. create new CONSTRUCT_ALL_DERRICKS_IN_SECTOR
-		3. Else, continue (the ordered list already orders the derricks in order of increasing distance from base)
-			3a. create new CONSTRUCT_OIL_DERRICK for single, CONSTRUCT_ALL_DERRICKS_IN_SECTOR for multiple
 		*/
 		const grid = state.grid.grid;
 		const numXCells = state.grid.numXCells;
@@ -84,10 +77,7 @@ class armyEngineering {
 		const enemyUnitThreat = state.fields.enemyUnitThreat;
 		const isReachable = state.mapData.isReachable;
 
-		const DEBUG_ON = false;
-		let debugGrid = create2DGrid(numXCells, numYCells, (...args) => {return "_";});
-		const normalPriorityDerricks = [];
-		const highPriorityDerricks = [];
+		const captureOptions = [];
 
 		// Iterate through the grid, find & remember valid cells
 		for (let gx=0; gx<numXCells; gx++) {
@@ -107,55 +97,23 @@ class armyEngineering {
 
 					// Check for existing missions
 					if (activeOilCapTaskIDs.indexOf(d.id) !== -1) continue; 									// found 'CONSTRUCT_OIL_DERRICK' task
-					if (activeOilCapTaskIDs.indexOf(grid[gx][gy].id) !== -1) continue;							// found the same 'CONSTRUCT_ALL_DERRICKS_IN_SECTOR' task
 
-					// if (tileIsBurning(d.x, d.y)) continue;		// seems to be worse
-
-					if (derricksInCell.length >= 4) {
-						const br = this.translateIntoBuildRequest({
-							missionType: MISSION_TYPE.CONSTRUCT_ALL_DERRICKS_IN_SECTOR, 
-							structureData: STRUCTURES["Oil Derrick"],
-							payload: grid[gx][gy]		// needs to have the '.derricks' property to work with the existing system
-						});
-						highPriorityDerricks.push(br);
-						if (DEBUG_ON) debugGrid[gx][gy] = "X";
-						break;
-					} else {
-						const br = this.translateIntoBuildRequest({
-							missionType: MISSION_TYPE.CONSTRUCT_OIL_DERRICK, 
-							structureData: STRUCTURES["Oil Derrick"],
-							payload: d
-						});
-						normalPriorityDerricks.push([d.id, br]);
-						if (DEBUG_ON) debugGrid[gx][gy] = "X";
-					}
+					const br = this.translateIntoBuildRequest({
+						missionType: MISSION_TYPE.CONSTRUCT_OIL_DERRICK, 
+						structureData: STRUCTURES["Oil Derrick"],
+						payload: d
+					});
+					captureOptions.push([d.id, br]);
 				}
 			}
-		}
-
-		if (DEBUG_ON) {
-			debug(`prioritiseOilCapTasks() @ ${gameTime} ms`);
-
-			for (let gy=0; gy<numYCells; gy++) {
-				let row = "";
-
-				for (let gx=0; gx<numXCells; gx++) {					
-					row += `${debugGrid[gx][gy]} `;
-				}
-				debug(row);
-			}
-		}
-
-		const result = [...highPriorityDerricks];
-		if (normalPriorityDerricks.length === 0) {
-			return result;
 		}
 		
-		// Else, order the tasks in order of decreasing distance from base (assumes state.poi.derricks is in order).
+		const result = [];
+		// Intent: Order the tasks in order of increasing distance from base (assumes state.poi.derricks is in order).
 		state.poi.derricks.forEach(d => {
-			for (let i=0; i<normalPriorityDerricks.length; i++) {
-				if (d.id === normalPriorityDerricks[i][0]) {
-					result.push(normalPriorityDerricks[i][1]);
+			for (let i=0; i<captureOptions.length; i++) {
+				if (d.id === captureOptions[i][0]) {
+					result.push(captureOptions[i][1]);
 					return;
 				}
 			}
@@ -165,18 +123,18 @@ class armyEngineering {
 
 	/**
 	 * Generates options for constructing defenses near oil derricks.
-	 * @param {worldState} state 
-	 * @param {(number | string)[]} activeDefenceBuildTaskIDs 
+	 * @param {worldState} state
+	 * @param {(number | string)[]} excludedDerrickIDs derricks already covered by an active defence-build task, or cooling down after one was called off as dangerous
 	 * @returns {Array}
 	 */
-	generateOilDefenceConstructionOptions(state, activeDefenceBuildTaskIDs) {
+	generateOilDefenceConstructionOptions(state, excludedDerrickIDs) {
 		/*
 		Algorithm:
+		- Seed the derrick grouping with the excluded derricks, so an excluded derrick denies its whole cluster
 		- For each derrick in `state.poi.derricks`
-			. If grid cell previously processed, continue
+			. If grid cell previously processed (or excluded), continue
 			. Check static defence threat grid (continue if high threat), check unit defence threat grid (after five mins)
 			. Check grid ref for friendly defences in sector (continue if done)
-			. Check active missions (continue if already active)
 			. Check grid ref for other derricks in sector ( -- influences how many defences)
 			. Check owner ( -- influences offensive vs friendly oil; if other types of defences are needed) or if tileIsBurning 
 			. Build one defence per undefended location also 
@@ -204,8 +162,11 @@ class armyEngineering {
 			payload: derrickObj
 		});
 
-		let highPrioOil = [], normalPrioOil = [];		
-		let seenDerricks = [];
+		let highPrioOil = [], normalPrioOil = [];
+
+		// An excluded derrick denies its whole cluster, not just its own tile: seeding the proximity grouping
+		// below with them means a site we were driven off does not simply reappear at the derrick next door.
+		let seenDerricks = derricks.filter(d => excludedDerrickIDs.includes(d.id));
 
 		const BUILT_DEFENCES = OBJ_FLAGS.DEFENSIVE_STRUCTURE | OBJ_FLAGS.IS_BUILT;
 
@@ -225,16 +186,11 @@ class armyEngineering {
 				}
 			}
 			if (previouslySeen) {
-				// debug(`skipped ${d.id}: already seen`);
+				// debug(`skipped ${d.id}: already seen, or excluded (active mission / cooling down)`);
 				continue;
 			}
 
-			seenDerricks.push(d);			
-
-			if (activeDefenceBuildTaskIDs.includes(d.id)) {
-				// debug(`skipped ${d.id}: activeMission`);
-				continue;
-			}
+			seenDerricks.push(d);
 
 			if (enemyUnitThreat[d.gx][d.gy] > 0) {
 				// debug(`skipped ${d.id}: unit threat`);
@@ -249,49 +205,27 @@ class armyEngineering {
 			// Intent: enumRange is used as this offers better granularity compared to directly accessing the grid
 			const nearby = state.grid.enumRangeLazy(d.x, d.y, PROXIMITY_RADIUS, true, true);
 			
-			let friendlyDefencesNearby = 0, friendlyDerricksNearby = 0;
-			nearby['friendlyStructures'].forEach(obj => {	
+			let friendlyDefencesNearby = 0;
+			nearby['friendlyStructures'].forEach(obj => {
 				const flags = obj.flags;
-
-				if (flags & OBJ_FLAGS.RESOURCE_EXTRACTOR) {
-					friendlyDerricksNearby++;
-					
-					const friendlyDerrickID = obj.id;
-					if (activeDefenceBuildTaskIDs.includes(friendlyDerrickID)) {
-						previouslySeen = true;
-					}
-				}
 
 				if ((flags & BUILT_DEFENCES) === BUILT_DEFENCES && !(flags & OBJ_FLAGS.ADA)) {
 					friendlyDefencesNearby++;
 				}
 			});
 
-			if (previouslySeen)  {
-				continue;
-			}
-
 			let enemyDefencesNearby = 0, enemyDerricksNearby = 0;
-			nearby['targetStructures'].forEach(obj => {	
+			nearby['targetStructures'].forEach(obj => {
 				const flags = obj.flags;
 
 				if (flags & OBJ_FLAGS.RESOURCE_EXTRACTOR) {
 					enemyDerricksNearby++;
-
-					const enemyDerrickID = obj.id;
-					if (activeDefenceBuildTaskIDs.includes(enemyDerrickID)) {
-						previouslySeen = true;
-					}
 				}
 
 				if ((flags & BUILT_DEFENCES) === BUILT_DEFENCES && !(flags & OBJ_FLAGS.ADA)) {
 					enemyDefencesNearby++;
 				}
 			});
-
-			if (previouslySeen)  {
-				continue;
-			}
 
 			if (enemyDefencesNearby > 0) {
 				// debug(`skipped ${d.id}: friendlyDefencesNearby`);
@@ -324,16 +258,10 @@ class armyEngineering {
 			
 			const regularContestedDerrick = tileIsBurning(d.x, d.y) || (enemyDerricksNearby > 0 && friendlyDefencesNearby === 0);		
 			if (regularContestedDerrick) {
-				normalPrioOil.unshift(makePrimaryDefence(d));
+				highPrioOil.push(makePrimaryDefence(d));
 			} else {
 				normalPrioOil.push(makePrimaryDefence(d));
 			}
-		}
-
-		if (false) {
-			debug(`generateOilDefenceConstructionOptions() @${gameTime}`);
-			debug(`	highPrio: ${highPrioOil}`);
-			debug(`	normalPrio: ${normalPrioOil}`);
 		}
 
 		return [...highPrioOil, ...normalPrioOil];
@@ -481,22 +409,24 @@ class armyEngineering {
 				
 		const baseBuildOrder_T2NoBase = [
 			STRUCTURES["Factory"],
-			STRUCTURES["Factory"],
+			STRUCTURES["Cyborg Factory"],	
 			STRUCTURES["Command Center"],
 			STRUCTURES["Power Generator"],	
 			STRUCTURES["Power Generator"],	
 			STRUCTURES["Power Generator"],		
 			STRUCTURES["Power Module"],		// The script will automatically find a place to put this module.
 			STRUCTURES["Power Generator"],
-			STRUCTURES["Cyborg Factory"],		
 			STRUCTURES["Repair Facility"],
 			STRUCTURES["Factory Module"],
 			STRUCTURES["Factory Module"],
 			STRUCTURES["Power Module"],			
 			STRUCTURES["Research Facility"],
 			STRUCTURES["Research Module"],
-			STRUCTURES["Power Module"],
 			STRUCTURES["VTOL Factory"],
+			STRUCTURES["Factory Module"],
+			STRUCTURES["Factory Module"],
+
+			STRUCTURES["Power Module"],
 			STRUCTURES["Power Module"],	
 			STRUCTURES["VTOL Rearming Pad"],
 			STRUCTURES["Cyborg Factory"],
@@ -508,16 +438,11 @@ class armyEngineering {
 			STRUCTURES["Research Module"],
 
 			STRUCTURES["VTOL Rearming Pad"],
-			STRUCTURES["Factory Module"],
-			STRUCTURES["Factory Module"],
 
 			STRUCTURES["Power Generator"],		// inserting here in the case that more power than expected is captured
 				STRUCTURES["Power Module"],
-
-			STRUCTURES["Research Facility"],
-			STRUCTURES["Research Module"],
-			STRUCTURES["VTOL Rearming Pad"],
-			STRUCTURES["VTOL Rearming Pad"],
+			STRUCTURES["Factory"],
+			STRUCTURES["Factory Module"],
 			STRUCTURES["Factory Module"],
 
 			STRUCTURES["Research Facility"],
@@ -526,7 +451,11 @@ class armyEngineering {
 			STRUCTURES["VTOL Rearming Pad"],
 			STRUCTURES["Research Facility"],
 			STRUCTURES["Research Module"],
-			STRUCTURES["Factory Module"],
+			STRUCTURES["VTOL Rearming Pad"],
+			STRUCTURES["VTOL Rearming Pad"],
+			STRUCTURES["Research Facility"],
+			STRUCTURES["Research Module"],
+
 			STRUCTURES["Factory"],
 			STRUCTURES["Factory Module"],
 			STRUCTURES["Factory Module"],
@@ -603,11 +532,21 @@ class armyEngineering {
 			if (structCount >= state.getMaxStructureCount(STRUCTURE_NAME)) {
 				continue;
 			}
-			// 1. Adapt power generators to number of derricks
+			// 1. Adapt base structures to oil situation
 			if (["Power Generator", "Power Module"].includes(STRUCTURE_NAME)) {
-				if (structCount >= parameters.MAX_GENERATORS_AND_POWER_MODULES) {
+				if (structCount >= parameters.DYNAMIC_POWER_GENERATOR_CAP) {
 					continue;
 				}	
+			}
+			if (["Factory", "Cyborg Factory", "VTOL Factory"].includes(STRUCTURE_NAME)) {
+				if (structCount >= parameters.DYNAMIC_FACTORY_CAP) {
+					continue;
+				}
+			}
+			if (["Research Facility", "Research Module"].includes(STRUCTURE_NAME)) {
+				if (structCount >= parameters.DYNAMIC_RESEARCH_LAB_CAP) {
+					continue;
+				}
 			}
 			// 2. Remove VTOLs if unused
 			if (["VTOL Factory", "VTOL Rearming Pad"].includes(STRUCTURE_NAME)) {
@@ -615,11 +554,8 @@ class armyEngineering {
 					continue;
 				}
 			}
-			// 3. Remove extra factory modules (e.g. as a result of VTOL Factory removal).
+			// 3.0 Remove extra factory modules 
 			if (["Factory Module"].includes(STRUCTURE_NAME)) {
-				if (!parameters.SHOULD_USE_FACTORY_MODULES) {
-					continue;
-				}
 				const factoryCount = structureCounts.get(STRUCTURES["Factory"])['count'];
 				const vtolFactoryCount = structureCounts.get(STRUCTURES["VTOL Factory"])['count'];
 				const factoryModuleCount = structureCounts.get(STRUCTURES["Factory Module"])['count'];
@@ -629,6 +565,17 @@ class armyEngineering {
 					continue;
 				}
 			}
+			// 3.1 Repeat for research modules
+			if (["Research Module"].includes(STRUCTURE_NAME)) {
+				const labCount = structureCounts.get(STRUCTURES["Research Facility"])['count'];
+				const researchModuleCount = structureCounts.get(STRUCTURES["Research Module"])['count'];
+
+				const MAXIMUM_RESEARCH_MODULES_REACHED = (researchModuleCount >= labCount);
+				if (MAXIMUM_RESEARCH_MODULES_REACHED) {
+					continue;
+				}
+			}
+
 			// 4. Match rearming pads to the number of VTOLs
 			if (["VTOL Rearming Pad"].includes(STRUCTURE_NAME)) {
 				if (structCount >= parameters.MAX_VTOL_REARMING_PADS) {

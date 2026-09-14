@@ -35,6 +35,7 @@ from tkinter import filedialog, messagebox
 import subprocess
 import ctypes
 import sys
+import time
 
 # =============================================================================
 # Constants
@@ -47,6 +48,14 @@ else:
 
 SETTINGS_FILE = APP_DIR / "__spectate_map_settings.json"
 BATCH_FILE = APP_DIR / "__spectate_map.bat"
+
+MACRO_SCRIPT_NAME = "run_debug_gamespeed_up.ahk"
+
+# The macro only needs to run once per computer restart, so the checkbox starts
+# ticked for the first run after a boot and unticked afterwards. Boot time is
+# derived from the system uptime, so allow some slack for clock adjustments
+# between runs.
+BOOT_MATCH_TOLERANCE_SECONDS = 120
 
 
 DEFAULT_TESTS_DIR = os.path.join(
@@ -97,6 +106,55 @@ status_label = None
 
 run_button = None
 
+launch_macro_var = None
+
+
+# =============================================================================
+# Boot Session
+# =============================================================================
+
+def get_boot_time():
+    """
+    Approximate epoch time of the current Windows boot, from the system uptime.
+    Returns None when that cannot be determined (any non-Windows platform), in
+    which case the macro checkbox simply starts ticked every time.
+    """
+
+    try:
+        uptime_ms = ctypes.windll.kernel32.GetTickCount64()
+    except Exception:
+        return None
+
+    return time.time() - (uptime_ms / 1000.0)
+
+
+def macro_already_launched():
+    """
+    True when we have already launched the macro during the boot we are in now.
+    The macro stays resident once started, so there is nothing to gain from
+    launching it again until the computer is restarted.
+    """
+
+    saved_boot = state["settings"].get("macro_launched_boot")
+    current_boot = get_boot_time()
+
+    if saved_boot is None or current_boot is None:
+        return False
+
+    try:
+        return abs(float(saved_boot) - current_boot) < BOOT_MATCH_TOLERANCE_SECONDS
+    except (TypeError, ValueError):
+        return False
+
+
+def remember_macro_launched():
+
+    try:
+        state["settings"]["macro_launched_boot"] = get_boot_time()
+        save_settings()
+    except Exception:
+        pass
+
 
 # =============================================================================
 # Settings
@@ -115,6 +173,9 @@ def load_settings():
 
     if "recent" not in state["settings"]:
         state["settings"]["recent"] = []
+
+    state["settings"].pop("launch_macro", None)
+    state["settings"].pop("launch_macro_boot", None)
 
 
 def save_settings():
@@ -265,6 +326,29 @@ def update_filter(*args):
         ]
 
     refresh_tests_list()
+
+    #
+    # `refresh_tests_list` wipes the highlight, so re-apply it to the cached
+    # selection. A selection the search has hidden is dropped instead: running
+    # it would launch a test that is no longer anywhere in the list.
+    #
+
+    if state["selected"] is not None:
+
+        if state["selected"] in state["filtered_tests"]:
+
+            if tests_listbox is not None:
+                index = state["filtered_tests"].index(state["selected"])
+                tests_listbox.selection_set(index)
+                tests_listbox.see(index)
+
+        else:
+
+            select_filename(None)
+
+            if recent_listbox is not None:
+                recent_listbox.selection_clear(0, tk.END)
+
     set_status(f"{len(state['filtered_tests'])} matching tests")
 
 
@@ -315,6 +399,20 @@ def on_test_selected(event=None):
 
     select_filename(filename)
 
+    #
+    # `on_recent_selected` mirrors its pick into this list, so only drop the
+    # recent highlight once the two lists actually disagree.
+    #
+
+    recent_selection = recent_listbox.curselection()
+
+    if recent_selection:
+
+        recent_filename = state["settings"]["recent"][recent_selection[0]]
+
+        if recent_filename != filename:
+            recent_listbox.selection_clear(0, tk.END)
+
 
 def on_recent_selected(event=None):
 
@@ -325,19 +423,33 @@ def on_recent_selected(event=None):
 
     filename = state["settings"]["recent"][selection[0]]
 
-    if filename in state["all_tests"]:
+    if filename not in state["all_tests"]:
 
-        select_filename(filename)
+        #
+        # The file has gone from the tests folder. Drop the selection rather
+        # than leaving the previous pick cached, which would quietly run that
+        # earlier test instead.
+        #
 
-        search_var.set("")
+        select_filename(None)
 
-        try:
-            index = state["filtered_tests"].index(filename)
-            tests_listbox.selection_clear(0, tk.END)
-            tests_listbox.selection_set(index)
-            tests_listbox.see(index)
-        except ValueError:
-            pass
+        tests_listbox.selection_clear(0, tk.END)
+
+        set_status(f"{filename} is no longer in the tests folder")
+
+        return
+
+    select_filename(filename)
+
+    search_var.set("")
+
+    try:
+        index = state["filtered_tests"].index(filename)
+        tests_listbox.selection_clear(0, tk.END)
+        tests_listbox.selection_set(index)
+        tests_listbox.see(index)
+    except ValueError:
+        pass
 
 
 # =============================================================================
@@ -348,6 +460,57 @@ def on_escape(event=None):
 
     search_var.set("")
     return "break"
+
+
+# =============================================================================
+# Game Speed Up Macro
+# =============================================================================
+
+def find_macro_script():
+    """
+    Locate `run_debug_gamespeed_up.ahk`. It lives in the root `fishbot` folder,
+    which is where the built .exe is run from, but also look a couple of levels
+    up so this still works when running from source.
+    """
+
+    candidates = [
+        APP_DIR,
+        APP_DIR.parent,
+        APP_DIR.parent.parent,
+    ]
+
+    for folder in candidates:
+
+        path = folder / MACRO_SCRIPT_NAME
+
+        if path.is_file():
+            return path
+
+    return None
+
+
+def launch_macro():
+    """
+    Best effort launch of the game speed up macro. AutoHotkey may not be
+    installed, the script may be missing, or we may not be on Windows at all -
+    in every case we silently carry on, the macro is only a convenience.
+
+    Returns True when the script was handed to the shell, so that a failed
+    launch is retried on the next run rather than assumed done for this boot.
+    """
+
+    try:
+        path = find_macro_script()
+
+        if path is None:
+            return False
+
+        os.startfile(str(path))
+
+        return True
+
+    except Exception:
+        return False
 
 
 # =============================================================================
@@ -367,6 +530,8 @@ def create_gui():
     global status_label
 
     global run_button
+
+    global launch_macro_var
 
     # Fix the blurry text by enabling DPI awareness
     try:
@@ -431,6 +596,11 @@ def create_gui():
 
     scrollbar.pack(side="right", fill="y")
     tests_listbox.pack(side="left", fill="both", expand=True)
+
+    tests_listbox.bind(
+        "<<ListboxSelect>>",
+        on_test_selected,
+    )
 
     #
     # Recent
@@ -508,6 +678,19 @@ def create_gui():
         side="right",
     )
 
+    launch_macro_var = tk.BooleanVar(
+        value=not macro_already_launched(),
+    )
+
+    tk.Checkbutton(
+        button_frame,
+        text="Launch gamespeed up macro",
+        variable=launch_macro_var,
+    ).pack(
+        side="right",
+        padx=(0, 10),
+    )
+
     #
     # Status
     #
@@ -567,6 +750,10 @@ def run_selected(event=None):
 
     with open(BATCH_FILE, "w", newline="\r\n") as f:
         f.write(batch_contents)
+
+    if launch_macro_var is not None and launch_macro_var.get():
+        if launch_macro():
+            remember_macro_launched()
 
     root.destroy()
 
