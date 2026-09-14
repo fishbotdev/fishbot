@@ -193,7 +193,7 @@ class CommandCenter {
 		// Update `_run.js` if any of the below task names change.
 		this.TASK_SCHEDULE = {
 			'combat_runC2': {"requestsPerMin": 60},
-			'combat_runJamResolution': {"requestsPerMin": 60},
+			'combat_runJamResolution': {"requestsPerMin": 20},
 			'global_missionManager': {"requestsPerMin": 60},
 			'logistics_runConstruction': {"requestsPerMin": 60},
 			'logistics_runResupplyLogistics': {"requestsPerMin": 30},

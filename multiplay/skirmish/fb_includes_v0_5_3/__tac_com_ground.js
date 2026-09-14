@@ -502,9 +502,9 @@ function moveBrigadeToAttack(state, brigadeID, groundTargets) {
 const JAM_MOVEMENT_ORDERS = [DORDER_MOVE, DORDER_SCOUT, DORDER_RTR, DORDER_RTB];
 
 const JAM_STUCK_MS = 3000;					// how long a unit must hold a movement order without moving before it counts as deadlocked
-const JAM_PAIR_RADIUS = 2;					// how close two deadlocked units must be to count as blocking each other
+const JAM_PAIR_RADIUS = 2;					// how close another ground unit must be to count as blocking a deadlocked unit
 const JAM_MIN_CHOKEPOINT_WIDTH = 2;			// a chokepoint this wide or narrower has no room to pass in, so no sidestep is attempted
-const JAM_SIDESTEP_MS = 2000;				// how long a sidestep is protected from being overridden, if the unit has not moved by then
+const JAM_SIDESTEP_MS = 3000;				// how long a sidestep is protected from being overridden, if the unit has not moved by then
 
 /**
  * Reports whether a unit is currently carrying out a sidestep issued by `resolveHeadOnJams`.
@@ -544,30 +544,35 @@ function isDeadlockedAtChokepoint(state, droid) {
 }
 
 /**
- * Returns the deadlocked unit nearest to `droid` within `JAM_PAIR_RADIUS`, or `undefined` if there is none.
- * A unit sharing `droid`'s tile is skipped, because the two give no axis to step away from.
+ * Returns the ground unit nearest to `droid` within `JAM_PAIR_RADIUS` which is standing in its way.
+ * Any ground unit counts, whatever its type, order or group: a truck laying a structure, an idle sensor and a
+ * deadlocked tank all obstruct the same way. A unit sharing `droid`'s tile is skipped, because the two give no
+ * axis to step away from. VTOLs are skipped because they fly over ground traffic rather than blocking it.
  * @param {DroidObject} droid 
- * @param {DroidObject[]} deadlockedUnits 
  * @returns {DroidObject | undefined}
  */
-function findDeadlockedOpponent(droid, deadlockedUnits) {
-	let opponent = undefined;
-	let opponentDistSq = JAM_PAIR_RADIUS ** 2;
+function findBlockingUnit(droid) {
+	const nearbyObjects = enumRange(droid.x, droid.y, JAM_PAIR_RADIUS, ALLIES, false);
 
-	for (let i=0; i<deadlockedUnits.length; i++) {
-		const other = deadlockedUnits[i];
-		if (other.id === droid.id) {
+	let blocker = undefined;
+	let blockerDistSq = JAM_PAIR_RADIUS ** 2;
+
+	for (let i=0; i<nearbyObjects.length; i++) {
+		const obj = nearbyObjects[i];
+
+		const IS_GROUND_UNIT = obj.type === DROID && !isVTOL(obj);
+		if (!IS_GROUND_UNIT || obj.id === droid.id) {
 			continue;
 		}
 
-		const squaredDist = distSq(droid.x, other.x, droid.y, other.y);
-		if (squaredDist > 0 && squaredDist <= opponentDistSq) {
-			opponent = other;
-			opponentDistSq = squaredDist;
+		const squaredDist = distSq(droid.x, obj.x, droid.y, obj.y);
+		if (squaredDist > 0 && squaredDist <= blockerDistSq) {
+			blocker = obj;
+			blockerDistSq = squaredDist;
 		}
 	}
 
-	return opponent;
+	return blocker;
 }
 
 /**
@@ -607,27 +612,27 @@ function findSidestepTile(state, droid, opponent) {
 /**
  * TAC SOP: BREAK A HEAD-ON DEADLOCK BY PASSING ON THE RIGHT
  *
- * Both units in a deadlocked pair derive the same axis between them and step to their own right of it, so the two
- * sidesteps are always in opposite directions and the lane clears without either unit having to yield to the other.
+ * A deadlocked unit steps to its own right of the axis joining it to whatever is blocking it. Where the blocker is
+ * itself a deadlocked unit it derives the same axis reversed, so the pair always steps apart and the lane clears
+ * without either having to yield; where the blocker is standing still, only the deadlocked unit moves around it.
  * A unit with nowhere to step is left on the order it already has.
  * @param {worldState} state 
  * @param {DroidObject[]} groundUnits 
  * @returns {void}
  */
 function resolveHeadOnJams(state, groundUnits) {
-	const deadlockedUnits = groundUnits.filter(droid => isDeadlockedAtChokepoint(state, droid));
-
-	deadlockedUnits.forEach(droid => {
-		if (isSidestepping(state, droid)) {
+	groundUnits.forEach(droid => {
+		const NEEDS_HELP = isDeadlockedAtChokepoint(state, droid) && !isSidestepping(state, droid);
+		if (!NEEDS_HELP) {
 			return;
 		}
 
-		const opponent = findDeadlockedOpponent(droid, deadlockedUnits);
-		if (opponent == undefined) {
+		const blocker = findBlockingUnit(droid);
+		if (blocker == undefined) {
 			return;
 		}
 
-		const sidestep = findSidestepTile(state, droid, opponent);
+		const sidestep = findSidestepTile(state, droid, blocker);
 		if (sidestep == undefined) {
 			return;
 		}
