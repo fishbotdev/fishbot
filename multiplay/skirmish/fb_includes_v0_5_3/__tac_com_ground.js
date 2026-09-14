@@ -40,7 +40,7 @@ function returnForRepair(taskForceID) {
 	Driver for attacking
 */
 function attackTarget(droid, target) {
-	if (!defined(target) || !defined(droid)) {
+	if (target == null || droid == null) {
 		return;
 	}
 
@@ -77,7 +77,7 @@ function attackTarget(droid, target) {
     Helper for finding closest droid to target
 */
 function findClosestDroidToTarget(unitGroup, currGroundTarget) {
-	if (unitGroup.length === 0 || !defined(currGroundTarget)) {
+	if (unitGroup.length === 0 || currGroundTarget == null) {
 		return undefined;
 	}
 
@@ -468,10 +468,10 @@ function moveBrigadeToAttack(state, brigadeID, groundTargets) {
 
 	// DEBUG
 	if (false) {
-		if (defined(DIRECT_FIRE_TARGET)) {
+		if (DIRECT_FIRE_TARGET != null) {
 			addBeacon(DIRECT_FIRE_TARGET.x, DIRECT_FIRE_TARGET.y, 0);
 		}
-		if (defined(FIRE_SUPPORT_TARGET)) {
+		if (FIRE_SUPPORT_TARGET != null) {
 			const RADIUS = 1;		// creates a bounding box with dimension [2*RADIUS + 1 by 2*RADIUS+1]
 			highlightTiles(FIRE_SUPPORT_TARGET.x - RADIUS, FIRE_SUPPORT_TARGET.y - RADIUS, FIRE_SUPPORT_TARGET.x + RADIUS, FIRE_SUPPORT_TARGET.y + RADIUS);
 		}

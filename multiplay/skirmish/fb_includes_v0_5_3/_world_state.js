@@ -24,7 +24,7 @@
  *  
  * We want to avoid chaos (obscure modifications of the state, impossible debugging, duplication of logic). To this end:
  * (1) All modifications to the state happen in `stateBuilder` (initialisation) and `hq_toc` (state update).
- * (2) The functions in `hq_command.ks` (almost exclusively) makes strategic decisions based on the game state. 
+ * (2) The functions in `hq_command.js` (almost exclusively) makes strategic decisions based on the game state. 
  * (3) All other functions can read the state but cannot modify it.
  */
 

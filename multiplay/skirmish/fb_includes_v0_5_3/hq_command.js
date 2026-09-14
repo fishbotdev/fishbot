@@ -1688,7 +1688,7 @@ class CommandCenter {
 				const researchStarted = pursueResearch(idleLabs[i], researchOrder[j].id);
 				if (researchStarted) {		// This check avoids conflicts with allies (shared-research mode)
 					positionInResearchOrder++;
-					deb(`${researchOrder[j].name}`);		
+					// deb(`${researchOrder[j].name}`);		
 					break;
 				}
 			}
