@@ -24,6 +24,9 @@ const baseLocation = startPositions[me];
 
 const WZ2100_TILERANGE_SCALING_FACTOR = 1 / 128;
 
+/** Repairs a droid. The engine accepts this order but does not export the constant to scripts; `DORDER_REPAIR` is for structures only. */
+const DORDER_DROIDREPAIR = 26;
+
 /*
     RESEARCH INFORMATION
 */
