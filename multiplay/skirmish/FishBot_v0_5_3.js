@@ -41,14 +41,15 @@
 	- 5315 JS @ 29 Jul 2026: v0.5.0 release 
 	- 5580 JS @ 04 Aug 2026: v0.5.1 release
 	- 5718 JS @ 01 Sep 2026: v0.5.2 release
+	- 5864 JS @ 20 Sep 2026: v0.5.3 release
 */
 
-const FISHBOT_VERSION = "0.5.2";
+const FISHBOT_VERSION = "0.5.3";
 
 //	This file connects all remaining pieces of AI code together. It shouldn't contain any code itself.
 //	NOTE: order matters!
 const FISHBOT_PATH = "/multiplay/skirmish/";
-const FB_INCLUDES = FISHBOT_PATH + "fb_includes_v0_5_2/";
+const FB_INCLUDES = FISHBOT_PATH + "fb_includes_v0_5_3/";
 
 // Enable DEBUG_MODE_ON (global) to:
 //	 - Show some useful debug information in the console

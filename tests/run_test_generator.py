@@ -203,9 +203,9 @@ if __name__ == "__main__":
     #################################### USER CONFIG START ####################################
 
     # INPUT DIRECTORY DEFINITIONS
-    BASE_MAPS_PATH = Path.cwd() / r'custom_test_map_packager\\v4.7.0_base_maps'
-    # BASE_MAPS_PATH = Path.cwd() / r'custom_test_map_packager\\v4.7.0_base_maps_upto4p_short'
-    # BASE_MAPS_PATH = Path.cwd() / r'custom_test_map_packager\\v4.7.0_base_maps_upto6p_long'
+    # BASE_MAPS_PATH = Path.cwd() / r'custom_test_map_packager\\v4.7.0_base_maps'
+    BASE_MAPS_PATH = Path.cwd() / r'custom_test_map_packager\\v4.7.0_base_maps__release_set'
+    # BASE_MAPS_PATH = Path.cwd() / r'custom_test_map_packager\\v4.7.0_vertical_slice_maps'
 
     # OUTPUT DIRECTORY DEFINITIONS
     BASE_PRODUCTION_DIRECTORY = r"..\Warzone 2100\PRODCONFIG"
