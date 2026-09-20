@@ -41,6 +41,7 @@
 	- 5315 JS @ 29 Jul 2026: v0.5.0 release 
 	- 5580 JS @ 04 Aug 2026: v0.5.1 release
 	- 5718 JS @ 01 Sep 2026: v0.5.2 release
+	- 5864 JS @ 20 Sep 2026: v0.5.3 release
 */
 
 const FISHBOT_VERSION = "0.5.3";
