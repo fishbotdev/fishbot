@@ -41,6 +41,7 @@
 	- 5315 JS @ 29 Jul 2026: v0.5.0 release 
 	- 5580 JS @ 04 Aug 2026: v0.5.1 release
 	- 5718 JS @ 01 Sep 2026: v0.5.2 release
+	- 5864 JS @ 20 Sep 2026: v0.5.3 release
 */
 
 const FISHBOT_VERSION = "0.5.3";
@@ -54,7 +55,7 @@ const FB_INCLUDES = FISHBOT_PATH + "fb_includes_v0_5_3/";
 //	 - Show some useful debug information in the console
 //	 - Automatically colour players 0, 1, 2
 //	 - Transform Player 0 (forced human player slot) to spectator mode (used for automated bot testing)
-const DEBUG_MODE_ON = true;
+const DEBUG_MODE_ON = false;
 
 // For developers, please refer to `docs/DEVELOPMENT.md` for important info e.g. release checklist.
 
