@@ -43,44 +43,44 @@ Ideally, FishBot will also have a good win rate in both duel (1-vs-1, tested in 
 | `Roughness` | 100% | - |
 | `Sk-HighGround` | 100% | - |
 | `Sk-Startup` | 100% | - |
-| `Sk-UrbanChasm` | 95% | - |
-| `Vision` | 95% | - |
+| `Sk-UrbanChasm` | 100% | - |
+| `Vision` | 100% | - |
 
 ### 3 player (T2-NoScav)
 | Map | Duel | FFA |
 | --- | :---: | :---: |
-| `Gamma` | 100% | 97% |
-| `Monocot` | 100% | 97% |
+| `Gamma` | 100% | 83% |
+| `Monocot` | 100% | 100% |
 
 ### 4 player (T2-NoScav)
 | Map | Duel | FFA |
 | --- | :---: | :---: |
-| `DustyMaze-2v2` | 98% | 90% |
-| `DustyMaze-FFA` | 98% | 65% |
-| `Sk-Basingstoke` | 99% | 58% |
-| `Sk-Cockpit` | 100% | 77% |
-| `Sk-FishNets` | 95% | 40% |
-| `Sk-GreatRift` | 100% | 70% |
-| `Sk-LittleEgypt` | 95% | 47% |
-| `Sk-Mountain` | 99% | 72% |
-| `Sk-Pyramidal` | 100% | 85% |
-| `Sk-RollingHills` | 96% | 95% |
-| `Sk-Rush` | 100% | 88% |
-| `Sk-Rush2` | 100% | 95% |
-| `Sk-Urban-Chaos` | 99% | 95% |
-| `Sk-UrbanDuel` | 100% | 100% |
-| `Sk-Valley` | 99% | 98% |
+| `DustyMaze-2v2` | 98% | 88% |
+| `DustyMaze-FFA` | 99% | 82% |
+| `Sk-Basingstoke` | 98% | 68% |
+| `Sk-Cockpit` | 100% | 82% |
+| `Sk-FishNets` | 96% | 57% |
+| `Sk-GreatRift` | 100% | 82% |
+| `Sk-LittleEgypt` | 98% | 40% |
+| `Sk-Mountain` | 100% | 80% |
+| `Sk-Pyramidal` | 100% | 90% |
+| `Sk-RollingHills` | 92% | 95% |
+| `Sk-Rush` | 100% | 95% |
+| `Sk-Rush2` | 100% | 90% |
+| `Sk-Urban-Chaos` | 99% | 98% |
+| `Sk-UrbanDuel` | 100% | 98% |
+| `Sk-Valley` | 98% | 90% |
 
 ### 5 player (T2-NoScav)
 | Map | Duel | FFA |
 | --- | :---: | :---: |
-| `Bloat` | - | 46% |
+| `Bloat` | - | 44% |
 
 ### 6 player (T2-NoScav)
 | Map | Duel | FFA |
 | --- | :---: | :---: |
-| `Entropy` | - | 62% |
-| `Melting` | - | 61% |
+| `Entropy` | - | 59% |
+| `Melting` | - | 60% |
 
 ### 7 player (T2-NoScav)
 | Map | Duel | FFA |
@@ -90,19 +90,19 @@ Ideally, FishBot will also have a good win rate in both duel (1-vs-1, tested in 
 ### 8 player (T2-NoScav)
 | Map | Duel | FFA |
 | --- | :---: | :---: |
-| `Sk-Bananas` | - | 51% |
-| `Sk-BeggarsKanyon` | - | 70% |
-| `Sk-Clover` | - | 57% |
-| `Sk-Cockate` | - | 47% |
-| `Sk-Concrete` | - | 31% |
-| `Sk-Gridlock` | - | 40% |
-| `Sk-HideNSneak` | - | 23% |
-| `Sk-MizaMaze` | - | 32% |
-| `Sk-SandCastles` | - | 51% |
-| `Sk-ThePit` | - | 46% |
-| `Sk-Wheel` | - | 38% |
-| `Sk-YinYang` | - | 52% |
-| `Sk-Ziggurat` | - | 29% |
+| `Sk-Bananas` | - | 54% |
+| `Sk-BeggarsKanyon` | - | 55% |
+| `Sk-Clover` | - | 45% |
+| `Sk-Cockate` | - | 27% |
+| `Sk-Concrete` | - | 38% |
+| `Sk-Gridlock` | - | 45% |
+| `Sk-HideNSneak` | - | 27% |
+| `Sk-MizaMaze` | - | 30% |
+| `Sk-SandCastles` | - | 35% |
+| `Sk-ThePit` | - | 49% |
+| `Sk-Wheel` | - | 36% |
+| `Sk-YinYang` | - | 38% |
+| `Sk-Ziggurat` | - | 20% |
 | `Sk-Manhattan` | - | NC |
 
 ### 9 player (T2-NoScav)
@@ -113,15 +113,15 @@ Ideally, FishBot will also have a good win rate in both duel (1-vs-1, tested in 
 * ~~`WaterLoop`~~ - **not compatible**: sea map
 
 ## Recent updates
-* **v0.5.3** - *released **15 Sep 2026***
+* **v0.5.3** - *released **20 Sep 2026***
     * Combat fixes:
         * Improved group cohesion during heavy fighting and further improved chokepoint handling for heavy body units.
         * Improved VTOL utilisation when the match is neck-and-neck.
         * Mortars no longer try to path in front of the front line to attack an invisible target (now prefers visible targets).
     * Improved the construction planner to reduce the chance that trucks oscillate back and forth doing nothing.
-    * Unit designs & base construction tweaked.
+    * Unit designs & base construction tweaked (heavy bodies are now preferred).
     * New focused cannon research path added for 1v1 matches.
-    * Excluding 10-player maps and sea maps, all other Warzone 2100 maps are now covered by automated E2E testing.
+    * Excluding 10-player maps and sea maps, all base Warzone 2100 maps are now covered by automated E2E testing.
 
 * **v0.5.2** - *released **01 Sep 2026***
     * Combat improvements, including a complete overhaul of group movement and targeting. 
