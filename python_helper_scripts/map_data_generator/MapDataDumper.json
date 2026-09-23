@@ -1,0 +1,7 @@
+{
+	"AI": {
+		"js": "MapDataDumper.js",
+		"name": "MapDataDumper",
+		"tip": "Prints the map's static data to the debug log on game start, then ends the game."
+	}
+}
