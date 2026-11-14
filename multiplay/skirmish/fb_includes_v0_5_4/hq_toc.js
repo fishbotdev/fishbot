@@ -713,13 +713,17 @@ class TacticalOperationsCenter {
 
 		// Write new grid cells
 		const PLAYER_ID_LIST = generateRange(maxPlayers);       // will create 0-indexed playerIDs from 0, 1, 2, ..., maxPlayers - 1
+		if (scavengers !== NO_SCAVENGERS) {
+			PLAYER_ID_LIST.push(scavengerPlayer);
+		}
 
-		for (let playerID=0; playerID<PLAYER_ID_LIST.length; playerID++) {
+		for (const playerID of PLAYER_ID_LIST) {
 
 			const p = createPlayerInfoEntry(playerID);
 
 			const PLAYER_IS_ENEMY = !p['isFriendly'];
 			const PLAYER_IS_ME = (playerID === me);
+			const PLAYER_IS_SCAVENGER = (playerID === scavengerPlayer);
 
 			((playerID) => {
 
@@ -877,7 +881,9 @@ class TacticalOperationsCenter {
 			})(playerID);	
 
 			// this.#debugPrintPlayerInfo(p);
-			state.playerInfo[playerID] = p;		
+			if (!PLAYER_IS_SCAVENGER) {
+				state.playerInfo[playerID] = p;
+			}
 		}
 	
 		this.updateSpatialFields(state, TEMP_GRID);

@@ -464,7 +464,7 @@ For each propulsion e.g. PROPULSIONS["Hover"], the parameters are:
 -   id                  | "hover01"             | (str) same as Id (added by FishBot)
 */
 
-const PROPULSION_LIST = ["Cyborg Propulsion", "Wheels", "Half-tracks", "Tracks", "Hover", "VTOL"];
+const PROPULSION_LIST = ["Cyborg Propulsion", "Wheels", "Half-tracks", "Tracks", "Hover", "VTOL", "BaBaLegs", "BaBaProp", "Helicopter"];
 PROPULSION_LIST.forEach(propName => {
     // debug(  `Stats.Propulsion[propName] ${Stats.Propulsion[propName]}, propName ${propName}, id ${Stats.Propulsion[propName].Id}`)
     const propObj = {...Stats.Propulsion[propName], ...{'name': propName, 'id': Stats.Propulsion[propName].Id}};       // adds user-friendly 'name' & id

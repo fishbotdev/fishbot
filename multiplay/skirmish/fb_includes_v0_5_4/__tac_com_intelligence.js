@@ -51,9 +51,11 @@ function classifyGameObject(obj) {
 
         switch (obj.propulsion) {
             case PROPULSIONS["Cyborg Propulsion"].id: 
+            case PROPULSIONS["BaBaLegs"].id:
                 flags |= OBJ_FLAGS.CYBORG_PROPULSION;
                 break;
             case PROPULSIONS["Wheels"].id:
+            case PROPULSIONS["BaBaProp"].id:
                 flags |= OBJ_FLAGS.WHEELED_PROPULSION;
                 break;
             case PROPULSIONS["Half-tracks"].id:
@@ -66,6 +68,7 @@ function classifyGameObject(obj) {
                 flags |= OBJ_FLAGS.HOVER_PROPULSION;
                 break;
             case PROPULSIONS["VTOL"].id:
+            case PROPULSIONS["Helicopter"].id:
                 flags |= OBJ_FLAGS.VTOL_PROPULSION;
                 break;
 
@@ -94,7 +97,7 @@ function classifyGameObject(obj) {
             }
         }
 
-        if (obj.droidType === DROID_CYBORG) {
+        if (obj.droidType === DROID_CYBORG || obj.droidType === DROID_PERSON) {
             flags |= OBJ_FLAGS.INFANTRY;
         }
 
