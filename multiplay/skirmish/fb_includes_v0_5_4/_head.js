@@ -254,9 +254,7 @@
  * @typedef {Object} BrigadeMetadata
  * @property {number} id This is the brigade ID (duplicate of the key).
  * @property {PositionInfo} location  
- * @property {number} strength Smoothed count of direct-fire units in the brigade (mortars excluded).
  * @property {number} avgBodySize Average vehicle BODY_WEIGHT (excludes cyborgs). Affects formation keeping (bigger vehicles need more room to maneuver).
- * @property {number} directFireCount Raw count of direct-fire units this update. `strength - directFireCount` is what the brigade is down on its recent peak.
  * @property {NearbyTargets} nearbyTargets
  * @property {FbObject[]} currentDirectFireTargets Previous cycle's ranked target list. Only `[0]` is read today; the rest is stored to be stepped through later.
  * @property {AirStrikeMissionRequest[]} casStrikeRequests
@@ -326,14 +324,6 @@
  */
 
 /**
- * @typedef {Object} ForceStructureParameters
- * @property {number} RELEASE_DWELL_TICKS
- * @property {number} MAX_THREAT_RATIO
- * @property {number} MAX_UNREPLACED_LOSSES
- * @property {number} releaseDwell
- */
-
-/**
  * @typedef {Object} ConstructionParameters
  * @property {number} MAX_PARALLEL_BASE_BUILD_TASKS
  * @property {number} MAX_PARALLEL_OIL_CAP_TASKS
@@ -379,7 +369,6 @@
  * 
  * @property {number} VEHICLE_REPAIR_THRESHOLD
  * @property {number} CYBORG_REPAIR_THRESHOLD
- * @property {number} STRENGTH_DECAY_RATE
  */
 
 /*

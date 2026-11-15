@@ -916,8 +916,6 @@ class worldStateBuilder {
                 'nearbyTargets': createNearbyTargetsArray(),
                 'currentDirectFireTargets': createCurrentDirectFireTargets(),
                 'casStrikeRequests': createCASStrikeRequests(),
-                'strength': 0,
-                'directFireCount': 0,
                 'avgBodySize': BODY_WEIGHT.MEDIUM,      // neutral until the first resupply update: medium-bodied brigades use the baseline cohesion radii
                 'composition': createBrigadeComposition()
             };

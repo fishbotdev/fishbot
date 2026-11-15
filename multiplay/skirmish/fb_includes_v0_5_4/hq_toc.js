@@ -951,7 +951,7 @@ class TacticalOperationsCenter {
 	}
 
 	/**
-	 * Updates unit lists for each battalion in a brigade, and the brigade's overall strength.
+	 * Updates unit lists for each battalion in a brigade, and the brigade's average body size.
 	 * @param {worldState} state
 	 * @param {number} brigadeID
      * @param {ProductionParameters} parameters
@@ -1033,11 +1033,7 @@ class TacticalOperationsCenter {
             battalionComposition["deficit"] = maxUnitCount - healthyUnitCount;
         };
 
-		// Brigade strength rises immediately with reinforcement but decays gradually, so it does not jitter when single units die and are replaced.
-        const directFireUnitCount = brigadeUnits.filter(unit => !unit.hasIndirect).length;
         const currBrigade = state.brigades[brigadeID];
-        currBrigade["directFireCount"] = directFireUnitCount;
-        currBrigade["strength"] = Math.max(directFireUnitCount, currBrigade["strength"] - parameters.STRENGTH_DECAY_RATE);
 
         // Update the brigade's average body size (vehicles only), which is used during formation keeping. Defaults to MEDIUM.
         currBrigade["avgBodySize"] = (vehicleCount === 0) ? BODY_WEIGHT.MEDIUM : (bodySizeSum / vehicleCount);
