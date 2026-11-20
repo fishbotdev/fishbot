@@ -556,8 +556,11 @@ class armyEngineering {
 			}
 			// 3.0 Remove extra factory modules 
 			if (["Factory Module"].includes(STRUCTURE_NAME)) {
-				const factoryCount = structureCounts.get(STRUCTURES["Factory"])['count'];
-				const vtolFactoryCount = structureCounts.get(STRUCTURES["VTOL Factory"])['count'];
+				const factoryPointer = structureCounts.get(STRUCTURES["Factory"]);
+				const factoryCount = factoryPointer != undefined ? factoryPointer['count'] : 0;
+				const vtolFactoryPointer = structureCounts.get(STRUCTURES["VTOL Factory"]);
+				const vtolFactoryCount = vtolFactoryPointer != undefined ? vtolFactoryPointer['count'] : 0;
+
 				const factoryModuleCount = structureCounts.get(STRUCTURES["Factory Module"])['count'];
 
 				const MAXIMUM_FACTORY_MODULES_REACHED = (factoryModuleCount >= (factoryCount + vtolFactoryCount) * MODULES_PER_FACTORY);
@@ -567,7 +570,9 @@ class armyEngineering {
 			}
 			// 3.1 Repeat for research modules
 			if (["Research Module"].includes(STRUCTURE_NAME)) {
-				const labCount = structureCounts.get(STRUCTURES["Research Facility"])['count'];
+				const labPointer = structureCounts.get(STRUCTURES["Research Facility"]);
+				const labCount = labPointer != undefined ? labPointer['count'] : 0;
+				
 				const researchModuleCount = structureCounts.get(STRUCTURES["Research Module"])['count'];
 
 				const MAXIMUM_RESEARCH_MODULES_REACHED = (researchModuleCount >= labCount);
