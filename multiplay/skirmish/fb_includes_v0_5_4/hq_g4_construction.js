@@ -409,12 +409,13 @@ class armyEngineering {
 				
 		const baseBuildOrder_T2NoBase = [
 			STRUCTURES["Factory"],
-			STRUCTURES["Cyborg Factory"],	
+			STRUCTURES["Factory"],
 			STRUCTURES["Power Generator"],	
 			STRUCTURES["Power Module"],		// The script will automatically find a place to put this module.	
 			STRUCTURES["Command Center"],
 			STRUCTURES["Power Generator"],	
 			STRUCTURES["Power Module"],	
+			STRUCTURES["Cyborg Factory"],	
 			STRUCTURES["Factory Module"],
 			STRUCTURES["Factory Module"],	
 			STRUCTURES["Repair Facility"],
@@ -425,10 +426,11 @@ class armyEngineering {
 			// STRUCTURES["Power Generator"],
 			// STRUCTURES["Research Module"],
 			STRUCTURES["VTOL Factory"],
-			STRUCTURES["Factory Module"],
-			STRUCTURES["Factory Module"],
+			// STRUCTURES["Factory Module"],
+			// STRUCTURES["Factory Module"],
 
 			// STRUCTURES["Power Module"],	
+			STRUCTURES["VTOL Rearming Pad"],
 			STRUCTURES["VTOL Rearming Pad"],
 			// STRUCTURES["Cyborg Factory"],
 			

@@ -212,7 +212,7 @@ class CommandCenter {
 		const ALIVE_PLAYER_COUNT = Math.max(livingPlayers.length, 1);
 
 		const FAIR_SHARE_DERRICK_COUNT = Math.floor(TOTAL_DERRICKS / ALIVE_PLAYER_COUNT);
-		const MINIMUM_OILS_CLAIMED = MY_DERRICK_COUNT >= Math.ceil(TOTAL_DERRICKS / (ALIVE_PLAYER_COUNT + 1));	// 2p -> bigger than 1/3, 3p -> bigger than 1/4 and so on
+		const MINIMUM_OILS_CLAIMED = MY_DERRICK_COUNT >= 4;
 
 		const getDynamicTruckCap = (fairShareDerrickCount, minBaseBuilderTrucks, maxFishbotTruckCount) => {
 			// TODO: make this depend the construction state of the base (e.g. `CAMP_CLEAN`)
