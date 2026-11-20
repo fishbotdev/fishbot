@@ -55,10 +55,10 @@ class CommandCenter {
 		this.FORCE_BUDGET_BRIGADES = 2;
 
 		const DEFAULT_FISHBOT_BRIGADE_COMPOSITION = {
-			'MAX_HEAVY_CAVALRY': 6,
+			'MAX_HEAVY_CAVALRY': 4,
 			'MAX_LIGHT_CAVALRY': 2,
-			'MAX_MORTAR': 5,
-			'MAX_ADA': 2,
+			'MAX_MORTAR': 4,
+			'MAX_ADA': 1,
 			'MAX_SENSOR': 1,
 			'MAX_REPAIR': 1,
 			'MAX_INFANTRY': 6,

@@ -336,7 +336,7 @@ function moveBrigadeToAttack(state, brigadeID, groundTargets) {
 
 	const returnAllUnitsToBase = () => returnUnitGroupsToBase([ARMOUR_UNITS, INFANTRY_UNITS, SHORT_RANGE_FIRE_SUPPORT, AA_UNITS, SENSOR_UNITS]);
 
-	if (ARMOUR_UNITS.length === 0) {
+	if (ARMOUR_UNITS.length === 0 && INFANTRY_UNITS.length === 0) {
 		returnAllUnitsToBase();		
 		return;
 	}
@@ -345,7 +345,7 @@ function moveBrigadeToAttack(state, brigadeID, groundTargets) {
 		return;
 	}
 
-	const closestDroidToTarget = findClosestDroidToTarget(ARMOUR_UNITS, DIRECT_FIRE_TARGET);
+	const closestDroidToTarget = findClosestDroidToTarget([...ARMOUR_UNITS, ...INFANTRY_UNITS], DIRECT_FIRE_TARGET);
 
 	const _distSqToClosestDroid = (droid) => distSq(droid.x, closestDroidToTarget.x, droid.y, closestDroidToTarget.y);
 
