@@ -261,7 +261,7 @@ class CommandCenter {
 			this.isOilDominant = oilDominance;
 		}
 
-		const IS_ENERGY_DEFICIENT = !MINIMUM_OILS_CLAIMED;
+		const IS_ENERGY_DEFICIENT = false;		// HACK TO DISABLE
 
 		/*
 			CONSTRUCTION PARAMETERS
