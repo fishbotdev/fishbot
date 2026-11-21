@@ -639,11 +639,6 @@ class CommandCenter {
 		/** @param {TargetCandidate[]} candidates */
 		const addDirectFireTargetByProximity = (candidates) => {
 			candidates.forEach(c => {
-				if (isCommittedTarget(c)) {		
-					FOUND_COMMITTED_TARGET_IN_RANGE = true;
-					directFireTargetsInRange.push(c);
-					return;					
-				}
 				if (outsideOfRadius(c.targetObj, parameters.IMMEDIATE_DIRECT_FIRE_RADIUS)) {
 					targetsOutOfRange.push(c);
 				} else {
@@ -655,12 +650,6 @@ class CommandCenter {
 		addDirectFireTargetByProximity(primaryDroidTargets);
 		addDirectFireTargetByProximity(secondaryDirectFireTargets);
 		addDirectFireTargetByProximity(tertiaryDirectFireTargets);
-
-		// Note: currently, `nearbyTargets` (INTEL) is refreshed less often than combat operations run (RUN_C2), so the committed target can be missing
-		// from RUNC2 for a cycle (as RUNC2 finds out that the target is destroyed first). Re-inserting it stops a gap from breaking the brigade's commitment.
-		if (COMMITTED_TARGET_FOUND && !FOUND_COMMITTED_TARGET_IN_RANGE) {
-			directFireTargetsInRange.push({'target': PREVIOUS_TARGET, 'targetObj': COMMITTED_TARGET_OBJ, 'cost': 0});
-		}
 
 		directFireTargetsInRange.forEach(c => {c.cost = directFireCost(c);});
 		directFireTargetsInRange.sort((a,b) => a.cost - b.cost);		// Note: this ignores the primary/secondary/tertiary ordering currently; cost based on type will be added later.
