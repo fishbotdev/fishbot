@@ -69,14 +69,10 @@ class CommandCenter {
 		/** @type {GroundForceParameters} */
 		this.GROUND_FORCE_PARAMETERS = {
 			IMMEDIATE_DIRECT_FIRE_RADIUS: 10,
-			DIRECT_FIRE_COMMITMENT_RADIUS: 20,		// a committed target is only released once it is further away than this (or dead / unreachable)
 
 			// Direct fire cost weights, applied by `directFireCost()` as multipliers on the *squared* distance to the
 			// target. Below 1.0 promotes a target, above 1.0 demotes it. Squared, so a weight of w lets a promoted target
 			// sit 1/sqrt(w) times further away than a rival and still win: 0.2 => ~2.2x, 0.25 => 2x, 0.56 => ~1.3x.
-			TARGET_ADJACENCY_RADIUS: 8,				// how close a target must be to the current battle to count as "part of the same fight"
-			COMMITMENT_WEIGHT: 0.2,					// the committed target only loses its place to something ~2.2x closer
-			ADJACENCY_WEIGHT: 0.25,					// promotes further-away targets which are part of the same fight (e.g. the rest of an enemy base)
 			KNOCKOUT_WEIGHT: 0.56,					// promotes targets which the brigade has already damaged
 			LOW_HEALTH_THRESHOLD: 50,				// a target below this health percentage is considered worth finishing off
 			THREAT_WEIGHT: 1.1,			
@@ -613,61 +609,14 @@ class CommandCenter {
 		}
 
 		/*
-			Direct Fire Targeting: attack what is closest and reachable in a straight line, and see the current fight to completion.
-			TODO: Lacks input from the strategic layer (which reasons about objectives & OAKOC) because it is currently non-existent.
+			Direct Fire Targeting: attack what is closest and reachable
 		*/
-
-		// Where the brigade's fight is, or `null` if it is not near one. Relies on FbObject carrying the stale 'x', 'y'.
-		let CURRENT_BATTLE_LOCATION = null;
-		const PREV_TARGET_DEFINED = PREVIOUS_TARGET != null;
-		const PREV_TARGET_TOO_FAR_AWAY = outsideOfRadius(PREVIOUS_TARGET, parameters.DIRECT_FIRE_COMMITMENT_RADIUS);
-		if (PREV_TARGET_DEFINED && !PREV_TARGET_TOO_FAR_AWAY) {
-			CURRENT_BATTLE_LOCATION = PREVIOUS_TARGET;
-		}
-
-		/**
-		 * Re-acquires lock on the existing target. Lock released when the target was destroyed, is unreachable, or the brigade is now too far from it.
-		 * @param {FbObject | undefined} previousTarget
-		 * @returns {DroidObject | StructureObject | FeatureObject | null}
-		 */
-		const getCommittedTarget = (previousTarget) => {
-			if (previousTarget == null) {
-				return null;
-			}
-			const obj = getObject(previousTarget.type, previousTarget.player, previousTarget.id);
-			if (obj == null) {
-				return null;		// destroyed
-			}
-			if (!isReachable[obj.x][obj.y]) {
-				return null;		// on an island / water terrain
-			}
-			if (outsideOfRadius(obj, parameters.DIRECT_FIRE_COMMITMENT_RADIUS)) {
-				return null;		// the brigade has been pushed (or has wandered) off this fight
-			}
-			return obj;
-		};
-
-		const COMMITTED_TARGET_OBJ = getCommittedTarget(PREVIOUS_TARGET);
-
-		const COMMITTED_TARGET_FOUND = COMMITTED_TARGET_OBJ != null;
-
-		/** @param {TargetCandidate} c */
-		const isCommittedTarget = (c) => COMMITTED_TARGET_FOUND && c.target.id === PREVIOUS_TARGET.id && c.target.player === PREVIOUS_TARGET.player;
-
-		const ADJACENCY_RADIUS_SQ = parameters.TARGET_ADJACENCY_RADIUS ** 2;
 
 		/** @param {TargetCandidate} c */
 		const directFireCost = (c) => {
 			const obj = c.targetObj;
 			let cost = distSq(x, obj.x, y, obj.y);
 
-			if (isCommittedTarget(c)) {
-				// Inertia 1: Prefers the existing target 
-				cost *= parameters.COMMITMENT_WEIGHT;
-			} else if (CURRENT_BATTLE_LOCATION != null && distSq(obj.x, CURRENT_BATTLE_LOCATION.x, obj.y, CURRENT_BATTLE_LOCATION.y) <= ADJACENCY_RADIUS_SQ) {
-				// Inertia 2: Prefers targets near the current battle
-				cost *= parameters.ADJACENCY_WEIGHT;
-			}
 			if (obj.health < parameters.LOW_HEALTH_THRESHOLD) {
 				// Opportunity 1: Prefers weak targets if available
 				cost *= parameters.KNOCKOUT_WEIGHT;

@@ -312,10 +312,6 @@
 /**
  * @typedef {Object} GroundForceParameters
  * @property {number} IMMEDIATE_DIRECT_FIRE_RADIUS
- * @property {number} DIRECT_FIRE_COMMITMENT_RADIUS
- * @property {number} TARGET_ADJACENCY_RADIUS
- * @property {number} COMMITMENT_WEIGHT
- * @property {number} ADJACENCY_WEIGHT
  * @property {number} KNOCKOUT_WEIGHT
  * @property {number} LOW_HEALTH_THRESHOLD
  * @property {number} THREAT_WEIGHT
