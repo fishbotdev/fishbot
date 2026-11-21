@@ -79,7 +79,6 @@ class CommandCenter {
 			ADJACENCY_WEIGHT: 0.25,					// promotes further-away targets which are part of the same fight (e.g. the rest of an enemy base)
 			KNOCKOUT_WEIGHT: 0.56,					// promotes targets which the brigade has already damaged
 			LOW_HEALTH_THRESHOLD: 50,				// a target below this health percentage is considered worth finishing off
-			BLOCKED_APPROACH_WEIGHT: 2.0,			// demotes targets with terrain in the way; a target with a clear approach wins from ~1.4x further away
 
 			EFFECTIVE_FIRE_SUPPORT_RADIUS: 12,		// todo: this should be adaptive - when the brigade has a sensor, this is better, without, it is restricted by sight range of the front units
 			EFFECTIVE_ADA_RADIUS: 12,
@@ -671,11 +670,6 @@ class CommandCenter {
 			if (obj.health < parameters.LOW_HEALTH_THRESHOLD) {
 				// Opportunity 1: Prefers weak targets if available
 				cost *= parameters.KNOCKOUT_WEIGHT;
-			}
-			if (lineIsBlocked(x, y, obj.x, obj.y, isWalkable)) {
-				// Terrain 1: Demotes targets the brigade cannot drive straight at. 
-				// TODO: Simplistic. Projects a straight line from the brigade position to the target & checks if the tiles are walkable. Replace by strategic layer inputs.
-				cost *= parameters.BLOCKED_APPROACH_WEIGHT;
 			}
 			return cost;
 		}
