@@ -672,7 +672,7 @@ class CommandCenter {
 				// Opportunity 1: Prefers weak targets if available
 				cost *= parameters.KNOCKOUT_WEIGHT;
 			}
-			if (c.target.flags & (OBJ_FLAGS.ARMOUR | OBJ_FLAGS.INDIRECT_FIRE | OBJ_FLAGS.INFANTRY)) {
+			if (c.target.flags & (OBJ_FLAGS.ARMOUR | OBJ_FLAGS.INDIRECT_FIRE | OBJ_FLAGS.INFANTRY | OBJ_FLAGS.DEFENSIVE_STRUCTURE)) {
 				cost *= parameters.THREAT_WEIGHT;
 			}
 			return cost;
