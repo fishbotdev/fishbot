@@ -409,100 +409,97 @@ class armyEngineering {
 				
 		const baseBuildOrder_T2NoBase = [
 			STRUCTURES["Factory"],
-			STRUCTURES["Factory"],
+			STRUCTURES["Cyborg Factory"],	
 			STRUCTURES["Command Center"],
 			STRUCTURES["Power Generator"],	
-			STRUCTURES["Power Module"],		// The script will automatically find a place to put this module.	
 			STRUCTURES["Power Generator"],	
-			STRUCTURES["Cyborg Factory"],	
-			STRUCTURES["Power Module"],	
-			STRUCTURES["Factory Module"],
-			STRUCTURES["Factory Module"],	
-			STRUCTURES["Repair Facility"],
 			STRUCTURES["Power Generator"],		
-			STRUCTURES["Power Module"],
-			// STRUCTURES["Research Facility"],
-			// STRUCTURES["Factory"],
-			// STRUCTURES["Power Generator"],
-			// STRUCTURES["Research Module"],
+			STRUCTURES["Power Module"],		// The script will automatically find a place to put this module.
+			STRUCTURES["Power Generator"],
+			STRUCTURES["Repair Facility"],
+			STRUCTURES["Factory Module"],
+			STRUCTURES["Factory Module"],
+			STRUCTURES["Power Module"],			
+			STRUCTURES["Research Facility"],
+			STRUCTURES["Research Module"],
 			STRUCTURES["VTOL Factory"],
 			// STRUCTURES["Factory Module"],
 			// STRUCTURES["Factory Module"],
 
-			// STRUCTURES["Power Module"],	
+			STRUCTURES["Power Module"],
+			STRUCTURES["Power Module"],	
 			STRUCTURES["VTOL Rearming Pad"],
-			STRUCTURES["VTOL Rearming Pad"],
-			// STRUCTURES["Cyborg Factory"],
+			STRUCTURES["Cyborg Factory"],
 			
 			STRUCTURES["Power Generator"],		// inserting here in the case that more power than expected is captured
 				STRUCTURES["Power Module"],
 			
-			// STRUCTURES["Research Facility"],
-			// STRUCTURES["Research Module"],
+			STRUCTURES["Research Facility"],
+			STRUCTURES["Research Module"],
 
 			STRUCTURES["VTOL Rearming Pad"],
 
-			// STRUCTURES["Power Generator"],		// inserting here in the case that more power than expected is captured
-			// 	STRUCTURES["Power Module"],
-			// STRUCTURES["Factory"],
-			// STRUCTURES["Factory Module"],
-			// STRUCTURES["Factory Module"],
+			STRUCTURES["Power Generator"],		// inserting here in the case that more power than expected is captured
+				STRUCTURES["Power Module"],
+			STRUCTURES["Factory"],
+			STRUCTURES["Factory Module"],
+			STRUCTURES["Factory Module"],
 
-			// STRUCTURES["Research Facility"],
-			// STRUCTURES["Research Module"],
+			STRUCTURES["Research Facility"],
+			STRUCTURES["Research Module"],
 			STRUCTURES["VTOL Rearming Pad"],
 			STRUCTURES["VTOL Rearming Pad"],
-			// STRUCTURES["Research Facility"],
-			// STRUCTURES["Research Module"],
-			// STRUCTURES["VTOL Rearming Pad"],
-			// STRUCTURES["VTOL Rearming Pad"],
-			// STRUCTURES["Research Facility"],
-			// STRUCTURES["Research Module"],
+			STRUCTURES["Research Facility"],
+			STRUCTURES["Research Module"],
+			STRUCTURES["VTOL Rearming Pad"],
+			STRUCTURES["VTOL Rearming Pad"],
+			STRUCTURES["Research Facility"],
+			STRUCTURES["Research Module"],
 
-			// STRUCTURES["Factory"],
-			// STRUCTURES["Factory Module"],
-			// STRUCTURES["Factory Module"],
-			// STRUCTURES["VTOL Rearming Pad"],
-			// STRUCTURES["VTOL Rearming Pad"],
-			// STRUCTURES["Cyborg Factory"],
+			STRUCTURES["Factory"],
+			STRUCTURES["Factory Module"],
+			STRUCTURES["Factory Module"],
+			STRUCTURES["VTOL Rearming Pad"],
+			STRUCTURES["VTOL Rearming Pad"],
+			STRUCTURES["Cyborg Factory"],
 			
-			// STRUCTURES["Power Generator"],		// inserting these here in the case that more power than expected is captured
-			// 	STRUCTURES["Power Module"],
-			// STRUCTURES["Power Generator"],		
-			// 	STRUCTURES["Power Module"],
+			STRUCTURES["Power Generator"],		// inserting these here in the case that more power than expected is captured
+				STRUCTURES["Power Module"],
+			STRUCTURES["Power Generator"],		
+				STRUCTURES["Power Module"],
 
-			// STRUCTURES["VTOL Rearming Pad"],
-			// STRUCTURES["VTOL Rearming Pad"],
+			STRUCTURES["VTOL Rearming Pad"],
+			STRUCTURES["VTOL Rearming Pad"],
 
-			// STRUCTURES["Factory"],
-			// STRUCTURES["Factory Module"],
-			// STRUCTURES["Factory Module"],
+			STRUCTURES["Factory"],
+			STRUCTURES["Factory Module"],
+			STRUCTURES["Factory Module"],
 
-			// STRUCTURES["VTOL Rearming Pad"],
-			// STRUCTURES["VTOL Rearming Pad"],
+			STRUCTURES["VTOL Rearming Pad"],
+			STRUCTURES["VTOL Rearming Pad"],
 
-			// STRUCTURES["Factory"],
-			// STRUCTURES["Factory Module"],
-			// STRUCTURES["Factory Module"],
+			STRUCTURES["Factory"],
+			STRUCTURES["Factory Module"],
+			STRUCTURES["Factory Module"],
 
-			// STRUCTURES["Cyborg Factory"],
+			STRUCTURES["Cyborg Factory"],
 
-			// STRUCTURES["Power Generator"],		// inserting these here in the case that more power than expected is captured
-			// 	STRUCTURES["Power Module"],
-			// STRUCTURES["Power Generator"],		
-			// 	STRUCTURES["Power Module"],
+			STRUCTURES["Power Generator"],		// inserting these here in the case that more power than expected is captured
+				STRUCTURES["Power Module"],
+			STRUCTURES["Power Generator"],		
+				STRUCTURES["Power Module"],
 
-			// STRUCTURES["VTOL Rearming Pad"],
-			// STRUCTURES["VTOL Rearming Pad"],
+			STRUCTURES["VTOL Rearming Pad"],
+			STRUCTURES["VTOL Rearming Pad"],
 
-			// STRUCTURES["VTOL Rearming Pad"],
-			// STRUCTURES["VTOL Rearming Pad"],
-			// STRUCTURES["VTOL Rearming Pad"],
-			// STRUCTURES["VTOL Rearming Pad"],
-			// STRUCTURES["VTOL Rearming Pad"],
-			// STRUCTURES["VTOL Rearming Pad"],
+			STRUCTURES["VTOL Rearming Pad"],
+			STRUCTURES["VTOL Rearming Pad"],
+			STRUCTURES["VTOL Rearming Pad"],
+			STRUCTURES["VTOL Rearming Pad"],
+			STRUCTURES["VTOL Rearming Pad"],
+			STRUCTURES["VTOL Rearming Pad"],
 
-			// STRUCTURES["Cyborg Factory"],
+			STRUCTURES["Cyborg Factory"],
 		];
 
 		// Put each task into an appropriate format for approval ("buildTask", which is internal to g4_construction)
