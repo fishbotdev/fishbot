@@ -262,15 +262,15 @@ function produceHeavyCavalry(factory) {
 
 	// Order these by tech level if you want the most technologically advanced body to be used
 	const heavyCavalryWeapons = [
-		WEAPONS["Light Cannon"],
-		WEAPONS["Medium Cannon"],
-		WEAPONS["Hyper Velocity Cannon"],
-		WEAPONS["Assault Cannon"],
-		WEAPONS["Heavy Cannon"],
-		WEAPONS["Twin Assault Cannon"],
+		// WEAPONS["Light Cannon"],
+		// WEAPONS["Medium Cannon"],
+		// WEAPONS["Hyper Velocity Cannon"],
+		WEAPONS["Lancer"],
+		// WEAPONS["Heavy Cannon"],
+		// WEAPONS["Twin Assault Cannon"],
 		// WEAPONS["Needle Gun"],
-		WEAPONS["Rail Gun"],
-		WEAPONS["Gauss Cannon"],
+		// WEAPONS["Rail Gun"],
+		// WEAPONS["Gauss Cannon"],
 	].reverse();
 	
 	const heavyCavalryPropulsions = [
@@ -490,7 +490,7 @@ function getDroidFbGroupClassification(droid) {
 		return DIVISION.INFANTRY_RESERVE;
 	}
 	
-	if (flags & (OBJ_FLAGS.CANNON_WEAPON)) {        // TODO: future support for other weapon types
+	if (flags & (OBJ_FLAGS.CANNON_WEAPON | OBJ_FLAGS.AT_ROCKET_WEAPON)) {        // TODO: future support for other weapon types
 		return DIVISION.HEAVY_CAV_RESERVE;
 	}
 

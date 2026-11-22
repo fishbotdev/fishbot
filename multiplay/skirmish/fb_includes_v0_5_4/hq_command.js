@@ -55,13 +55,13 @@ class CommandCenter {
 		this.FORCE_BUDGET_BRIGADES = 2;
 
 		const DEFAULT_FISHBOT_BRIGADE_COMPOSITION = {
-			'MAX_HEAVY_CAVALRY': 4,
-			'MAX_LIGHT_CAVALRY': 2,
-			'MAX_MORTAR': 4,
-			'MAX_ADA': 1,
-			'MAX_SENSOR': 1,
-			'MAX_REPAIR': 1,
-			'MAX_INFANTRY': 6,
+			'MAX_HEAVY_CAVALRY': 3,
+			'MAX_LIGHT_CAVALRY': 5,
+			'MAX_MORTAR': 5,
+			'MAX_ADA': 0,
+			'MAX_SENSOR': 0,
+			'MAX_REPAIR': 0,
+			'MAX_INFANTRY': 5,
 		};
 
 		const TOTAL_UNITS_PER_BRIGADE = Object.values(DEFAULT_FISHBOT_BRIGADE_COMPOSITION).reduce((a, b) => a + b, 0);
