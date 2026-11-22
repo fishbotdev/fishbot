@@ -336,7 +336,7 @@ function moveBrigadeToAttack(state, brigadeID, groundTargets) {
 
 	const returnAllUnitsToBase = () => returnUnitGroupsToBase([ARMOUR_UNITS, INFANTRY_UNITS, SHORT_RANGE_FIRE_SUPPORT, AA_UNITS, SENSOR_UNITS]);
 
-	if (ARMOUR_UNITS.length === 0 && INFANTRY_UNITS.length === 0) {
+	if (ARMOUR_UNITS.length === 0 && INFANTRY_UNITS.length === 0 && SHORT_RANGE_FIRE_SUPPORT.length === 0) {
 		returnAllUnitsToBase();		
 		return;
 	}
@@ -345,7 +345,7 @@ function moveBrigadeToAttack(state, brigadeID, groundTargets) {
 		return;
 	}
 
-	const closestDroidToTarget = findClosestDroidToTarget([...ARMOUR_UNITS, ...INFANTRY_UNITS], DIRECT_FIRE_TARGET);
+	const closestDroidToTarget = findClosestDroidToTarget([...ARMOUR_UNITS, ...INFANTRY_UNITS, ...SHORT_RANGE_FIRE_SUPPORT], DIRECT_FIRE_TARGET);
 
 	const CLOSEST_X = closestDroidToTarget.x, CLOSEST_Y = closestDroidToTarget.y;
 
@@ -456,35 +456,24 @@ function moveBrigadeToAttack(state, brigadeID, groundTargets) {
 	const DIRECT_FIRE_TARGETS_TO_SEARCH = Math.min(5, directFireTargets.length);
 
 	SHORT_RANGE_FIRE_SUPPORT.forEach(droid => {
-		const UNIT_ROADBLOCKED = state.mapData.isChokepoint[droid.x][droid.y] && BRIGADE_CONGESTED;
-		const DISTSQ_TO_CENTER = distSq(LOCATION_X, droid.x, LOCATION_Y, droid.y);
+		
+		const DROID_RANGE_SQ = (droid.range * WZ2100_TILERANGE_SCALING_FACTOR) ** 2;
 
-		const TOO_FAR_AWAY_FROM_CENTER = DISTSQ_TO_CENTER > FIRE_SUPPORT_RADIUS_SQ;
-
-		const DISTSQ_TO_TARGET = distSq(targetX, droid.x, targetY, droid.y);
-		const AHEAD_OF_GROUP = DISTSQ_TO_TARGET < DISTSQ_CENTER_TO_TARGET;		// this is the direct fire target
-
-		if ((AHEAD_OF_GROUP || TOO_FAR_AWAY_FROM_CENTER) && !UNIT_ROADBLOCKED) {
-			orderDroidLoc(droid, DORDER_MOVE, LOCATION_X, LOCATION_Y);
-		} else {
-			const DROID_RANGE_SQ = (droid.range * WZ2100_TILERANGE_SCALING_FACTOR) ** 2;
-
-			if (FIRE_SUPPORT_TARGET_AVAILABLE) {
-				for (let i=0; i<FIRE_SUPPORT_TARGETS_TO_SEARCH; i++) {
-					if (distSq(droid.x, fireSupportTargets[i].x, droid.y, fireSupportTargets[i].y) < DROID_RANGE_SQ) {
-						attackTarget(droid, fireSupportTargets[i]);
-						return;
-					}
-				}
-			}
-			for (let i=0; i<DIRECT_FIRE_TARGETS_TO_SEARCH; i++) {
-				if (distSq(droid.x, directFireTargets[i].x, droid.y, directFireTargets[i].y) < DROID_RANGE_SQ) {
-					attackTarget(droid, directFireTargets[i]);
+		if (FIRE_SUPPORT_TARGET_AVAILABLE) {
+			for (let i=0; i<FIRE_SUPPORT_TARGETS_TO_SEARCH; i++) {
+				if (distSq(droid.x, fireSupportTargets[i].x, droid.y, fireSupportTargets[i].y) < DROID_RANGE_SQ) {
+					attackTarget(droid, fireSupportTargets[i]);
 					return;
 				}
 			}
-			orderDroidLoc(droid, DORDER_MOVE, LOCATION_X, LOCATION_Y);
 		}
+		for (let i=0; i<DIRECT_FIRE_TARGETS_TO_SEARCH; i++) {
+			if (distSq(droid.x, directFireTargets[i].x, droid.y, directFireTargets[i].y) < DROID_RANGE_SQ) {
+				attackTarget(droid, directFireTargets[i]);
+				return;
+			}
+		}
+		orderDroidLoc(droid, DORDER_MOVE, LOCATION_X, LOCATION_Y);
 	});
 
 	REPAIR_UNITS.forEach(fixNearestDamaged);
