@@ -153,7 +153,7 @@ class armyEngineering {
 
 		const makePrimaryDefence = (derrickObj) => this.translateIntoBuildRequest({
 			missionType: MISSION_TYPE.CONSTRUCT_NEARBY_DEFENCE, 
-			structureData: STRUCTURES["Rotary MG Bunker"],
+			structureData: STRUCTURES["Assault Gun Hardpoint"],
 			payload: derrickObj
 		});
 		const makeSecondaryDefence = (derrickObj) => this.translateIntoBuildRequest({
@@ -241,7 +241,7 @@ class armyEngineering {
 			if (isHighPriority) {
 				// Has a special case of defences === 1 -> can build secondary defence
 				if (friendlyDefencesNearby === 0) {
-					highPrioOil.unshift(makePrimaryDefence(d));			// unshift -> reverses the order of `state.poi.derricks` which is ordered in ascending order from base
+					highPrioOil.push(makePrimaryDefence(d));			// unshift -> reverses the order of `state.poi.derricks` which is ordered in ascending order from base
 				} else if (friendlyDefencesNearby === 1) {
 					const specialContestedDerrick = (enemyDerricksNearby > 0 && friendlyDefencesNearby === 1);
 					if (specialContestedDerrick) {
