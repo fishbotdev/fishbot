@@ -415,10 +415,10 @@ class armyEngineering {
 			STRUCTURES["Power Module"],		// The script will automatically find a place to put this module.	
 			STRUCTURES["Power Generator"],	
 			STRUCTURES["Power Module"],	
-			STRUCTURES["Cyborg Factory"],	
 			STRUCTURES["Factory Module"],
-			STRUCTURES["Factory Module"],	
+			STRUCTURES["Factory Module"],		
 			STRUCTURES["Repair Facility"],
+			STRUCTURES["Cyborg Factory"],	
 			STRUCTURES["Power Generator"],		
 			STRUCTURES["Power Module"],
 			// STRUCTURES["Research Facility"],
