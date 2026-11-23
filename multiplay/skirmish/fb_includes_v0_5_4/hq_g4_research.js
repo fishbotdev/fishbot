@@ -26,15 +26,13 @@ class FishBotResearchOrders {
 	 */
 	getFocusedT2RocketResearchPath() {
 		const FISHBOT_T2_ROCKET_RESEARCH_PRIORITIES = [
-			"R-Wpn-Rocket-Damage",
 			RESEARCHES["Tank Killer Rocket"].id,
-			"R-Struc-Power",
-
+			RESEARCHES["HEAT Rocket Warhead Mk3"].id,
 			RESEARCHES["Super Tank-Killer Cyborg"].id,
+			"R-Wpn-Rocket-Damage",
 			"R-Wpn-Rocket-Accuracy",
 	
 			RESEARCHES["Dense Composite Alloys Mk2"].id,
-
 		];
 
 		const FISHBOT_T2_ROCKET_RESEARCH_BLACKLIST = [
