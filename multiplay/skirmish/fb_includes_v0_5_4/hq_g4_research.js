@@ -29,6 +29,7 @@ class FishBotResearchOrders {
 			RESEARCHES["Tank Killer Rocket"].id,
 			RESEARCHES["HEAT Rocket Warhead Mk3"].id,
 			RESEARCHES["Super Tank-Killer Cyborg"].id,
+			"R-Struc-Power",
 			"R-Wpn-Rocket-Damage",
 			"R-Wpn-Rocket-Accuracy",
 	
