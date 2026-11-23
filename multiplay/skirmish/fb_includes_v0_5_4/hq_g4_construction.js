@@ -429,16 +429,15 @@ class armyEngineering {
 			// STRUCTURES["Factory Module"],
 			// STRUCTURES["Factory Module"],
 
-			// STRUCTURES["Power Module"],	
-			STRUCTURES["VTOL Rearming Pad"],
-			STRUCTURES["VTOL Rearming Pad"],
-
-			
-			STRUCTURES["Power Generator"],		// inserting here in the case that more power than expected is captured
-				STRUCTURES["Power Module"],
-
 			STRUCTURES["Research Facility"],
 			STRUCTURES["Research Module"],
+			// STRUCTURES["Power Module"],	
+
+			STRUCTURES["Power Generator"],		// inserting here in the case that more power than expected is captured
+			STRUCTURES["Power Module"],
+
+			STRUCTURES["VTOL Rearming Pad"],
+			STRUCTURES["VTOL Rearming Pad"],
 
 			STRUCTURES["Power Generator"],		// inserting here in the case that more power than expected is captured
 			STRUCTURES["Power Module"],
@@ -453,18 +452,18 @@ class armyEngineering {
 			// STRUCTURES["Research Module"],
 			// STRUCTURES["VTOL Rearming Pad"],
 			// STRUCTURES["VTOL Rearming Pad"],
-			// STRUCTURES["Research Facility"],
-			// STRUCTURES["Research Module"],
+			STRUCTURES["Research Facility"],
+			STRUCTURES["Research Module"],
 
 			// STRUCTURES["Factory"],
-			// STRUCTURES["Factory Module"],
+			STRUCTURES["Factory Module"],
 			// STRUCTURES["Factory Module"],
 			// STRUCTURES["VTOL Rearming Pad"],
 			// STRUCTURES["VTOL Rearming Pad"],
 			// STRUCTURES["Cyborg Factory"],
 			
-			// STRUCTURES["Power Generator"],		// inserting these here in the case that more power than expected is captured
-			// 	STRUCTURES["Power Module"],
+			STRUCTURES["Power Generator"],		// inserting these here in the case that more power than expected is captured
+				STRUCTURES["Power Module"],
 			// STRUCTURES["Power Generator"],		
 			// 	STRUCTURES["Power Module"],
 
