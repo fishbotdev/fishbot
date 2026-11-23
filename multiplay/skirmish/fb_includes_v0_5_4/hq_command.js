@@ -48,6 +48,21 @@ class CommandCenter {
 		// Intelligence parameters
 		this.TARGET_SEARCH_RADIUS = 25;				// how many tiles away from the brigadeLocation to look for enemies (impacts computational performance)
 
+		// Aviation parameters
+		/** @type {AviationParameters} */
+		this.AVIATION_PARAMETERS = {
+			totalNumAircraft: 0,
+			prioritiseCasTargets: false,
+			prioritiseIndustrialTargets: false,
+			prioritiseRaidTargets: false,
+			SATURATION_RAID_ACTIVE: false,
+			STANDARD_THREAT_THRESHOLD: 0,
+			URGENT_THREAT_THRESHOLD: 0,
+			SATURATION_THREAT_THRESHOLD: 0,
+			CAS_SUPPORT_RADIUS: 25,
+			UNITS_FOR_ADA_STRIKE: 3,
+		};
+
 		// Ground targeting
 		this.BRIGADE_DESIGNATIONS = [DIVISION.FIRST_BCT];	// the BCTs in the field
 
@@ -57,7 +72,7 @@ class CommandCenter {
 		const DEFAULT_FISHBOT_BRIGADE_COMPOSITION = {
 			'MAX_HEAVY_CAVALRY': 3,
 			'MAX_LIGHT_CAVALRY': 5,
-			'MAX_MORTAR': 5,
+			'MAX_MORTAR': 7,
 			'MAX_ADA': 0,
 			'MAX_SENSOR': 0,
 			'MAX_REPAIR': 0,
@@ -81,39 +96,6 @@ class CommandCenter {
 			EFFECTIVE_ADA_RADIUS: 12,
 		};
 
-		// Aviation parameters
-		/** @type {AviationParameters} */
-		this.AVIATION_PARAMETERS = {
-			totalNumAircraft: 0,
-			prioritiseCasTargets: false,
-			prioritiseIndustrialTargets: false,
-			prioritiseRaidTargets: false,
-			SATURATION_RAID_ACTIVE: false,
-			STANDARD_THREAT_THRESHOLD: 0,
-			URGENT_THREAT_THRESHOLD: 0,
-			SATURATION_THREAT_THRESHOLD: 0,
-			CAS_SUPPORT_RADIUS: 25,
-			UNITS_FOR_ADA_STRIKE: 3,
-		};
-
-		// Construction parameters
-		/** @type {ConstructionParameters} */
-		this.CONSTRUCTION_PARAMETERS = {
-			// Concurrency
-			MAX_PARALLEL_BASE_BUILD_TASKS: 1,
-			MAX_PARALLEL_OIL_CAP_TASKS: 4,
-			MAX_PARALLEL_DEFENCE_BUILD_TASKS: 1,
-			MAX_PARALLEL_REPAIR_CENTER_BUILD_TASKS: 1,
-			ABORTED_SECTOR_COOLDOWN_MS: 30000,		// how long a sector aborted as dangerous stays off the option list
-
-			// Structure limits
-			DYNAMIC_POWER_GENERATOR_CAP: 2,
-			DYNAMIC_FACTORY_CAP: 2,
-			DYNAMIC_RESEARCH_LAB_CAP: 1,
-			MAX_VTOL_REARMING_PADS: 2, 
-			SHOULD_BUILD_VTOLS: false,
-		};
-
 		// Production parameters
 		/** @type {Map<number, number>} */
 		const DEFAULT_BRIGADE_WEIGHTS = new Map([
@@ -126,8 +108,8 @@ class CommandCenter {
 			// Production weights (which influences production order) are tuned using `python_helper_scripts / production_scheduling.py`.
 			// Must be rebalanced each time the brigade composition is changed.	
 			[DIVISION.HEAVY_CAV_RESERVE, 0.55],
-			[DIVISION.LIGHT_CAV_RESERVE, 0.95],
-			[DIVISION.SHORT_RANGE_FIRE_SUPPORT_RESERVE, 0.6],
+			[DIVISION.LIGHT_CAV_RESERVE, 0.9],
+			[DIVISION.SHORT_RANGE_FIRE_SUPPORT_RESERVE, 0.7],
 			[DIVISION.AIR_DEFENCE_RESERVE, 0.35],
 			[DIVISION.SENSOR_RESERVE, 0.2],
 			[DIVISION.MAINTENANCE_RESERVE, 0.1],
@@ -155,6 +137,24 @@ class CommandCenter {
 			CYBORG_REPAIR_THRESHOLD: 45,
 		};
 		
+		// Construction parameters
+		/** @type {ConstructionParameters} */
+		this.CONSTRUCTION_PARAMETERS = {
+			// Concurrency
+			MAX_PARALLEL_BASE_BUILD_TASKS: 1,
+			MAX_PARALLEL_OIL_CAP_TASKS: 4,
+			MAX_PARALLEL_DEFENCE_BUILD_TASKS: 1,
+			MAX_PARALLEL_REPAIR_CENTER_BUILD_TASKS: 1,
+			ABORTED_SECTOR_COOLDOWN_MS: 30000,		// how long a sector aborted as dangerous stays off the option list
+
+			// Structure limits
+			DYNAMIC_POWER_GENERATOR_CAP: 2,
+			DYNAMIC_FACTORY_CAP: 2,
+			DYNAMIC_RESEARCH_LAB_CAP: 1,
+			MAX_VTOL_REARMING_PADS: 2, 
+			SHOULD_BUILD_VTOLS: false,
+		};
+
 		// Research parameters
 		this.DEFAULT_RESEARCH_PATH = rnd.researchOrders.getT2CannonResearchPath();
 		this.FOCUSED_COMBAT_RESEARCH_PATH = rnd.researchOrders.getFocusedT2CannonResearchPath();
