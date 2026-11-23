@@ -157,7 +157,7 @@ class CommandCenter {
 
 		// Research parameters
 		this.DEFAULT_RESEARCH_PATH = rnd.researchOrders.getT2CannonResearchPath();
-		this.FOCUSED_COMBAT_RESEARCH_PATH = rnd.researchOrders.getFocusedT2CannonResearchPath();
+		this.FOCUSED_COMBAT_RESEARCH_PATH = rnd.researchOrders.getFocusedT2RocketResearchPath();
 
 		/** @type {ResearchParameters} */
 		this.RESEARCH_PARAMETERS = {
@@ -1421,7 +1421,7 @@ class CommandCenter {
 				const researchStarted = pursueResearch(idleLabs[i], researchOrder[j].id);
 				if (researchStarted) {		// This check avoids conflicts with allies (shared-research mode)
 					positionInResearchOrder++;
-					// deb(`${researchOrder[j].name}`);		
+					deb(`${researchOrder[j].name}`);		
 					break;
 				}
 			}

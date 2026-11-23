@@ -22,6 +22,32 @@ class FishBotResearchOrders {
 	}
 
 	/**
+	 * @returns {ResearchPath} Research priorities and & blacklist for Rockets @ Tech Level 2 (T2).
+	 */
+	getFocusedT2RocketResearchPath() {
+		const FISHBOT_T2_ROCKET_RESEARCH_PRIORITIES = [
+			"R-Wpn-Rocket-Damage",
+			RESEARCHES["Tank Killer Rocket"].id,
+			"R-Struc-Power",
+
+			RESEARCHES["Super Tank-Killer Cyborg"].id,
+			"R-Wpn-Rocket-Accuracy",
+	
+			RESEARCHES["Dense Composite Alloys Mk2"].id,
+
+		];
+
+		const FISHBOT_T2_ROCKET_RESEARCH_BLACKLIST = [
+			"Flame", "Cannon", "Rail", "R-Defense", "R-Sys-VTOLStrike-Turret", "R-Wpn-PlasmaCannon", 
+		];
+
+		return {
+			'researchPriorities': FISHBOT_T2_ROCKET_RESEARCH_PRIORITIES, 
+			'researchBlacklist': FISHBOT_T2_ROCKET_RESEARCH_BLACKLIST,
+		};
+	}
+
+	/**
 	 * @returns {ResearchPath} Research priorities and & blacklist for Cannons @ Tech Level 2 (T2).
 	 */
 	getT2CannonResearchPath() {
