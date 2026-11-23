@@ -253,6 +253,30 @@ function produceLightCavalry(factory) {
 }
 
 /**
+ * Heavy rockets are tracked, heavy body rocket vehicles. Designed to add some survivability to the rocket platform.
+ * @param {*} factory 
+ * @returns 
+ */
+function produceHeavyRocket(factory) {
+	const body = chooseVehicleBody2(factory, BODY_WEIGHT.HEAVY);
+
+	// Order these by tech level if you want the most technologically advanced weapon to be used
+	const heavyCavalryWeapons = [
+		WEAPONS["Lancer"],
+		WEAPONS["Tank Killer"],
+		WEAPONS["Scourge Missile"]
+	].reverse();
+
+	const heavyCavalryPropulsions = [
+		PROPULSIONS["Wheels"], 
+		PROPULSIONS["Half-tracks"], 
+		PROPULSIONS["Tracks"]
+	].reverse();
+
+	return produceVehicle2(factory, body, heavyCavalryWeapons, heavyCavalryPropulsions);
+}
+
+/**
  * Heavy cavalry has heavy armour, heavy armament but has slow speed. Requires combined arms to be truly effective.
  * @param {*} factory 
  * @returns 
@@ -260,17 +284,16 @@ function produceLightCavalry(factory) {
 function produceHeavyCavalry(factory) {
 	const body = chooseVehicleBody2(factory, BODY_WEIGHT.HEAVY);
 
-	// Order these by tech level if you want the most technologically advanced body to be used
+	// Order these by tech level if you want the most technologically advanced weapon to be used
 	const heavyCavalryWeapons = [
-		// WEAPONS["Light Cannon"],
-		// WEAPONS["Medium Cannon"],
-		// WEAPONS["Hyper Velocity Cannon"],
-		WEAPONS["Lancer"],
-		// WEAPONS["Heavy Cannon"],
-		// WEAPONS["Twin Assault Cannon"],
-		// WEAPONS["Needle Gun"],
-		// WEAPONS["Rail Gun"],
-		// WEAPONS["Gauss Cannon"],
+		WEAPONS["Light Cannon"],
+		WEAPONS["Medium Cannon"],
+		WEAPONS["Assault Cannon"],
+		WEAPONS["Heavy Cannon"],
+		WEAPONS["Twin Assault Cannon"],
+		WEAPONS["Needle Gun"],
+		WEAPONS["Rail Gun"],
+		WEAPONS["Gauss Cannon"],
 	].reverse();
 	
 	const heavyCavalryPropulsions = [
@@ -406,9 +429,10 @@ function produceInfantry(factory) {
 		// { res: "R-Wpn-Cannon1Mk1", body: "CyborgLightBody", name: 'Heavy Gunner', prop: "CyborgLegs", weapon: [ "CyborgCannon", ] },
 		{ res: "R-Wpn-Mortar01Lt", body: "CyborgLightBody", name: 'Grenadier', prop: "CyborgLegs", weapon: "Cyb-Wpn-Grenade" },
 		{ res: "R-Wpn-MG4", body: "CyborgLightBody", name: 'Assault Gunner', prop: "CyborgLegs", weapon: "CyborgRotMG" },
-		{ res: "R-Wpn-Rocket01-LtAT", body: "CyborgLightBody", name: 'AT Crew', prop: "CyborgLegs", weapon: "CyborgRocket" },
+		{ res: "R-Wpn-Rocket01-LtAT", body: "CyborgLightBody", name: 'Lancer', prop: "CyborgLegs", weapon: "CyborgRocket" },
 		// { res: "R-Wpn-MG4", body: "CyborgHeavyBody", name: 'Super HVC Cyborg', prop: "CyborgLegs", weapon: "Cyb-Hvywpn-HPV" },
 		// { res: "R-Cyborg-Hvywpn-Acannon", body: "CyborgHeavyBody", name: 'Super Auto-Cannon Cyborg', prop: "CyborgLegs", weapon: "Cyb-Hvywpn-Acannon" }, // ac super
+		{ res: "canBeAnything", body: "CyborgHeavyBody", name: 'Tank Killer', prop: "CyborgLegs", weapon: "Cyb-Hvywpn-TK" },
 		// { res: "R-Wpn-RailGun01", body: "CyborgLightBody", name: 'Needle Gunner', prop: "CyborgLegs", weapon: "Cyb-Wpn-Rail1" }, 
 		// { res: "R-Wpn-Laser01", body: "CyborgLightBody", name: 'Flashlight Gunner', prop: "CyborgLegs", weapon: "Cyb-Wpn-Laser" }, 
 		// { res: "R-Cyborg-Hvywpn-PulseLsr", body: "CyborgHeavyBody", name: 'Super Pulse Laser Cyborg', prop: "CyborgLegs", weapon: "Cyb-Hvywpn-PulseLsr" }, 
@@ -439,7 +463,7 @@ function produceLandUnitCategory(category, factory) {
 	
 	switch (category) {
 		case DIVISION.HEAVY_CAV_RESERVE:
-			productionStarted = productionStarted || produceHeavyCavalry(factory);
+			productionStarted = productionStarted || produceHeavyRocket(factory);
 			break;
 		case DIVISION.LIGHT_CAV_RESERVE:
 			productionStarted = productionStarted || produceLightCavalry(factory);
