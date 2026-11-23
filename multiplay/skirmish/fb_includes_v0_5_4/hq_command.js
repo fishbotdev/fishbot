@@ -1362,7 +1362,7 @@ class CommandCenter {
 
 			if (SHOULD_PRODUCE_VTOLS) {
 				if (DEBUG_PRODUCTION) debug(`	${gameTime}: produced VTOL`);
-				const productionStarted = produceCloseAirSupport(factory);
+				const productionStarted = produceATRocketDrone(factory);
 				if (productionStarted) {
 					this.toc.addToActiveProductionJobs(state, {'factory': factory, 'type': DIVISION.AIR_RESERVE});
 				}

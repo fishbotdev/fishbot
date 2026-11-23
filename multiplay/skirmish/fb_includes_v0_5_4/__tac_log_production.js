@@ -187,7 +187,23 @@ function produceCombatEngineer(factory) {
 	AIR UNIT PRODUCTION
 */
 
-function produceCloseAirSupport(factory) {
+function produceATRocketDrone(factory) {
+	const body = chooseVehicleBody2(factory, BODY_WEIGHT.MEDIUM);
+
+	const fishBotCASWeapons = [
+		WEAPONS["VTOL Lancer"],
+		WEAPONS["VTOL Tank Killer"],
+		WEAPONS["VTOL Scourge Missile"]
+	].reverse();
+
+	const vtolPropulsions = [
+		PROPULSIONS["VTOL"]
+	];
+
+	return produceVehicle2(factory, body, fishBotCASWeapons, vtolPropulsions);
+}
+
+function produceCannonDrone(factory) {
 
 	const body = chooseVehicleBody2(factory, BODY_WEIGHT.MEDIUM);
 
@@ -205,7 +221,7 @@ function produceCloseAirSupport(factory) {
 	return produceVehicle2(factory, body, fishBotCASWeapons, vtolPropulsions);
 }
 
-function produceDeepAirSupport(factory) {
+function produceBombDrone(factory) {
 
 	const body = chooseVehicleBody2(factory, BODY_WEIGHT.MEDIUM);
 
