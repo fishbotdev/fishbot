@@ -342,7 +342,7 @@ function produceHeavyRepair(factory) {
 
 
 function produceLandAPFireSupport(factory) {
-	const body = chooseVehicleBody2(factory, BODY_WEIGHT.HEAVY);
+	const body = chooseVehicleBody2(factory, BODY_WEIGHT.MEDIUM);
 
 	// Order these by tech level if you want the most technologically advanced weapon to be used
 	const fireSupportWeapons = [
@@ -362,7 +362,7 @@ function produceLandAPFireSupport(factory) {
 }
 
 function produceLandFireSupportGeneric(factory) {
-	const body = chooseVehicleBody2(factory, BODY_WEIGHT.HEAVY);
+	const body = chooseVehicleBody2(factory, BODY_WEIGHT.MEDIUM);
 
 	// Order these by tech level if you want the most technologically advanced weapon to be used
 	const fireSupportWeapons = [
