@@ -355,7 +355,7 @@ function produceLandAPFireSupport(factory) {
 	const fireSupportPropulsions = [
 		PROPULSIONS["Wheels"], 
 		PROPULSIONS["Half-tracks"],
-		PROPULSIONS["Tracks"]
+		// PROPULSIONS["Tracks"]
 	].reverse();
 
 	return produceVehicle2(factory, body, fireSupportWeapons, fireSupportPropulsions);
