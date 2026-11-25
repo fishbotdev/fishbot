@@ -70,8 +70,8 @@ class CommandCenter {
 		this.FORCE_BUDGET_BRIGADES = 2;
 
 		const DEFAULT_FISHBOT_BRIGADE_COMPOSITION = {
-			'MAX_HEAVY_CAVALRY': 4,
-			'MAX_LIGHT_CAVALRY': 4,
+			'MAX_HEAVY_CAVALRY': 3,
+			'MAX_LIGHT_CAVALRY': 5,
 			'MAX_MORTAR': 7,
 			'MAX_ADA': 0,
 			'MAX_SENSOR': 0,
@@ -122,7 +122,7 @@ class CommandCenter {
 			SHOULD_PRODUCE_TRUCK_VEHICLES: true,
 			MAX_TRUCKS_THIS_TICK: 1,
 			SHOULD_PRODUCE_TRUCK_CYBORGS: false,
-			DYNAMIC_TRUCK_CAP: 5,
+			DYNAMIC_TRUCK_CAP: 8,
 			
 			BRIGADE_WEIGHTS: DEFAULT_BRIGADE_WEIGHTS,
 			BRIGADE_COMPOSITION: DEFAULT_FISHBOT_BRIGADE_COMPOSITION,
@@ -385,9 +385,9 @@ class CommandCenter {
 			// Production weights (which influences production order) are tuned using `python_helper_scripts / production_scheduling.py`.
 			// Must be rebalanced each time the brigade composition is changed.	
 			[DIVISION.HEAVY_CAV_RESERVE, 0.55],
-			[DIVISION.LIGHT_CAV_RESERVE, 0.9],
-			[DIVISION.SHORT_RANGE_FIRE_SUPPORT_RESERVE, 0.65],
-			[DIVISION.AIR_DEFENCE_RESERVE, 0.2],
+			[DIVISION.LIGHT_CAV_RESERVE, 0.95],
+			[DIVISION.SHORT_RANGE_FIRE_SUPPORT_RESERVE, 0.6],
+			[DIVISION.AIR_DEFENCE_RESERVE, 0.35],
 			[DIVISION.SENSOR_RESERVE, 0.2],
 			[DIVISION.MAINTENANCE_RESERVE, 0.1],
 		]);
