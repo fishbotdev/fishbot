@@ -156,7 +156,7 @@ def generate_ffa_configs(base_config: dict) -> list:
                 config[f"player_{position}"] = {
                     "difficulty": C.MEDIUM_DIFFICULTY,
                     "team": position,
-                    "ai": C.COBRA_AI,
+                    "ai": C.PEACEMAKER_AI,
                 }
 
         results.append({
@@ -214,7 +214,7 @@ def generate_duel_configs(base_config: dict) -> list:
                     config[f"player_{position}"] = {
                         "difficulty": C.MEDIUM_DIFFICULTY,
                         "team": position,
-                        "ai": C.COBRA_AI,
+                        "ai": C.PEACEMAKER_AI,
                     }
                 else:
                     config[f"player_{position}"] = create_spectator_player(team=C.DEFAULT_FISHBOT_TEAM)

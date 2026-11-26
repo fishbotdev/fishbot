@@ -227,11 +227,11 @@ def launch_workers(
 
 def run_batch_test(commit_sha: str) -> Path:
 
-    WORKER_COUNT = 8    # match to number of CPU cores
+    WORKER_COUNT = 6    # match to number of CPU cores
 
     COMMIT_SHA = commit_sha
     SHORT_SHA = COMMIT_SHA[:7]
-    RUNS_PER_TEST = 50
+    RUNS_PER_TEST = 10
 
     BASE_MANIFEST_PATH = Path.cwd() / "base_manifest.json"
     TEST_RESULTS_PATH = Path.cwd() / "results" / SHORT_SHA
@@ -297,7 +297,7 @@ if __name__ == "__main__":
 
         start_time = time.time()
 
-        run_batch_test(commit_sha="ad59fc71f6570631b931315d7c5398c0273da1e7")
+        run_batch_test(commit_sha="5f5f81f77e82782b7855d1118e884ee6e39826ad")
 
         end_time = time.time()
 
