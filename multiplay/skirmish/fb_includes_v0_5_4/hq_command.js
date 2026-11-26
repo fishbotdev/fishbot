@@ -634,8 +634,6 @@ class CommandCenter {
 		const directFireTargetsInRange = [];
 		const targetsOutOfRange = [];		
 
-		let FOUND_COMMITTED_TARGET_IN_RANGE = false;
-
 		/** @param {TargetCandidate[]} candidates */
 		const addDirectFireTargetByProximity = (candidates) => {
 			candidates.forEach(c => {
