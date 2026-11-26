@@ -90,8 +90,8 @@ class CommandCenter {
 			// sit 1/sqrt(w) times further away than a rival and still win: 0.2 => ~2.2x, 0.25 => 2x, 0.56 => ~1.3x.
 			KNOCKOUT_WEIGHT: 0.56,					// promotes targets which the brigade has already damaged
 			LOW_HEALTH_THRESHOLD: 50,				// a target below this health percentage is considered worth finishing off
-			THREAT_WEIGHT: 0.56,			
-
+			THREAT_WEIGHT: 0.44,			
+			BLOCKED_APPROACH_WEIGHT: 2.0,			// demotes targets with terrain in the way; a target with a clear approach wins from ~1.4x further away
 			EFFECTIVE_FIRE_SUPPORT_RADIUS: 12,		// todo: this should be adaptive - when the brigade has a sensor, this is better, without, it is restricted by sight range of the front units
 			EFFECTIVE_ADA_RADIUS: 12,
 		};
@@ -623,6 +623,11 @@ class CommandCenter {
 			}
 			if (c.target.flags & (OBJ_FLAGS.ARMOUR | OBJ_FLAGS.INDIRECT_FIRE | OBJ_FLAGS.INFANTRY | OBJ_FLAGS.DEFENSIVE_STRUCTURE)) {
 				cost *= parameters.THREAT_WEIGHT;
+			}
+			if (lineIsBlocked(x, y, obj.x, obj.y, isWalkable)) {
+				// Terrain 1: Demotes targets the brigade cannot drive straight at. 
+				// TODO: Simplistic. Projects a straight line from the brigade position to the target & checks if the tiles are walkable. Replace by strategic layer inputs.
+				cost *= parameters.BLOCKED_APPROACH_WEIGHT;
 			}
 			return cost;
 		}
