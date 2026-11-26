@@ -349,22 +349,22 @@ function moveBrigadeToAttack(state, brigadeID, groundTargets) {
 
 	const CLOSEST_X = closestDroidToTarget.x, CLOSEST_Y = closestDroidToTarget.y;
 
-	let SHOULD_ATTACK = true;
+	let HAS_FIRE_SUPPORT = true;
 	if (DIRECT_FIRE_TARGET_AVAILABLE && 
 		SHORT_RANGE_FIRE_SUPPORT.length > 0 &&
-		distSq(CLOSEST_X, DIRECT_FIRE_TARGET.x, CLOSEST_Y, DIRECT_FIRE_TARGET.y) > 12 ** 2) 
+		distSq(CLOSEST_X, DIRECT_FIRE_TARGET.x, CLOSEST_Y, DIRECT_FIRE_TARGET.y) > 10 ** 2) 
 	{
-		if (!SHORT_RANGE_FIRE_SUPPORT.some(u => distSq(u.x, CLOSEST_X, u.y, CLOSEST_Y))) {
-			SHOULD_ATTACK = false;
+		const SOME_FIRE_SUPPORT_NEARBY = SHORT_RANGE_FIRE_SUPPORT.some(u => (distSq(u.x, CLOSEST_X, u.y, CLOSEST_Y)) < 9 ** 2);
+		if (!SOME_FIRE_SUPPORT_NEARBY) {
+			HAS_FIRE_SUPPORT = false;
 		}
-		// hackMarkTiles(LOCATION_X-4, LOCATION_Y-4, LOCATION_X+3, LOCATION_Y+3);
 	}
 
 	const _distSqToClosestDroid = (droid) => distSq(droid.x, closestDroidToTarget.x, droid.y, closestDroidToTarget.y);
 
 	const moveToClosestDroid = (droid) => orderDroidLoc(droid, DORDER_MOVE, closestDroidToTarget.x, closestDroidToTarget.y);
 	
-	const attackDirectFireTarget = (droid, distSqGroupCenterToTarget, shouldAttack) => {
+	const attackDirectFireTarget = (droid, distSqGroupCenterToTarget, hasFireSupport) => {
 		const UNIT_ROADBLOCKED = state.mapData.isChokepoint[droid.x][droid.y] && BRIGADE_CONGESTED;
 		const DISTSQ_TO_CENTER = distSq(LOCATION_X, droid.x, LOCATION_Y, droid.y);
 
@@ -374,7 +374,7 @@ function moveBrigadeToAttack(state, brigadeID, groundTargets) {
 		const DISTSQ_TO_TARGET = distSq(targetX, droid.x, targetY, droid.y);
 		const AHEAD_OF_GROUP = DISTSQ_TO_TARGET < distSqGroupCenterToTarget;
 
-		if (shouldAttack) {
+		if (hasFireSupport) {
 			if (TOO_FAR_AWAY_FROM_CENTER) {
 				if (UNIT_ROADBLOCKED) {
 					attackTarget(droid, DIRECT_FIRE_TARGET);
@@ -438,9 +438,9 @@ function moveBrigadeToAttack(state, brigadeID, groundTargets) {
 		DISTSQ_CENTER_TO_TARGET = distSq(LOCATION_X, targetX, LOCATION_Y, targetY);
 	}
 
-	ARMOUR_UNITS.forEach(droid => attackDirectFireTarget(droid, DISTSQ_CENTER_TO_TARGET, SHOULD_ATTACK));
+	ARMOUR_UNITS.forEach(droid => attackDirectFireTarget(droid, DISTSQ_CENTER_TO_TARGET, HAS_FIRE_SUPPORT));
 
-	INFANTRY_UNITS.forEach(droid => attackDirectFireTarget(droid, DISTSQ_CENTER_TO_TARGET, SHOULD_ATTACK));
+	INFANTRY_UNITS.forEach(droid => attackDirectFireTarget(droid, DISTSQ_CENTER_TO_TARGET, HAS_FIRE_SUPPORT));
 
 	SENSOR_UNITS.forEach(maintainPosition);
 
