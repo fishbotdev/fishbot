@@ -36,10 +36,10 @@ class armyAviation {
 	 */
 	translateIntoCASRequest(targetObject, priority) {
 		return this.#createAirStrikeRequest({
-			'missionType': MISSION_TYPE.CAS_STRIKE, 
+			'missionType': MISSION_TYPE.CAS_STRIKE,
 			'target': targetObject,
 			'priority': priority,
-			'numAircraft': 2		
+			'numAircraft': 1
 		});
 	}
 	
@@ -117,11 +117,7 @@ class armyAviation {
 		const target = undefined;
 		const md =  this.#createMissionOrders(missionType, "VTOL_STAGING_MISSION", DIVISION.AIR_RESERVE, target);
 
-		const ORBIT_RADIUS = 2;
-		md.orders = () => {
-			const {x, y} = state.brigades[DIVISION.FIRST_BCT].location;
-			return orbitVtolGroup(md.taskForceID, x, y, ORBIT_RADIUS);
-		};
+		md.orders = () => rearmVtolGroup(md.taskForceID);
 		md.ceaseOrders = () => {};
 		return md;
 	}
