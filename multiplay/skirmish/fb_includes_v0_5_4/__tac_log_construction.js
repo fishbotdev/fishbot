@@ -159,7 +159,7 @@ function pickStructLocation3(structureID, x, y) {
 	const heightMap = state.mapData.heightMap;
 
 	const playerIsEnemy = [];
-	state.playerInfo.forEach(p => playerIsEnemy.push(p.isFriendly));
+	state.playerInfo.forEach(p => playerIsEnemy.push(!p.isFriendly));
 
 	if (!isReachable[x][y]) {
 		// debug(` ${gameTime}: pickStructLocation3() failed: (${x} ${y}) for "${structureID}" is not reachable with wheels. Check caller function.`);
