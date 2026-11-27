@@ -74,7 +74,10 @@ function footprintIsBlocked(structureID, x, y, nearbyObjects) {
 
 		if (IS_DESIRED_STRUCTURE) 	continue;
 
-		const nearbyStructureFootprint = getStructureBounds(lookup.id).footprint;
+		if (lookup === undefined) {
+			warn(`footprintIsBlocked(): "${obj.name}" (player ${obj.player}) at ${obj.x}, ${obj.y} is not in STRUCTURES. Defaulted to a 1x1 footprint.`);
+		}
+		const nearbyStructureFootprint = getStructureBounds(lookup?.id).footprint;
 		for (let j=0; j<nearbyStructureFootprint.length; j++) {
 			const ox = obj.x + nearbyStructureFootprint[j][0];
 			const oy = obj.y + nearbyStructureFootprint[j][1];
