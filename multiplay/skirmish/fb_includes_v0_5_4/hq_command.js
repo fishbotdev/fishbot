@@ -59,7 +59,7 @@ class CommandCenter {
 			STANDARD_THREAT_THRESHOLD: 0,
 			URGENT_THREAT_THRESHOLD: 0,
 			SATURATION_THREAT_THRESHOLD: 0,
-			CAS_SUPPORT_RADIUS: 25,
+			CAS_SUPPORT_RADIUS: 12,
 			UNITS_FOR_ADA_STRIKE: 3,
 		};
 
@@ -449,7 +449,7 @@ class CommandCenter {
 		this.AVIATION_PARAMETERS.STANDARD_THREAT_THRESHOLD = STANDARD_THREAT_THRESHOLD;
 		this.AVIATION_PARAMETERS.URGENT_THREAT_THRESHOLD = URGENT_THREAT_THRESHOLD;
 		this.AVIATION_PARAMETERS.SATURATION_THREAT_THRESHOLD = SATURATION_THREAT_THRESHOLD;
-		this.AVIATION_PARAMETERS.CAS_SUPPORT_RADIUS = 25;
+		this.AVIATION_PARAMETERS.CAS_SUPPORT_RADIUS = 12;
 		this.AVIATION_PARAMETERS.UNITS_FOR_ADA_STRIKE = 3;
 
 		/*
@@ -718,8 +718,9 @@ class CommandCenter {
 
 		// CAS Targeting (Close Air Support)
 		// Intent: `casTargets` should be a list of mission requests interpretable by a following call of `#prioritiseAviationTargets`.
-		const primaryCASTargets = [...enemyIndirectFire];
-		const secondaryCASTargets = [...enemyADA, ...enemyArmor, ...enemyDefenses];
+		const inCasRange = (c) => !outsideOfRadius(c.targetObj, this.AVIATION_PARAMETERS.CAS_SUPPORT_RADIUS);
+		const primaryCASTargets = [...enemyIndirectFire].filter(inCasRange);
+		const secondaryCASTargets = [...enemyADA, ...enemyArmor, ...enemyDefenses].filter(inCasRange);
 
 		const isHealthy = (obj) => obj.health > 25;
 		secondaryCASTargets.forEach(c => {
@@ -860,6 +861,7 @@ class CommandCenter {
 		} else {
 			targetCandidates = casPriorityTargets;
 		}
+		targetCandidates = casTargets;
 
 		if (targetCandidates.length === 0) {
 			// debug(`${gameTime}: no target candidates; (CAS/RAID/IND = ${prioritiseIndustrialTargets}, ${prioritiseCasTargets}, ${prioritiseRaidTargets})`);

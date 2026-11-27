@@ -117,12 +117,10 @@ class armyAviation {
 		const target = undefined;
 		const md =  this.#createMissionOrders(missionType, "VTOL_STAGING_MISSION", DIVISION.AIR_RESERVE, target);
 
-		const ORBIT_RADIUS = 4;
+		const ORBIT_RADIUS = 2;
 		md.orders = () => {
-			const bct = state.brigades[DIVISION.FIRST_BCT];
-			const ref = bct.currentDirectFireTargets.find(t => !(t.flags & OBJ_FLAGS.INFANTRY));
-			const strikeTarget = ref && getObject(ref.type, ref.player, ref.id);
-			return orbitVtolGroup(md.taskForceID, bct.location.x, bct.location.y, ORBIT_RADIUS, strikeTarget);
+			const {x, y} = state.brigades[DIVISION.FIRST_BCT].location;
+			return orbitVtolGroup(md.taskForceID, x, y, ORBIT_RADIUS);
 		};
 		md.ceaseOrders = () => {};
 		return md;
