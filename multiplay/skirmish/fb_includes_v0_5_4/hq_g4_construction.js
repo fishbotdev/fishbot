@@ -487,10 +487,10 @@ class armyEngineering {
 
 			// STRUCTURES["Cyborg Factory"],
 
-			// STRUCTURES["Power Generator"],		// inserting these here in the case that more power than expected is captured
-			// 	STRUCTURES["Power Module"],
-			// STRUCTURES["Power Generator"],		
-			// 	STRUCTURES["Power Module"],
+			STRUCTURES["Power Generator"],		// inserting these here in the case that more power than expected is captured
+				STRUCTURES["Power Module"],
+			STRUCTURES["Power Generator"],		
+				STRUCTURES["Power Module"],
 
 			// STRUCTURES["VTOL Rearming Pad"],
 			// STRUCTURES["VTOL Rearming Pad"],
