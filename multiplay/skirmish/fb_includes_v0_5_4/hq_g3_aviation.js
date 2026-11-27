@@ -119,8 +119,10 @@ class armyAviation {
 
 		const ORBIT_RADIUS = 4;
 		md.orders = () => {
-			const {x, y} = state.brigades[DIVISION.FIRST_BCT].location;
-			return orbitVtolGroup(md.taskForceID, x, y, ORBIT_RADIUS);
+			const bct = state.brigades[DIVISION.FIRST_BCT];
+			const ref = bct.currentDirectFireTargets.find(t => !(t.flags & OBJ_FLAGS.INFANTRY));
+			const strikeTarget = ref && getObject(ref.type, ref.player, ref.id);
+			return orbitVtolGroup(md.taskForceID, bct.location.x, bct.location.y, ORBIT_RADIUS, strikeTarget);
 		};
 		md.ceaseOrders = () => {};
 		return md;

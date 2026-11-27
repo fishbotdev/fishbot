@@ -73,13 +73,14 @@ function rearmVtolGroup(taskForceID) {
 }
 
 /**
- * TAC SOP: VTOL ORBIT — scout to a random point within `radius` of (x, y); rearm when low.
+ * TAC SOP: VTOL ORBIT — attack `target` if given, else move to a random point within `radius` of (x, y); rearm when low.
  * @param {string | number} taskForceID
  * @param {number} x
  * @param {number} y
  * @param {number} radius
+ * @param {DroidObject | StructureObject | null | undefined} target
  */
-function orbitVtolGroup(taskForceID, x, y, radius) {
+function orbitVtolGroup(taskForceID, x, y, radius, target) {
 	const randomOffset = () => Math.round((Math.random() * 2 - 1) * radius);
 	const clamp = (v, max) => Math.min(Math.max(v, 1), max - 2);
 
@@ -91,7 +92,14 @@ function orbitVtolGroup(taskForceID, x, y, radius) {
 			vtolRearm(droid);
 			return;
 		}
-		orderDroidLoc(droid, DORDER_SCOUT, clamp(x + randomOffset(), mapWidth), clamp(y + randomOffset(), mapHeight));
+		if (droid.order === DORDER_ATTACK) {
+			return;
+		}
+		if (target != null) {
+			attackTarget(droid, target);
+			return;
+		}
+		orderDroidLoc(droid, DORDER_MOVE, clamp(x + randomOffset(), mapWidth), clamp(y + randomOffset(), mapHeight));
 	});
 	return {status: MISSION_STATUS.IN_PROGRESS};
 }
