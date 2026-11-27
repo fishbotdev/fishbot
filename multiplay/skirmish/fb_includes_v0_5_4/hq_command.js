@@ -44,6 +44,7 @@ class CommandCenter {
 
 		// Oil strategic parameters
 		this.isOilDominant = false;					// reports whether or not FishBot has enough oil (for the time being)
+		this.hasReachedTruckCapOnce = false;		// once true, trucks are replenished one at a time, and only while the army can spare them
 
 		// Intelligence parameters
 		this.TARGET_SEARCH_RADIUS = 25;				// how many tiles away from the brigadeLocation to look for enemies (impacts computational performance)
@@ -365,7 +366,12 @@ class CommandCenter {
 		const SHOULD_PRODUCE_VTOLS = CAN_DESIGN_UNITS && !HIT_AIR_UNIT_LIMIT;
 
 		// Decide on whether or not to produce trucks
-		const MAX_TRUCKS_THIS_TICK = TRUCK_SOFT_LIMIT - MY_TRUCK_COUNT;
+		if (HIT_TRUCK_LIMIT) this.hasReachedTruckCapOnce = true;
+		const GROUND_ARMY_SIZE = MY_LAND_VEHICLE_COUNT + (MY_INFANTRY_COUNT > 3 ? MY_INFANTRY_COUNT : 0);
+		const ARMY_CAN_SPARE_TRUCK = GROUND_ARMY_SIZE >= 9 || MY_TRUCK_COUNT < BASE_BUILDER_TRUCK_COUNT;
+		const TRUCK_DEFICIT = TRUCK_SOFT_LIMIT - MY_TRUCK_COUNT;
+		const SLOW_REPLENISHMENT_CAP = ARMY_CAN_SPARE_TRUCK ? 1 : 0;
+		const MAX_TRUCKS_THIS_TICK = this.hasReachedTruckCapOnce ? Math.min(SLOW_REPLENISHMENT_CAP, TRUCK_DEFICIT) : TRUCK_DEFICIT;
 
 		const INITIAL_TRUCK_RUSH_PERIOD = gameTime < 60000;
 
@@ -981,17 +987,18 @@ class CommandCenter {
 
 		// New mission planning system has implemented .gx, .gy grid references for all missions
 		// This allows the following algorithm:
-		// 	1. Check threat @ grid ref
-		//	2. Check truck distances to grid ref 
-		//	3. Cancel mission
+		// 	1. Check threat @ grid ref and @ each truck's own cell
+		//	2. Check truck distances to grid ref
+		//	3. Cancel mission if any truck is in danger, or if the site is threatened and no truck has reached it yet
 		activeRemoteMissions.forEach(md => {
-			// Check unit threat at grid ref
-			if (enemyUnitThreat[md.gx][md.gy] === 0 && enemyStaticDefenceThreat[md.gx][md.gy] === 0) {
+			const assignedTrucks = state.g.enumGroup(md.id);
+			const TRUCK_IN_DANGER = assignedTrucks.some(truck => enemyUnitThreat[Math.floor(truck.x / cellSize)][Math.floor(truck.y / cellSize)] >= 1);
+			const SITE_IS_SAFE = enemyUnitThreat[md.gx][md.gy] < 1 && enemyStaticDefenceThreat[md.gx][md.gy] === 0;
+			if (SITE_IS_SAFE && !TRUCK_IN_DANGER) {
 				return;
 			}
-			
+
 			// Check truck locations relative to grid ref
-			const assignedTrucks = state.g.enumGroup(md.id);
 			const moreThanOneCellAway = assignedTrucks.every(truck => {
 				const tgx = Math.floor(truck.x / cellSize);
 				const tgy = Math.floor(truck.y / cellSize);
@@ -1003,7 +1010,7 @@ class CommandCenter {
 				}
 			});
 
-			if (moreThanOneCellAway) {
+			if (TRUCK_IN_DANGER || moreThanOneCellAway) {
 				// debug(`aborted (${md.id}) @ (~ tileco ${md.gx * cellSize} ${md.gy * cellSize}); high threat`);
 				md.missionStatus = MISSION_STATUS.ABORT;
 
@@ -1336,19 +1343,19 @@ class CommandCenter {
 		}
 
 		// Run production
-		let trucksThisTick = 0;
+		let trucksInProduction = activeProductionJobs.filter(job => job.type === ENGINEERING.ENGINEERING_RESERVE).length;
 		const DEBUG_PRODUCTION = false;
 
 		// Note: for now, we will directly call the tactical level functions
 		for (let i=0; i<idleCyborgFactories.length; i++) {
 			const f = idleCyborgFactories[i];
 
-			if (SHOULD_PRODUCE_TRUCK_CYBORGS && trucksThisTick < MAX_TRUCKS_THIS_TICK) {
+			if (SHOULD_PRODUCE_TRUCK_CYBORGS && trucksInProduction < MAX_TRUCKS_THIS_TICK) {
 				if (DEBUG_PRODUCTION) debug(`	${gameTime}: produced Combat Engineer`);
 				const productionStarted = produceCombatEngineer(f);
 				if (productionStarted) {
 					this.toc.addToActiveProductionJobs(state, {'factory': f, 'type': ENGINEERING.ENGINEERING_RESERVE});
-					trucksThisTick += 1;
+					trucksInProduction += 1;
 				}
 				continue;
 			}
@@ -1379,13 +1386,13 @@ class CommandCenter {
 		for (let i=0; i<idleFactories.length; i++) {
 			const factory = idleFactories[i];
 
-			if (SHOULD_PRODUCE_TRUCK_VEHICLES && trucksThisTick < MAX_TRUCKS_THIS_TICK) {
+			if (SHOULD_PRODUCE_TRUCK_VEHICLES && trucksInProduction < MAX_TRUCKS_THIS_TICK) {
 				if (DEBUG_PRODUCTION) debug(`	${gameTime}: produced Truck`);
 				// Note: CAN_DESIGN_UNITS prevents FishBot from producing any other trucks other than `Truck Viper Wheels` until the command center is built
 				const productionStarted = produceTruck(factory, CAN_DESIGN_UNITS);
 				if (productionStarted) {
 					this.toc.addToActiveProductionJobs(state, {'factory': factory, 'type': ENGINEERING.ENGINEERING_RESERVE});
-					trucksThisTick += 1;
+					trucksInProduction += 1;
 				}		
 				continue;
 			}

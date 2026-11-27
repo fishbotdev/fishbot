@@ -86,7 +86,7 @@ class armyEngineering {
 				// Filter out invalid / bad entries
 				if (unclaimedDerricksInCell[gx][gy] === 0) continue;
 				if (enemyStaticDefenceThreat[gx][gy] > 0) continue;			
-				if (enemyUnitThreat[gx][gy] > 0) continue;
+				if (enemyUnitThreat[gx][gy] >= 1) continue;
 
 				const derricksInCell = grid[gx][gy].derricks;
 				for (let i=0; i<derricksInCell.length; i++) {
