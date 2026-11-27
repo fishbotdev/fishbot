@@ -117,7 +117,11 @@ class armyAviation {
 		const target = undefined;
 		const md =  this.#createMissionOrders(missionType, "VTOL_STAGING_MISSION", DIVISION.AIR_RESERVE, target);
 
-		md.orders = () => rearmVtolGroup(md.taskForceID);		
+		const ORBIT_RADIUS = 4;
+		md.orders = () => {
+			const {x, y} = state.brigades[DIVISION.FIRST_BCT].location;
+			return orbitVtolGroup(md.taskForceID, x, y, ORBIT_RADIUS);
+		};
 		md.ceaseOrders = () => {};
 		return md;
 	}
