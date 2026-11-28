@@ -26,7 +26,7 @@
  * @param {StructureObject} structure 
  */
 function eventDroidBuilt(droid, structure) {	
-	const newGroupID = hq.toc.setNewDroidGroup(state, droid);
+	const newGroupID = hq.toc.setNewDroidGroup(state, droid, structure);
 	hq.toc.removeFromActiveProductionJobs(state, structure, newGroupID);	// this function is used for production tracking
 }
 

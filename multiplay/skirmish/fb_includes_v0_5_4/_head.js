@@ -318,6 +318,9 @@
  * @property {number} BLOCKED_APPROACH_WEIGHT
  * @property {number} EFFECTIVE_FIRE_SUPPORT_RADIUS
  * @property {number} EFFECTIVE_ADA_RADIUS
+ * @property {number} BASE_GUARD_RADIUS
+ * @property {number} BASE_GUARD_LEASH_RADIUS
+ * @property {number} BASE_GUARD_IDLE_RADIUS
  */
 
 /**
@@ -353,7 +356,8 @@
  * @property {boolean} SHOULD_PRODUCE_TRUCK_VEHICLES
  * @property {number} MAX_TRUCKS_THIS_TICK
  * @property {boolean} SHOULD_PRODUCE_TRUCK_CYBORGS
- * @property {number} DYNAMIC_TRUCK_CAP	
+ * @property {number} DYNAMIC_TRUCK_CAP
+ * @property {boolean} SHOULD_PRODUCE_BASE_GUARD
  * 
  * @property {Map<number, number>} BRIGADE_WEIGHTS
  * @property {Object} BRIGADE_COMPOSITION
@@ -470,6 +474,7 @@ const DIVISION = {
 	BCT_RESERVE: 3016,
 
 	RETURNING_FOR_REPAIR: 4000,
+	BASE_GUARD: 4001,
 };
 Object.freeze(DIVISION);
 
