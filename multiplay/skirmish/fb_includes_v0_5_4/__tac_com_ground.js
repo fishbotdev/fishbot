@@ -153,6 +153,61 @@ function moveReservesToShadow(state, reserveGroupIDs, anchorBrigadeID) {
 
 }
 
+/**
+ * TAC SOP: GUARD THE BASE
+ *
+ * The guard waits at the base repair facility (or the base, if there is none) and attacks any reachable enemy near
+ * the base: units first, then structures. A guard which strays beyond the leash is recalled, whatever it is doing.
+ * @param {worldState} state
+ * @param {number} guardGroupID
+ * @param {GroundForceParameters} parameters
+ */
+function guardBase(state, guardGroupID, parameters) {
+	const guards = state.g.enumGroup(guardGroupID);
+	if (guards.length === 0) {
+		return;
+	}
+
+	const bx = baseLocation.x, by = baseLocation.y;
+	const isReachable = state.mapData.isReachable;
+
+	// Remote repair centres are never built within 14 tiles of base, so a facility this close is the base one.
+	const baseRepairFacility = state.playerInfo[me]["repairFacilityFbObjects"].find(f => distSq(f.x, bx, f.y, by) <= 14 ** 2);
+	const anchor = baseRepairFacility ?? baseLocation;
+
+	/** @param {FbObject[]} candidates */
+	const findFirstReachable = (candidates) => {
+		for (const c of candidates) {
+			const obj = getObject(c.type, c.player, c.id);
+			if (obj != null && isReachable[obj.x][obj.y]) return obj;
+		}
+		return null;
+	};
+
+	const nearby = state.grid.enumRangeLazy(bx, by, parameters.BASE_GUARD_RADIUS, true, false);
+	const groundUnits = nearby['targetUnits'].filter(t => !(t.flags & OBJ_FLAGS.AVIATION));
+	const target = findFirstReachable(groundUnits) ?? findFirstReachable(nearby['targetStructures']);
+
+	guards.forEach(guard => {
+		const BEYOND_LEASH = distSq(guard.x, bx, guard.y, by) > parameters.BASE_GUARD_LEASH_RADIUS ** 2;
+		const IS_ATTACKING = guard.order === DORDER_ATTACK;
+		if (!BEYOND_LEASH && IS_ATTACKING) {
+			return;
+		}
+		if (!BEYOND_LEASH && target != null) {
+			// temporary: flags enemies building in, or raiding, the base
+			deb(`base guard ${guard.id} attacking ${target.name} (player ${target.player}) at (${target.x}, ${target.y})`);
+			attackTarget(guard, target);
+			return;
+		}
+		const AWAY_FROM_ANCHOR = distSq(guard.x, anchor.x, guard.y, anchor.y) > parameters.BASE_GUARD_IDLE_RADIUS ** 2;
+		const IS_MOVING = guard.order === DORDER_MOVE;
+		if ((BEYOND_LEASH || AWAY_FROM_ANCHOR) && !IS_MOVING) {
+			orderDroidLoc(guard, DORDER_MOVE, anchor.x, anchor.y);
+		}
+	});
+}
+
 const COHESION_RADII = {
 	/** @type {CohesionRadius} */
 	REGROUP:         {tight: 8, relaxed: 12},		// beyond this, a unit breaks off what it is doing and rejoins the group

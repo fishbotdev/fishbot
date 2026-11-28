@@ -1070,13 +1070,15 @@ class TacticalOperationsCenter {
 	}
 
 	/**
-     * Adds all newly manufactured droids into a FishBot reserve group (called by `eventDroidBuilt()`).
+     * Adds a newly manufactured droid to its FishBot reserve group, or to the base guard if built for it (called by `eventDroidBuilt()`).
 	 * @param {worldState} state
-     * @param {DroidObject} droid 
+     * @param {DroidObject} droid
+     * @param {StructureObject | null} factory the factory which built the droid, if any
      * @returns {number} new groupID
      */
-    setNewDroidGroup(state, droid) {
-		const groupID = getDroidFbGroupClassification(droid);
+    setNewDroidGroup(state, droid, factory = null) {
+		const IS_BASE_GUARD_JOB = factory != null && state.activeProductionJobs.some(job => job.factory.id === factory.id && job.type === DIVISION.BASE_GUARD);
+		const groupID = IS_BASE_GUARD_JOB ? DIVISION.BASE_GUARD : getDroidFbGroupClassification(droid);
 		state.g.addDroidToGroup({groupID: groupID, droidID: droid.id});
 		return groupID;
 	}

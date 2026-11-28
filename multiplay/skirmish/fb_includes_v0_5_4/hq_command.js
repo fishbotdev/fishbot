@@ -45,6 +45,7 @@ class CommandCenter {
 		// Oil strategic parameters
 		this.isOilDominant = false;					// reports whether or not FishBot has enough oil (for the time being)
 		this.hasReachedTruckCapOnce = false;		// once true, trucks are replenished one at a time, and only while the army can spare them
+		this.hasFilledBaseGuardOnce = false;		// once true, base guards are replaced only while the army can spare them
 
 		// Intelligence parameters
 		this.TARGET_SEARCH_RADIUS = 25;				// how many tiles away from the brigadeLocation to look for enemies (impacts computational performance)
@@ -69,6 +70,7 @@ class CommandCenter {
 
 		// Total ground force budget, counted in brigades' worth of units (BCT + reserve).
 		this.FORCE_BUDGET_BRIGADES = 2;
+		this.BASE_GUARD_SIZE = 2;					// units held at base, outside the force budget
 
 		const DEFAULT_FISHBOT_BRIGADE_COMPOSITION = {
 			'MAX_HEAVY_CAVALRY': 3,
@@ -95,6 +97,9 @@ class CommandCenter {
 			BLOCKED_APPROACH_WEIGHT: 2.0,			// demotes targets with terrain in the way; a target with a clear approach wins
 			EFFECTIVE_FIRE_SUPPORT_RADIUS: 12,		// todo: this should be adaptive - when the brigade has a sensor, this is better, without, it is restricted by sight range of the front units
 			EFFECTIVE_ADA_RADIUS: 12,
+			BASE_GUARD_RADIUS: 20,					// the base guard attacks enemies within this many tiles of the base
+			BASE_GUARD_LEASH_RADIUS: 21,			// a guard beyond this is recalled, whatever it is doing
+			BASE_GUARD_IDLE_RADIUS: 4,				// how far an idle guard may sit from the base repair facility
 		};
 
 		// Production parameters
@@ -126,7 +131,8 @@ class CommandCenter {
 			MAX_TRUCKS_THIS_TICK: 1,
 			SHOULD_PRODUCE_TRUCK_CYBORGS: false,
 			DYNAMIC_TRUCK_CAP: 8,
-			
+			SHOULD_PRODUCE_BASE_GUARD: false,
+
 			BRIGADE_WEIGHTS: DEFAULT_BRIGADE_WEIGHTS,
 			BRIGADE_COMPOSITION: DEFAULT_FISHBOT_BRIGADE_COMPOSITION,
 			TOTAL_UNITS_PER_BRIGADE: TOTAL_UNITS_PER_BRIGADE,		
@@ -338,7 +344,8 @@ class CommandCenter {
 		const cyborgFactories = state.playerInfo[me]["cyborgFactoryFbObjects"];
 		const CYBORG_CONSTRUCTOR_AVAILABLE = cyborgFactories.length > 0;
 		const MY_TRUCK_COUNT = state.playerInfo[me]["numTrucks"];
-		const MY_INFANTRY_COUNT = state.playerInfo[me]["numInfantryUnits"];
+		const BASE_GUARD_COUNT = state.g.groupSize(DIVISION.BASE_GUARD);
+		const MY_INFANTRY_COUNT = state.playerInfo[me]["numInfantryUnits"] - BASE_GUARD_COUNT;		// guards sit outside the infantry budget
 
 		// todo: add sensor + repair to land vehicle count
 		const MY_LAND_VEHICLE_COUNT = (state.playerInfo[me]["numArmourUnits"] + state.playerInfo[me]["numADAUnits"] + 
@@ -370,10 +377,16 @@ class CommandCenter {
 		// Decide on whether or not to produce trucks
 		if (HIT_TRUCK_LIMIT) this.hasReachedTruckCapOnce = true;
 		const GROUND_ARMY_SIZE = MY_LAND_VEHICLE_COUNT + (MY_INFANTRY_COUNT > 3 ? MY_INFANTRY_COUNT : 0);
-		const ARMY_CAN_SPARE_TRUCK = GROUND_ARMY_SIZE >= 9 || MY_TRUCK_COUNT < BASE_BUILDER_TRUCK_COUNT;
+		const ARMY_IS_ESTABLISHED = GROUND_ARMY_SIZE >= 9;
+		const ARMY_CAN_SPARE_TRUCK = ARMY_IS_ESTABLISHED || MY_TRUCK_COUNT < BASE_BUILDER_TRUCK_COUNT;
 		const TRUCK_DEFICIT = TRUCK_SOFT_LIMIT - MY_TRUCK_COUNT;
 		const SLOW_REPLENISHMENT_CAP = ARMY_CAN_SPARE_TRUCK ? 1 : 0;
 		const MAX_TRUCKS_THIS_TICK = this.hasReachedTruckCapOnce ? Math.min(SLOW_REPLENISHMENT_CAP, TRUCK_DEFICIT) : TRUCK_DEFICIT;
+
+		// Decide on whether or not to produce base guards: fill early, then replace losses only while the army can spare them
+		if (BASE_GUARD_COUNT >= this.BASE_GUARD_SIZE) this.hasFilledBaseGuardOnce = true;
+		const ARMY_CAN_SPARE_GUARD = !this.hasFilledBaseGuardOnce || ARMY_IS_ESTABLISHED;
+		const SHOULD_PRODUCE_BASE_GUARD = CAN_DESIGN_UNITS && ARMY_CAN_SPARE_GUARD;		// production checks the guard's live size
 
 		const INITIAL_TRUCK_RUSH_PERIOD = gameTime < 60000;
 
@@ -405,6 +418,7 @@ class CommandCenter {
 		this.PRODUCTION_RESUPPLY_PARAMETERS.MAX_TRUCKS_THIS_TICK = MAX_TRUCKS_THIS_TICK;
 		this.PRODUCTION_RESUPPLY_PARAMETERS.SHOULD_PRODUCE_TRUCK_VEHICLES = true;
 		this.PRODUCTION_RESUPPLY_PARAMETERS.SHOULD_PRODUCE_TRUCK_CYBORGS = false;
+		this.PRODUCTION_RESUPPLY_PARAMETERS.SHOULD_PRODUCE_BASE_GUARD = SHOULD_PRODUCE_BASE_GUARD;
 
 		this.PRODUCTION_RESUPPLY_PARAMETERS.SHOULD_PRODUCE_INFANTRY = SHOULD_PRODUCE_INFANTRY;
 		this.PRODUCTION_RESUPPLY_PARAMETERS.SHOULD_PRODUCE_VTOLS = SHOULD_PRODUCE_VTOLS;
@@ -933,6 +947,8 @@ class CommandCenter {
 	 */
 	runCombatOperations(state) {
 
+		guardBase(state, DIVISION.BASE_GUARD, this.GROUND_FORCE_PARAMETERS);
+
 		const READY_TO_ATTACK = groundForces.isReadyToAttack(state);
 		if (!READY_TO_ATTACK) {
 			return;
@@ -1175,7 +1191,7 @@ class CommandCenter {
 	runResupplyLogistics(state) {
 
 		// Return repaired units back into the reserve force
-		this.#recoverRepairedUnits(state);		
+		this.#recoverRepairedUnits(state);
 
 		// Update brigade supply status
 		this.BRIGADE_DESIGNATIONS.forEach(brigadeID => {
@@ -1288,7 +1304,8 @@ class CommandCenter {
 		const MAX_TRUCKS_THIS_TICK = this.PRODUCTION_RESUPPLY_PARAMETERS.MAX_TRUCKS_THIS_TICK;
 		const SHOULD_PRODUCE_TRUCK_VEHICLES = this.PRODUCTION_RESUPPLY_PARAMETERS.SHOULD_PRODUCE_TRUCK_VEHICLES;
 		const SHOULD_PRODUCE_TRUCK_CYBORGS = this.PRODUCTION_RESUPPLY_PARAMETERS.SHOULD_PRODUCE_TRUCK_CYBORGS;
-		
+		const SHOULD_PRODUCE_BASE_GUARD = this.PRODUCTION_RESUPPLY_PARAMETERS.SHOULD_PRODUCE_BASE_GUARD;
+
 		const CAN_DESIGN_UNITS = this.PRODUCTION_RESUPPLY_PARAMETERS.CAN_DESIGN_UNITS;
 		
 		const SHOULD_PRODUCE_LAND_VEHICLES = this.PRODUCTION_RESUPPLY_PARAMETERS.SHOULD_PRODUCE_LAND_VEHICLES;
@@ -1346,6 +1363,7 @@ class CommandCenter {
 
 		// Run production
 		let trucksInProduction = activeProductionJobs.filter(job => job.type === ENGINEERING.ENGINEERING_RESERVE).length;
+		let baseGuardsQueued = state.g.groupSize(DIVISION.BASE_GUARD) + activeProductionJobs.filter(job => job.type === DIVISION.BASE_GUARD).length;
 		const DEBUG_PRODUCTION = false;
 
 		// Note: for now, we will directly call the tactical level functions
@@ -1359,6 +1377,14 @@ class CommandCenter {
 					this.toc.addToActiveProductionJobs(state, {'factory': f, 'type': ENGINEERING.ENGINEERING_RESERVE});
 					trucksInProduction += 1;
 				}
+				continue;
+			}
+
+			// Falls through to infantry if the guard unit cannot be built, so the guard never idles the factory.
+			if (SHOULD_PRODUCE_BASE_GUARD && baseGuardsQueued < this.BASE_GUARD_SIZE && produceBaseGuard(f)) {
+				if (DEBUG_PRODUCTION) debug(`	${gameTime}: produced Base Guard`);
+				this.toc.addToActiveProductionJobs(state, {'factory': f, 'type': DIVISION.BASE_GUARD});
+				baseGuardsQueued += 1;
 				continue;
 			}
 

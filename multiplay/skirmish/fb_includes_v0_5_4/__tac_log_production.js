@@ -469,6 +469,30 @@ function produceInfantry(factory) {
 }
 
 /**
+ * Produces a base guard cyborg.
+ * @param {StructureObject} factory
+ */
+function produceBaseGuard(factory) {
+
+	// Arrange in ascending order of technological sophistication
+	const baseGuardCyborgs = [
+		{ body: "CyborgLightBody", name: 'Assault Gunner', prop: "CyborgLegs", weapon: "CyborgRotMG" },
+	].reverse();
+
+	// Try to make the most technologically advanced cyborg
+	for (let i=0; i<baseGuardCyborgs.length; ++i) {
+		const cyborg = baseGuardCyborgs[i];
+		const cyborgName = cyborg.name + ` (FishBot v${FISHBOT_VERSION})`;
+
+		const productionInProgress = buildDroidWrapper(factory, cyborgName, cyborg.body, cyborg.prop, cyborg.weapon);
+		if (productionInProgress) {
+			return true;
+		}
+	}
+	return false;
+}
+
+/**
  * Driver for producing land units.
  * @param {number} category 
  * @param {StructureObject} factory 
