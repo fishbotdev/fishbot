@@ -97,8 +97,8 @@ class CommandCenter {
 			BLOCKED_APPROACH_WEIGHT: 2.0,			// demotes targets with terrain in the way; a target with a clear approach wins
 			EFFECTIVE_FIRE_SUPPORT_RADIUS: 12,		// todo: this should be adaptive - when the brigade has a sensor, this is better, without, it is restricted by sight range of the front units
 			EFFECTIVE_ADA_RADIUS: 12,
-			BASE_GUARD_RADIUS: 20,					// the base guard attacks enemies within this many tiles of the base
-			BASE_GUARD_LEASH_RADIUS: 21,			// a guard beyond this is recalled, whatever it is doing
+			BASE_GUARD_RADIUS: 30,					// the base guard attacks enemies within this many tiles of the base
+			BASE_GUARD_LEASH_RADIUS: 35,			// a guard beyond this is recalled, whatever it is doing
 			BASE_GUARD_IDLE_RADIUS: 4,				// how far an idle guard may sit from the base repair facility
 		};
 
