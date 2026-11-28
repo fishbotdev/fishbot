@@ -27,13 +27,18 @@ class FishBotResearchOrders {
 	getFocusedT2RocketResearchPath() {
 		const FISHBOT_T2_ROCKET_RESEARCH_PRIORITIES = [
 			"R-Struc-Power",
+			"R-Wpn-Mortar-Damage",
+			RESEARCHES["Thermal Imaging Rockets"].id,
 			RESEARCHES["Tank Killer Rocket"].id,
-			RESEARCHES["HEAT Rocket Warhead Mk3"].id,
 			RESEARCHES["Super Tank-Killer Cyborg"].id,
+			"R-Wpn-Mortar-ROF",
+			RESEARCHES["HEAT Rocket Warhead Mk3"].id,
+			RESEARCHES["Dense Composite Alloys Mk2"].id,
 			"R-Wpn-Rocket-Damage",
 			"R-Wpn-Rocket-Accuracy",
-	
-			RESEARCHES["Dense Composite Alloys Mk2"].id,
+			"R-Vehicle-Metals",
+			"R-Wpn-MG-Damage",
+			"R-Vehicle-Engine",
 		];
 
 		const FISHBOT_T2_ROCKET_RESEARCH_BLACKLIST = [
@@ -164,6 +169,7 @@ class armyResearchAndDevelopment {
 			// Check if high priority, if so, add to `highPriority` list 
 			if (researchPriorities.some(searchText => curr.id.includes(searchText))) {
 				highPriorityUnsorted.push(curr);
+				// deb(`	- ${curr.name}`)
 				continue;
 			}
 
@@ -173,6 +179,7 @@ class armyResearchAndDevelopment {
 			}
 
 			regularPriority.push(curr);
+			// deb(`	- ${curr.name}`)
 		}
 
 		for (let i=0; i<researchPriorities.length; i++) {
