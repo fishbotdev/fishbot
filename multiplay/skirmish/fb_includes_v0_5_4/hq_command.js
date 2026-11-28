@@ -74,7 +74,7 @@ class CommandCenter {
 			'MAX_HEAVY_CAVALRY': 3,
 			'MAX_LIGHT_CAVALRY': 5,
 			'MAX_MORTAR': 7,
-			'MAX_ADA': 0,
+			'MAX_ADA': 2,
 			'MAX_SENSOR': 0,
 			'MAX_REPAIR': 0,
 			'MAX_INFANTRY': 5,
@@ -108,9 +108,11 @@ class CommandCenter {
 		const DEFAULT_UNIT_WEIGHTS = new Map([
 			// Production weights (which influences production order) are tuned using `python_helper_scripts / production_scheduling.py`.
 			// Must be rebalanced each time the brigade composition is changed.	
+			
+			// The live weights are stored in the `updateStrategicParameters()` method. These are just for reference.
 			[DIVISION.HEAVY_CAV_RESERVE, 0.55],
-			[DIVISION.LIGHT_CAV_RESERVE, 0.9],
-			[DIVISION.SHORT_RANGE_FIRE_SUPPORT_RESERVE, 0.7],
+			[DIVISION.LIGHT_CAV_RESERVE, 0.95],
+			[DIVISION.SHORT_RANGE_FIRE_SUPPORT_RESERVE, 0.6],
 			[DIVISION.AIR_DEFENCE_RESERVE, 0.35],
 			[DIVISION.SENSOR_RESERVE, 0.2],
 			[DIVISION.MAINTENANCE_RESERVE, 0.1],
